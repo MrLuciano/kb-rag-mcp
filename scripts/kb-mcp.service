@@ -1,0 +1,29 @@
+[Unit]
+Description=KB RAG MCP Server
+Documentation=https://github.com/seu-usuario/kb-rag-mcp
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=kb
+Group=kb
+WorkingDirectory=/opt/kb-rag-mcp
+
+# Carrega variáveis de ambiente do .env
+EnvironmentFile=/opt/kb-rag-mcp/.env
+
+ExecStartPre=/usr/bin/docker start kb-qdrant
+ExecStart=/opt/kb-rag-mcp/.venv/bin/python /opt/kb-rag-mcp/server/server.py
+
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/var/log/kb-mcp.log
+StandardError=append:/var/log/kb-mcp.log
+
+# Limites de recursos
+MemoryMax=4G
+CPUQuota=400%
+
+[Install]
+WantedBy=multi-user.target

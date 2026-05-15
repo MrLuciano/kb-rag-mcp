@@ -1,0 +1,80 @@
+{
+  "_comment": "Configurações MCP para Claude Code e OpenCode",
+  "_instrucoes": "Copie o bloco do seu cenário para o arquivo de config correto.",
+
+  "_claude_code_gaming_wsl2": {
+    "_arquivo": "%APPDATA%\\Claude\\claude_desktop_config.json  (Windows)",
+    "mcpServers": {
+      "kb-rag": {
+        "command": "wsl.exe",
+        "args": [
+          "-d", "Ubuntu-24.04",
+          "--",
+          "/home/SEU_USER/kb-rag-mcp/.venv/bin/python",
+          "/home/SEU_USER/kb-rag-mcp/server/server.py"
+        ],
+        "env": {
+          "EMBED_BACKEND": "lmstudio-sdk",
+          "EMBED_MODEL": "nomic-embed-text-v1.5",
+          "LMS_BASE_URL": "http://host.docker.internal:1234",
+          "QDRANT_HOST": "localhost",
+          "QDRANT_PORT": "6333",
+          "MCP_TRANSPORT": "stdio"
+        }
+      }
+    }
+  },
+
+  "_claude_code_proxmox_ssh": {
+    "_arquivo": "~/.claude/settings.json  (Linux/macOS)",
+    "mcpServers": {
+      "kb-rag": {
+        "command": "ssh",
+        "args": [
+          "-T", "kb-proxmox",
+          "/opt/kb-rag/.venv/bin/python /opt/kb-rag/server/server.py"
+        ]
+      }
+    }
+  },
+
+  "_claude_code_proxmox_sse": {
+    "_arquivo": "~/.claude/settings.json",
+    "_nota": "Use quando MCP_TRANSPORT=sse no Proxmox",
+    "mcpServers": {
+      "kb-rag": {
+        "url": "http://192.168.1.200:8765/sse"
+      }
+    }
+  },
+
+  "_opencode_gaming": {
+    "_arquivo": "opencode.json  (na raiz do projeto ou ~/.config/opencode/opencode.json)",
+    "mcp": {
+      "kb-rag": {
+        "type": "local",
+        "command": [
+          "wsl.exe",
+          "-d", "Ubuntu-24.04",
+          "--",
+          "/home/SEU_USER/kb-rag-mcp/.venv/bin/python",
+          "/home/SEU_USER/kb-rag-mcp/server/server.py"
+        ],
+        "environment": {
+          "EMBED_BACKEND": "lmstudio-sdk",
+          "EMBED_MODEL": "nomic-embed-text-v1.5"
+        }
+      }
+    }
+  },
+
+  "_opencode_proxmox_sse": {
+    "_arquivo": "opencode.json",
+    "mcp": {
+      "kb-rag": {
+        "type": "sse",
+        "url": "http://192.168.1.200:8765/sse"
+      }
+    }
+  }
+}
