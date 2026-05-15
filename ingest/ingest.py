@@ -6,14 +6,14 @@ Suporta: PDF, DOCX, XLSX, PPTX, TXT, MD e código fonte.
 Uso:
     python ingest.py --docs /caminho/para/docs
     python ingest.py --docs /caminho --product meu-produto --workers 4
-    python ingest.py --file /caminho/para/arquivo.pdf  # ingestão de arquivo único
+    python ingest.py --file /caminho/para/arquivo.pdf \
+        # ingestão de arquivo único
     python ingest.py --clean  # limpa toda a KB antes de reingerir
 """
 
 import argparse
 import asyncio
 import logging
-import os
 import sys
 import time
 import uuid
@@ -25,13 +25,20 @@ _project_root = Path(__file__).parent.parent
 _env_file = _project_root / ".env"
 try:
     from dotenv import load_dotenv
+
     if _env_file.exists():
         load_dotenv(_env_file, override=True)
         # Confirma silenciosamente que carregou
     else:
         print(f"[WARN] .env não encontrado em {_env_file}", file=sys.stderr)
 except ImportError:
-    print("[WARN] python-dotenv não instalado. Instale: pip install python-dotenv", file=sys.stderr)
+    print(
+        (
+            "[WARN] python-dotenv não instalado."
+            " Instale: pip install python-dotenv"
+        ),
+        file=sys.stderr,
+    )
 
 # Agora adiciona o server/ ao path para imports de embed_client e vector_store
 sys.path.insert(0, str(_project_root / "server"))
@@ -43,43 +50,45 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)],
 )
 
-# ── Extensões suportadas ──────────────────────────────────────────────────────
+
+# ── Extensões suportadas
+# ──────────────────────────────────────────────────────
 EXT_TYPE_MAP = {
-    ".pdf":   "pdf",
-    ".docx":  "docx",
-    ".doc":   "docx",
-    ".xlsx":  "xlsx",
-    ".xls":   "xlsx",
-    ".pptx":  "pptx",
-    ".ppt":   "pptx",
-    ".txt":   "txt",
-    ".md":    "txt",
-    ".rst":   "txt",
-    ".py":    "code",
-    ".ts":    "code",
-    ".js":    "code",
-    ".java":  "code",
-    ".go":    "code",
-    ".rs":    "code",
-    ".cpp":   "code",
-    ".c":     "code",
-    ".cs":    "code",
-    ".yaml":  "code",
-    ".yml":   "code",
-    ".json":  "code",
-    ".xml":   "code",
-    ".sh":    "code",
-    ".sql":   "code",
+    ".pdf": "pdf",
+    ".docx": "docx",
+    ".doc": "docx",
+    ".xlsx": "xlsx",
+    ".xls": "xlsx",
+    ".pptx": "pptx",
+    ".ppt": "pptx",
+    ".txt": "txt",
+    ".md": "txt",
+    ".rst": "txt",
+    ".py": "code",
+    ".ts": "code",
+    ".js": "code",
+    ".java": "code",
+    ".go": "code",
+    ".rs": "code",
+    ".cpp": "code",
+    ".c": "code",
+    ".cs": "code",
+    ".yaml": "code",
+    ".yml": "code",
+    ".json": "code",
+    ".xml": "code",
+    ".sh": "code",
+    ".sql": "code",
 }
 
 # Chunk settings por tipo
 CHUNK_SETTINGS = {
-    "pdf":   {"size": 800,  "overlap": 100},
-    "docx":  {"size": 700,  "overlap": 80},
-    "xlsx":  {"size": 500,  "overlap": 50},
-    "pptx":  {"size": 600,  "overlap": 80},
-    "txt":   {"size": 600,  "overlap": 80},
-    "code":  {"size": 400,  "overlap": 60},
+    "pdf": {"size": 800, "overlap": 100},
+    "docx": {"size": 700, "overlap": 80},
+    "xlsx": {"size": 500, "overlap": 50},
+    "pptx": {"size": 600, "overlap": 80},
+    "txt": {"size": 600, "overlap": 80},
+    "code": {"size": 400, "overlap": 60},
 }
 
 
@@ -87,12 +96,14 @@ CHUNK_SETTINGS = {
 # EXTRATORES
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def extract_pdf(path: Path) -> list[dict]:
     """Extrai texto de PDF preservando estrutura de páginas."""
     chunks_raw = []
     try:
         # Tenta docling primeiro (melhor para PDFs complexos)
         from docling.document_converter import DocumentConverter
+
         converter = DocumentConverter()
         result = converter.convert(str(path))
         text = result.document.export_to_markdown()
@@ -106,6 +117,7 @@ def extract_pdf(path: Path) -> list[dict]:
     if not chunks_raw:
         try:
             import fitz  # PyMuPDF
+
             doc = fitz.open(str(path))
             for page_num, page in enumerate(doc, 1):
                 text = page.get_text("text").strip()
@@ -113,7 +125,9 @@ def extract_pdf(path: Path) -> list[dict]:
                     chunks_raw.append({"text": text, "page": page_num})
             log.info(f"  PyMuPDF OK: {path.name} ({len(chunks_raw)} páginas)")
         except ImportError:
-            log.error("  Instale docling ou pymupdf: pip install docling pymupdf")
+            log.error(
+                "  Instale docling ou pymupdf: pip install docling pymupdf"
+            )
             return []
         except Exception as e:
             log.error(f"  Erro ao extrair PDF: {e}")
@@ -125,6 +139,7 @@ def extract_pdf(path: Path) -> list[dict]:
 def extract_docx(path: Path) -> list[dict]:
     try:
         from docx import Document
+
         doc = Document(str(path))
         paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
         return [{"text": "\n".join(paragraphs), "page": None}]
@@ -139,17 +154,27 @@ def extract_docx(path: Path) -> list[dict]:
 def extract_xlsx(path: Path) -> list[dict]:
     try:
         import openpyxl
+
         wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
         results = []
         for sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
             rows = []
             for row in ws.iter_rows(values_only=True):
-                row_text = "\t".join(str(c) if c is not None else "" for c in row)
+                row_text = "\t".join(
+                    str(c) if c is not None else "" for c in row
+                )
                 if row_text.strip():
                     rows.append(row_text)
             if rows:
-                results.append({"text": f"[Planilha: {sheet_name}]\n" + "\n".join(rows), "page": sheet_name})
+                results.append(
+                    {
+                        "text": (
+                            f"[Planilha: {sheet_name}]\n" + "\n".join(rows)
+                        ),
+                        "page": sheet_name,
+                    }
+                )
         return results
     except ImportError:
         log.error("  Instale openpyxl: pip install openpyxl")
@@ -162,6 +187,7 @@ def extract_xlsx(path: Path) -> list[dict]:
 def extract_pptx(path: Path) -> list[dict]:
     try:
         from pptx import Presentation
+
         prs = Presentation(str(path))
         results = []
         for i, slide in enumerate(prs.slides, 1):
@@ -201,11 +227,11 @@ def extract_code(path: Path) -> list[dict]:
 
 
 EXTRACTORS = {
-    "pdf":  extract_pdf,
+    "pdf": extract_pdf,
     "docx": extract_docx,
     "xlsx": extract_xlsx,
     "pptx": extract_pptx,
-    "txt":  extract_text,
+    "txt": extract_text,
     "code": extract_code,
 }
 
@@ -214,11 +240,13 @@ EXTRACTORS = {
 # CHUNKING
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def chunk_text(text: str, file_type: str) -> list[str]:
     """Divide texto em chunks com overlap usando LangChain."""
     settings = CHUNK_SETTINGS.get(file_type, {"size": 600, "overlap": 80})
     try:
         from langchain_text_splitters import RecursiveCharacterTextSplitter
+
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings["size"],
             chunk_overlap=settings["overlap"],
@@ -227,10 +255,10 @@ def chunk_text(text: str, file_type: str) -> list[str]:
         return splitter.split_text(text)
     except ImportError:
         # Fallback manual se langchain não estiver instalado
-        size    = settings["size"]
+        size = settings["size"]
         overlap = settings["overlap"]
-        chunks  = []
-        start   = 0
+        chunks = []
+        start = 0
         while start < len(text):
             end = start + size
             chunks.append(text[start:end])
@@ -241,6 +269,7 @@ def chunk_text(text: str, file_type: str) -> list[str]:
 # ─────────────────────────────────────────────────────────────────────────────
 # PIPELINE PRINCIPAL
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 async def process_file(
     file_path: Path,
@@ -254,20 +283,21 @@ async def process_file(
     Processa um arquivo e insere seus chunks no Qdrant.
     Retorna (chunks_gerados, status) onde status é 'ok'|'skipped'|'error'.
     """
-    from embed_client import get_embeddings_batch
     from classifier import classify
+    from embed_client import get_embeddings_batch
 
     ext = file_path.suffix.lower()
     file_type = EXT_TYPE_MAP.get(ext)
     if not file_type:
         return 0, "skipped"
 
-    meta        = classify(file_path, docs_root, product_override)
-    product     = meta["product"]
-    doc_type    = meta["doc_type"]
+    meta = classify(file_path, docs_root, product_override)
+    product = meta["product"]
+    doc_type = meta["doc_type"]
     source_file = str(file_path.relative_to(docs_root))
 
-    # ── Verifica se precisa ingerir ───────────────────────────────────────────
+    # ── Verifica se precisa ingerir ─
+    # ───────────────────────────────────────────
     if not force:
         needs, reason = registry.needs_ingest(file_path, source_file)
         if not needs:
@@ -278,11 +308,18 @@ async def process_file(
         log.info(f"[{doc_type:16}] [{product:20}] {source_file}  (forçado)")
 
     try:
-        extractor    = EXTRACTORS[file_type]
+        extractor = EXTRACTORS[file_type]
         raw_sections = extractor(file_path)
         if not raw_sections:
             log.warning(f"  Sem conteúdo extraído: {source_file}")
-            registry.mark_error(file_path, source_file, "sem conteúdo extraído", file_type, product, doc_type)
+            registry.mark_error(
+                file_path,
+                source_file,
+                "sem conteúdo extraído",
+                file_type,
+                product,
+                doc_type,
+            )
             return 0, "error"
 
         # Remove chunks anteriores do mesmo arquivo
@@ -296,35 +333,53 @@ async def process_file(
             for chunk_text_content in text_chunks:
                 if len(chunk_text_content.strip()) < 30:
                     continue
-                all_chunks_data.append({
-                    "chunk_id":    str(uuid.uuid4()),
-                    "text":        chunk_text_content,
-                    "source_file": source_file,
-                    "file_type":   file_type,
-                    "product":     product,
-                    "doc_type":    doc_type,
-                    "page":        section.get("page"),
-                    "chunk_index": chunk_index,
-                })
+                all_chunks_data.append(
+                    {
+                        "chunk_id": str(uuid.uuid4()),
+                        "text": chunk_text_content,
+                        "source_file": source_file,
+                        "file_type": file_type,
+                        "product": product,
+                        "doc_type": doc_type,
+                        "page": section.get("page"),
+                        "chunk_index": chunk_index,
+                    }
+                )
                 chunk_index += 1
 
         if not all_chunks_data:
-            registry.mark_error(file_path, source_file, "chunks vazios após split", file_type, product, doc_type)
+            registry.mark_error(
+                file_path,
+                source_file,
+                "chunks vazios após split",
+                file_type,
+                product,
+                doc_type,
+            )
             return 0, "error"
 
-        texts   = [c["text"] for c in all_chunks_data]
+        texts = [c["text"] for c in all_chunks_data]
         vectors = await get_embeddings_batch(texts, batch_size=32)
         for chunk_data, vector in zip(all_chunks_data, vectors):
             chunk_data["vector"] = vector
 
         await store.upsert_chunks(all_chunks_data)
-        registry.mark_ok(file_path, source_file, len(all_chunks_data), file_type, product, doc_type)
+        registry.mark_ok(
+            file_path,
+            source_file,
+            len(all_chunks_data),
+            file_type,
+            product,
+            doc_type,
+        )
         log.info(f"  ✓ {len(all_chunks_data)} chunks")
         return len(all_chunks_data), "ok"
 
     except Exception as e:
         log.error(f"  ✗ {source_file}: {e}", exc_info=True)
-        registry.mark_error(file_path, source_file, str(e), file_type, product, doc_type)
+        registry.mark_error(
+            file_path, source_file, str(e), file_type, product, doc_type
+        )
         return 0, "error"
 
 
@@ -338,10 +393,10 @@ async def run_ingest(
     sync: bool = False,
 ):
     """Executa a ingestão completa ou de um arquivo específico."""
-    from vector_store import VectorStore
     from registry import IngestRegistry
+    from vector_store import VectorStore
 
-    store    = VectorStore()
+    store = VectorStore()
     registry = IngestRegistry()
 
     await store.connect()
@@ -355,35 +410,41 @@ async def run_ingest(
         log.info("KB e registry limpos.")
 
     if single_file:
-        files     = [single_file]
+        files = [single_file]
         docs_root = single_file.parent
     else:
         files = [
-            f for f in docs_path.rglob("*")
+            f
+            for f in docs_path.rglob("*")
             if f.is_file() and f.suffix.lower() in EXT_TYPE_MAP
         ]
         docs_root = docs_path
 
-    # ── Detecta arquivos removidos do disco ───────────────────────────────────
+    # ── Detecta arquivos removidos do disco
     if sync and not single_file:
         _sync_deleted(registry, docs_root, files)
 
-    total_chunks  = 0
-    total_ok      = 0
+    total_chunks = 0
+    total_ok = 0
     total_skipped = 0
-    total_errors  = 0
-    start_time    = time.time()
+    total_errors = 0
+    start_time = time.time()
 
     sem = asyncio.Semaphore(workers)
 
     async def process_one(f: Path):
         nonlocal total_chunks, total_ok, total_skipped, total_errors
         async with sem:
-            n, status = await process_file(f, docs_root, store, registry, product, force)
-            total_chunks  += n
-            if status == "ok":      total_ok      += 1
-            elif status == "skipped": total_skipped += 1
-            elif status == "error":   total_errors  += 1
+            n, status = await process_file(
+                f, docs_root, store, registry, product, force
+            )
+            total_chunks += n
+            if status == "ok":
+                total_ok += 1
+            elif status == "skipped":
+                total_skipped += 1
+            elif status == "error":
+                total_errors += 1
 
     await asyncio.gather(*[process_one(f) for f in files])
 
@@ -415,20 +476,24 @@ async def run_ingest(
 def _sync_deleted(registry, docs_root: Path, current_files: list[Path]):
     """Marca no registry arquivos que foram removidos do disco."""
     existing_rel = {str(f.relative_to(docs_root)) for f in current_files}
-    all_indexed  = registry.list_all(status="ok")
-    removed      = 0
+    all_indexed = registry.list_all(status="ok")
+    removed = 0
     for rec in all_indexed:
         if rec["path"] not in existing_rel:
             registry.mark_deleted(rec["path"])
             removed += 1
     if removed:
-        log.info(f"  {removed} arquivo(s) removidos do disco marcados como 'deleted'")
+        log.info(
+            f"  {removed} arquivo(s) removidos do disco "
+            f"marcados como 'deleted'"
+        )
 
 
 def cmd_status(args):
     """Exibe relatório do registry sem rodar ingestão."""
-    from registry import IngestRegistry
     import datetime
+
+    from registry import IngestRegistry
 
     registry = IngestRegistry()
     registry.connect()
@@ -440,9 +505,9 @@ def cmd_status(args):
             return "—"
         return datetime.datetime.fromtimestamp(t).strftime("%Y-%m-%d %H:%M")
 
-    print("\n" + "="*55)
+    print("\n" + "=" * 55)
     print(" KB RAG — Status do Registry")
-    print("="*55)
+    print("=" * 55)
     print(f"  Documentos indexados (OK):  {summary['ok'] or 0}")
     print(f"  Com erro:                   {summary['errors'] or 0}")
     print(f"  Removidos do disco:         {summary['deleted'] or 0}")
@@ -464,43 +529,74 @@ def cmd_status(args):
         all_files = registry.list_all()
         print(f"\n  Todos os arquivos ({len(all_files)}):")
         for r in all_files:
-            icon = {"ok": "✓", "error": "✗", "deleted": "⌀"}.get(r["status"], "?")
-            print(f"    {icon} [{r['file_type']:5}] {r['path']}  ({r['chunks']} chunks, {ts(r['indexed_at'])})")
+            icon = {"ok": "✓", "error": "✗", "deleted": "⌀"}.get(
+                r["status"], "?"
+            )
+            print(
+                f"    {icon} [{r['file_type']:5}] {r['path']}  ("
+                f"{r['chunks']} chunks, {ts(r['indexed_at'])}"
+                ")"
+            )
 
-    print("="*55 + "\n")
+    print("=" * 55 + "\n")
     registry.close()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="KB RAG — Pipeline de Ingestão")
+    parser = argparse.ArgumentParser(
+        description="KB RAG — Pipeline de Ingestão"
+    )
     sub = parser.add_subparsers(dest="cmd")
 
-    # ── ingest (default) ──────────────────────────────────────────────────────
+    # ── ingest (default)
     p_ingest = sub.add_parser("ingest", help="Ingere documentos (padrão)")
-    p_ingest.add_argument("--docs",    type=Path, help="Pasta raiz dos documentos")
-    p_ingest.add_argument("--file",    type=Path, help="Arquivo único para ingerir")
-    p_ingest.add_argument("--product", type=str,  help="Nome do produto (override)")
-    p_ingest.add_argument("--workers", type=int,  default=2, help="Workers paralelos")
-    p_ingest.add_argument("--clean",   action="store_true", help="Limpa KB e registry antes")
-    p_ingest.add_argument("--force",   action="store_true", help="Re-ingere mesmo sem mudanças")
-    p_ingest.add_argument("--sync",    action="store_true", help="Marca deletados arquivos removidos do disco")
+    p_ingest.add_argument(
+        "--docs", type=Path, help="Pasta raiz dos documentos"
+    )
+    p_ingest.add_argument(
+        "--file", type=Path, help="Arquivo único para ingerir"
+    )
+    p_ingest.add_argument(
+        "--product", type=str, help="Nome do produto (override)"
+    )
+    p_ingest.add_argument(
+        "--workers", type=int, default=2, help="Workers paralelos"
+    )
+    p_ingest.add_argument(
+        "--clean", action="store_true", help="Limpa KB e registry antes"
+    )
+    p_ingest.add_argument(
+        "--force", action="store_true", help="Re-ingere mesmo sem mudanças"
+    )
+    p_ingest.add_argument(
+        "--sync",
+        action="store_true",
+        help="Marca deletados arquivos removidos do disco",
+    )
 
-    # ── status ────────────────────────────────────────────────────────────────
+    # ── status
     p_status = sub.add_parser("status", help="Exibe status do registry")
-    p_status.add_argument("--errors", action="store_true", help="Mostra arquivos com erro")
-    p_status.add_argument("--list",   action="store_true", help="Lista todos os arquivos")
+    p_status.add_argument(
+        "--errors", action="store_true", help="Mostra arquivos com erro"
+    )
+    p_status.add_argument(
+        "--list", action="store_true", help="Lista todos os arquivos"
+    )
 
     # Compatibilidade retroativa: aceita flags direto sem subcomando
-    parser.add_argument("--docs",    type=Path)
-    parser.add_argument("--file",    type=Path)
+
+    parser.add_argument("--docs", type=Path)
+    parser.add_argument("--file", type=Path)
     parser.add_argument("--product", type=str)
     parser.add_argument("--workers", type=int, default=2)
-    parser.add_argument("--clean",   action="store_true")
-    parser.add_argument("--force",   action="store_true")
-    parser.add_argument("--sync",    action="store_true")
-    parser.add_argument("--status",  action="store_true", help="Atalho para o subcomando status")
-    parser.add_argument("--errors",  action="store_true")
-    parser.add_argument("--list",    action="store_true")
+    parser.add_argument("--clean", action="store_true")
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--sync", action="store_true")
+    parser.add_argument(
+        "--status", action="store_true", help="Atalho para o subcomando status"
+    )
+    parser.add_argument("--errors", action="store_true")
+    parser.add_argument("--list", action="store_true")
 
     args = parser.parse_args()
 
@@ -517,18 +613,21 @@ def main():
     if not ingest_args.docs and not ingest_args.file:
         parser.error("Informe --docs ou --file")
 
-    docs_path = ingest_args.docs or (ingest_args.file.parent if ingest_args.file else Path("."))
-    asyncio.run(run_ingest(
-        docs_path=docs_path,
-        product=ingest_args.product,
-        workers=ingest_args.workers,
-        single_file=ingest_args.file,
-        clean=ingest_args.clean,
-        force=getattr(ingest_args, "force", False),
-        sync=getattr(ingest_args, "sync", False),
-    ))
+    docs_path = ingest_args.docs or (
+        ingest_args.file.parent if ingest_args.file else Path(".")
+    )
+    asyncio.run(
+        run_ingest(
+            docs_path=docs_path,
+            product=ingest_args.product,
+            workers=ingest_args.workers,
+            single_file=ingest_args.file,
+            clean=ingest_args.clean,
+            force=getattr(ingest_args, "force", False),
+            sync=getattr(ingest_args, "sync", False),
+        )
+    )
 
 
 if __name__ == "__main__":
     main()
-
