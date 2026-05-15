@@ -103,10 +103,14 @@ lxml==6.1.0
     # via
     #   python-docx
     #   python-pptx
+markdown-it-py==4.2.0
+    # via rich
 mccabe==0.7.0
     # via flake8
 mcp==1.27.1
     # via -r requirements.in
+mdurl==0.1.2
+    # via markdown-it-py
 msgspec==0.21.1
     # via lmstudio
 mypy==2.1.0
@@ -139,6 +143,8 @@ pluggy==1.6.0
     # via pytest
 portalocker==3.2.0
     # via qdrant-client
+prometheus-client==0.25.0
+    # via -r requirements.in
 protobuf==7.34.1
     # via qdrant-client
 pycodestyle==2.14.0
@@ -159,7 +165,9 @@ pydantic-settings==2.14.1
 pyflakes==3.4.0
     # via flake8
 pygments==2.20.0
-    # via pytest
+    # via
+    #   pytest
+    #   rich
 pyjwt[crypto]==2.12.1
     # via mcp
 pymupdf==1.27.2.3
@@ -196,6 +204,8 @@ requests==2.34.2
     #   requests-toolbelt
 requests-toolbelt==1.0.0
     # via langsmith
+rich==15.0.0
+    # via -r requirements.in
 rpds-py==0.30.0
     # via
     #   jsonschema
