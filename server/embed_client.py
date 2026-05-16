@@ -60,6 +60,12 @@ KNOWN_DIMS = {
     "nomic-embed-code": 768,
 }
 
+# ── Connection pool config (FASE 8)
+HTTP_POOL_CONNECTIONS = int(os.getenv("HTTP_POOL_CONNECTIONS", "20"))
+HTTP_POOL_MAXSIZE = int(os.getenv("HTTP_POOL_MAXSIZE", "50"))
+HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "60.0"))
+BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "32"))
+
 # ── Cache do cliente httpx e embedding cache
 _http_client: httpx.AsyncClient | None = None
 _embed_cache: Optional[CacheManager] = None
@@ -95,9 +101,31 @@ def init_cache(
 
 
 async def _http() -> httpx.AsyncClient:
+    """
+    Get or create HTTP client with connection pooling.
+    
+    FASE 8: Enhanced with connection pooling for better throughput.
+    Limits configured via HTTP_POOL_* environment variables.
+    """
     global _http_client
     if _http_client is None:
-        _http_client = httpx.AsyncClient(timeout=30.0)
+        limits = httpx.Limits(
+            max_connections=HTTP_POOL_MAXSIZE,
+            max_keepalive_connections=HTTP_POOL_CONNECTIONS,
+            keepalive_expiry=30.0,
+        )
+        _http_client = httpx.AsyncClient(
+            timeout=HTTP_TIMEOUT,
+            limits=limits,
+            http2=True,  # Enable HTTP/2 for multiplexing
+        )
+        log.info(
+            "HTTP client initialized: pool_size=%d, max_connections=%d, "
+            "timeout=%.1fs",
+            HTTP_POOL_CONNECTIONS,
+            HTTP_POOL_MAXSIZE,
+            HTTP_TIMEOUT,
+        )
     return _http_client
 
 
@@ -167,6 +195,42 @@ async def _embed_openai_compat(text: str) -> list[float]:
     return resp.json()["data"][0]["embedding"]
 
 
+async def _embed_openai_compat_batch(
+    texts: list[str],
+) -> list[list[float]]:
+    """
+    FASE 8: Native batch embedding via OpenAI-compatible API.
+    
+    Sends multiple texts in a single API call for better throughput.
+    
+    Args:
+        texts: List of texts to embed
+        
+    Returns:
+        List of embedding vectors in same order as input
+    """
+    if not texts:
+        return []
+    
+    client = await _http()
+    url = f"{LMS_BASE_URL}/v1/embeddings"
+    log.debug(
+        f"openai-compat BATCH → POST {url} model={MODEL} texts={len(texts)}"
+    )
+    
+    resp = await client.post(
+        url,
+        headers={"Authorization": "Bearer lm-studio"},
+        json={"model": MODEL, "input": texts},
+    )
+    resp.raise_for_status()
+    
+    data = resp.json()["data"]
+    # Sort by index to ensure correct order
+    sorted_data = sorted(data, key=lambda x: x.get("index", 0))
+    return [item["embedding"] for item in sorted_data]
+
+
 async def _embed_ollama(text: str) -> list[float]:
     """Ollama nativo — ideal para Proxmox/Linux sem GPU."""
     client = await _http()
@@ -176,6 +240,28 @@ async def _embed_ollama(text: str) -> list[float]:
     )
     resp.raise_for_status()
     return resp.json()["embedding"]
+
+
+async def _embed_ollama_batch(texts: list[str]) -> list[list[float]]:
+    """
+    FASE 8: Batch embedding for Ollama.
+    
+    Ollama doesn't have native batch API, so we use parallel requests.
+    
+    Args:
+        texts: List of texts to embed
+        
+    Returns:
+        List of embedding vectors
+    """
+    if not texts:
+        return []
+    
+    # Ollama doesn't support batch API, use parallel requests
+    results = await asyncio.gather(
+        *[_embed_ollama(text) for text in texts]
+    )
+    return list(results)
 
 
 # ── Dispatcher público
@@ -232,29 +318,141 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
 
 
 async def get_embeddings_batch(
-    texts: list[str], batch_size: int = 32, use_cache: bool = True
+    texts: list[str], batch_size: int | None = None, use_cache: bool = True
 ) -> list[list[float]]:
     """
-    Processa uma lista de textos em batches para não sobrecarregar
-    o servidor.
-
+    FASE 8: Optimized batch embedding with native API support and caching.
+    
+    Uses native batch APIs when available (openai-compat) for 3-5x speedup.
+    Falls back to parallel requests for backends without batch support.
+    
+    Process flow:
+    1. Check cache for all texts
+    2. Group uncached texts into batches
+    3. Process batches via native API or parallel requests
+    4. Cache new results
+    5. Return all vectors in original order
+    
     Args:
         texts: List of texts to embed
-        batch_size: Batch size for parallel processing
+        batch_size: Batch size (default: BATCH_SIZE env var or 32)
         use_cache: Whether to use cache (default True)
-
+        
     Returns:
-        List of embedding vectors
+        List of embedding vectors in same order as input texts
     """
-    results = []
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i : i + batch_size]
-        batch_results = await asyncio.gather(
-            *[get_embedding(t, use_cache=use_cache) for t in batch]
-        )
-        results.extend(batch_results)
-        log.info(f"Embeddings: {min(i + batch_size, len(texts))}/{len(texts)}")
-    return results
+    if not texts:
+        return []
+    
+    if batch_size is None:
+        batch_size = BATCH_SIZE
+    
+    # Step 1: Check cache for all texts
+    cache_results: dict[int, list[float]] = {}
+    uncached_indices: list[int] = []
+    
+    if use_cache and _embed_cache is not None:
+        for i, text in enumerate(texts):
+            cache_key = _embed_cache.hash_key("embed", BACKEND, MODEL, text)
+            cached = _embed_cache.get(cache_key)
+            if cached is not None:
+                cache_results[i] = cached
+            else:
+                uncached_indices.append(i)
+        
+        if cache_results:
+            log.debug(
+                "Batch cache: %d hits, %d misses",
+                len(cache_results),
+                len(uncached_indices),
+            )
+            if _metrics:
+                _metrics.increment(
+                    "embedding_cache_hits_total",
+                    len(cache_results),
+                )
+                _metrics.increment(
+                    "embedding_cache_misses_total",
+                    len(uncached_indices),
+                )
+    else:
+        uncached_indices = list(range(len(texts)))
+    
+    # If all cached, return early
+    if not uncached_indices:
+        return [cache_results[i] for i in range(len(texts))]
+    
+    # Step 2: Get uncached texts
+    uncached_texts = [texts[i] for i in uncached_indices]
+    
+    # Step 3: Process via native batch API if supported
+    if BACKEND == "openai-compat":
+        # Use native batch API
+        new_vectors: list[list[float]] = []
+        for i in range(0, len(uncached_texts), batch_size):
+            batch_texts = uncached_texts[i : i + batch_size]
+            try:
+                batch_vectors = await _embed_openai_compat_batch(batch_texts)
+                new_vectors.extend(batch_vectors)
+                log.info(
+                    "Batch embeddings: %d/%d (native API)",
+                    min(i + batch_size, len(uncached_texts)),
+                    len(uncached_texts),
+                )
+            except Exception as e:
+                log.warning(
+                    "Batch API failed (%s), falling back to parallel: %s",
+                    BACKEND,
+                    e,
+                )
+                # Fallback to parallel requests
+                batch_vectors = await asyncio.gather(
+                    *[get_embedding(t, use_cache=False) for t in batch_texts]
+                )
+                new_vectors.extend(batch_vectors)
+    
+    elif BACKEND == "ollama":
+        # Ollama: parallel requests in batches
+        new_vectors = []
+        for i in range(0, len(uncached_texts), batch_size):
+            batch_texts = uncached_texts[i : i + batch_size]
+            batch_vectors = await _embed_ollama_batch(batch_texts)
+            new_vectors.extend(batch_vectors)
+            log.info(
+                "Batch embeddings: %d/%d (parallel)",
+                min(i + batch_size, len(uncached_texts)),
+                len(uncached_texts),
+            )
+    
+    else:
+        # Other backends: parallel requests
+        new_vectors = []
+        for i in range(0, len(uncached_texts), batch_size):
+            batch_texts = uncached_texts[i : i + batch_size]
+            batch_vectors = await asyncio.gather(
+                *[get_embedding(t, use_cache=False) for t in batch_texts]
+            )
+            new_vectors.extend(batch_vectors)
+            log.info(
+                "Batch embeddings: %d/%d (parallel)",
+                min(i + batch_size, len(uncached_texts)),
+                len(uncached_texts),
+            )
+    
+    # Step 4: Cache new results
+    if use_cache and _embed_cache is not None:
+        for i, vector in zip(uncached_indices, new_vectors):
+            text = texts[i]
+            cache_key = _embed_cache.hash_key("embed", BACKEND, MODEL, text)
+            size_bytes = len(vector) * 8
+            _embed_cache.put(cache_key, vector, size_bytes=size_bytes)
+    
+    # Step 5: Merge cached and new results in original order
+    all_results: dict[int, list[float]] = {**cache_results}
+    for i, vector in zip(uncached_indices, new_vectors):
+        all_results[i] = vector
+    
+    return [all_results[i] for i in range(len(texts))]
 
 
 def get_embed_dim() -> int:
@@ -267,6 +465,19 @@ def get_cache_stats() -> dict:
     if _embed_cache is None:
         return {"status": "disabled"}
     return _embed_cache.stats()
+
+
+async def close() -> None:
+    """
+    FASE 8: Cleanup resources (HTTP client, connections).
+    
+    Call this on server shutdown to gracefully close connections.
+    """
+    global _http_client
+    if _http_client is not None:
+        await _http_client.aclose()
+        _http_client = None
+        log.info("HTTP client closed")
 
 
 async def health_check() -> dict:

@@ -48,6 +48,24 @@ class MetricsCollector:
         self.cache_evictions = cache_evictions
         self.cache_size_bytes = cache_size_bytes
         self.cache_entries = cache_entries
+        # FASE 8: Batch metrics
+        self.batch_embeddings_total = batch_embeddings_total
+        self.batch_embedding_texts = batch_embedding_texts
+        self.batch_embedding_duration = batch_embedding_duration
+        self.batch_upserts_total = batch_upserts_total
+        self.batch_upsert_points = batch_upsert_points
+        self.batch_upsert_duration = batch_upsert_duration
+        self.http_pool_connections = http_pool_connections
+        self.batch_processing_throughput = batch_processing_throughput
+    
+    def increment(self, metric_name: str, value: int = 1, **labels) -> None:
+        """Helper to increment counter metrics."""
+        metric = getattr(self, metric_name, None)
+        if metric and hasattr(metric, "labels"):
+            if labels:
+                metric.labels(**labels).inc(value)
+            else:
+                metric.inc(value)
 
 
 # ── Job Metrics ──────────────────────────────────────────────────
@@ -327,3 +345,121 @@ def get_metrics() -> tuple[bytes, str]:
         Tuple of (metrics_bytes, content_type)
     """
     return generate_latest(), CONTENT_TYPE_LATEST
+
+
+# ── FASE 8: Batch Processing Metrics ────────────────────────────────
+
+
+batch_embeddings_total = Counter(
+    "kb_batch_embeddings_total",
+    "Total number of batch embedding operations",
+    ["backend", "batch_size_range"],  # small/medium/large
+)
+
+batch_embedding_texts = Counter(
+    "kb_batch_embedding_texts_total",
+    "Total number of texts embedded in batch operations",
+    ["backend"],
+)
+
+batch_embedding_duration = Histogram(
+    "kb_batch_embedding_duration_seconds",
+    "Batch embedding operation duration",
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0],
+)
+
+batch_upserts_total = Counter(
+    "kb_batch_upserts_total",
+    "Total number of batch upsert operations to Qdrant",
+    ["parallel"],  # true/false
+)
+
+batch_upsert_points = Counter(
+    "kb_batch_upsert_points_total",
+    "Total number of points upserted in batch operations",
+)
+
+batch_upsert_duration = Histogram(
+    "kb_batch_upsert_duration_seconds",
+    "Batch upsert operation duration",
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
+)
+
+http_pool_connections = Gauge(
+    "kb_http_pool_connections",
+    "Number of HTTP connections in pool",
+    ["state"],  # idle/active
+)
+
+batch_processing_throughput = Gauge(
+    "kb_batch_processing_throughput_chunks_per_sec",
+    "Current batch processing throughput",
+)
+
+
+def record_batch_embedding(
+    backend: str,
+    num_texts: int,
+    duration: float,
+) -> None:
+    """
+    Record batch embedding operation.
+    
+    Args:
+        backend: Embedding backend (openai-compat, ollama, etc)
+        num_texts: Number of texts in batch
+        duration: Operation duration in seconds
+    """
+    # Categorize batch size
+    if num_texts < 10:
+        size_range = "small"
+    elif num_texts < 50:
+        size_range = "medium"
+    else:
+        size_range = "large"
+    
+    batch_embeddings_total.labels(
+        backend=backend, batch_size_range=size_range
+    ).inc()
+    batch_embedding_texts.labels(backend=backend).inc(num_texts)
+    batch_embedding_duration.observe(duration)
+
+
+def record_batch_upsert(
+    num_points: int,
+    duration: float,
+    parallel: bool = False,
+) -> None:
+    """
+    Record batch upsert operation.
+    
+    Args:
+        num_points: Number of points upserted
+        duration: Operation duration in seconds
+        parallel: Whether parallel upsert was used
+    """
+    batch_upserts_total.labels(parallel=str(parallel).lower()).inc()
+    batch_upsert_points.inc(num_points)
+    batch_upsert_duration.observe(duration)
+
+
+def update_http_pool_metrics(idle: int, active: int) -> None:
+    """
+    Update HTTP connection pool metrics.
+    
+    Args:
+        idle: Number of idle connections
+        active: Number of active connections
+    """
+    http_pool_connections.labels(state="idle").set(idle)
+    http_pool_connections.labels(state="active").set(active)
+
+
+def update_batch_throughput(chunks_per_sec: float) -> None:
+    """
+    Update batch processing throughput gauge.
+    
+    Args:
+        chunks_per_sec: Current throughput in chunks/second
+    """
+    batch_processing_throughput.set(chunks_per_sec)

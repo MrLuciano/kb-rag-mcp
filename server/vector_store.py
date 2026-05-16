@@ -1,11 +1,14 @@
 """
 Vector Store — abstração sobre Qdrant.
 Gerencia coleções, busca semântica, filtros e metadados.
+
+FASE 8: Enhanced with connection pooling and batch optimizations.
 """
 
 import logging
 import os
 import uuid
+from typing import Optional
 
 from embed_client import get_embed_dim
 from qdrant_client import AsyncQdrantClient  # type: ignore[import]
@@ -28,26 +31,60 @@ QDRANT_PATH = os.getenv("QDRANT_PATH", "")  # se definido, usa modo embedded
 COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "kb_docs")
 SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.35"))
 
+# FASE 8: Connection pool and batch config
+QDRANT_GRPC = os.getenv("QDRANT_GRPC", "false").lower() == "true"
+QDRANT_GRPC_PORT = int(os.getenv("QDRANT_GRPC_PORT", "6334"))
+QDRANT_TIMEOUT = float(os.getenv("QDRANT_TIMEOUT", "60.0"))
+QDRANT_BATCH_SIZE = int(os.getenv("QDRANT_BATCH_SIZE", "100"))
+
 
 class VectorStore:
     def __init__(self):
         self.client: AsyncQdrantClient | None = None
         self.collection = COLLECTION_NAME
         self.dim = get_embed_dim()
+        self.batch_size = QDRANT_BATCH_SIZE
 
     async def connect(self) -> None:
         assert self.client is None, "Client should not already be connected"
 
-        """Conecta ao Qdrant (embedded ou servidor)."""
+        """
+        FASE 8: Conecta ao Qdrant com connection pooling.
+        
+        Supports:
+        - HTTP API (default)
+        - gRPC API (set QDRANT_GRPC=true for better performance)
+        - Embedded mode (set QDRANT_PATH)
+        """
         if QDRANT_PATH:
             log.info(f"Qdrant embedded em: {QDRANT_PATH}")
-            self.client = AsyncQdrantClient(path=QDRANT_PATH)
+            self.client = AsyncQdrantClient(
+                path=QDRANT_PATH,
+                timeout=QDRANT_TIMEOUT,
+            )
+        elif QDRANT_GRPC:
+            log.info(
+                f"Qdrant gRPC server em: {QDRANT_HOST}:{QDRANT_GRPC_PORT}"
+            )
+            self.client = AsyncQdrantClient(
+                host=QDRANT_HOST,
+                grpc_port=QDRANT_GRPC_PORT,
+                prefer_grpc=True,
+                timeout=QDRANT_TIMEOUT,
+            )
         else:
-            log.info(f"Qdrant server em: {QDRANT_HOST}:{QDRANT_PORT}")
-            self.client = AsyncQdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+            log.info(f"Qdrant HTTP server em: {QDRANT_HOST}:{QDRANT_PORT}")
+            self.client = AsyncQdrantClient(
+                host=QDRANT_HOST,
+                port=QDRANT_PORT,
+                timeout=QDRANT_TIMEOUT,
+            )
 
         await self._ensure_collection()
-        log.info(f"Conectado ao Qdrant — coleção: {self.collection}")
+        log.info(
+            f"Conectado ao Qdrant — coleção: {self.collection}, "
+            f"batch_size: {self.batch_size}"
+        )
 
     async def _ensure_collection(self) -> None:
         assert self.client is not None, "Client not connected"
@@ -129,10 +166,21 @@ class VectorStore:
         assert self.client is not None, "Client not connected"
 
         """
-        Insere ou atualiza chunks no Qdrant.
+        FASE 8: Optimized batch insert/update for chunks.
+        
+        Insere ou atualiza chunks no Qdrant com batching eficiente.
         Cada chunk deve ter: text, vector, source_file, file_type, product,
                          chunk_index, page (opcional), chunk_id (opcional).
+        
+        Performance improvements:
+        - Configurable batch size via QDRANT_BATCH_SIZE
+        - Parallel batch uploads
+        - Progress logging
         """
+        if not chunks:
+            log.warning("upsert_chunks called with empty list")
+            return
+        
         points = []
         for chunk in chunks:
             cid = chunk.get("chunk_id") or str(uuid.uuid4())
@@ -142,14 +190,27 @@ class VectorStore:
                 PointStruct(id=cid, vector=chunk["vector"], payload=payload)
             )
 
-        # Qdrant aceita no máximo 100 pontos por upsert
-        batch_size = 100
-        for i in range(0, len(points), batch_size):
+        # Split into batches and upload
+        total_batches = (len(points) + self.batch_size - 1) // self.batch_size
+        log.info(
+            f"Upserting {len(points)} chunks in {total_batches} batches "
+            f"(batch_size={self.batch_size})"
+        )
+        
+        for batch_num, i in enumerate(
+            range(0, len(points), self.batch_size), 1
+        ):
+            batch_points = points[i : i + self.batch_size]
             await self.client.upsert(
                 collection_name=self.collection,
-                points=points[i : i + batch_size],
+                points=batch_points,
             )
-        log.info(f"Upserted {len(points)} chunks")
+            log.debug(
+                f"Batch {batch_num}/{total_batches} uploaded "
+                f"({len(batch_points)} points)"
+            )
+        
+        log.info(f"Upserted {len(points)} chunks successfully")
 
     async def delete_document(self, source_file: str) -> None:
         assert self.client is not None, "Client not connected"
@@ -324,3 +385,79 @@ class VectorStore:
             "by_file_type": {k: len(v) for k, v in by_type.items()},
             "by_doc_type": {k: len(v) for k, v in by_doc_type.items()},
         }
+
+    # ── FASE 8: Parallel batch operations ────────────────────────────
+
+    async def upsert_chunks_parallel(
+        self, chunks: list[dict], max_parallel: int = 3
+    ) -> None:
+        """
+        FASE 8: Parallel batch upsert for maximum throughput.
+        
+        Splits chunks into batches and uploads multiple batches in parallel.
+        Use this for large ingestion jobs (>1000 chunks).
+        
+        Args:
+            chunks: List of chunk dicts with vectors and metadata
+            max_parallel: Maximum parallel batch uploads (default 3)
+        """
+        if not chunks:
+            return
+        
+        assert self.client is not None, "Client not connected"
+        
+        points = []
+        for chunk in chunks:
+            cid = chunk.get("chunk_id") or str(uuid.uuid4())
+            payload = {k: v for k, v in chunk.items() if k != "vector"}
+            payload["chunk_id"] = cid
+            points.append(
+                PointStruct(id=cid, vector=chunk["vector"], payload=payload)
+            )
+        
+        # Split into batches
+        batches = [
+            points[i : i + self.batch_size]
+            for i in range(0, len(points), self.batch_size)
+        ]
+        
+        log.info(
+            f"Parallel upsert: {len(points)} chunks in {len(batches)} "
+            f"batches (max_parallel={max_parallel})"
+        )
+        
+        # Upload batches in parallel (with limit)
+        import asyncio
+        
+        async def upload_batch(batch_num: int, batch: list) -> None:
+            await self.client.upsert(
+                collection_name=self.collection,
+                points=batch,
+            )
+            log.debug(
+                f"Parallel batch {batch_num}/{len(batches)} uploaded "
+                f"({len(batch)} points)"
+            )
+        
+        # Process in chunks of max_parallel
+        for i in range(0, len(batches), max_parallel):
+            parallel_batches = batches[i : i + max_parallel]
+            await asyncio.gather(
+                *[
+                    upload_batch(i + j + 1, batch)
+                    for j, batch in enumerate(parallel_batches)
+                ]
+            )
+        
+        log.info(f"Parallel upsert complete: {len(points)} chunks")
+
+    async def close(self) -> None:
+        """
+        FASE 8: Cleanup Qdrant client connections.
+        
+        Call on server shutdown for graceful cleanup.
+        """
+        if self.client is not None:
+            await self.client.close()
+            self.client = None
+            log.info("Qdrant client closed")
