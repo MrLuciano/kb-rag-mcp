@@ -24,6 +24,9 @@ MCP client.
 - 🔧 **Multi-backend**: LM Studio, Ollama, or OpenAI-compatible APIs
 - ⚡ **Batch processing**: 3-5x faster ingestion with connection pooling
 - 🛠️ **Operations**: Automated install, backup/restore, updates
+- 👁️ **Auto-ingestion**: File watcher for automatic document updates (NEW)
+- 🏷️ **Version filtering**: Search by document version (22.3, CE 24.4) (NEW)
+- 📝 **Metadata overrides**: Per-directory/file classification control (NEW)
 
 ---
 
@@ -124,6 +127,11 @@ The automated installer (`deployment/scripts/install.sh`) performs:
   - `kb-rag-server.service` - MCP server (stdio/SSE)
   - `kb-rag-health.service` - Health check HTTP server (port 8000)
   - `kb-rag-scheduler.service` - Job scheduler (placeholder)
+**systemd Services (4):**
+  - `kb-rag-server.service` - MCP server (port 5001)
+  - `kb-rag-health.service` - Health check server (port 8000)
+  - `kb-rag-scheduler.service` - Job scheduler
+  - `kb-rag-watcher.service` - File watcher (NEW in FASE 13)
   - `kb-rag.target` - Unified service management
 - ✅ Log rotation (14-day retention, 100MB max size)
 - ✅ Security hardening (user isolation, filesystem protection)
@@ -147,6 +155,7 @@ sudo systemctl status kb-rag.target
 # View logs
 sudo journalctl -u kb-rag-server -f
 sudo journalctl -u kb-rag-health -f
+sudo journalctl -u kb-rag-watcher -f  # NEW: File watcher logs
 
 # Enable auto-start on boot
 sudo systemctl enable kb-rag.target
@@ -454,6 +463,63 @@ docs/
 
 Product is automatically inferred from directory name.
 
+#### Auto-Ingestion (FASE 13)
+
+Monitor directories for changes and automatically trigger ingestion:
+
+```bash
+# Start file watcher service
+sudo systemctl start kb-rag-watcher
+
+# Or run standalone
+python -m ingest.watcher.file_watcher
+
+# Configure in .env
+WATCH_PATH=/path/to/docs
+WATCH_DEBOUNCE_SECONDS=30
+```
+
+**See [AUTO_INGESTION.md](docs/AUTO_INGESTION.md) for full guide.**
+
+#### Version Filtering (FASE 13)
+
+Search documents by version (automatically extracted from filenames/paths):
+
+```python
+# MCP tool usage
+search_kb(
+    query="installation steps",
+    product="ArchiveCenter",
+    version="22.3"  # Only search 22.3 docs
+)
+```
+
+**Supported version patterns:**
+- Numeric: `22.3`, `23.1.5`
+- CE prefix: `CE 24.4`
+- v prefix: `v2.5`
+- Version keyword: `version 16.2`
+
+**See [VERSION_FILTERING.md](docs/VERSION_FILTERING.md) for full guide.**
+
+#### Metadata Overrides (FASE 13)
+
+Override automatic classification with `_meta.json` files:
+
+```json
+{
+  "product": "ArchiveCenter",
+  "doc_type": "admin_guide",
+  "files": {
+    "install.pdf": {
+      "doc_type": "installation_guide"
+    }
+  }
+}
+```
+
+**See [METADATA_OVERRIDES.md](docs/METADATA_OVERRIDES.md) for full guide.**
+
 ---
 
 ### 🏥 Health Checks
@@ -636,9 +702,10 @@ Semantic search over knowledge base.
 - `product` (optional): Filter by product
 - `doc_type` (optional): Filter by document type
 - `filter_type` (optional): Filter by file format (pdf, docx, xlsx, pptx, txt, code)
+- `version` (optional): Filter by document version (NEW in FASE 13)
 
 **Returns:** List of chunks with `chunk_id`, `score`, `text`, `source_file`,
-`product`, `doc_type`, `file_type`, `page`.
+`product`, `doc_type`, `file_type`, `page`, `version`.
 
 #### `list_documents`
 
@@ -741,14 +808,27 @@ pip-sync requirements.txt
 
 ### 📚 Documentation
 
+**User Guides:**
+- [AUTO_INGESTION.md](docs/AUTO_INGESTION.md) - Automatic file watching and ingestion
+- [METADATA_OVERRIDES.md](docs/METADATA_OVERRIDES.md) - Override classification with _meta.json
+- [VERSION_FILTERING.md](docs/VERSION_FILTERING.md) - Search by document version
+- [SEARCH_QUALITY.md](docs/SEARCH_QUALITY.md) - Hybrid search and reranking (FASE 12)
+- [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
+**Technical Documentation:**
 - [TESTING.md](docs/TESTING.md) - Testing strategy
+- [INSTRUCTIONS.md](docs/INSTRUCTIONS.md) - Detailed technical instructions
+- [PLAN.md](docs/PLAN.md) - Implementation roadmap
+
+**Phase Completion Reports:**
 - [FASE1_COMPLETION.md](docs/FASE1_COMPLETION.md) - Foundation & testing infrastructure
 - [FASE2_COMPLETION.md](docs/FASE2_COMPLETION.md) - Job management system
 - [FASE3_COMPLETION.md](docs/FASE3_COMPLETION.md) - Worker pool & rate limiter
 - [FASE4_COMPLETION.md](docs/FASE4_COMPLETION.md) - Observability & metrics
 - [FASE5_COMPLETION.md](docs/FASE5_COMPLETION.md) - Cache system
-- [INSTRUCTIONS.md](docs/INSTRUCTIONS.md) - Detailed technical instructions
-- [PLAN.md](docs/PLAN.md) - Implementation roadmap
+- [FASE9_COMPLETION.md](docs/FASE9_COMPLETION.md) - Production hardening
+- [FASE10_COMPLETION.md](docs/FASE10_COMPLETION.md) - Documentation & final QA
+- [FASE12_COMPLETION.md](docs/FASE12_COMPLETION.md) - Search quality enhancement
 
 ---
 
@@ -1144,6 +1224,9 @@ TXT, Markdown e código-fonte (~7 GB+). Compatível com **Claude Code**,
 - 📊 **Métricas**: métricas compatíveis com Prometheus para monitoramento
 - 🔄 **Sistema de cache**: LRU com auto-ajuste de RAM ou Redis
 - 🔧 **Multi-backend**: LM Studio, Ollama ou APIs compatíveis com OpenAI
+- 👁️ **Ingestão automática**: Monitoramento de arquivos para atualizações automáticas (NOVO)
+- 🏷️ **Filtragem por versão**: Busca por versão de documento (22.3, CE 24.4) (NOVO)
+- 📝 **Sobrescrever metadados**: Controle de classificação por diretório/arquivo (NOVO)
 
 ---
 

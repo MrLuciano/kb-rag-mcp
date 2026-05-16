@@ -108,13 +108,14 @@ class VectorStore:
 
     async def _create_payload_indexes(self) -> None:
         """
-        Create payload indexes on product and doc_type fields.
+        Create payload indexes on product, doc_type, and version fields.
         
         FASE 12: Accelerates filtered queries from O(n) to O(log n).
+        FASE 13: Added version field index.
         """
         assert self.client is not None, "Client not connected"
         
-        indexed_fields = ["product", "doc_type"]
+        indexed_fields = ["product", "doc_type", "version"]
         
         for field in indexed_fields:
             try:
@@ -140,9 +141,10 @@ class VectorStore:
         filter_type: str | None = None,
         product: str | None = None,
         doc_type: str | None = None,
+        version: str | None = None,  # FASE 13: Version filter
     ) -> list[dict]:
         """Busca semântica com filtros opcionais por
-        file_type, product e doc_type.
+        file_type, product, doc_type, e version (FASE 13).
         """
         assert self.client is not None, "Client not connected"
         conditions = []
@@ -160,6 +162,12 @@ class VectorStore:
             conditions.append(
                 FieldCondition(
                     key="doc_type", match=MatchValue(value=doc_type)
+                )
+            )
+        if version:  # FASE 13: Version filtering
+            conditions.append(
+                FieldCondition(
+                    key="version", match=MatchValue(value=version)
                 )
             )
 

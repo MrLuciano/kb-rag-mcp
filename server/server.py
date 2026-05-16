@@ -129,6 +129,14 @@ async def list_tools() -> list[types.Tool]:
                         ),
                         "enum": doc_type_enum,
                     },
+                    "version": {
+                        "type": "string",
+                        "description": (
+                            "FASE 13: Filtrar por versão do produto. "
+                            "Exemplos: 22.3, CE 24.4, v2.5. "
+                            "Use para buscar documentação de versão específica."
+                        ),
+                    },
                     "filter_type": {
                         "type": "string",
                         "description": "Filtrar por formato do arquivo: pdf, "
@@ -270,12 +278,13 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     filter_type = args.get("filter_type")
     product = args.get("product")
     doc_type = args.get("doc_type")
+    version = args.get("version")  # FASE 13: Version filter
     hybrid = args.get("hybrid", False)
     rerank = args.get("rerank", False)
 
     log.info(
         f"search_kb: '{query}' top_k={top_k} product={product} "
-        f"doc_type={doc_type} file_type={filter_type} "
+        f"doc_type={doc_type} version={version} file_type={filter_type} "
         f"hybrid={hybrid} rerank={rerank}"
     )
 
@@ -302,6 +311,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             filter_type=filter_type,
             product=product,
             doc_type=doc_type,
+            version=version,  # FASE 13: Pass version to hybrid search
         )
     else:
         # Standard dense vector search
@@ -311,6 +321,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             filter_type=filter_type,
             product=product,
             doc_type=doc_type,
+            version=version,  # FASE 13: Pass version filter
         )
     
     # FASE 12: Apply reranking if enabled

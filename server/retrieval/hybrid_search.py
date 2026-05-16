@@ -104,6 +104,7 @@ class HybridSearcher:
         filter_type: str | None = None,
         product: str | None = None,
         doc_type: str | None = None,
+        version: str | None = None,  # FASE 13: Version filter
     ) -> list[dict]:
         """
         Perform hybrid search combining dense and sparse retrieval.
@@ -116,6 +117,7 @@ class HybridSearcher:
             filter_type: File type filter
             product: Product filter
             doc_type: Document type filter
+            version: Version filter (FASE 13)
         
         Returns:
             List of results sorted by fused score
@@ -132,6 +134,7 @@ class HybridSearcher:
             filter_type=filter_type,
             product=product,
             doc_type=doc_type,
+            version=version,  # FASE 13: Pass version filter
         )
         
         log.info(f"Dense search returned {len(dense_results)} results")

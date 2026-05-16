@@ -294,6 +294,7 @@ async def process_file(
     meta = classify(file_path, docs_root, product_override)
     product = meta["product"]
     doc_type = meta["doc_type"]
+    version = meta.get("version")  # FASE 13: Optional version field
     source_file = str(file_path.relative_to(docs_root))
 
     # ── Verifica se precisa ingerir ─
@@ -333,18 +334,20 @@ async def process_file(
             for chunk_text_content in text_chunks:
                 if len(chunk_text_content.strip()) < 30:
                     continue
-                all_chunks_data.append(
-                    {
-                        "chunk_id": str(uuid.uuid4()),
-                        "text": chunk_text_content,
-                        "source_file": source_file,
-                        "file_type": file_type,
-                        "product": product,
-                        "doc_type": doc_type,
-                        "page": section.get("page"),
-                        "chunk_index": chunk_index,
-                    }
-                )
+                chunk_data = {
+                    "chunk_id": str(uuid.uuid4()),
+                    "text": chunk_text_content,
+                    "source_file": source_file,
+                    "file_type": file_type,
+                    "product": product,
+                    "doc_type": doc_type,
+                    "page": section.get("page"),
+                    "chunk_index": chunk_index,
+                }
+                # FASE 13: Add version if available
+                if version:
+                    chunk_data["version"] = version
+                all_chunks_data.append(chunk_data)
                 chunk_index += 1
 
         if not all_chunks_data:

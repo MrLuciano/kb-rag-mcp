@@ -1,9 +1,12 @@
 """
 Classificador de conteúdo da KB.
 
-Infere duas dimensões a partir do nome do arquivo e caminho:
+Infere dimensões a partir do nome do arquivo e caminho:
   - product  : produto/sistema ao qual o documento pertence
   - doc_type : tipo de conteúdo (admin_guide, standard, training, etc.)
+  - version  : versão extraída do nome do arquivo/diretório (FASE 13)
+
+FASE 13: Suporta metadata overrides via _meta.json em diretórios.
 
 Nenhuma reorganização de pastas é necessária — tudo é inferido
 por padrões no nome do arquivo e estrutura de diretórios existente.
@@ -376,10 +379,58 @@ def classify(
     product_override: str | None = None,
 ) -> dict[str, str]:
     """
-    Retorna dict com product e doc_type inferidos.
+    Retorna dict com product, doc_type e version inferidos.
     Ponto de entrada único usado pelo ingest.py.
+
+    FASE 13: Integra version extractor e meta loader.
+
+    Precedência para product/doc_type:
+    1. Override de _meta.json file-specific
+    2. Override de _meta.json directory-level
+    3. product_override parameter (CLI)
+    4. Auto-classification
+
+    Args:
+        file_path: Path to file being classified
+        docs_root: Root docs directory
+        product_override: Optional product override from CLI
+
+    Returns:
+        Dict with 'product', 'doc_type', and optionally 'version'
     """
-    return {
-        "product": infer_product(file_path, docs_root, product_override),
-        "doc_type": infer_doc_type(file_path),
+    # FASE 13: Load metadata overrides from _meta.json
+    try:
+        from ingest.core.meta_loader import MetaLoader
+
+        loader = MetaLoader()
+        meta = loader.load_meta(file_path.parent)
+        overrides = loader.get_metadata(file_path, meta)
+    except Exception:
+        # If meta loader fails, use empty overrides
+        overrides = {"product": None, "doc_type": None}
+
+    # Auto-classify (will be overridden if _meta.json specifies)
+    auto_product = infer_product(file_path, docs_root, product_override)
+    auto_doc_type = infer_doc_type(file_path)
+
+    # Apply precedence: _meta.json > product_override > auto
+    product = overrides.get("product") or auto_product
+    doc_type = overrides.get("doc_type") or auto_doc_type
+
+    result = {
+        "product": product,
+        "doc_type": doc_type,
     }
+
+    # FASE 13: Extract version from filename/path
+    try:
+        from ingest.core.version_extractor import extract_version
+
+        version = extract_version(file_path)
+        if version:
+            result["version"] = version
+    except Exception:
+        # If version extractor fails, continue without version
+        pass
+
+    return result
