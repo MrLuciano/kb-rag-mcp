@@ -225,3 +225,27 @@ class MetadataStore:
     def rollback(self) -> None:
         """Rollback current transaction."""
         self.conn.rollback()
+
+    # ── Statistics
+
+    def get_stats(self) -> dict:
+        """Get database statistics."""
+        stats = {}
+
+        # Job counts
+        row = self.conn.execute(
+            "SELECT COUNT(*) FROM jobs"
+        ).fetchone()
+        stats["total_jobs"] = row[0] if row else 0
+
+        row = self.conn.execute(
+            "SELECT COUNT(*) FROM jobs WHERE status IN "
+            "('pending', 'running', 'paused')"
+        ).fetchone()
+        stats["active_jobs"] = row[0] if row else 0
+
+        # File counts
+        row = self.conn.execute("SELECT COUNT(*) FROM files").fetchone()
+        stats["total_files"] = row[0] if row else 0
+
+        return stats

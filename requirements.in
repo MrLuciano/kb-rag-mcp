@@ -28,6 +28,7 @@ starlette>=0.37.0
 
 # ── Utils ──────────────────────────────────────────────────────
 python-dotenv>=1.0.0
+psutil>=5.9.0             # System monitoring for cache auto-tuning
 
 # ── Dev/Test Only ──────────────────────────────────────────────
 pytest>=7.2.1

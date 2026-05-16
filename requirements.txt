@@ -147,6 +147,8 @@ prometheus-client==0.25.0
     # via -r requirements.in
 protobuf==7.34.1
     # via qdrant-client
+psutil==7.2.2
+    # via -r requirements.in
 pycodestyle==2.14.0
     # via flake8
 pycparser==3.0
