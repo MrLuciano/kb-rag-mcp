@@ -1076,11 +1076,15 @@ curl http://localhost:8000/health/detailed | \
   jq '.components.cache.details.hit_rate'
 ```
 
-For more troubleshooting, see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) (coming soon).
+**For complete troubleshooting guide with 40+ scenarios, see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).**
 
 ---
 
 ### 🛠️ Troubleshooting
+
+> **📖 See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the complete troubleshooting guide with 40+ scenarios, diagnostic commands, and solutions.**
+
+**Quick Fixes:**
 
 **Embedding API not responding:**
 ```bash
