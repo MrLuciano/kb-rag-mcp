@@ -150,7 +150,9 @@ async def test_multi_rate_limiter_acquire_nonexistent():
 async def test_file_worker_success():
     """Test successful file processing."""
     limiter = RateLimiter(requests_per_minute=60.0)
-    worker = FileWorker(rate_limiter=limiter, max_retries=3)
+    worker = FileWorker(
+        rate_limiter=limiter, max_retries=3, skip_validation=True
+    )
 
     # Mock the process_file function
     with patch("ingest.ingest.process_file") as mock:
@@ -175,7 +177,9 @@ async def test_file_worker_success():
 @pytest.mark.asyncio
 async def test_file_worker_retry():
     """Test retry logic on failure."""
-    worker = FileWorker(rate_limiter=None, max_retries=2)
+    worker = FileWorker(
+        rate_limiter=None, max_retries=2, skip_validation=True
+    )
 
     # Mock to fail twice then succeed
     with patch("ingest.ingest.process_file") as mock:
@@ -200,9 +204,12 @@ async def test_file_worker_retry():
 
 @pytest.mark.asyncio
 async def test_file_worker_max_retries():
-    """Test max retry limit."""
-    worker = FileWorker(rate_limiter=None, max_retries=2)
+    """Test exceeding max retries."""
+    worker = FileWorker(
+        rate_limiter=None, max_retries=2, skip_validation=True
+    )
 
+    # Mock to always fail
     with patch("ingest.ingest.process_file") as mock:
         mock.side_effect = Exception("Persistent error")
 
@@ -303,7 +310,7 @@ def test_worker_stats_summary():
 @pytest.mark.asyncio
 async def test_worker_pool_start_stop():
     """Test starting and stopping worker pool."""
-    pool = WorkerPool(num_workers=2)
+    pool = WorkerPool(num_workers=2, skip_validation=True)
 
     assert not pool.is_running()
 
@@ -319,7 +326,7 @@ async def test_worker_pool_start_stop():
 @pytest.mark.asyncio
 async def test_worker_pool_context_manager():
     """Test pool as async context manager."""
-    async with WorkerPool(num_workers=2) as pool:
+    async with WorkerPool(num_workers=2, skip_validation=True) as pool:
         assert pool.is_running()
 
     assert not pool.is_running()
@@ -328,7 +335,7 @@ async def test_worker_pool_context_manager():
 @pytest.mark.asyncio
 async def test_worker_pool_submit_task():
     """Test submitting task to pool."""
-    pool = WorkerPool(num_workers=1, max_queue_size=10)
+    pool = WorkerPool(num_workers=1, max_queue_size=10, skip_validation=True)
     await pool.start()
 
     task = WorkerTask(
@@ -347,7 +354,7 @@ async def test_worker_pool_submit_task():
 @pytest.mark.asyncio
 async def test_worker_pool_get_result():
     """Test getting result from pool."""
-    pool = WorkerPool(num_workers=1)
+    pool = WorkerPool(num_workers=1, skip_validation=True)
     await pool.start()
 
     # Mock worker processing
@@ -373,7 +380,7 @@ async def test_worker_pool_get_result():
 @pytest.mark.asyncio
 async def test_worker_pool_result_timeout():
     """Test result timeout."""
-    pool = WorkerPool(num_workers=1)
+    pool = WorkerPool(num_workers=1, skip_validation=True)
     await pool.start()
 
     # Don't submit any tasks
@@ -386,7 +393,7 @@ async def test_worker_pool_result_timeout():
 @pytest.mark.asyncio
 async def test_worker_pool_batch_submit():
     """Test submitting batch of tasks."""
-    pool = WorkerPool(num_workers=2)
+    pool = WorkerPool(num_workers=2, skip_validation=True)
     await pool.start()
 
     tasks = [
@@ -420,7 +427,7 @@ async def test_worker_pool_with_rate_limiter():
     limiter = RateLimiter(
         requests_per_minute=120.0, burst_capacity=2
     )  # 2/sec, 2 burst
-    pool = WorkerPool(num_workers=2, rate_limiter=limiter)
+    pool = WorkerPool(num_workers=2, rate_limiter=limiter, skip_validation=True)
 
     await pool.start()
 

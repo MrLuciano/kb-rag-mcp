@@ -9,6 +9,10 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from ingest.validation.pipeline import (
+    ValidationPipeline,
+    create_default_pipeline,
+)
 from ingest.worker.limiter import RateLimiter
 
 log = logging.getLogger("kb-ingest.worker.worker")
@@ -23,8 +27,9 @@ class WorkerResult:
         success: Whether processing succeeded
         chunks_generated: Number of chunks created
         error: Error message if failed
-        status: Processing status (ok/skipped/error)
+        status: Processing status (ok/skipped/error/validation_failed)
         retries: Number of retry attempts
+        validation_errors: List of validation error messages
     """
 
     def __init__(
@@ -35,6 +40,7 @@ class WorkerResult:
         error: Optional[str] = None,
         status: str = "ok",
         retries: int = 0,
+        validation_errors: Optional[list[str]] = None,
     ):
         self.file_path = file_path
         self.success = success
@@ -42,6 +48,7 @@ class WorkerResult:
         self.error = error
         self.status = status
         self.retries = retries
+        self.validation_errors = validation_errors or []
 
 
 class FileWorker:
@@ -56,6 +63,8 @@ class FileWorker:
         self,
         rate_limiter: Optional[RateLimiter] = None,
         max_retries: int = 3,
+        validation_pipeline: Optional[ValidationPipeline] = None,
+        skip_validation: bool = False,
     ):
         """
         Initialize worker.
@@ -63,9 +72,18 @@ class FileWorker:
         Args:
             rate_limiter: Rate limiter for API calls
             max_retries: Maximum retry attempts on failure
+            validation_pipeline: Optional validation pipeline.
+                                Defaults to create_default_pipeline().
+            skip_validation: Skip validation (for testing or legacy mode)
         """
         self.rate_limiter = rate_limiter
         self.max_retries = max_retries
+        self.validation_pipeline = (
+            validation_pipeline
+            if validation_pipeline is not None
+            else create_default_pipeline()
+        )
+        self.skip_validation = skip_validation
 
     async def process_file(
         self,
@@ -90,6 +108,31 @@ class FileWorker:
         Returns:
             WorkerResult with processing outcome
         """
+        # Validate file before processing
+        if not self.skip_validation:
+            is_valid, validation_results = (
+                self.validation_pipeline.validate(file_path)
+            )
+
+            if not is_valid:
+                # Get failure reasons
+                failure_reasons = (
+                    self.validation_pipeline.get_failure_reasons(
+                        validation_results
+                    )
+                )
+                log.warning(
+                    f"Validation failed for {file_path.name}: "
+                    f"{'; '.join(failure_reasons)}"
+                )
+                return WorkerResult(
+                    file_path=file_path,
+                    success=False,
+                    status="validation_failed",
+                    error="Validation failed",
+                    validation_errors=failure_reasons,
+                )
+
         retries = 0
 
         while retries <= self.max_retries:
@@ -163,6 +206,7 @@ class WorkerStats:
         self.files_processed = 0
         self.files_skipped = 0
         self.files_failed = 0
+        self.files_validation_failed = 0
         self.chunks_generated = 0
         self.total_retries = 0
 
@@ -170,6 +214,8 @@ class WorkerStats:
         """Record a worker result in stats."""
         if result.status == "skipped":
             self.files_skipped += 1
+        elif result.status == "validation_failed":
+            self.files_validation_failed += 1
         elif result.success:
             self.files_processed += 1
             self.chunks_generated += result.chunks_generated
@@ -184,10 +230,14 @@ class WorkerStats:
             "processed": self.files_processed,
             "skipped": self.files_skipped,
             "failed": self.files_failed,
+            "validation_failed": self.files_validation_failed,
             "chunks": self.chunks_generated,
             "retries": self.total_retries,
             "total": (
-                self.files_processed + self.files_skipped + self.files_failed
+                self.files_processed
+                + self.files_skipped
+                + self.files_failed
+                + self.files_validation_failed
             ),
         }
 
@@ -198,6 +248,7 @@ class WorkerStats:
             f"Processed: {s['processed']}, "
             f"Skipped: {s['skipped']}, "
             f"Failed: {s['failed']}, "
+            f"Validation Failed: {s['validation_failed']}, "
             f"Chunks: {s['chunks']}, "
             f"Retries: {s['retries']}"
         )

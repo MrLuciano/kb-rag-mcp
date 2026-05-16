@@ -53,10 +53,11 @@ class WorkerPool:
 
     def __init__(
         self,
-        num_workers: int = 2,
+        num_workers: int = 4,
         rate_limiter: Optional[RateLimiter] = None,
-        max_queue_size: int = 100,
+        max_queue_size: int = 1000,
         max_retries: int = 3,
+        skip_validation: bool = False,
     ):
         """
         Initialize worker pool.
@@ -66,11 +67,13 @@ class WorkerPool:
             rate_limiter: Shared rate limiter
             max_queue_size: Max tasks in queue
             max_retries: Max retry attempts per file
+            skip_validation: Skip file validation (for testing)
         """
         self.num_workers = num_workers
         self.rate_limiter = rate_limiter
         self.max_queue_size = max_queue_size
         self.max_retries = max_retries
+        self.skip_validation = skip_validation
 
         self.task_queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
         self.result_queue: asyncio.Queue = asyncio.Queue()
@@ -212,6 +215,7 @@ class WorkerPool:
         worker = FileWorker(
             rate_limiter=self.rate_limiter,
             max_retries=self.max_retries,
+            skip_validation=self.skip_validation,
         )
 
         log.debug(f"Worker {worker_id} started")
