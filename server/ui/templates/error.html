@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Error - KB-RAG{% endblock %}
+
+{% block content %}
+<div class="alert alert-danger">
+    <h4 class="alert-heading">Error</h4>
+    <p>{{ error }}</p>
+    <hr>
+    <p class="mb-0">
+        <a href="/ui/browse" class="btn btn-primary">
+            Back to Browse
+        </a>
+    </p>
+</div>
+{% endblock %}

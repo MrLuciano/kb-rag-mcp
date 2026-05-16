@@ -1,0 +1,22 @@
+[Unit]
+Description=KB-RAG Web UI Server
+After=network.target
+Wants=kb-rag-server.service
+
+[Service]
+Type=simple
+User=kb-rag
+Group=kb-rag
+WorkingDirectory=/opt/kb-rag
+Environment="PATH=/opt/kb-rag/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="UI_HOST=0.0.0.0"
+Environment="UI_PORT=8001"
+Environment="KB_METADATA_DB=/opt/kb-rag/data/kb_metadata.db"
+ExecStart=/opt/kb-rag/.venv/bin/python3 server/ui/run_ui.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

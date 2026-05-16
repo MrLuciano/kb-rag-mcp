@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - FASE 14: Observability and Audit (2026-05-16)
+
+- **Query Logging System**
+  - Automatic logging of all search queries to SQLite
+  - 12 fields tracked: query text, filters, results, scores, latency
+  - 90-day auto-rotation with configurable retention
+  - <5ms overhead per query (non-blocking)
+  - Aggregate statistics API for analytics
+  - New module: `server/telemetry/query_logger.py` (160 lines)
+  - Environment variable: `QUERY_LOG_ENABLED` (default: true)
+  - Storage: `data/kb_metadata.db` table `query_log`
+  - 4 unit tests, 100% passing
+
+- **Registry Export CLI**
+  - Export document registry to JSON or CSV formats
+  - Streaming design (memory-safe for large datasets)
+  - Filters: product, doc_type, version, status
+  - Programmatic API for integration
+  - New module: `ingest/cli/export.py` (112 lines)
+  - 4 unit tests, 100% passing
+
+- **Web UI for Document Browsing**
+  - FastAPI + Bootstrap 5 + HTMX web interface
+  - Document browser with filters and pagination (20/page)
+  - Search tester with parameter configuration
+  - Document detail view with metadata
+  - Health check endpoint at `/health`
+  - systemd service: `kb-rag-ui.service`
+  - Default port: 8001
+  - New modules: `server/ui/` (app, routes, templates)
+  - 5 HTML templates (base, browse, search, document, error)
+  - No authentication (internal use only)
+
+- **Documentation**
+  - Query analysis guide: `docs/QUERY_ANALYSIS.md` (400+ lines)
+  - Web UI usage guide: `docs/WEB_UI.md` (300+ lines)
+  - SQL query examples for analytics
+  - Performance troubleshooting
+
 ### Added - FASE 13: Ingestion Automation (2026-05-16)
 
 - **File Watcher for Automatic Ingestion**

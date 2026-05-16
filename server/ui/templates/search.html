@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Search Tester - KB-RAG{% endblock %}
+
+{% block content %}
+<h1>Search Tester</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Search Parameters</h5>
+                <form id="searchForm">
+                    <div class="mb-3">
+                        <label for="query" class="form-label">
+                            Query *
+                        </label>
+                        <input type="text" class="form-control" 
+                               id="query" name="query" required
+                               placeholder="How to install...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="top_k" class="form-label">
+                            Top K
+                        </label>
+                        <input type="number" class="form-control" 
+                               id="top_k" name="top_k" 
+                               value="5" min="1" max="20">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="product" class="form-label">
+                            Product
+                        </label>
+                        <input type="text" class="form-control" 
+                               id="product" name="product"
+                               placeholder="Optional filter">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="version" class="form-label">
+                            Version
+                        </label>
+                        <input type="text" class="form-control" 
+                               id="version" name="version"
+                               placeholder="e.g., 23.4">
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" 
+                               id="hybrid" name="hybrid">
+                        <label class="form-check-label" for="hybrid">
+                            Hybrid Search (Dense + BM25)
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" 
+                               id="rerank" name="rerank">
+                        <label class="form-check-label" for="rerank">
+                            Cross-encoder Reranking
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        Search
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div id="results">
+            <div class="alert alert-info">
+                Enter a query and click Search to test the system.
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('searchForm').addEventListener('submit', 
+    async function(e) {
+    e.preventDefault();
+    
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = '<div class="spinner-border" role="status">' +
+                          '<span class="visually-hidden">Loading...</span>' +
+                          '</div>';
+    
+    const formData = new FormData(e.target);
+    const params = new URLSearchParams();
+    
+    for (const [key, value] of formData.entries()) {
+        if (value) {
+            if (key === 'hybrid' || key === 'rerank') {
+                params.append(key, 'true');
+            } else {
+                params.append(key, value);
+            }
+        }
+    }
+    
+    try {
+        // Note: This would need to call the MCP server's search endpoint
+        // For now, show a placeholder
+        resultsDiv.innerHTML = `
+            <div class="alert alert-warning">
+                <strong>Note:</strong> Search integration requires MCP 
+                server API endpoint. This is a UI mockup.
+            </div>
+            <h5>Query: ${formData.get('query')}</h5>
+            <p class="text-muted">
+                Top K: ${formData.get('top_k')} | 
+                Hybrid: ${formData.get('hybrid') ? 'Yes' : 'No'} | 
+                Rerank: ${formData.get('rerank') ? 'Yes' : 'No'}
+            </p>
+        `;
+    } catch (error) {
+        resultsDiv.innerHTML = `
+            <div class="alert alert-danger">
+                Error: ${error.message}
+            </div>
+        `;
+    }
+});
+</script>
+{% endblock %}

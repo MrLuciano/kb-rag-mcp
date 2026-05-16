@@ -27,6 +27,7 @@ from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from mcp.server.stdio import stdio_server
 from vector_store import VectorStore
+from server.telemetry.query_logger import QueryLogger
 
 # ── Logging ───────────────────────────────────────────────────────
 logging.basicConfig(
@@ -45,9 +46,27 @@ SSE_HOST = os.getenv("SSE_HOST", "0.0.0.0")
 SSE_PORT = int(os.getenv("SSE_PORT", "8765"))
 TOP_K = int(os.getenv("DEFAULT_TOP_K", "5"))
 
+# FASE 14: Query logging configuration
+QUERY_LOG_ENABLED = os.getenv("QUERY_LOG_ENABLED", "true").lower() in (
+    "true", "1", "yes"
+)
+QUERY_LOG_PATH = Path(
+    os.getenv("QUERY_LOG_PATH", "data/kb_metadata.db")
+)
+
 # ── Inicialização ─────────────────────────────────────────────────
 app = Server("kb-rag")
 store = VectorStore()
+
+# FASE 14: Initialize query logger if enabled
+query_logger = None
+if QUERY_LOG_ENABLED:
+    try:
+        query_logger = QueryLogger(db_path=QUERY_LOG_PATH)
+        log.info(f"Query logging enabled: {QUERY_LOG_PATH}")
+    except Exception as e:
+        log.error(f"Failed to initialize query logger: {e}")
+        log.warning("Continuing without query logging")
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -273,6 +292,9 @@ async def call_tool(
 
 
 async def _search_kb(args: dict) -> list[types.TextContent]:
+    import time  # FASE 14: For query timing
+    start_time = time.time()
+    
     query = args["query"]
     top_k = args.get("top_k", TOP_K)
     filter_type = args.get("filter_type")
@@ -344,6 +366,31 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             results = results[:top_k]
 
     if not results:
+        # FASE 14: Log query with zero results
+        latency_ms = (time.time() - start_time) * 1000
+        if query_logger:
+            try:
+                filters = {}
+                if product:
+                    filters['product'] = product
+                if doc_type:
+                    filters['doc_type'] = doc_type
+                if filter_type:
+                    filters['file_type'] = filter_type
+                
+                query_logger.log_query(
+                    query_text=query,
+                    top_k=top_k,
+                    score_threshold=None,
+                    filters=filters if filters else None,
+                    version_filter=version,
+                    result_count=0,
+                    scores=[],
+                    latency_ms=latency_ms
+                )
+            except Exception as e:
+                log.error(f"Failed to log query: {e}")
+        
         return [
             types.TextContent(
                 type="text",
@@ -381,6 +428,36 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         lines.append("\n---")
 
     lines.append("\n*Use `get_chunk` com o ID para obter contexto expandido.*")
+    
+    # FASE 14: Log query if enabled
+    latency_ms = (time.time() - start_time) * 1000
+    if query_logger:
+        try:
+            # Build filters dict
+            filters = {}
+            if product:
+                filters['product'] = product
+            if doc_type:
+                filters['doc_type'] = doc_type
+            if filter_type:
+                filters['file_type'] = filter_type
+            
+            # Extract scores
+            scores = [r['score'] for r in results]
+            
+            query_logger.log_query(
+                query_text=query,
+                top_k=top_k,
+                score_threshold=None,  # Not exposed in API yet
+                filters=filters if filters else None,
+                version_filter=version,
+                result_count=len(results),
+                scores=scores,
+                latency_ms=latency_ms
+            )
+        except Exception as e:
+            log.error(f"Failed to log query: {e}")
+    
     return [types.TextContent(type="text", text="\n".join(lines))]
 
 
