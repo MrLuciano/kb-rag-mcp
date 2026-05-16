@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - FASE 16: RAG Performance and Accuracy (2026-05-16)
+
+- **Query Analyzer**
+  - Analyzes FASE 14 query logs to identify patterns
+  - APIs: `most_common_queries`, `low_score_queries`, `zero_result_queries`
+  - New module: `server/analytics/query_analyzer.py`
+  - 4 unit tests, 100% passing
+
+- **Golden Dataset**
+  - Version-controlled evaluation dataset (`server/evaluation/golden_dataset.json`)
+  - 10 hand-curated examples across multiple products
+  - `GoldenDataset` class with validation
+  - New module: `server/evaluation/dataset.py`
+  - 3 unit tests, 100% passing
+
+- **RAGAS Evaluation Pipeline (stub)**
+  - `RAGASEvaluator` class with save/load interface
+  - Metrics: context_precision, context_recall, answer_relevancy, faithfulness
+  - LLM integration deferred (requires Ollama or OpenAI setup)
+  - New module: `server/evaluation/ragas_pipeline.py`
+  - 4 unit tests passing, 1 skipped (LLM required)
+
+- **Optimization Experiment Stubs**
+  - Chunk size tuning: `server/optimization/chunking_experiments.py`
+  - Score threshold tuning: `server/optimization/scoring_experiments.py`
+  - Interface defined; implementation deferred to Phase 2
+
+- **Documentation**
+  - `docs/RAG_EVALUATION.md`: full evaluation guide
+  - `docs/FASE16_COMPLETION.md`: completion report
+
 ### Added - FASE 14: Observability and Audit (2026-05-16)
 
 - **Query Logging System**
