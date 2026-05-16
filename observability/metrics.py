@@ -14,6 +14,42 @@ from prometheus_client import (
     generate_latest,
 )
 
+# ── Metrics Collector ────────────────────────────────────────────
+
+
+class MetricsCollector:
+    """Container for all metrics - simplifies passing to components."""
+
+    def __init__(self) -> None:
+        """Initialize with references to all module-level metrics."""
+        # Job metrics
+        self.jobs_created = jobs_created
+        self.jobs_completed = jobs_completed
+        self.jobs_active = jobs_active
+        self.job_duration = job_duration
+        # File metrics
+        self.files_processed = files_processed
+        self.files_processing_time = files_processing_time
+        self.chunks_generated = chunks_generated
+        # Worker metrics
+        self.worker_pool_size = worker_pool_size
+        self.worker_pool_queue_size = worker_pool_queue_size
+        self.worker_pool_utilization = worker_pool_utilization
+        # Rate limiter metrics
+        self.rate_limiter_tokens = rate_limiter_tokens
+        self.rate_limiter_waits = rate_limiter_waits
+        self.rate_limiter_wait_time = rate_limiter_wait_time
+        # API metrics
+        self.api_requests = api_requests
+        self.api_latency = api_latency
+        # Cache metrics
+        self.cache_hits = cache_hits
+        self.cache_misses = cache_misses
+        self.cache_evictions = cache_evictions
+        self.cache_size_bytes = cache_size_bytes
+        self.cache_entries = cache_entries
+
+
 # ── Job Metrics ──────────────────────────────────────────────────
 
 
@@ -120,6 +156,40 @@ api_latency = Histogram(
     "API request latency in seconds",
     ["endpoint"],
     buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0],
+)
+
+
+# ── Cache Metrics ────────────────────────────────────────────────
+
+
+cache_hits = Counter(
+    "kb_rag_cache_hits_total",
+    "Total number of cache hits",
+    ["backend"],  # lru, redis
+)
+
+cache_misses = Counter(
+    "kb_rag_cache_misses_total",
+    "Total number of cache misses",
+    ["backend"],
+)
+
+cache_evictions = Counter(
+    "kb_rag_cache_evictions_total",
+    "Total number of cache evictions",
+    ["backend", "reason"],  # size_limit, expired, manual, clear
+)
+
+cache_size_bytes = Gauge(
+    "kb_rag_cache_size_bytes",
+    "Current cache size in bytes",
+    ["backend"],
+)
+
+cache_entries = Gauge(
+    "kb_rag_cache_entries",
+    "Number of entries in cache",
+    ["backend"],
 )
 
 
@@ -234,6 +304,19 @@ def record_api_request(endpoint: str, status: str, latency: float) -> None:
     """
     api_requests.labels(endpoint=endpoint, status=status).inc()
     api_latency.labels(endpoint=endpoint).observe(latency)
+
+
+def update_cache_metrics(backend: str, size_bytes: int, entries: int) -> None:
+    """
+    Update cache size and entry metrics.
+
+    Args:
+        backend: Cache backend (lru/redis)
+        size_bytes: Cache size in bytes
+        entries: Number of entries
+    """
+    cache_size_bytes.labels(backend=backend).set(size_bytes)
+    cache_entries.labels(backend=backend).set(entries)
 
 
 def get_metrics() -> tuple[bytes, str]:
