@@ -452,7 +452,14 @@ Ingestão dos 7 GB leva estimadamente 3–6 horas em CPU only.
   selecionável via parâmetro na tool ou variável de ambiente.
 - [ ] **Export do registry:** comando para gerar CSV/JSON com todos os documentos indexados
   e suas classificações, para auditoria.
-
+- [ ] ** kubernetes support ** scripts para montagem do ambiente em kubernetes 
+  e criação do pod com o kb-rag-mcp e dependencias em outros pods. 
+  Montagem completa do ambiente funcionando. Os serviços devem estar preparados para execução 
+  ininterrupta com controle de logs e filesystem que previnam o consumo de filestore e ram até a falha.
+- [ ] ** RAG performance and accuracy ** pesquisar técnicas de melhoramento do RAG controlando 
+  a performance: não usar funcionalidades inerentes a trainamento de llms como uso intensivo de cpu e gpu.
+  Usar as técnicas mais simples e de maior ganho primeiro. Usar as queries recebidas para melhorar a 
+  próxima fase do desenvolvimento da ferramenta com machine learning.
 ---
 
 ## 12. Comandos de Operação
