@@ -135,6 +135,24 @@ async def list_tools() -> list[types.Tool]:
                         "docx, xlsx, pptx, txt, code",
                         "enum": ["pdf", "docx", "xlsx", "pptx", "txt", "code"],
                     },
+                    "hybrid": {
+                        "type": "boolean",
+                        "description": (
+                            "FASE 12: Usar busca híbrida (dense + BM25 sparse). "
+                            "Melhora recall em termos técnicos específicos "
+                            "(versões, códigos, nomes exatos)"
+                        ),
+                        "default": False,
+                    },
+                    "rerank": {
+                        "type": "boolean",
+                        "description": (
+                            "FASE 12: Aplicar reranking com cross-encoder. "
+                            "Melhora precisão dos top resultados "
+                            "(adiciona ~200ms de latência)"
+                        ),
+                        "default": False,
+                    },
                 },
                 "required": ["query"],
             },
@@ -252,20 +270,67 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     filter_type = args.get("filter_type")
     product = args.get("product")
     doc_type = args.get("doc_type")
+    hybrid = args.get("hybrid", False)
+    rerank = args.get("rerank", False)
 
     log.info(
         f"search_kb: '{query}' top_k={top_k} product={product} "
-        "doc_type={doc_type} file_type={filter_type}"
+        f"doc_type={doc_type} file_type={filter_type} "
+        f"hybrid={hybrid} rerank={rerank}"
     )
 
     vector = await get_embedding(query)
-    results = await store.search(
-        vector=vector,
-        top_k=top_k,
-        filter_type=filter_type,
-        product=product,
-        doc_type=doc_type,
-    )
+    
+    # FASE 12: Determine retrieve_k for reranking
+    # If reranking, retrieve more results (up to 4x) for better reranking pool
+    retrieve_k = top_k
+    if rerank:
+        retrieve_k = min(top_k * 4, 20)
+        log.info(f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}")
+    
+    # FASE 12: Route to hybrid search if enabled
+    if hybrid:
+        from server.retrieval.hybrid_search import get_hybrid_searcher
+        
+        log.info("Using hybrid search (dense + sparse)")
+        hybrid_searcher = get_hybrid_searcher()
+        results = await hybrid_searcher.search(
+            vector_store=store,
+            query_vector=vector,
+            query_text=query,
+            top_k=retrieve_k,
+            filter_type=filter_type,
+            product=product,
+            doc_type=doc_type,
+        )
+    else:
+        # Standard dense vector search
+        results = await store.search(
+            vector=vector,
+            top_k=retrieve_k,
+            filter_type=filter_type,
+            product=product,
+            doc_type=doc_type,
+        )
+    
+    # FASE 12: Apply reranking if enabled
+    if rerank and results:
+        from server.retrieval.reranker import get_reranker
+        
+        log.info(f"Applying cross-encoder reranking to {len(results)} results")
+        reranker = get_reranker()
+        try:
+            results = await reranker.rerank(
+                query=query,
+                results=results,
+                top_k=top_k,
+            )
+            log.info(f"Reranking complete: {len(results)} results returned")
+        except Exception as e:
+            log.error(f"Reranking failed: {e}", exc_info=True)
+            log.warning("Falling back to original results")
+            # Fallback: use original results, truncate to top_k
+            results = results[:top_k]
 
     if not results:
         return [
@@ -277,6 +342,16 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         ]
 
     lines = [f'## Resultados para: "{query}"\n']
+    
+    # Add search mode indicator
+    mode_indicators = []
+    if hybrid:
+        mode_indicators.append("híbrida")
+    if rerank:
+        mode_indicators.append("reranked")
+    if mode_indicators:
+        lines.append(f"*Busca {' + '.join(mode_indicators)}*\n")
+    
     for i, r in enumerate(results, 1):
         score_pct = f"{r['score'] * 100:.1f}%"
         lines.append(
