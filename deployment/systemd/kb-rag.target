@@ -1,0 +1,8 @@
+[Unit]
+Description=KB-RAG System Target
+Documentation=https://github.com/MrLuciano/kb-rag-mcp
+Requires=kb-rag-server.service kb-rag-health.service
+Wants=kb-rag-scheduler.service
+
+[Install]
+WantedBy=multi-user.target

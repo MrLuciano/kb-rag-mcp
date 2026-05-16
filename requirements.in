@@ -22,9 +22,10 @@ pymupdf>=1.24.0           # PDF (fallback rápido)
 # ── Chunking ───────────────────────────────────────────────────
 langchain-text-splitters>=0.2.0
 
-# ── SSE transport ───────────────────────────────────────────────
+# ── SSE transport & Health API ──────────────────────────────────
 uvicorn>=0.30.0
 starlette>=0.37.0
+fastapi>=0.109.0          # Health check HTTP server
 
 # ── Utils ──────────────────────────────────────────────────────
 python-dotenv>=1.0.0

@@ -1,0 +1,60 @@
+# Prometheus Configuration for KB-RAG
+#
+# Add this to your Prometheus configuration to scrape KB-RAG metrics.
+#
+# Usage:
+#   1. Copy this file to your Prometheus config directory
+#   2. Include it in your main prometheus.yml:
+#      - job_name: 'kb-rag'
+#        file_sd_configs:
+#          - files:
+#            - 'kb-rag-targets.yml'
+#
+# Or add directly to prometheus.yml scrape_configs section.
+
+# Global settings
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'production'
+    service: 'kb-rag'
+
+# Scrape KB-RAG health server metrics
+scrape_configs:
+  - job_name: 'kb-rag'
+    static_configs:
+      - targets:
+          - 'localhost:8000'
+        labels:
+          service: 'kb-rag'
+          component: 'health-server'
+    
+    # Scrape /metrics endpoint
+    metrics_path: '/metrics'
+    
+    # Scrape interval
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    
+    # Health check
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 'localhost:8000'
+
+# Alerting rules
+rule_files:
+  - 'kb-rag-alerts.yml'
+
+# Alert manager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'localhost:9093'

@@ -1,0 +1,147 @@
+# Prometheus Alerting Rules for KB-RAG
+#
+# These rules define alerts for KB-RAG service health and performance.
+#
+# Usage:
+#   Include in prometheus.yml rule_files section:
+#   rule_files:
+#     - 'kb-rag-alerts.yml'
+
+groups:
+  - name: kb-rag-health
+    interval: 30s
+    rules:
+      # Service down
+      - alert: KBRagServerDown
+        expr: up{job="kb-rag"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: server
+        annotations:
+          summary: "KB-RAG server is down"
+          description: "KB-RAG server has been down for more than 2 minutes."
+      
+      # High error rate
+      - alert: KBRagHighErrorRate
+        expr: |
+          rate(kb_rag_errors_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: server
+        annotations:
+          summary: "High error rate in KB-RAG"
+          description: "KB-RAG is experiencing {{ $value }} errors per second."
+      
+      # Embedding service unhealthy
+      - alert: KBRagEmbeddingServiceUnhealthy
+        expr: |
+          kb_rag_health_status{component="embedding"} == 0
+        for: 3m
+        labels:
+          severity: critical
+          component: embedding
+        annotations:
+          summary: "KB-RAG embedding service is unhealthy"
+          description: "Embedding service has been unhealthy for 3 minutes."
+      
+      # Vector store unhealthy
+      - alert: KBRagVectorStoreUnhealthy
+        expr: |
+          kb_rag_health_status{component="vector_store"} == 0
+        for: 3m
+        labels:
+          severity: critical
+          component: vector-store
+        annotations:
+          summary: "KB-RAG vector store is unhealthy"
+          description: "Vector store has been unhealthy for 3 minutes."
+
+  - name: kb-rag-performance
+    interval: 60s
+    rules:
+      # High latency
+      - alert: KBRagHighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            rate(kb_rag_request_duration_seconds_bucket[5m])
+          ) > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "High latency in KB-RAG"
+          description: "P95 latency is {{ $value }}s (threshold: 5s)."
+      
+      # Cache hit rate low
+      - alert: KBRagLowCacheHitRate
+        expr: |
+          rate(kb_rag_cache_hits_total[10m]) / 
+          (rate(kb_rag_cache_hits_total[10m]) + 
+           rate(kb_rag_cache_misses_total[10m])) < 0.5
+        for: 15m
+        labels:
+          severity: info
+          component: cache
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}."
+
+  - name: kb-rag-resources
+    interval: 60s
+    rules:
+      # High memory usage
+      - alert: KBRagHighMemoryUsage
+        expr: |
+          process_resident_memory_bytes{job="kb-rag"} / 
+          (2 * 1024 * 1024 * 1024) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          component: resources
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} of limit."
+      
+      # Disk space low
+      - alert: KBRagLowDiskSpace
+        expr: |
+          kb_rag_filesystem_free_bytes / 
+          kb_rag_filesystem_total_bytes < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: filesystem
+        annotations:
+          summary: "Low disk space"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining."
+
+  - name: kb-rag-jobs
+    interval: 60s
+    rules:
+      # Jobs stuck
+      - alert: KBRagJobsStuck
+        expr: |
+          kb_rag_jobs_running > 0 and
+          rate(kb_rag_files_processed_total[30m]) == 0
+        for: 30m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "Jobs appear to be stuck"
+          description: "{{ $value }} jobs running but no progress in 30 minutes."
+      
+      # High job failure rate
+      - alert: KBRagHighJobFailureRate
+        expr: |
+          rate(kb_rag_jobs_failed_total[10m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: jobs
+        annotations:
+          summary: "High job failure rate"
+          description: "Job failure rate is {{ $value }} per second."

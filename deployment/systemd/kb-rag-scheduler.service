@@ -1,0 +1,44 @@
+[Unit]
+Description=KB-RAG Job Scheduler
+Documentation=https://github.com/MrLuciano/kb-rag-mcp
+After=network.target kb-rag-server.service
+Requires=kb-rag-server.service
+
+[Service]
+Type=simple
+User=kb-rag
+Group=kb-rag
+WorkingDirectory=/opt/kb-rag
+Environment="PATH=/opt/kb-rag/venv/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/opt/kb-rag/config/kb-rag.env
+
+# Start scheduler daemon
+# NOTE: Scheduler daemon will be implemented in FASE 10
+# For now, this is a placeholder that will be enabled later
+ExecStart=/opt/kb-rag/venv/bin/python3 -c "import time; time.sleep(999999)"
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=5min
+StartLimitBurst=3
+
+# Resource limits
+MemoryMax=1G
+CPUQuota=100%
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/kb-rag/data /opt/kb-rag/logs
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kb-rag-scheduler
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=kb-rag.target
