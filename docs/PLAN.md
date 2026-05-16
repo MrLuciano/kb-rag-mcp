@@ -189,3 +189,303 @@ Deliverables:
 Acceptance:
 - Clean install works on Debian.
 - Full workflow passes E2E tests.
+
+---
+
+## Future Phases: Enhancements and Advanced Features
+
+### FASE 11: Expanded Ingestion (High + Medium Priority)
+**Duration:** 7 days (Days 89-95)
+
+Goals:
+- Support legacy Office formats (doc, xls, ppt, WordPerfect).
+- Extract and ingest ZIP archives recursively.
+- Maximize document coverage for legacy documentation bases.
+
+Deliverables:
+- `ingest/parsers/legacy_office.py` with fallback chain:
+  * python-docx2txt for .doc files
+  * xlrd for old .xls files
+  * python-pptx or textract for .ppt files
+  * textract or unoconv for .wpd (WordPerfect)
+  * odfpy for OpenDocument formats (.odt, .ods, .odp)
+- `ingest/parsers/zip_handler.py`:
+  * Recursive extraction up to 2 levels deep
+  * Skip files >500MB inside archives
+  * Preserve relative path as source_path metadata
+  * Reuse existing parsers for extracted files
+- Integration with existing parser factory in document_processor.py
+- Validation rules for archive size and nesting depth
+- Unit tests with real legacy format samples
+- docs/LEGACY_FORMATS.md with supported formats table
+
+Acceptance:
+- Successfully ingests .doc, .xls, .ppt, .wpd files.
+- Extracts and processes all files from nested ZIPs.
+- Invalid formats fallback gracefully with logging.
+- Test coverage >80% for new parsers.
+
+---
+
+### FASE 12: Search Quality Enhancement (High Priority)
+**Duration:** 10 days (Days 96-105)
+
+Goals:
+- Implement payload indexing for fast filtered queries.
+- Add hybrid search combining dense vectors with BM25 sparse.
+- Integrate cross-encoder reranking for top results.
+- Significantly improve retrieval quality (NDCG, MRR).
+
+Deliverables:
+- `scripts/migrations/create_payload_indexes.py`:
+  * Create Qdrant payload indexes on `product` and `doc_type`
+  * Safe to run on existing collections (idempotent)
+  * Progress reporting for large collections
+- `server/retrieval/hybrid_search.py`:
+  * Integrate Qdrant SparseVector with BM25 from fastembed
+  * Implement RRF (Reciprocal Rank Fusion) for score combination
+  * Parameter `hybrid=true` in search_kb tool (opt-in)
+  * Preserve existing filter compatibility
+- `server/retrieval/reranker.py`:
+  * Load cross-encoder/ms-marco-MiniLM-L-6-v2 via sentence-transformers
+  * Retrieve top-20, rerank, return top-k
+  * Parameter `rerank=true` in search_kb tool (opt-in)
+  * Batch processing for efficiency (max 20 at a time)
+  * Async implementation to avoid blocking
+- Update `vector_store.py` to create indexes on collection creation
+- Benchmarking suite: measure NDCG@5, MRR, recall before/after
+- Integration tests with real queries
+- Performance tests (latency p95 <500ms with reranking)
+- docs/SEARCH_QUALITY.md with evaluation methodology
+
+Acceptance:
+- Payload indexes created on existing collections.
+- Hybrid search improves recall by >15% on test dataset.
+- Reranking improves NDCG@5 by >20% on test dataset.
+- Opt-in parameters work without breaking existing behavior.
+- Performance targets met (p95 <500ms).
+
+---
+
+### FASE 13: Ingestion Automation (Medium Priority)
+**Duration:** 7 days (Days 106-112)
+
+Goals:
+- Auto-detect file changes and trigger incremental ingestion.
+- Extract version information from filenames and index.
+- Support per-directory metadata overrides with _meta.json.
+- Reduce manual ingestion work.
+
+Deliverables:
+- `ingest/watcher/file_watcher.py`:
+  * watchdog monitoring DOCS_PATH (configurable)
+  * Debounce: 30s to avoid duplicate jobs
+  * Trigger incremental ingestion via job system
+  * Handle file create, modify, delete events
+  * Ignore temp files (.tmp, .swp, etc.)
+- `ingest/core/version_extractor.py`:
+  * Regex patterns: `(\d{2}\.\d+)`, `(CE \d{2}\.\d+)`, `(v\d+\.\d+)`
+  * Extract from filename and parent directory
+  * Add `version` field to Qdrant payload (string)
+  * Enable version filtering in search_kb tool
+- `ingest/core/meta_loader.py`:
+  * Load `_meta.json` per directory with schema:
+    ```json
+    {
+      "product": "ProductName",
+      "doc_type": "api_guide",
+      "files": {
+        "specific_file.pdf": {"product": "Override", "doc_type": "manual"}
+      }
+    }
+    ```
+  * Precedence: file-specific > directory-level > auto-inference
+  * Validation: reject invalid product/doc_type values
+- `deployment/systemd/kb-rag-watcher.service`:
+  * Runs file_watcher as separate service
+  * Restart=always
+  * Depends on kb-rag-server
+- Integration with FileScanner and metadata classification
+- Unit tests for watcher, version extractor, meta loader
+- Integration test: add file → watcher detects → job created
+- docs/AUTO_INGESTION.md
+
+Acceptance:
+- Watcher detects new/modified files within 30s.
+- Version extracted correctly from 90% of test filenames.
+- _meta.json overrides work and take precedence.
+- Watcher service runs continuously without crashes.
+
+---
+
+### FASE 14: Observability and Audit (Low Priority)
+**Duration:** 10 days (Days 113-122)
+
+Goals:
+- Log all search queries with results and scores for analysis.
+- Export file registry to CSV/JSON for auditing.
+- Build lightweight web UI for document inspection and testing.
+- Improve operational visibility.
+
+Deliverables:
+- `server/telemetry/query_logger.py`:
+  * SQLite table `query_log`: query, top_k, product_filter, 
+    doc_type_filter, num_results, avg_score, latency_ms, timestamp
+  * Log after each search_kb invocation
+  * Auto-rotation: keep last 90 days, monthly archive
+  * Query to export aggregated stats (top queries, low-score queries)
+- `ingest/cli/export.py`:
+  * Command: `kb-rag registry export --format csv|json`
+  * Options: --product, --doc_type, --status filters
+  * Output: file_path, product, doc_type, status, ingested_at, hash
+  * Streaming export for large registries (don't load all in memory)
+- `server/ui/` (FastAPI + HTMX):
+  * `/ui` - web interface (no auth, internal only)
+  * Browse documents: list by product/doc_type, pagination (50/page)
+  * Search tester: query input, show results with scores
+  * Document detail: show chunks, metadata, source file
+  * Bootstrap 5 or Tailwind for minimal styling
+  * HTMX for dynamic updates without JS framework
+- Update Grafana dashboard with query metrics:
+  * Top 10 queries
+  * Queries with low avg scores (<0.5)
+  * Query latency p50/p95/p99
+- Tests for query logger, export CLI, UI endpoints
+- docs/QUERY_ANALYSIS.md
+
+Acceptance:
+- All queries logged with <5ms overhead.
+- Export generates valid CSV/JSON with filters.
+- UI allows browsing 10k+ documents with good UX.
+- UI search tester returns same results as MCP tool.
+
+---
+
+### FASE 15: Advanced Infrastructure (Low Priority)
+**Duration:** 14 days (Days 123-136)
+
+Goals:
+- Support multiple Qdrant collections (per product/context).
+- Provide production-grade Kubernetes deployment.
+- Enable horizontal scaling and multi-tenancy.
+
+Deliverables:
+- `server/collections/manager.py`:
+  * CollectionManager: create, list, switch collections
+  * Collection naming: `kb_docs_{product}` or `kb_docs_{context}`
+  * Parameter `collection` in search_kb tool (optional)
+  * Environment variable `DEFAULT_COLLECTION=kb_docs`
+  * Automatic collection creation on first use
+- `server/collections/router.py`:
+  * Route queries to appropriate collection
+  * Support wildcard: collection=* searches all collections
+  * Merge and deduplicate results from multiple collections
+- Helm chart: `deployment/kubernetes/kb-rag/`:
+  * Chart.yaml, values.yaml
+  * Deployments: kb-rag-server, kb-rag-health, kb-rag-scheduler
+  * StatefulSet: qdrant (with PVC for data persistence)
+  * ConfigMap: kb-rag.env configuration
+  * Secret: embedding API keys (if needed)
+  * Service: expose health server as LoadBalancer/NodePort
+  * HPA (optional): autoscale server based on CPU >70%
+  * Liveness/Readiness probes for all pods
+  * Resource limits: 2Gi RAM server, 4Gi RAM Qdrant
+- Alternative: plain YAML manifests if Helm not required
+- `deployment/kubernetes/kb-rag-sqlite-backup.yaml`:
+  * CronJob for daily backups to PVC
+- Update install.sh to detect k8s environment
+- Integration tests with kind or minikube
+- docs/KUBERNETES.md with deployment guide
+
+Acceptance:
+- Multi-collection support works with filtering.
+- Helm install creates all resources successfully.
+- Pods restart on failure with health checks.
+- Backup CronJob runs and creates valid archives.
+- Services accessible via LoadBalancer or Ingress.
+
+---
+
+### FASE 16: RAG Performance and Accuracy (Low Priority)
+**Duration:** 14 days (Days 137-150)
+
+Goals:
+- Establish RAG evaluation methodology with metrics.
+- Analyze query patterns from production logs.
+- Implement continuous improvement pipeline.
+- Optimize RAG based on real usage data (not LLM training).
+
+Deliverables:
+- `server/analytics/query_analyzer.py`:
+  * Load query_log from FASE 14
+  * Identify patterns: most common queries, low-score queries
+  * Cluster similar queries (embeddings + k-means)
+  * Generate report: query_analysis.json
+- `server/evaluation/ragas_pipeline.py`:
+  * Golden dataset: 50+ (query, expected_answer, expected_docs)
+  * RAGAS metrics: context_precision, answer_relevancy, 
+    faithfulness, context_recall
+  * LLM-as-judge using local Ollama or OpenAI API
+  * Compare current system vs improvements
+  * Store results in `evaluation_results.json`
+- `server/evaluation/dataset.py`:
+  * Create golden dataset from real queries (anonymized)
+  * Manual labeling: expected answer, expected source docs
+  * Version control for dataset (git)
+- Optimization experiments based on analysis:
+  * Adjust CHUNK_SIZE/CHUNK_OVERLAP based on doc types
+  * Tune score thresholds per product
+  * Optimize reranking model selection
+  * Experiment with query expansion/reformulation
+- CI job: weekly RAGAS evaluation on main branch
+- Regression tests: alert if RAGAS scores drop >10%
+- Before/after reports with charts
+- docs/RAG_EVALUATION.md:
+  * Methodology
+  * Baseline metrics
+  * Improvement experiments
+  * Results and recommendations
+
+Acceptance:
+- Golden dataset created with 50+ labeled examples.
+- RAGAS pipeline runs and produces metrics.
+- At least 2 optimization experiments completed.
+- Improvement of >10% in at least one RAGAS metric.
+- Evaluation runs automatically in CI weekly.
+
+---
+
+## Updated Timeline
+
+Total duration: 24.6 weeks (172 days)
+
+**Completed Phases (Days 1-88):**
+- FASE 1-10: Foundation through Documentation (88 days)
+
+**Future Phases (Days 89-150):**
+- FASE 11: Expanded Ingestion (7 days)
+- FASE 12: Search Quality Enhancement (10 days)
+- FASE 13: Ingestion Automation (7 days)
+- FASE 14: Observability and Audit (10 days)
+- FASE 15: Advanced Infrastructure (14 days)
+- FASE 16: RAG Performance and Accuracy (14 days)
+
+**Total:** ~6 months for complete feature set
+
+---
+
+## Priority Execution Order
+
+**Immediate (v1.1.0):**
+1. FASE 12 (Search Quality) - Highest impact on user experience
+2. FASE 11 (Expanded Ingestion) - More documents = more value
+
+**Near-term (v1.2.0):**
+3. FASE 13 (Automation) - Reduce manual work
+
+**Long-term (v1.3.0+):**
+4. FASE 14 (Observability) - Production maturity
+5. FASE 15 (Kubernetes) - Enterprise deployment
+6. FASE 16 (RAG Accuracy) - Continuous improvement
+
+Each phase can be released independently after validation.

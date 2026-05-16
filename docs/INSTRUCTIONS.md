@@ -425,41 +425,597 @@ Ingestão dos 7 GB leva estimadamente 3–6 horas em CPU only.
 
 ## 11. Melhorias Planejadas (backlog)
 
+> **Nota:** Este backlog está mapeado para FASE 11-16 em docs/PLAN.md.  
+> Cada item contém detalhes técnicos suficientes para implementação autônoma.
+
+---
+
 ### Alta prioridade
-- [ ] **Reranking:** cross-encoder local (`cross-encoder/ms-marco-MiniLM-L-6-v2`) aplicado
-  sobre os top-20 resultados antes de retornar os top-k ao LLM. Reduz ruído sem custo de embedding.
-- [ ] **Busca híbrida:** combinar score vetorial com BM25 (sparse). Qdrant suporta nativamente
-  com `SparseVector`. Melhora recall em termos técnicos específicos (nomes de produto, versões).
-- [ ] **Payload indexing:** criar índices Qdrant nos campos `product` e `doc_type` para
-  acelerar queries filtradas em coleções grandes.
+
+#### Older Office formats (FASE 11)
+**Problema:** Leitor de documentos MS Office falha com formatos legados (.doc, .xls, .ppt) 
+e formatos alternativos (WordPerfect .wpd, OpenDocument .odt/.ods/.odp).
+
+**Solução técnica:**
+- Criar `ingest/parsers/legacy_office.py` com fallback chain:
+  1. **python-docx2txt** para `.doc` (Word 97-2003)
+  2. **xlrd** para `.xls` (Excel 97-2003)  
+  3. **python-pptx** ou **textract** para `.ppt` (PowerPoint 97-2003)
+  4. **textract** ou **unoconv** para `.wpd` (WordPerfect)
+  5. **odfpy** para `.odt`, `.ods`, `.odp` (OpenDocument)
+- Fallback final: **textract** (wrapper para Tika/Tesseract) para qualquer formato
+- Adicionar ao `document_processor.py` parser factory
+- Validação: tamanho máximo 100MB, timeout 60s por arquivo
+
+**Arquivos afetados:**
+- `requirements.in`: adicionar `python-docx2txt`, `xlrd`, `odfpy`, `textract`
+- `ingest/parsers/legacy_office.py`: novo módulo
+- `ingest/core/document_processor.py`: registrar novos parsers
+- `tests/test_legacy_parsers.py`: testes com fixtures reais
+
+**Testes:**
+- Criar fixtures: `tests/fixtures/legacy/sample.{doc,xls,ppt,wpd,odt}`
+- Teste unitário para cada formato
+- Teste de fallback quando parser primário falha
+- Validação de encoding (UTF-8 no output)
+
+**Critério de aceitação:**
+- 90% dos formatos legados na KB atual são parseados com sucesso
+- Fallback gracioso com log quando nenhum parser funciona
+
+---
+
+#### Reranking (FASE 12)
+**Problema:** Resultados vetoriais incluem falsos positivos (similaridade semântica sem 
+relevância factual). Top-5 pode conter documentos irrelevantes.
+
+**Solução técnica:**
+- Criar `server/retrieval/reranker.py` com cross-encoder:
+  - Modelo: `cross-encoder/ms-marco-MiniLM-L-6-v2` via `sentence-transformers`
+  - Pipeline: `search_kb` retorna top-20 → reranker → top-k ao usuário
+  - Batch processing: grupos de 20 pares (query, chunk) por vez
+  - Async: não bloquear thread principal
+- Adicionar parâmetro `rerank: bool = False` ao tool `search_kb` (opt-in)
+- Cache de resultados rerankeados (key: hash(query + results))
+
+**Arquivos afetados:**
+- `requirements.in`: adicionar `sentence-transformers>=2.2.0`
+- `server/retrieval/reranker.py`: novo módulo
+- `server/mcp_server.py`: integrar reranker no `search_kb`
+- `server/cache/cache_manager.py`: adicionar cache de reranking
+- `tests/test_reranker.py`: testes unitários
+- `tests/e2e/test_reranking_quality.py`: testes de qualidade
+
+**Configuração:**
+```bash
+# .env
+RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+RERANKER_BATCH_SIZE=20
+RERANKER_CACHE_TTL=3600  # 1 hora
+```
+
+**Testes:**
+- Dataset de golden queries com expected top doc
+- Métrica: NDCG@5 antes/depois do reranking
+- Teste de performance: latência p95 <500ms
+- Validação: ordem de resultados muda corretamente
+
+**Critério de aceitação:**
+- NDCG@5 melhora >20% no dataset de teste
+- Latência adicional <200ms (p95)
+- Opt-in não quebra comportamento existente
+
+---
+
+#### Busca híbrida (FASE 12)
+**Problema:** Busca puramente vetorial falha em termos técnicos específicos 
+(nomes de produto, versões, códigos). Exemplo: "Archive Center 22.3" não 
+ranqueia documentos com esse termo exato no topo.
+
+**Solução técnica:**
+- Qdrant `SparseVector` + BM25 via `fastembed`:
+  - Dense vector: embedding atual (nomic-embed-text)
+  - Sparse vector: BM25 tokenization com fastembed
+  - Fusão: **RRF (Reciprocal Rank Fusion)** ou weighted sum
+- Adicionar parâmetro `hybrid: bool = False` ao `search_kb` (opt-in)
+- Armazenar sparse vector junto com dense no upsert
+
+**Arquivos afetados:**
+- `requirements.in`: adicionar `fastembed>=0.2.0` (BM25 support)
+- `server/retrieval/hybrid_search.py`: novo módulo
+- `ingest/core/document_processor.py`: gerar sparse vector no chunking
+- `server/vector_store.py`: upsert com sparse vector
+- `server/mcp_server.py`: integrar hybrid search
+- `tests/test_hybrid_search.py`: testes unitários
+- `tests/e2e/test_recall_improvement.py`: métricas de recall
+
+**Implementação RRF:**
+```python
+def rrf_fusion(dense_results, sparse_results, k=60):
+    """Reciprocal Rank Fusion."""
+    scores = {}
+    for rank, result in enumerate(dense_results):
+        scores[result.id] = scores.get(result.id, 0) + 1/(k + rank + 1)
+    for rank, result in enumerate(sparse_results):
+        scores[result.id] = scores.get(result.id, 0) + 1/(k + rank + 1)
+    return sorted(scores.items(), key=lambda x: -x[1])
+```
+
+**Configuração:**
+```bash
+# .env
+HYBRID_DENSE_WEIGHT=0.7
+HYBRID_SPARSE_WEIGHT=0.3
+HYBRID_RRF_K=60
+```
+
+**Testes:**
+- Queries com termos técnicos específicos (versões, códigos)
+- Métrica: Recall@10 antes/depois
+- Validação: documentos com match exato ranqueiam melhor
+
+**Critério de aceitação:**
+- Recall@10 melhora >15% em queries técnicas
+- Compatibilidade com filtros existentes (product, doc_type)
+- Performance: latência <100ms adicional
+
+---
+
+#### Payload indexing (FASE 12)
+**Problema:** Queries filtradas (`product=X`, `doc_type=Y`) são lentas em 
+coleções grandes (>100k chunks) porque Qdrant scana todos os payloads.
+
+**Solução técnica:**
+- Criar índices Qdrant nos campos `product` e `doc_type`:
+  ```python
+  client.create_payload_index(
+      collection_name="kb_docs",
+      field_name="product",
+      field_schema="keyword"  # index como string exato
+  )
+  ```
+- Script de migração: `scripts/migrations/create_payload_indexes.py`
+  - Idempotente: verifica se índice já existe
+  - Progress bar para coleções grandes
+  - Pode rodar em produção sem downtime
+- Integrar criação de índices em `vector_store.py` ao criar collection
+
+**Arquivos afetados:**
+- `scripts/migrations/create_payload_indexes.py`: novo script
+- `server/vector_store.py`: adicionar index creation ao `create_collection()`
+- `docs/MIGRATIONS.md`: documentar migração
+- `tests/test_payload_indexes.py`: validar criação de índices
+
+**Script de migração:**
+```python
+# scripts/migrations/create_payload_indexes.py
+import asyncio
+from qdrant_client import QdrantClient
+
+async def create_indexes():
+    client = QdrantClient(url=QDRANT_URL)
+    fields = ["product", "doc_type"]
+    
+    for field in fields:
+        # Check if index exists
+        collection_info = client.get_collection("kb_docs")
+        if field not in collection_info.config.params.index_fields:
+            print(f"Creating index on {field}...")
+            client.create_payload_index(
+                collection_name="kb_docs",
+                field_name=field,
+                field_schema="keyword"
+            )
+            print(f"✓ Index created on {field}")
+        else:
+            print(f"✓ Index already exists on {field}")
+
+if __name__ == "__main__":
+    asyncio.run(create_indexes())
+```
+
+**Testes:**
+- Benchmark: filtro antes/depois de criar índices
+- Validação: query com filtro retorna resultados corretos
+- Performance: queries filtradas <50ms em coleção de 100k chunks
+
+**Critério de aceitação:**
+- Índices criados com sucesso em produção
+- Queries filtradas >10x mais rápidas
+- Script idempotente (pode rodar múltiplas vezes)
+
+---
 
 ### Média prioridade
-- [ ] **Watcher de arquivos:** `watchdog` monitorando `DOCS_PATH`, triggering ingestão incremental
-  automática quando arquivos são adicionados/modificados. Útil para manter KB atualizada.
-- [ ] **Suporte a ZIP:** extrair e ingerir conteúdo de `.zip` com documentação
-  (vários presentes na KB atual).
-- [ ] **Versão no payload:** extrair versão do produto do nome do arquivo
-  (ex: `22.3`, `16.2`, `CE 24.4`) e indexar como campo separado para filtro.
-- [ ] **`_meta.json` por pasta:** arquivo opcional para override de `product`/`doc_type`
-  por arquivo sem mover nada, útil para pasta `varios/`.
+
+#### Watcher de arquivos (FASE 13)
+**Problema:** Operador precisa rodar manualmente `ingest.py` quando documentos 
+são adicionados ou atualizados. Processo manual propenso a esquecimento.
+
+**Solução técnica:**
+- `watchdog` monitorando `WATCH_PATH` (env var, default: DOCS_PATH):
+  ```python
+  from watchdog.observers import Observer
+  from watchdog.events import FileSystemEventHandler
+  
+  class DocWatcher(FileSystemEventHandler):
+      def on_created(self, event):
+          self.schedule_ingestion(event.src_path)
+      
+      def on_modified(self, event):
+          self.schedule_ingestion(event.src_path)
+      
+      def schedule_ingestion(self, path):
+          # Debounce: wait 30s, merge multiple changes
+          # Trigger job via JobManager
+  ```
+- Debounce: agrupar mudanças em janela de 30s para evitar jobs duplicados
+- Ignorar arquivos temporários: `.tmp`, `.swp`, `.~`, `~$`
+- systemd service: `kb-rag-watcher.service`
+
+**Arquivos afetados:**
+- `requirements.in`: adicionar `watchdog>=3.0.0`
+- `ingest/watcher/file_watcher.py`: novo módulo
+- `ingest/watcher/debouncer.py`: janela de debounce
+- `deployment/systemd/kb-rag-watcher.service`: novo service
+- `tests/test_file_watcher.py`: testes unitários
+- `tests/e2e/test_auto_ingestion.py`: teste E2E (criar arquivo → job)
+
+**Configuração:**
+```bash
+# .env
+WATCH_PATH=/path/to/docs
+WATCH_DEBOUNCE_SECONDS=30
+WATCH_IGNORE_PATTERNS=.tmp,.swp,.~,~$*
+WATCH_RECURSIVE=true
+```
+
+**systemd service:**
+```ini
+[Unit]
+Description=KB-RAG File Watcher
+After=kb-rag-server.service
+Requires=kb-rag-server.service
+
+[Service]
+Type=simple
+User=kb-rag
+WorkingDirectory=/opt/kb-rag
+ExecStart=/opt/kb-rag/venv/bin/python -m ingest.watcher.file_watcher
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=kb-rag.target
+```
+
+**Testes:**
+- Criar arquivo → watcher detecta em <30s
+- Modificar arquivo → job de re-ingestão criado
+- Ignorar .tmp → não cria job
+- Múltiplas mudanças em 30s → 1 job único
+
+**Critério de aceitação:**
+- Watcher detecta mudanças em <30s
+- Debounce funciona (agrupa mudanças)
+- Service roda continuamente sem crash
+- Ignora corretamente arquivos temporários
+
+---
+
+#### Suporte a ZIP (FASE 11)
+**Problema:** Documentação frequentemente vem em arquivos `.zip`. Atualmente 
+precisa extrair manualmente antes de ingerir.
+
+**Solução técnica:**
+- Parser `ingest/parsers/zip_handler.py`:
+  - Extração recursiva até 2 níveis (evitar zip bombs)
+  - Limite: skip arquivos >500MB dentro do ZIP
+  - Preservar path relativo como `source_path` metadata
+  - Reusar parsers existentes para cada arquivo extraído
+  - Cleanup: deletar arquivos temporários após ingestão
+- Adicionar ao parser factory em `document_processor.py`
+
+**Arquivos afetados:**
+- `ingest/parsers/zip_handler.py`: novo módulo
+- `ingest/core/document_processor.py`: registrar ZIP parser
+- `tests/test_zip_parser.py`: testes com ZIPs aninhados
+- `tests/fixtures/archives/`: ZIPs de teste
+
+**Implementação:**
+```python
+import zipfile
+import tempfile
+from pathlib import Path
+
+class ZipHandler:
+    MAX_DEPTH = 2
+    MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
+    
+    def extract_and_parse(self, zip_path, depth=0):
+        if depth > self.MAX_DEPTH:
+            logger.warning(f"Max depth {self.MAX_DEPTH} reached")
+            return []
+        
+        results = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with zipfile.ZipFile(zip_path) as zf:
+                for member in zf.namelist():
+                    if member.endswith('/'):  # skip directories
+                        continue
+                    
+                    # Check size
+                    info = zf.getinfo(member)
+                    if info.file_size > self.MAX_FILE_SIZE:
+                        logger.warning(f"Skip large file: {member}")
+                        continue
+                    
+                    # Extract
+                    extract_path = zf.extract(member, tmpdir)
+                    
+                    # Recursive if nested ZIP
+                    if member.endswith('.zip'):
+                        results.extend(
+                            self.extract_and_parse(extract_path, depth+1)
+                        )
+                    else:
+                        # Parse with existing parsers
+                        content = parse_file(extract_path)
+                        results.append({
+                            'content': content,
+                            'source_path': f"{zip_path}!/{member}",
+                            'relative_path': member
+                        })
+        
+        return results
+```
+
+**Testes:**
+- ZIP simples com 3 PDFs → 3 documentos ingeridos
+- ZIP aninhado (ZIP dentro de ZIP) → extração recursiva
+- ZIP com arquivo >500MB → skip com warning
+- ZIP com 4 níveis → para no nível 2
+
+**Critério de aceitação:**
+- Extrai e ingere todos os arquivos de ZIPs
+- Recursão limitada a 2 níveis
+- Skip de arquivos grandes com log
+- Cleanup de arquivos temporários
+
+---
+
+#### Versão no payload (FASE 13)
+**Problema:** Documentos de versões diferentes do mesmo produto não são 
+distinguíveis. Usuário não pode filtrar por versão específica.
+
+**Solução técnica:**
+- Extrator de versão: `ingest/core/version_extractor.py`
+  - Regex patterns:
+    - `(\d{2}\.\d+)` → "22.3", "16.2"
+    - `(CE \d{2}\.\d+)` → "CE 24.4"
+    - `(v\d+\.\d+\.\d+)` → "v3.2.1"
+    - `(\d{4}R\d)` → "2024R1" (SAP style)
+  - Buscar em: filename, parent directory, primeiro parágrafo do texto
+  - Retornar primeira match ou `None`
+- Adicionar campo `version: str | None` ao payload Qdrant
+- Filtro `version` no `search_kb` tool
+
+**Arquivos afetados:**
+- `ingest/core/version_extractor.py`: novo módulo
+- `ingest/core/metadata.py`: integrar extração de versão
+- `server/mcp_server.py`: adicionar parâmetro `version` ao `search_kb`
+- `tests/test_version_extractor.py`: testes com diversos formatos
+
+**Implementação:**
+```python
+import re
+
+class VersionExtractor:
+    PATTERNS = [
+        r'(\d{2}\.\d+(?:\.\d+)?)',  # 22.3, 16.2.1
+        r'(CE \d{2}\.\d+)',          # CE 24.4
+        r'(v\d+\.\d+(?:\.\d+)?)',    # v3.2.1, v2.0
+        r'(\d{4}R\d)',               # 2024R1
+    ]
+    
+    def extract(self, filename: str, parent_dir: str, 
+                text_preview: str) -> str | None:
+        """Extract version from filename, directory, or text."""
+        sources = [filename, parent_dir, text_preview[:500]]
+        
+        for source in sources:
+            for pattern in self.PATTERNS:
+                match = re.search(pattern, source)
+                if match:
+                    return match.group(1)
+        
+        return None
+```
+
+**Testes:**
+- `"ArchiveCenter_22.3_Admin_Guide.pdf"` → `"22.3"`
+- `"/docs/xECM/CE 24.4/manual.pdf"` → `"CE 24.4"`
+- `"Release Notes for version 16.2"` → `"16.2"`
+- Arquivo sem versão → `None`
+
+**Critério de aceitação:**
+- Extrai versão corretamente de 90% dos arquivos de teste
+- Campo `version` indexado no Qdrant
+- Filtro `version` funciona no search_kb
+
+---
+
+#### `_meta.json` por pasta (FASE 13)
+**Problema:** Classificação automática erra em alguns arquivos. Mover arquivos 
+para reestruturar pastas é trabalhoso. Precisa de override pontual.
+
+**Solução técnica:**
+- Arquivo `_meta.json` por diretório:
+  ```json
+  {
+    "product": "DefaultProductForDir",
+    "doc_type": "default_doc_type",
+    "files": {
+      "specific_file.pdf": {
+        "product": "OverrideProduct",
+        "doc_type": "api_guide"
+      },
+      "another_file.docx": {
+        "doc_type": "manual"
+      }
+    }
+  }
+  ```
+- Precedência: file-specific > directory-level > auto-inference
+- Validação: rejeitar `product`/`doc_type` inválidos (lista permitida)
+- Carregar em `FileScanner` antes de classificar
+
+**Arquivos afetados:**
+- `ingest/core/meta_loader.py`: novo módulo
+- `ingest/core/file_scanner.py`: integrar meta loader
+- `ingest/core/metadata.py`: usar override se disponível
+- `tests/test_meta_loader.py`: testes de precedência
+
+**Implementação:**
+```python
+import json
+from pathlib import Path
+
+class MetaLoader:
+    VALID_DOC_TYPES = [
+        "admin_guide", "install_guide", "api_guide", 
+        "release_notes", "manual", "training", "overview"
+    ]
+    
+    def load_meta(self, directory: Path) -> dict:
+        """Load _meta.json from directory."""
+        meta_file = directory / "_meta.json"
+        if not meta_file.exists():
+            return {}
+        
+        with open(meta_file) as f:
+            meta = json.load(f)
+        
+        # Validate
+        if "doc_type" in meta:
+            if meta["doc_type"] not in self.VALID_DOC_TYPES:
+                raise ValueError(f"Invalid doc_type: {meta['doc_type']}")
+        
+        if "files" in meta:
+            for file, overrides in meta["files"].items():
+                if "doc_type" in overrides:
+                    if overrides["doc_type"] not in self.VALID_DOC_TYPES:
+                        raise ValueError(
+                            f"Invalid doc_type for {file}: "
+                            f"{overrides['doc_type']}"
+                        )
+        
+        return meta
+    
+    def get_metadata(self, file_path: Path, meta: dict) -> dict:
+        """Get metadata for file considering precedence."""
+        filename = file_path.name
+        
+        # File-specific override
+        if "files" in meta and filename in meta["files"]:
+            file_meta = meta["files"][filename]
+            return {
+                "product": file_meta.get("product", meta.get("product")),
+                "doc_type": file_meta.get("doc_type", meta.get("doc_type"))
+            }
+        
+        # Directory-level default
+        return {
+            "product": meta.get("product"),
+            "doc_type": meta.get("doc_type")
+        }
+```
+
+**Testes:**
+- `_meta.json` com default → aplicado a todos os arquivos
+- `_meta.json` com file-specific → override funciona
+- Precedência: file > dir > auto
+- Validação: doc_type inválido → erro
+
+**Critério de aceitação:**
+- `_meta.json` carregado e validado corretamente
+- Precedência funciona (file > dir > auto)
+- Validação rejeita valores inválidos
+- Classificação manual tem prioridade sobre automática
+
+---
 
 ### Baixa prioridade
-- [ ] **UI de inspeção:** interface web leve (FastAPI + HTMX) para navegar documentos
-  indexados, testar queries e ver classificações.
-- [ ] **Métricas de uso:** logar quais queries são feitas, quais documentos são retornados
-  e scores, para avaliar qualidade do RAG ao longo do tempo.
-- [ ] **Suporte a múltiplas coleções:** coleção por produto ou por contexto de projeto,
-  selecionável via parâmetro na tool ou variável de ambiente.
-- [ ] **Export do registry:** comando para gerar CSV/JSON com todos os documentos indexados
-  e suas classificações, para auditoria.
-- [ ] ** kubernetes support ** scripts para montagem do ambiente em kubernetes 
-  e criação do pod com o kb-rag-mcp e dependencias em outros pods. 
-  Montagem completa do ambiente funcionando. Os serviços devem estar preparados para execução 
-  ininterrupta com controle de logs e filesystem que previnam o consumo de filestore e ram até a falha.
-- [ ] ** RAG performance and accuracy ** pesquisar técnicas de melhoramento do RAG controlando 
-  a performance: não usar funcionalidades inerentes a trainamento de llms como uso intensivo de cpu e gpu.
-  Usar as técnicas mais simples e de maior ganho primeiro. Usar as queries recebidas para melhorar a 
-  próxima fase do desenvolvimento da ferramenta com machine learning.
+
+#### UI de inspeção (FASE 14)
+**Solução resumida:**
+- FastAPI em `server/ui/` com HTMX
+- Rotas: `/ui` (browse), `/ui/search` (tester), `/ui/doc/{id}` (detail)
+- Bootstrap 5 ou Tailwind para styling
+- Sem autenticação (internal only)
+- Paginação: 50 documentos por página
+
+**Arquivos:** `server/ui/{app.py, templates/, static/}`
+
+---
+
+#### Métricas de uso (FASE 14)
+**Solução resumida:**
+- Tabela SQLite `query_log`: query, results, scores, latency_ms, timestamp
+- Log após cada `search_kb` invocation
+- Auto-rotação: keep 90 dias, archive mensalmente
+- Query para stats: top queries, low-score queries
+
+**Arquivos:** `server/telemetry/query_logger.py`
+
+---
+
+#### Múltiplas coleções (FASE 15)
+**Solução resumida:**
+- `CollectionManager` em `server/collections/manager.py`
+- Naming: `kb_docs_{product}` ou `kb_docs_{context}`
+- Parâmetro `collection` no `search_kb` (opcional)
+- Env var `DEFAULT_COLLECTION=kb_docs`
+
+**Arquivos:** `server/collections/{manager.py, router.py}`
+
+---
+
+#### Export do registry (FASE 14)
+**Solução resumida:**
+- Comando: `kb-rag registry export --format csv|json`
+- Filtros: `--product`, `--doc_type`, `--status`
+- Streaming export (não carregar tudo em memória)
+
+**Arquivos:** `ingest/cli/export.py`
+
+---
+
+#### Kubernetes support (FASE 15)
+**Solução resumida:**
+- Helm chart em `deployment/kubernetes/kb-rag/`
+- 4 deployments: server, health, scheduler, qdrant (StatefulSet)
+- ConfigMap para env vars, Secret para API keys
+- HPA opcional, PVC para SQLite/Qdrant
+- Liveness/Readiness probes
+
+**Arquivos:** `deployment/kubernetes/kb-rag/{Chart.yaml, values.yaml, templates/}`
+
+---
+
+#### RAG performance and accuracy (FASE 16)
+**Solução resumida:**
+- Golden dataset: 50+ (query, expected_answer, expected_docs)
+- RAGAS pipeline: context_precision, answer_relevancy, faithfulness
+- LLM-as-judge via Ollama local ou OpenAI API
+- Query analyzer: identificar padrões, low-score queries
+- Otimizações: chunk size, score thresholds, query expansion
+- CI job semanal de avaliação
+
+**Arquivos:** `server/evaluation/{ragas_pipeline.py, dataset.py}`, 
+            `server/analytics/query_analyzer.py`
+
+---
 ---
 
 ## 12. Comandos de Operação
