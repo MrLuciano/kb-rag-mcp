@@ -187,5 +187,5 @@ Deliverables:
 - E2E test suite and benchmarks.
 
 Acceptance:
-- Clean install works on Ubuntu 22.04.
+- Clean install works on Debian.
 - Full workflow passes E2E tests.
