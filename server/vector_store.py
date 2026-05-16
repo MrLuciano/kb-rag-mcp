@@ -6,30 +6,27 @@ Gerencia coleções, busca semântica, filtros e metadados.
 import logging
 import os
 import uuid
-from typing import Any
 
-from qdrant_client import AsyncQdrantClient
+from embed_client import get_embed_dim
+from qdrant_client import AsyncQdrantClient  # type: ignore[import]
+from qdrant_client import models as qmodels  # type: ignore[import]
+from qdrant_client.models import Distance  # type: ignore[import]
 from qdrant_client.models import (
-    Distance,
     FieldCondition,
     Filter,
     MatchValue,
     PointStruct,
     VectorParams,
-    QueryRequest,
 )
-from qdrant_client import models as qmodels
-
-from embed_client import get_embed_dim
 
 log = logging.getLogger("kb-mcp.store")
 
-# ── Config ────────────────────────────────────────────────────────────────────
-QDRANT_HOST       = os.getenv("QDRANT_HOST", "localhost")
-QDRANT_PORT       = int(os.getenv("QDRANT_PORT", "6333"))
-QDRANT_PATH       = os.getenv("QDRANT_PATH", "")          # se definido, usa modo embedded
-COLLECTION_NAME   = os.getenv("QDRANT_COLLECTION", "kb_docs")
-SCORE_THRESHOLD   = float(os.getenv("SCORE_THRESHOLD", "0.35"))
+# ── Config
+QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
+QDRANT_PATH = os.getenv("QDRANT_PATH", "")  # se definido, usa modo embedded
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "kb_docs")
+SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.35"))
 
 
 class VectorStore:
@@ -38,7 +35,9 @@ class VectorStore:
         self.collection = COLLECTION_NAME
         self.dim = get_embed_dim()
 
-    async def connect(self):
+    async def connect(self) -> None:
+        assert self.client is None, "Client should not already be connected"
+
         """Conecta ao Qdrant (embedded ou servidor)."""
         if QDRANT_PATH:
             log.info(f"Qdrant embedded em: {QDRANT_PATH}")
@@ -50,17 +49,23 @@ class VectorStore:
         await self._ensure_collection()
         log.info(f"Conectado ao Qdrant — coleção: {self.collection}")
 
-    async def _ensure_collection(self):
+    async def _ensure_collection(self) -> None:
+        assert self.client is not None, "Client not connected"
+
         """Cria a coleção se não existir."""
-        existing = [c.name for c in (await self.client.get_collections()).collections]
+        existing = [
+            c.name for c in (await self.client.get_collections()).collections
+        ]
         if self.collection not in existing:
             await self.client.create_collection(
                 collection_name=self.collection,
-                vectors_config=VectorParams(size=self.dim, distance=Distance.COSINE),
+                vectors_config=VectorParams(
+                    size=self.dim, distance=Distance.COSINE
+                ),
             )
             log.info(f"Coleção '{self.collection}' criada (dim={self.dim})")
 
-    # ── Busca ─────────────────────────────────────────────────────────────────
+    # ── Busca ───────────────────────────────────────────────────────
 
     async def search(
         self,
@@ -70,14 +75,27 @@ class VectorStore:
         product: str | None = None,
         doc_type: str | None = None,
     ) -> list[dict]:
-        """Busca semântica com filtros opcionais por file_type, product e doc_type."""
+        """Busca semântica com filtros opcionais por
+        file_type, product e doc_type.
+        """
+        assert self.client is not None, "Client not connected"
         conditions = []
         if filter_type:
-            conditions.append(FieldCondition(key="file_type", match=MatchValue(value=filter_type)))
+            conditions.append(
+                FieldCondition(
+                    key="file_type", match=MatchValue(value=filter_type)
+                )
+            )
         if product:
-            conditions.append(FieldCondition(key="product",   match=MatchValue(value=product)))
+            conditions.append(
+                FieldCondition(key="product", match=MatchValue(value=product))
+            )
         if doc_type:
-            conditions.append(FieldCondition(key="doc_type",  match=MatchValue(value=doc_type)))
+            conditions.append(
+                FieldCondition(
+                    key="doc_type", match=MatchValue(value=doc_type)
+                )
+            )
 
         query_filter = Filter(must=conditions) if conditions else None
 
@@ -92,56 +110,69 @@ class VectorStore:
 
         return [
             {
-                "chunk_id":    str(r.id),
-                "score":       r.score,
-                "text":        r.payload.get("text", ""),
+                "chunk_id": str(r.id),
+                "score": r.score,
+                "text": r.payload.get("text", ""),
                 "source_file": r.payload.get("source_file", ""),
-                "file_type":   r.payload.get("file_type", ""),
-                "product":     r.payload.get("product", ""),
-                "doc_type":    r.payload.get("doc_type", "document"),
-                "page":        r.payload.get("page"),
+                "file_type": r.payload.get("file_type", ""),
+                "product": r.payload.get("product", ""),
+                "doc_type": r.payload.get("doc_type", "document"),
+                "page": r.payload.get("page"),
                 "chunk_index": r.payload.get("chunk_index", 0),
             }
             for r in response.points
         ]
 
-    # ── Upsert ───────────────────────────────────────────────────────────────
+    # ── Upsert ───────────────────────────────────────────────────────
 
-    async def upsert_chunks(self, chunks: list[dict]):
+    async def upsert_chunks(self, chunks: list[dict]) -> None:
+        assert self.client is not None, "Client not connected"
+
         """
         Insere ou atualiza chunks no Qdrant.
         Cada chunk deve ter: text, vector, source_file, file_type, product,
-                             chunk_index, page (opcional), chunk_id (opcional).
+                         chunk_index, page (opcional), chunk_id (opcional).
         """
         points = []
         for chunk in chunks:
             cid = chunk.get("chunk_id") or str(uuid.uuid4())
             payload = {k: v for k, v in chunk.items() if k != "vector"}
             payload["chunk_id"] = cid
-            points.append(PointStruct(id=cid, vector=chunk["vector"], payload=payload))
+            points.append(
+                PointStruct(id=cid, vector=chunk["vector"], payload=payload)
+            )
 
         # Qdrant aceita no máximo 100 pontos por upsert
         batch_size = 100
         for i in range(0, len(points), batch_size):
             await self.client.upsert(
                 collection_name=self.collection,
-                points=points[i:i + batch_size],
+                points=points[i : i + batch_size],
             )
         log.info(f"Upserted {len(points)} chunks")
 
-    async def delete_document(self, source_file: str):
-        """Remove todos os chunks de um documento pelo caminho do arquivo."""
+    async def delete_document(self, source_file: str) -> None:
+        assert self.client is not None, "Client not connected"
+
+        """
+        Remove todos os chunks de um documento pelo caminho do arquivo.
+        """
         await self.client.delete(
             collection_name=self.collection,
             points_selector=qmodels.FilterSelector(
                 filter=Filter(
-                    must=[FieldCondition(key="source_file", match=MatchValue(value=source_file))]
+                    must=[
+                        FieldCondition(
+                            key="source_file",
+                            match=MatchValue(value=source_file),
+                        )
+                    ]
                 )
             ),
         )
         log.info(f"Documento removido: {source_file}")
 
-    # ── Listagem ──────────────────────────────────────────────────────────────
+    # ── Listagem ──────────────────────────────────────────────────────
 
     async def list_documents(
         self,
@@ -150,14 +181,24 @@ class VectorStore:
         doc_type: str | None = None,
         limit: int = 50,
     ) -> list[dict]:
-        """Lista documentos únicos indexados, agrupados por source_file."""
+        assert self.client is not None, "Client not connected"
         conditions = []
         if filter_type:
-            conditions.append(FieldCondition(key="file_type", match=MatchValue(value=filter_type)))
+            conditions.append(
+                FieldCondition(
+                    key="file_type", match=MatchValue(value=filter_type)
+                )
+            )
         if product:
-            conditions.append(FieldCondition(key="product",   match=MatchValue(value=product)))
+            conditions.append(
+                FieldCondition(key="product", match=MatchValue(value=product))
+            )
         if doc_type:
-            conditions.append(FieldCondition(key="doc_type",  match=MatchValue(value=doc_type)))
+            conditions.append(
+                FieldCondition(
+                    key="doc_type", match=MatchValue(value=doc_type)
+                )
+            )
 
         query_filter = Filter(must=conditions) if conditions else None
 
@@ -178,9 +219,9 @@ class VectorStore:
                 if sf not in docs:
                     docs[sf] = {
                         "source_file": sf,
-                        "file_type":   r.payload.get("file_type", ""),
-                        "product":     r.payload.get("product", ""),
-                        "doc_type":    r.payload.get("doc_type", "document"),
+                        "file_type": r.payload.get("file_type", ""),
+                        "product": r.payload.get("product", ""),
+                        "doc_type": r.payload.get("doc_type", "document"),
                         "chunk_count": 0,
                     }
                 docs[sf]["chunk_count"] += 1
@@ -195,7 +236,12 @@ class VectorStore:
     async def get_chunk_with_context(
         self, chunk_id: str, context_window: int = 1
     ) -> list[dict]:
-        """Retorna um chunk e seus vizinhos (mesmo documento, índices adjacentes)."""
+        assert self.client is not None, "Client not connected"
+
+        """
+        Retorna um chunk e seus vizinhos
+        (mesmo documento, índices adjacentes).
+        """
         results = await self.client.retrieve(
             collection_name=self.collection,
             ids=[chunk_id],
@@ -206,7 +252,7 @@ class VectorStore:
             return []
 
         target = results[0].payload
-        source_file  = target.get("source_file", "")
+        source_file = target.get("source_file", "")
         target_index = int(target.get("chunk_index", 0))
 
         # Busca chunks vizinhos no mesmo documento
@@ -216,7 +262,11 @@ class VectorStore:
         neighbors, _ = await self.client.scroll(
             collection_name=self.collection,
             scroll_filter=Filter(
-                must=[FieldCondition(key="source_file", match=MatchValue(value=source_file))]
+                must=[
+                    FieldCondition(
+                        key="source_file", match=MatchValue(value=source_file)
+                    )
+                ]
             ),
             limit=context_window * 2 + 10,
             with_payload=True,
@@ -225,8 +275,8 @@ class VectorStore:
 
         chunks = [
             {
-                "chunk_id":    str(n.id),
-                "text":        n.payload.get("text", ""),
+                "chunk_id": str(n.id),
+                "text": n.payload.get("text", ""),
                 "source_file": n.payload.get("source_file", ""),
                 "chunk_index": int(n.payload.get("chunk_index", 0)),
             }
@@ -236,9 +286,10 @@ class VectorStore:
         chunks.sort(key=lambda c: c["chunk_index"])
         return chunks
 
-    # ── Stats ─────────────────────────────────────────────────────────────────
+    # ── Stats ─────────────────────────────────────────────────────────
 
     async def get_stats(self) -> dict:
+        assert self.client is not None, "Client not connected"
         """Retorna estatísticas da coleção."""
         info = await self.client.get_collection(self.collection)
         count = info.points_count or 0
@@ -260,13 +311,16 @@ class VectorStore:
             by_doc_type.setdefault(dt, set()).add(sf)
 
         from embed_client import BACKEND, MODEL
+
         return {
-            "total_chunks":    count,
-            "total_documents": len({r.payload.get("source_file") for r in sample}),
-            "index_size_mb":   count * self.dim * 4 / 1024 / 1024,
-            "embed_model":     MODEL,
-            "embed_backend":   BACKEND,
-            "embed_dim":       self.dim,
-            "by_file_type":    {k: len(v) for k, v in by_type.items()},
-            "by_doc_type":     {k: len(v) for k, v in by_doc_type.items()},
+            "total_chunks": count,
+            "total_documents": len(
+                {r.payload.get("source_file") for r in sample}
+            ),
+            "index_size_mb": count * self.dim * 4 / 1024 / 1024,
+            "embed_model": MODEL,
+            "embed_backend": BACKEND,
+            "embed_dim": self.dim,
+            "by_file_type": {k: len(v) for k, v in by_type.items()},
+            "by_doc_type": {k: len(v) for k, v in by_doc_type.items()},
         }
