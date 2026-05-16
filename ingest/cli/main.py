@@ -24,12 +24,13 @@ except ImportError:
 sys.path.insert(0, str(_project_root / "server"))
 
 # Import subcommands after path setup (noqa to ignore E402)
+from ingest.cli.db import db_group  # noqa: E402
 from ingest.cli.job import job_group  # noqa: E402
 from ingest.cli.progress import progress_group  # noqa: E402
 
 
 @click.group()
-@click.version_option(version="2.0.0", prog_name="kb-rag")
+@click.version_option(version="0.10.0-dev", prog_name="kb-rag")
 @click.option(
     "--db",
     type=click.Path(exists=False, dir_okay=False, path_type=Path),
@@ -74,6 +75,7 @@ def info(ctx: click.Context) -> None:
 
 
 # Register subcommands
+cli.add_command(db_group)
 cli.add_command(job_group)
 cli.add_command(progress_group)
 

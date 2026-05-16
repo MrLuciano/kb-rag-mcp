@@ -18,6 +18,7 @@ from qdrant_client.models import (
     FieldCondition,
     Filter,
     MatchValue,
+    PayloadSchemaType,
     PointStruct,
     VectorParams,
 )
@@ -101,6 +102,34 @@ class VectorStore:
                 ),
             )
             log.info(f"Coleção '{self.collection}' criada (dim={self.dim})")
+            
+            # FASE 12: Create payload indexes for fast filtered queries
+            await self._create_payload_indexes()
+
+    async def _create_payload_indexes(self) -> None:
+        """
+        Create payload indexes on product and doc_type fields.
+        
+        FASE 12: Accelerates filtered queries from O(n) to O(log n).
+        """
+        assert self.client is not None, "Client not connected"
+        
+        indexed_fields = ["product", "doc_type"]
+        
+        for field in indexed_fields:
+            try:
+                await self.client.create_payload_index(
+                    collection_name=self.collection,
+                    field_name=field,
+                    field_schema=PayloadSchemaType.KEYWORD,
+                    wait=True,
+                )
+                log.info(f"Índice criado no campo '{field}'")
+            except Exception as e:
+                # Non-fatal: indexes improve performance but aren't critical
+                log.warning(
+                    f"Falha ao criar índice no campo '{field}': {e}"
+                )
 
     # ── Busca ───────────────────────────────────────────────────────
 
