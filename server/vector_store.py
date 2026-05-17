@@ -47,7 +47,8 @@ class VectorStore:
         self.batch_size = QDRANT_BATCH_SIZE
 
     async def connect(self) -> None:
-        assert self.client is None, "Client should not already be connected"
+        if self.client is not None:
+            raise RuntimeError("VectorStore already connected")
 
         """
         FASE 8: Conecta ao Qdrant com connection pooling.
@@ -88,7 +89,8 @@ class VectorStore:
         )
 
     async def _ensure_collection(self) -> None:
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
 
         """Cria a coleção se não existir."""
         existing = [
@@ -113,10 +115,10 @@ class VectorStore:
         FASE 12: Accelerates filtered queries from O(n) to O(log n).
         FASE 13: Added version field index.
         """
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
         
-        indexed_fields = ["product", "doc_type", "version"]
-        
+        indexed_fields = ["product", "doc_type", "version"]        
         for field in indexed_fields:
             try:
                 await self.client.create_payload_index(
@@ -146,7 +148,8 @@ class VectorStore:
         """Busca semântica com filtros opcionais por
         file_type, product, doc_type, e version (FASE 13).
         """
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
         conditions = []
         if filter_type:
             conditions.append(
@@ -200,7 +203,8 @@ class VectorStore:
     # ── Upsert ───────────────────────────────────────────────────────
 
     async def upsert_chunks(self, chunks: list[dict]) -> None:
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
 
         """
         FASE 8: Optimized batch insert/update for chunks.
@@ -250,7 +254,8 @@ class VectorStore:
         log.info(f"Upserted {len(points)} chunks successfully")
 
     async def delete_document(self, source_file: str) -> None:
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
 
         """
         Remove todos os chunks de um documento pelo caminho do arquivo.
@@ -279,7 +284,8 @@ class VectorStore:
         doc_type: str | None = None,
         limit: int = 50,
     ) -> list[dict]:
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
         conditions = []
         if filter_type:
             conditions.append(
@@ -334,7 +340,8 @@ class VectorStore:
     async def get_chunk_with_context(
         self, chunk_id: str, context_window: int = 1
     ) -> list[dict]:
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
 
         """
         Retorna um chunk e seus vizinhos
@@ -387,7 +394,8 @@ class VectorStore:
     # ── Stats ─────────────────────────────────────────────────────────
 
     async def get_stats(self) -> dict:
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
         """Retorna estatísticas da coleção."""
         info = await self.client.get_collection(self.collection)
         count = info.points_count or 0
@@ -396,7 +404,7 @@ class VectorStore:
         sample, _ = await self.client.scroll(
             collection_name=self.collection,
             limit=1000,
-            with_payload=["file_type", "source_file"],
+            with_payload=["file_type", "source_file", "doc_type"],
             with_vectors=False,
         )
         by_type: dict[str, set] = {}
@@ -441,7 +449,8 @@ class VectorStore:
         if not chunks:
             return
         
-        assert self.client is not None, "Client not connected"
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
         
         points = []
         for chunk in chunks:

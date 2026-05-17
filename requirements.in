@@ -44,7 +44,7 @@ pytest-asyncio>=1.3.0
 prometheus-client>=0.20.0
 rich>=13.0.0
 
-# FASE 16: RAG Evaluation
-ragas>=0.1.0              # RAG evaluation framework
+# FASE 16: RAG Evaluation — moved to requirements-eval.in
+# ragas>=0.1.0              # RAG evaluation framework (install from requirements-eval.txt)
 scikit-learn>=1.3.0       # For clustering
 matplotlib>=3.7.0         # For visualization

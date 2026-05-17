@@ -157,3 +157,122 @@ def test_get_query_stats(temp_db):
     assert stats['avg_results'] == 3.0
     assert abs(stats['avg_max_score'] - 0.9) < 0.01
     assert abs(stats['avg_min_score'] - 0.7) < 0.01
+
+
+def test_cleanup_custom_retention_days(temp_db):
+    """CR-04: cleanup_old_queries respects custom retention_days parameter."""
+    logger = QueryLogger(db_path=temp_db)
+
+    conn = sqlite3.connect(temp_db)
+    cursor = conn.cursor()
+
+    # Insert a query 10 days old
+    ten_days_ago = (datetime.utcnow() - timedelta(days=10)).isoformat()
+    cursor.execute(
+        "INSERT INTO query_log (timestamp, query_text, top_k, result_count, latency_ms)"
+        " VALUES (?, ?, ?, ?, ?)",
+        (ten_days_ago, "old-10d", 5, 1, 5.0),
+    )
+    # Insert a query 3 days old
+    three_days_ago = (datetime.utcnow() - timedelta(days=3)).isoformat()
+    cursor.execute(
+        "INSERT INTO query_log (timestamp, query_text, top_k, result_count, latency_ms)"
+        " VALUES (?, ?, ?, ?, ?)",
+        (three_days_ago, "old-3d", 5, 1, 5.0),
+    )
+    conn.commit()
+    conn.close()
+
+    # Cleanup with 7-day retention: should remove the 10-day-old entry only
+    deleted = logger.cleanup_old_queries(retention_days=7)
+    assert deleted == 1
+
+    conn = sqlite3.connect(temp_db)
+    cursor = conn.cursor()
+    cursor.execute("SELECT query_text FROM query_log")
+    remaining = [r[0] for r in cursor.fetchall()]
+    conn.close()
+
+    assert remaining == ["old-3d"]
+
+
+def test_log_query_no_connection_leak_on_exception(temp_db, monkeypatch):
+    """WR-04: log_query must use context managers so connections close on error."""
+    import sqlite3 as _sqlite3
+    logger = QueryLogger(db_path=temp_db)
+
+    original_connect = _sqlite3.connect
+    connections_opened = []
+    connections_closed = []
+
+    class TrackingConnection:
+        """Wraps a real sqlite3 connection and tracks close() calls."""
+        def __init__(self, real_conn):
+            self._real = real_conn
+            connections_opened.append(self)
+
+        def cursor(self):
+            return _FailingCursor(self._real.cursor())
+
+        def execute(self, sql, params=()):
+            return _FailingCursor(self._real.cursor()).execute(sql, params)
+
+        def commit(self):
+            self._real.commit()
+
+        def rollback(self):
+            self._real.rollback()
+
+        def close(self):
+            connections_closed.append(self)
+            self._real.close()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if exc_type:
+                self._real.rollback()
+            else:
+                self._real.commit()
+            self.close()
+            return False
+
+    class _FailingCursor:
+        def __init__(self, real_cursor):
+            self._real = real_cursor
+
+        def execute(self, sql, params=()):
+            if "INSERT" in sql:
+                raise _sqlite3.OperationalError("simulated failure")
+            return self._real.execute(sql, params)
+
+        def fetchone(self):
+            return self._real.fetchone()
+
+        @property
+        def rowcount(self):
+            return self._real.rowcount
+
+    def patched_connect(path, **kwargs):
+        return TrackingConnection(original_connect(path, **kwargs))
+
+    monkeypatch.setattr("server.telemetry.query_logger.sqlite3.connect", patched_connect)
+
+    with pytest.raises(_sqlite3.OperationalError):
+        logger.log_query(
+            query_text="test",
+            top_k=5,
+            score_threshold=None,
+            filters=None,
+            version_filter=None,
+            result_count=0,
+            scores=[],
+            latency_ms=1.0,
+        )
+
+    # Connection opened during log_query must have been closed (via context manager)
+    assert len(connections_opened) >= 1
+    assert len(connections_closed) == len(connections_opened), (
+        "Connection was opened but not closed — connection leak detected"
+    )

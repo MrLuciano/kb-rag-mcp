@@ -20,28 +20,23 @@ class QueryLogger:
     
     def _ensure_schema(self) -> None:
         """Create query_log table if it doesn't exist."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS query_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT NOT NULL,
-                query_text TEXT NOT NULL,
-                top_k INTEGER,
-                score_threshold REAL,
-                filters TEXT,
-                version_filter TEXT,
-                result_count INTEGER,
-                max_score REAL,
-                min_score REAL,
-                avg_score REAL,
-                latency_ms REAL
-            )
-        """)
-        
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS query_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    query_text TEXT NOT NULL,
+                    top_k INTEGER,
+                    score_threshold REAL,
+                    filters TEXT,
+                    version_filter TEXT,
+                    result_count INTEGER,
+                    max_score REAL,
+                    min_score REAL,
+                    avg_score REAL,
+                    latency_ms REAL
+                )
+            """)
     
     def log_query(
         self,
@@ -75,31 +70,26 @@ class QueryLogger:
         # Serialize filters to JSON
         filters_json = json.dumps(filters) if filters else None
         
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            INSERT INTO query_log (
-                timestamp, query_text, top_k, score_threshold,
-                filters, version_filter, result_count,
-                max_score, min_score, avg_score, latency_ms
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            datetime.utcnow().isoformat(),
-            query_text,
-            top_k,
-            score_threshold,
-            filters_json,
-            version_filter,
-            result_count,
-            max_score,
-            min_score,
-            avg_score,
-            latency_ms
-        ))
-        
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                INSERT INTO query_log (
+                    timestamp, query_text, top_k, score_threshold,
+                    filters, version_filter, result_count,
+                    max_score, min_score, avg_score, latency_ms
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                datetime.utcnow().isoformat(),
+                query_text,
+                top_k,
+                score_threshold,
+                filters_json,
+                version_filter,
+                result_count,
+                max_score,
+                min_score,
+                avg_score,
+                latency_ms
+            ))
     
     def cleanup_old_queries(self, retention_days: int = 90) -> int:
         """
@@ -115,17 +105,12 @@ class QueryLogger:
             datetime.utcnow() - timedelta(days=retention_days)
         ).isoformat()
         
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute(
-            "DELETE FROM query_log WHERE timestamp < ?",
-            (cutoff_date,)
-        )
-        deleted_count = cursor.rowcount
-        
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "DELETE FROM query_log WHERE timestamp < ?",
+                (cutoff_date,)
+            )
+            deleted_count = cursor.rowcount
         
         return deleted_count
     
@@ -136,21 +121,17 @@ class QueryLogger:
         Returns:
             Dictionary with query statistics
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT 
-                COUNT(*) as total_queries,
-                AVG(latency_ms) as avg_latency_ms,
-                AVG(result_count) as avg_results,
-                AVG(max_score) as avg_max_score,
-                AVG(min_score) as avg_min_score
-            FROM query_log
-        """)
-        
-        row = cursor.fetchone()
-        conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("""
+                SELECT 
+                    COUNT(*) as total_queries,
+                    AVG(latency_ms) as avg_latency_ms,
+                    AVG(result_count) as avg_results,
+                    AVG(max_score) as avg_max_score,
+                    AVG(min_score) as avg_min_score
+                FROM query_log
+            """)
+            row = cursor.fetchone()
         
         return {
             'total_queries': row[0] or 0,

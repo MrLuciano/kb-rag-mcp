@@ -8,6 +8,7 @@ import asyncio
 import logging
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -42,7 +43,7 @@ log = logging.getLogger("kb-mcp")
 
 # ── Config ────────────────────────────────────────────────────────
 TRANSPORT = os.getenv("MCP_TRANSPORT", "stdio")  # stdio | sse
-SSE_HOST = os.getenv("SSE_HOST", "0.0.0.0")
+SSE_HOST = os.getenv("SSE_HOST", "127.0.0.1")
 SSE_PORT = int(os.getenv("SSE_PORT", "8765"))
 TOP_K = int(os.getenv("DEFAULT_TOP_K", "5"))
 
@@ -52,6 +53,10 @@ QUERY_LOG_ENABLED = os.getenv("QUERY_LOG_ENABLED", "true").lower() in (
 )
 QUERY_LOG_PATH = Path(
     os.getenv("QUERY_LOG_PATH", "data/kb_metadata.db")
+)
+QUERY_LOG_RETENTION_DAYS = int(os.getenv("QUERY_LOG_RETENTION_DAYS", "90"))
+QUERY_LOG_CLEANUP_INTERVAL_HOURS = int(
+    os.getenv("QUERY_LOG_CLEANUP_INTERVAL_HOURS", "24")
 )
 
 # ── Inicialização ─────────────────────────────────────────────────
@@ -292,7 +297,6 @@ async def call_tool(
 
 
 async def _search_kb(args: dict) -> list[types.TextContent]:
-    import time  # FASE 14: For query timing
     start_time = time.time()
     
     query = args["query"]
@@ -548,10 +552,37 @@ async def _kb_stats() -> list[types.TextContent]:
 # ──────────────────────────────────────────────────────────────────
 
 
+async def _schedule_log_cleanup() -> None:
+    """CR-04: Periodically purge query log entries older than retention window.
+
+    Interval controlled by QUERY_LOG_CLEANUP_INTERVAL_HOURS (default 24h).
+    Retention window controlled by QUERY_LOG_RETENTION_DAYS (default 90d).
+    """
+    interval_seconds = QUERY_LOG_CLEANUP_INTERVAL_HOURS * 3600
+    while True:
+        await asyncio.sleep(interval_seconds)
+        if query_logger:
+            try:
+                deleted = query_logger.cleanup_old_queries(QUERY_LOG_RETENTION_DAYS)
+                log.info(
+                    f"Query log cleanup: {deleted} entries older than "
+                    f"{QUERY_LOG_RETENTION_DAYS}d removed"
+                )
+            except Exception as e:
+                log.error(f"Query log cleanup failed: {e}", exc_info=True)
+
+
 async def main():
     log.info(f"KB RAG MCP Server iniciando (transport={TRANSPORT})")
     await store.connect()
 
+    # CR-04: Schedule periodic query log cleanup
+    if query_logger:
+        asyncio.create_task(_schedule_log_cleanup())
+        log.info(
+            f"Query log cleanup scheduled every {QUERY_LOG_CLEANUP_INTERVAL_HOURS}h, "
+            f"retaining last {QUERY_LOG_RETENTION_DAYS} days"
+        )
     if TRANSPORT == "sse":
         import uvicorn
         from starlette.applications import Starlette

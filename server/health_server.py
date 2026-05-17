@@ -46,7 +46,7 @@ logging.basicConfig(
 log = logging.getLogger("kb-mcp.health-server")
 
 # ── Config ─────────────────────────────────────────────────────
-HEALTH_HOST = os.getenv("HEALTH_HOST", "0.0.0.0")
+HEALTH_HOST = os.getenv("HEALTH_HOST", "127.0.0.1")
 HEALTH_PORT = int(os.getenv("HEALTH_PORT", "8000"))
 
 # ── App ────────────────────────────────────────────────────────

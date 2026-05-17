@@ -39,7 +39,7 @@ class TestHybridSearcher:
     async def test_rrf_fusion_empty_sparse(self, hybrid_searcher):
         dense_results = [
             {"id": "1", "score": 0.9},
-            {"id": "2", "score": 0.8"},
+            {"id": "2", "score": 0.8},
         ]
         sparse_results = []
         

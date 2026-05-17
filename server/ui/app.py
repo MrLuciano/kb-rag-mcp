@@ -1,15 +1,21 @@
 """FastAPI application for KB-RAG Web UI."""
 import os
+from importlib.metadata import version, PackageNotFoundError
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+try:
+    _version = version("kb-rag-mcp")
+except PackageNotFoundError:
+    _version = "dev"
+
 # Initialize FastAPI app
 app = FastAPI(
     title="KB-RAG Web UI",
     description="Document browser and search tester for KB-RAG system",
-    version="0.12.0-dev"
+    version=_version
 )
 
 # Template directory

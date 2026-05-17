@@ -14,6 +14,7 @@ Uso:
 import argparse
 import asyncio
 import logging
+import os
 import sys
 import time
 import uuid
@@ -82,13 +83,22 @@ EXT_TYPE_MAP = {
 }
 
 # Chunk settings por tipo
+_DEFAULT_CHUNK_SIZE = int(os.getenv("INGEST_CHUNK_SIZE_DEFAULT", "600"))
+_DEFAULT_CHUNK_OVERLAP = int(os.getenv("INGEST_CHUNK_OVERLAP_DEFAULT", "80"))
+
 CHUNK_SETTINGS = {
-    "pdf": {"size": 800, "overlap": 100},
-    "docx": {"size": 700, "overlap": 80},
-    "xlsx": {"size": 500, "overlap": 50},
-    "pptx": {"size": 600, "overlap": 80},
-    "txt": {"size": 600, "overlap": 80},
-    "code": {"size": 400, "overlap": 60},
+    "pdf":  {"size": int(os.getenv("INGEST_CHUNK_SIZE_PDF",  "800")),
+             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_PDF", "100"))},
+    "docx": {"size": int(os.getenv("INGEST_CHUNK_SIZE_DOCX", "700")),
+             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_DOCX", "80"))},
+    "xlsx": {"size": int(os.getenv("INGEST_CHUNK_SIZE_XLSX", "500")),
+             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_XLSX", "50"))},
+    "pptx": {"size": int(os.getenv("INGEST_CHUNK_SIZE_PPTX", "600")),
+             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_PPTX", "80"))},
+    "txt":  {"size": int(os.getenv("INGEST_CHUNK_SIZE_TXT",  "600")),
+             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_TXT",  "80"))},
+    "code": {"size": int(os.getenv("INGEST_CHUNK_SIZE_CODE", "400")),
+             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_CODE", "60"))},
 }
 
 
@@ -435,21 +445,24 @@ async def run_ingest(
 
     sem = asyncio.Semaphore(workers)
 
-    async def process_one(f: Path):
-        nonlocal total_chunks, total_ok, total_skipped, total_errors
+    async def process_one(f: Path) -> tuple[int, str]:
+        """Process a single file and return (chunk_count, status)."""
         async with sem:
             n, status = await process_file(
                 f, docs_root, store, registry, product, force
             )
-            total_chunks += n
-            if status == "ok":
-                total_ok += 1
-            elif status == "skipped":
-                total_skipped += 1
-            elif status == "error":
-                total_errors += 1
+            return n, status
 
-    await asyncio.gather(*[process_one(f) for f in files])
+    results = await asyncio.gather(*[process_one(f) for f in files])
+
+    for n, status in results:
+        total_chunks += n
+        if status == "ok":
+            total_ok += 1
+        elif status == "skipped":
+            total_skipped += 1
+        elif status == "error":
+            total_errors += 1
 
     elapsed = time.time() - start_time
     summary = registry.summary()

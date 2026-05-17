@@ -141,7 +141,10 @@ async def _embed_lmstudio_sdk(text: str) -> list[float]:
     try:
         import lmstudio as lms  # type: ignore[import]
 
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
 
         def _call():
             # Conecta ao host remoto se não for localhost

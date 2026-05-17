@@ -198,7 +198,7 @@ class HybridSearcher:
         
         # Process dense results
         for rank, result in enumerate(dense_results):
-            chunk_id = result["id"]
+            chunk_id = result["chunk_id"]
             rrf_score = 1.0 / (self.rrf_k + rank + 1)
             scores[chunk_id] = scores.get(chunk_id, 0) + (
                 rrf_score * self.dense_weight
@@ -207,7 +207,7 @@ class HybridSearcher:
         
         # Process sparse results
         for rank, result in enumerate(sparse_results):
-            chunk_id = result["id"]
+            chunk_id = result["chunk_id"]
             rrf_score = 1.0 / (self.rrf_k + rank + 1)
             scores[chunk_id] = scores.get(chunk_id, 0) + (
                 rrf_score * self.sparse_weight
