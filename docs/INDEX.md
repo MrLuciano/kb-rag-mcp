@@ -2,157 +2,89 @@
 
 **Complete documentation index for the KB-RAG-MCP project**
 
-[🇬🇧 English](#english) | [🇧🇷 Português](#português)
-
 ---
 
-<a name="english"></a>
-## 🇬🇧 English Documentation
+## Getting Started
 
-### Getting Started
-
-- [README.md](../README.md#english) — Quick start guide, installation, usage
+- [README.md](../README.md) — Quick start, installation, usage
+- [REFERENCE.md](REFERENCE.md) — **Living reference: architecture, components, config, ops, QA results**
 - [TESTING.md](TESTING.md) — Testing strategy and guidelines
 
-### Technical Reference
+## Technical Reference
 
 - [INSTRUCTIONS.md](INSTRUCTIONS.md) — Complete technical instructions
-- [PLAN.md](PLAN.md) — Implementation roadmap (12 phases)
+- [INSTRUCTIONS.pt-BR.md](INSTRUCTIONS.pt-BR.md) — Instruções técnicas completas (PT-BR)
+- [PLAN.md](PLAN.md) — Implementation roadmap (all 16 FASEs + QA pipeline)
 
-### Implementation Reports (FASE Completions)
+## Topic Guides
 
-- [FASE1_COMPLETION.md](FASE1_COMPLETION.md) — Foundation & Testing Infrastructure
-  - pytest setup, pip-tools, code formatting, type hints
-  - **Deliverables:** requirements.in/txt, conftest.py, TESTING.md
-  - **Status:** ✅ Complete
+- [SEARCH_QUALITY.md](SEARCH_QUALITY.md) — Hybrid search, reranking, evaluation methodology
+- [AUTO_INGESTION.md](AUTO_INGESTION.md) — File watcher, version extractor, _meta.json overrides
+- [VERSION_FILTERING.md](VERSION_FILTERING.md) — Version extraction and search filtering
+- [METADATA_OVERRIDES.md](METADATA_OVERRIDES.md) — Per-directory metadata overrides
+- [QUERY_ANALYSIS.md](QUERY_ANALYSIS.md) — Query telemetry and analysis
+- [RAG_EVALUATION.md](RAG_EVALUATION.md) — RAGAS pipeline, golden dataset, metrics
+- [WEB_UI.md](WEB_UI.md) — Web UI for document browsing and search testing
+- [OPERATIONS.md](OPERATIONS.md) — systemd services, backup, monitoring
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Common issues and fixes
 
-- [FASE2_COMPLETION.md](FASE2_COMPLETION.md) — Job Management System
-  - SQLite-backed job queue, priority scheduling, lifecycle management
-  - **Deliverables:** ingest/job/ (manager, scheduler, models), metadata schema v2
-  - **Status:** ✅ Complete (34 tests)
+## Historical Archive
 
-- [FASE3_COMPLETION.md](FASE3_COMPLETION.md) — Worker Pool & Rate Limiter
-  - Async worker pool, token bucket rate limiting, job executor
-  - **Deliverables:** ingest/worker/ (pool, worker, limiter, executor)
-  - **Status:** ✅ Complete (23 tests)
-
-- [FASE4_COMPLETION.md](FASE4_COMPLETION.md) — Observability & Metrics
-  - Prometheus metrics (15), structured logging, progress tracking with ETA
-  - **Deliverables:** observability/ (metrics, logging, progress)
-  - **Status:** ✅ Complete (660 lines)
-
-- [FASE5_COMPLETION.md](FASE5_COMPLETION.md) — Cache System
-  - LRU cache with RAM auto-tuning, optional Redis backend
-  - **Deliverables:** server/cache/ (lru, redis, manager), metrics integration
-  - **Status:** ✅ Complete (550 lines)
-
-### Code Quality
-
-- [HYGIENE_STATUS.md](HYGIENE_STATUS.md) — Code quality audit results
-  - 5 core modules 100% clean (black, isort, flake8)
-  - Line length: 79 chars (PEP 8 strict)
+FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
+[archive/](archive/) for historical reference.
 
 ---
 
-<a name="português"></a>
-## 🇧🇷 Documentação em Português
+## Roadmap Progress
 
-### Começando
-
-- [README.pt-BR.md](../README.pt-BR.md) — Guia rápido, instalação, uso
-- [TESTING.md](TESTING.md) — Estratégia de testes (em inglês)
-
-### Referência Técnica
-
-- [INSTRUCTIONS.pt-BR.md](INSTRUCTIONS.pt-BR.md) — Instruções técnicas completas
-- [PLAN.md](PLAN.md) — Roadmap de implementação (12 fases, em inglês)
-
-### Relatórios de Implementação (Conclusões das FASEs)
-
-- [FASE1_COMPLETION.md](FASE1_COMPLETION.md) — Fundação e Infraestrutura de Testes
-  - Setup do pytest, pip-tools, formatação de código, type hints
-  - **Entregáveis:** requirements.in/txt, conftest.py, TESTING.md
-  - **Status:** ✅ Completo
-
-- [FASE2_COMPLETION.md](FASE2_COMPLETION.md) — Sistema de Gerenciamento de Jobs
-  - Fila de jobs em SQLite, agendamento por prioridade, gerenciamento de ciclo de vida
-  - **Entregáveis:** ingest/job/ (manager, scheduler, models), schema v2
-  - **Status:** ✅ Completo (34 testes)
-
-- [FASE3_COMPLETION.md](FASE3_COMPLETION.md) — Pool de Workers e Rate Limiter
-  - Pool de workers assíncrono, rate limiting token bucket, executor de jobs
-  - **Entregáveis:** ingest/worker/ (pool, worker, limiter, executor)
-  - **Status:** ✅ Completo (23 testes)
-
-- [FASE4_COMPLETION.md](FASE4_COMPLETION.md) — Observabilidade e Métricas
-  - Métricas Prometheus (15), logging estruturado, rastreamento de progresso com ETA
-  - **Entregáveis:** observability/ (metrics, logging, progress)
-  - **Status:** ✅ Completo (660 linhas)
-
-- [FASE5_COMPLETION.md](FASE5_COMPLETION.md) — Sistema de Cache
-  - Cache LRU com auto-ajuste de RAM, backend Redis opcional
-  - **Entregáveis:** server/cache/ (lru, redis, manager), integração com métricas
-  - **Status:** ✅ Completo (550 linhas)
-
-### Qualidade de Código
-
-- [HYGIENE_STATUS.md](HYGIENE_STATUS.md) — Resultados da auditoria de qualidade
-  - 5 módulos principais 100% limpos (black, isort, flake8)
-  - Comprimento de linha: 79 caracteres (PEP 8 strict)
+| FASE | Title | Status |
+|---|---|---|
+| 1 | Foundation & Testing Infrastructure | ✅ Complete |
+| 1.5 | Migration Tools | ✅ Complete |
+| 2 | Job Management & Scheduler | ✅ Complete |
+| 3 | Worker Pool & Rate Limiter | ✅ Complete |
+| 4 | Progress & Observability | ✅ Complete |
+| 5 | Cache System | ✅ Complete |
+| 6 | CLI Refactor & Job Control | ✅ Complete |
+| 7 | Document Validators & Quality | ✅ Complete |
+| 8 | Connection Pooling & Batch Optimization | ✅ Complete |
+| 9 | Production Hardening | ✅ Complete |
+| 10 | Documentation & Final QA | ✅ Complete |
+| 11 | Expanded Ingestion | ✅ Complete |
+| 12 | Search Quality Enhancement | ✅ Complete |
+| 13 | Ingestion Automation | ✅ Complete |
+| 14 | Observability & Audit | ✅ Complete |
+| 15 | Advanced Infrastructure | ✅ Complete |
+| 16 | RAG Performance & Accuracy | ✅ Complete |
+| QA | OTCS QA Pipeline | ✅ Complete |
 
 ---
 
-## 📊 Project Statistics
+## Project Statistics
 
 | Metric | Value |
-|--------|-------|
-| **Total Tests** | 59 passing |
-| **Test Coverage** | 70%+ (target) |
-| **Code Lines** | ~5,500 (core) |
-| **Documentation** | ~15,000 words |
-| **Phases Completed** | 5 / 12 |
-| **Time Elapsed** | 5 weeks / 12.6 weeks total |
+|---|---|
+| **Tests passing** | 252 |
+| **Tests failing** | 38 (pre-existing, non-critical) |
+| **Coverage target** | 70%+ overall |
+| **Phases completed** | 16 + QA pipeline |
+| **QA Hit Rate** | 100% (OTCS corpus) |
+| **QA MRR** | 0.78 |
 
 ---
 
-## 🗺️ Roadmap Progress
+## How to Navigate
 
-- ✅ **FASE 1:** Foundation & Testing Infrastructure
-- ✅ **FASE 2:** Job Management & Scheduler
-- ✅ **FASE 3:** Worker Pool & Rate Limiter
-- ✅ **FASE 4:** Progress & Observability
-- ✅ **FASE 5:** Cache System
-- ⏳ **FASE 6:** CLI Refactor & Job Control
-- ⏳ **FASE 7:** Document Validators & Quality
-- ⏳ **FASE 8:** Connection Pooling & Batch Optimization
-- ⏳ **FASE 9:** Production Hardening
-- ⏳ **FASE 10:** Documentation & Final QA
-
----
-
-## 📖 How to Navigate This Documentation
-
-### For New Users
-
-1. Start with [README.md](../README.md) ([PT-BR](../README.pt-BR.md))
-2. Follow installation guide
+**New to the project?**
+1. Read [REFERENCE.md](REFERENCE.md) — start here
+2. Follow the Running the System section
 3. Read [TESTING.md](TESTING.md) for test conventions
 
-### For Developers
+**Developer working on a feature?**
+1. Check [REFERENCE.md](REFERENCE.md) for the component map and config
+2. Read the relevant topic guide (e.g. SEARCH_QUALITY.md)
+3. Run tests: `PYTHONPATH=. pytest`
 
-1. Read [INSTRUCTIONS.md](INSTRUCTIONS.md) ([PT-BR](INSTRUCTIONS.pt-BR.md))
-2. Review [PLAN.md](PLAN.md) for architecture decisions
-3. Check FASE completion docs for implementation details
-4. Run tests: `pytest tests/ -v`
-
-### For Contributors
-
-1. Read [HYGIENE_STATUS.md](HYGIENE_STATUS.md) for code standards
-2. Follow black/isort/flake8 rules (79 char limit)
-3. Add tests for new features (70%+ coverage)
-4. Update relevant FASE docs when modifying components
-
----
-
-**Last Updated:** 2026-05-15  
-**Version:** 2.0 (FASE 1-5 Complete)
+**Understanding a past decision?**
+1. Check [PLAN.md](PLAN.md) for the FASE spec
+2. Check [archive/](archive/) for the completion report

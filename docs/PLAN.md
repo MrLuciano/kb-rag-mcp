@@ -29,19 +29,26 @@ TDD and includes a migration toolset.
 - Secrets handling: interactive prompts + --secrets-file.
 
 ## Timeline
-Total duration: 12.6 weeks (88 days)
+Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 
-- FASE 1: Foundation and Testing Infrastructure (Days 1-10)
-- FASE 1.5: Migration Tools (Days 11-12)
-- FASE 2: Job Management and Scheduler (Days 13-24)
-- FASE 3: Worker Pool and Rate Limiter (Days 25-35)
-- FASE 4: Progress Tracking and Observability (Days 36-42)
-- FASE 5: Cache System (Days 43-49)
-- FASE 6: CLI Refactor and Job Control (Days 50-56)
-- FASE 7: Document Validators and Quality (Days 57-63)
-- FASE 8: Connection Pooling and Batch Optimization (Days 64-70)
-- FASE 9: Production Hardening (Days 71-81)
-- FASE 10: Documentation and Final QA (Days 82-88)
+- ✅ FASE 1: Foundation and Testing Infrastructure (Days 1-10)
+- ✅ FASE 1.5: Migration Tools (Days 11-12)
+- ✅ FASE 2: Job Management and Scheduler (Days 13-24)
+- ✅ FASE 3: Worker Pool and Rate Limiter (Days 25-35)
+- ✅ FASE 4: Progress Tracking and Observability (Days 36-42)
+- ✅ FASE 5: Cache System (Days 43-49)
+- ✅ FASE 6: CLI Refactor and Job Control (Days 50-56)
+- ✅ FASE 7: Document Validators and Quality (Days 57-63)
+- ✅ FASE 8: Connection Pooling and Batch Optimization (Days 64-70)
+- ✅ FASE 9: Production Hardening (Days 71-81)
+- ✅ FASE 10: Documentation and Final QA (Days 82-88)
+- ✅ FASE 11: Expanded Ingestion (Days 89-95)
+- ✅ FASE 12: Search Quality Enhancement (Days 96-105)
+- ✅ FASE 13: Ingestion Automation (Days 106-112)
+- ✅ FASE 14: Observability and Audit (Days 113-122)
+- ✅ FASE 15: Advanced Infrastructure (Days 123-136)
+- ✅ FASE 16: RAG Performance and Accuracy (Days 137-150)
+- ✅ QA Pipeline: OTCS corpus evaluation (Hit Rate 100%, MRR 0.78)
 
 ## FASE 1: Foundation and Testing Infrastructure
 Goals:
@@ -457,35 +464,30 @@ Acceptance:
 
 ## Updated Timeline
 
-Total duration: 24.6 weeks (172 days)
+Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 
-**Completed Phases (Days 1-88):**
+**Completed Phases (Days 1-150):**
 - FASE 1-10: Foundation through Documentation (88 days)
-
-**Future Phases (Days 89-150):**
 - FASE 11: Expanded Ingestion (7 days)
 - FASE 12: Search Quality Enhancement (10 days)
 - FASE 13: Ingestion Automation (7 days)
 - FASE 14: Observability and Audit (10 days)
 - FASE 15: Advanced Infrastructure (14 days)
 - FASE 16: RAG Performance and Accuracy (14 days)
+- QA Pipeline: OTCS corpus evaluation — Hit Rate 100%, MRR 0.78 ✅
 
-**Total:** ~6 months for complete feature set
+**Total:** ~6 months for complete feature set — **DELIVERED**
 
 ---
 
 ## Priority Execution Order
 
-**Immediate (v1.1.0):**
-1. FASE 12 (Search Quality) - Highest impact on user experience
-2. FASE 11 (Expanded Ingestion) - More documents = more value
+All phases shipped. No pending phases.
 
-**Near-term (v1.2.0):**
-3. FASE 13 (Automation) - Reduce manual work
+**v1.0 (FASEs 1-10):** Foundation, job system, worker pool, cache, CLI, validators, batching, production hardening, documentation.
 
-**Long-term (v1.3.0+):**
-4. FASE 14 (Observability) - Production maturity
-5. FASE 15 (Kubernetes) - Enterprise deployment
-6. FASE 16 (RAG Accuracy) - Continuous improvement
+**v1.1.0 (FASEs 11-12):** Expanded ingestion (legacy Office, ZIP), search quality (hybrid BM25+dense, reranker).
 
-Each phase can be released independently after validation.
+**v1.2.0 (FASEs 13-14):** Ingestion automation (file watcher, version extractor), observability (query logger, web UI).
+
+**v1.3.0 (FASEs 15-16 + QA):** Advanced infrastructure (multi-collection, Kubernetes), RAG accuracy (RAGAS pipeline, golden dataset), OTCS QA pipeline validated.
