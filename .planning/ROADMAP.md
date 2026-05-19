@@ -23,7 +23,13 @@ All 16 features are implemented and working. This milestone closes integration g
   3. All entry points call `bootstrap_env()` — `grep -r "load_dotenv" .` finds only the one canonical definition
   4. `ingest/registry.py` is deleted; only `ingest/core/metadata.py` remains
   5. Batch ingest computes real SHA-256 checksums — test proves two identical files deduplicate, two different files don't
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Delete legacy `server/` module, verify zero external imports
+- [ ] 01-02-PLAN.md — Create `config/bootstrap_env()`, replace 9 `load_dotenv` blocks
+- [ ] 01-03-PLAN.md — Implement real BM25+dense RRF hybrid search + unit test
+- [ ] 01-04-PLAN.md — Move IngestRegistry to `ingest/core/metadata.py`, fix batch SHA-256
 
 ### Phase 2: Data Integrity & Security
 **Goal**: Stale docs are removed from Qdrant on file deletion, no secrets are tracked in git, and teams have a clear remediation guide
