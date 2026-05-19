@@ -57,11 +57,11 @@ logging.basicConfig(
 EXT_TYPE_MAP = {
     ".pdf": "pdf",
     ".docx": "docx",
-    ".doc": "docx",
+    ".doc": "doc",        # legacy Word 97-2003
     ".xlsx": "xlsx",
-    ".xls": "xlsx",
+    ".xls": "xls",        # legacy Excel 97-2003
     ".pptx": "pptx",
-    ".ppt": "pptx",
+    ".ppt": "ppt",        # legacy PowerPoint 97-2003
     ".txt": "txt",
     ".md": "txt",
     ".rst": "txt",
@@ -80,6 +80,11 @@ EXT_TYPE_MAP = {
     ".xml": "code",
     ".sh": "code",
     ".sql": "code",
+    ".odt": "odt",        # OpenDocument Text
+    ".ods": "ods",        # OpenDocument Spreadsheet
+    ".odp": "odp",        # OpenDocument Presentation
+    ".wpd": "wpd",        # WordPerfect
+    ".zip": "zip",        # ZIP archive
 }
 
 # Chunk settings por tipo
@@ -236,13 +241,27 @@ def extract_code(path: Path) -> list[dict]:
         return []
 
 
+from ingest.parsers.legacy_office import (
+    extract_doc, extract_xls, extract_ppt,
+    extract_odt, extract_ods, extract_odp, extract_wpd,
+)
+from ingest.parsers.zip_handler import extract_zip
+
 EXTRACTORS = {
     "pdf": extract_pdf,
     "docx": extract_docx,
+    "doc": extract_doc,        # legacy Word 97-2003
     "xlsx": extract_xlsx,
+    "xls": extract_xls,        # legacy Excel 97-2003
     "pptx": extract_pptx,
+    "ppt": extract_ppt,        # legacy PowerPoint 97-2003
     "txt": extract_text,
     "code": extract_code,
+    "odt": extract_odt,        # OpenDocument Text
+    "ods": extract_ods,        # OpenDocument Spreadsheet
+    "odp": extract_odp,        # OpenDocument Presentation
+    "wpd": extract_wpd,        # WordPerfect
+    "zip": extract_zip,        # ZIP archive
 }
 
 

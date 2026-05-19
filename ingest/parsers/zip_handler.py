@@ -65,15 +65,18 @@ def extract_zip(path: Path, _depth: int = 0) -> list[dict]:
                 entry_path = Path(info.filename)
                 entry_ext = entry_path.suffix.lower()
 
-                # Nested ZIP — recurse
-                if entry_ext == ".zip" and _depth + 1 < MAX_DEPTH:
-                    with tempfile.TemporaryDirectory() as tmp:
-                        extracted = Path(tmp) / entry_path.name
-                        extracted.write_bytes(zf.read(info.filename))
-                        nested = extract_zip(extracted, _depth=_depth + 1)
-                        for item in nested:
-                            item["source_path"] = f"{info.filename}/{item.get('source_path', '')}"
-                        results.extend(nested)
+                # Nested ZIP — recurse if within depth limit, else skip
+                if entry_ext == ".zip":
+                    if _depth + 1 < MAX_DEPTH:
+                        with tempfile.TemporaryDirectory() as tmp:
+                            extracted = Path(tmp) / entry_path.name
+                            extracted.write_bytes(zf.read(info.filename))
+                            nested = extract_zip(extracted, _depth=_depth + 1)
+                            for item in nested:
+                                item["source_path"] = f"{info.filename}/{item.get('source_path', '')}"
+                            results.extend(nested)
+                    else:
+                        log.debug(f"  Skipping nested ZIP at max depth: {info.filename}")
                     continue
 
                 # Supported format
