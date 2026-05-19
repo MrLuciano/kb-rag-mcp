@@ -56,3 +56,6 @@ Thumbs.db
 # Backup files
 *.backup
 *.bak
+
+# QA fixtures (do not track PDFs)
+qa/fixtures/*.pdf

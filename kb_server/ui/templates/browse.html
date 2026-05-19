@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Documents - KB-RAG{% endblock %}
+
+{% block content %}
+<h1>Browse Documents</h1>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" action="/ui/browse" class="row g-3">
+            <div class="col-md-3">
+                <label for="product" class="form-label">Product</label>
+                <input type="text" class="form-control" id="product" 
+                       name="product" 
+                       value="{{ filters.product or '' }}"
+                       placeholder="e.g., ArchiveCenter">
+            </div>
+            <div class="col-md-3">
+                <label for="doc_type" class="form-label">Doc Type</label>
+                <input type="text" class="form-control" id="doc_type" 
+                       name="doc_type"
+                       value="{{ filters.doc_type or '' }}"
+                       placeholder="e.g., install_guide">
+            </div>
+            <div class="col-md-3">
+                <label for="version" class="form-label">Version</label>
+                <input type="text" class="form-control" id="version" 
+                       name="version"
+                       value="{{ filters.version or '' }}"
+                       placeholder="e.g., 23.4">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All</option>
+                    <option value="completed" 
+                            {% if filters.status == 'completed' %}
+                            selected{% endif %}>
+                        Completed
+                    </option>
+                    <option value="failed" 
+                            {% if filters.status == 'failed' %}
+                            selected{% endif %}>
+                        Failed
+                    </option>
+                    <option value="pending" 
+                            {% if filters.status == 'pending' %}
+                            selected{% endif %}>
+                        Pending
+                    </option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    Filter
+                </button>
+                <a href="/ui/browse" class="btn btn-secondary">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results count -->
+<p class="text-muted">
+    Showing {{ documents|length }} of {{ total }} documents
+    (Page {{ page }} of {{ total_pages }})
+</p>
+
+<!-- Documents table -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Source File</th>
+                <th>Product</th>
+                <th>Type</th>
+                <th>Version</th>
+                <th>Status</th>
+                <th>Chunks</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documents %}
+            <tr>
+                <td>{{ doc.id }}</td>
+                <td>
+                    <a href="/ui/document/{{ doc.id }}">
+                        {{ doc.source_file }}
+                    </a>
+                </td>
+                <td>{{ doc.product or 'N/A' }}</td>
+                <td>{{ doc.doc_type or 'N/A' }}</td>
+                <td>{{ doc.version or 'N/A' }}</td>
+                <td>
+                    <span class="status-{{ doc.status }}">
+                        {{ doc.status }}
+                    </span>
+                </td>
+                <td>{{ doc.chunks_stored or 0 }}</td>
+                <td>
+                    <a href="/ui/document/{{ doc.id }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        View
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<nav aria-label="Page navigation">
+    <ul class="pagination">
+        {% if page > 1 %}
+        <li class="page-item">
+            <a class="page-link" 
+               href="?page={{ page - 1 }}
+                     {% if filters.product %}&product={{ filters.product }}
+                     {% endif %}
+                     {% if filters.doc_type %}&doc_type={{ filters.doc_type }}
+                     {% endif %}
+                     {% if filters.version %}&version={{ filters.version }}
+                     {% endif %}
+                     {% if filters.status %}&status={{ filters.status }}
+                     {% endif %}">
+                Previous
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <li class="page-item active">
+                <span class="page-link">{{ p }}</span>
+            </li>
+            {% elif (p <= 3) or (p >= total_pages - 2) or 
+                    (p >= page - 1 and p <= page + 1) %}
+            <li class="page-item">
+                <a class="page-link" 
+                   href="?page={{ p }}
+                         {% if filters.product %}&product={{ filters.product }}
+                         {% endif %}
+                         {% if filters.doc_type %}&doc_type={{ filters.doc_type }}
+                         {% endif %}
+                         {% if filters.version %}&version={{ filters.version }}
+                         {% endif %}
+                         {% if filters.status %}&status={{ filters.status }}
+                         {% endif %}">
+                    {{ p }}
+                </a>
+            </li>
+            {% elif p == 4 or p == total_pages - 3 %}
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page < total_pages %}
+        <li class="page-item">
+            <a class="page-link" 
+               href="?page={{ page + 1 }}
+                     {% if filters.product %}&product={{ filters.product }}
+                     {% endif %}
+                     {% if filters.doc_type %}&doc_type={{ filters.doc_type }}
+                     {% endif %}
+                     {% if filters.version %}&version={{ filters.version }}
+                     {% endif %}
+                     {% if filters.status %}&status={{ filters.status }}
+                     {% endif %}">
+                Next
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

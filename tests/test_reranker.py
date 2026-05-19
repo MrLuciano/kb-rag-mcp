@@ -13,11 +13,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "server"))
 class TestCrossEncoderReranker:
     @pytest.fixture
     def reranker(self):
-        from server.retrieval.reranker import CrossEncoderReranker
+        from kb_server.retrieval.reranker import CrossEncoderReranker
         return CrossEncoderReranker()
 
     @pytest.mark.asyncio
-    @patch("server.retrieval.reranker.CrossEncoder")
+    @patch("kb_server.retrieval.reranker.CrossEncoder")
     async def test_rerank_updates_scores(self, mock_cross_encoder, reranker):
         """Test that reranker updates result scores."""
         # Mock cross-encoder model
@@ -45,7 +45,7 @@ class TestCrossEncoderReranker:
         assert all(r["reranked"] for r in reranked)
 
     @pytest.mark.asyncio
-    @patch("server.retrieval.reranker.CrossEncoder")
+    @patch("kb_server.retrieval.reranker.CrossEncoder")
     async def test_rerank_reorders_results(self, mock_cross_encoder, reranker):
         """Test that reranker reorders results by new scores."""
         mock_model = MagicMock()
@@ -66,7 +66,7 @@ class TestCrossEncoderReranker:
         assert reranked[2]["id"] == "1"
 
     @pytest.mark.asyncio
-    @patch("server.retrieval.reranker.CrossEncoder")
+    @patch("kb_server.retrieval.reranker.CrossEncoder")
     async def test_rerank_respects_top_k(self, mock_cross_encoder, reranker):
         """Test that reranker respects top_k parameter."""
         mock_model = MagicMock()
@@ -89,7 +89,7 @@ class TestCrossEncoderReranker:
         assert reranked == []
 
     @pytest.mark.asyncio
-    @patch("server.retrieval.reranker.CrossEncoder")
+    @patch("kb_server.retrieval.reranker.CrossEncoder")
     async def test_rerank_lazy_loads_model(self, mock_cross_encoder, reranker):
         """Test that model is lazy loaded on first use."""
         assert reranker.model is None
@@ -109,19 +109,19 @@ class TestRerankerIntegration:
     @pytest.mark.asyncio
     async def test_search_kb_with_rerank(self):
         """Test that search_kb properly invokes reranker."""
-        from server.server import _search_kb
+        from kb_server.server import _search_kb
         from unittest.mock import AsyncMock, patch
         
         # Mock dependencies
-        with patch("server.server.get_embedding", return_value=[0.1] * 768):
-            with patch("server.server.store") as mock_store:
+        with patch("kb_server.server.get_embedding", return_value=[0.1] * 768):
+            with patch("kb_server.server.store") as mock_store:
                 mock_store.search = AsyncMock(return_value=[
                     {"id": "1", "text": "result 1", "score": 0.8, 
                      "source_file": "test.pdf", "file_type": "pdf",
                      "chunk_id": "1"},
                 ])
                 
-                with patch("server.retrieval.reranker.CrossEncoder"):
+                with patch("kb_server.retrieval.reranker.CrossEncoder"):
                     result = await _search_kb({
                         "query": "test",
                         "top_k": 5,

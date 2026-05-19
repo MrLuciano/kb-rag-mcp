@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.source_file }} - KB-RAG{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Document Details</h1>
+    <a href="/ui/browse" class="btn btn-secondary">
+        Back to Browse
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">{{ document.source_file }}</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9">{{ document.id }}</dd>
+            
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+                <span class="status-{{ document.status }}">
+                    {{ document.status }}
+                </span>
+            </dd>
+            
+            <dt class="col-sm-3">Product</dt>
+            <dd class="col-sm-9">{{ document.product or 'N/A' }}</dd>
+            
+            <dt class="col-sm-3">Document Type</dt>
+            <dd class="col-sm-9">{{ document.doc_type or 'N/A' }}</dd>
+            
+            <dt class="col-sm-3">Version</dt>
+            <dd class="col-sm-9">{{ document.version or 'N/A' }}</dd>
+            
+            <dt class="col-sm-3">File Type</dt>
+            <dd class="col-sm-9">{{ document.file_type or 'N/A' }}</dd>
+            
+            <dt class="col-sm-3">Chunks Stored</dt>
+            <dd class="col-sm-9">{{ document.chunks_stored or 0 }}</dd>
+            
+            <dt class="col-sm-3">Hash</dt>
+            <dd class="col-sm-9">
+                <code>{{ document.hash or 'N/A' }}</code>
+            </dd>
+        </dl>
+    </div>
+</div>
+
+{% if document.status == 'failed' %}
+<div class="alert alert-danger">
+    <strong>Ingestion Failed</strong>
+    <p class="mb-0">
+        This document failed to process. Check the logs for details.
+    </p>
+</div>
+{% elif document.chunks_stored == 0 %}
+<div class="alert alert-warning">
+    <strong>No Chunks Stored</strong>
+    <p class="mb-0">
+        This document has no searchable chunks yet.
+    </p>
+</div>
+{% else %}
+<div class="alert alert-success">
+    <strong>Document Indexed Successfully</strong>
+    <p class="mb-0">
+        {{ document.chunks_stored }} chunks are searchable.
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}

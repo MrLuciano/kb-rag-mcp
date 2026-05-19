@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 class TestHybridSearcher:
     @pytest.fixture
     def hybrid_searcher(self):
-        from server.retrieval.hybrid_search import HybridSearcher
+        from kb_server.retrieval.hybrid_search import HybridSearcher
         return HybridSearcher()
 
     @pytest.mark.asyncio
@@ -52,7 +52,7 @@ class TestHybridSearcher:
 class TestHybridSearchCLI:
     @pytest.mark.asyncio
     async def test_search_kb_has_hybrid_parameter(self):
-        from server.server import app
+        from kb_server.server import app
         
         tools = await app.list_tools()
         search_kb_tool = next(t for t in tools if t.name == "search_kb")

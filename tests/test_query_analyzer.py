@@ -2,7 +2,7 @@ import sqlite3
 import tempfile
 from pathlib import Path
 import pytest
-from server.analytics.query_analyzer import QueryAnalyzer
+from kb_server.analytics.query_analyzer import QueryAnalyzer
 
 
 @pytest.fixture

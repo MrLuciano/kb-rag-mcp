@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 def test_health_basic():
     """Test basic health endpoint returns 200."""
-    from server.health_server import app
+    from kb_server.health_server import app
 
     client = TestClient(app)
     response = client.get("/health")
@@ -17,7 +17,7 @@ def test_health_basic():
 
 def test_health_detailed():
     """Test detailed health includes all components."""
-    from server.health_server import app
+    from kb_server.health_server import app
 
     client = TestClient(app)
     response = client.get("/health/detailed")
@@ -35,7 +35,7 @@ def test_health_detailed():
 
 def test_readiness_check():
     """Test readiness endpoint."""
-    from server.health_server import app
+    from kb_server.health_server import app
 
     client = TestClient(app)
     response = client.get("/ready")
@@ -46,7 +46,7 @@ def test_readiness_check():
 
 def test_liveness_check():
     """Test liveness endpoint."""
-    from server.health_server import app
+    from kb_server.health_server import app
 
     client = TestClient(app)
     response = client.get("/alive")
@@ -58,7 +58,7 @@ def test_liveness_check():
 @pytest.mark.asyncio
 async def test_health_check_with_failures():
     """Test health check detects component failures."""
-    from server.health import check_all_components
+    from kb_server.health import check_all_components
 
     # Mock a failing component
     status = await check_all_components()

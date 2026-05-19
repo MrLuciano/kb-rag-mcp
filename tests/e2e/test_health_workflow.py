@@ -21,7 +21,7 @@ class TestHealthCheckComponents:
     @pytest.mark.asyncio
     async def test_embedding_health_check(self):
         """Test embedding service health check."""
-        from server.health import EmbeddingHealthCheck
+        from kb_server.health import EmbeddingHealthCheck
         
         # Mock embedding client
         mock_client = AsyncMock()
@@ -38,7 +38,7 @@ class TestHealthCheckComponents:
     @pytest.mark.asyncio
     async def test_embedding_health_check_failure(self):
         """Test embedding health check with service failure."""
-        from server.health import EmbeddingHealthCheck
+        from kb_server.health import EmbeddingHealthCheck
         
         # Mock failing embedding client
         mock_client = AsyncMock()
@@ -54,7 +54,7 @@ class TestHealthCheckComponents:
     @pytest.mark.asyncio
     async def test_vector_store_health_check(self):
         """Test vector store health check."""
-        from server.health import VectorStoreHealthCheck
+        from kb_server.health import VectorStoreHealthCheck
         
         # Mock Qdrant client
         mock_client = MagicMock()
@@ -73,7 +73,7 @@ class TestHealthCheckComponents:
     @pytest.mark.asyncio
     async def test_cache_health_check(self):
         """Test cache health check."""
-        from server.health import CacheHealthCheck
+        from kb_server.health import CacheHealthCheck
         
         # Mock cache
         mock_cache = MagicMock()
@@ -95,7 +95,7 @@ class TestHealthCheckComponents:
     @pytest.mark.asyncio
     async def test_database_health_check(self, e2e_temp_db):
         """Test database health check."""
-        from server.health import DatabaseHealthCheck
+        from kb_server.health import DatabaseHealthCheck
         
         checker = DatabaseHealthCheck(str(e2e_temp_db))
         result = await checker.check()
@@ -107,7 +107,7 @@ class TestHealthCheckComponents:
     @pytest.mark.asyncio
     async def test_filesystem_health_check(self, tmp_path):
         """Test filesystem health check."""
-        from server.health import FilesystemHealthCheck
+        from kb_server.health import FilesystemHealthCheck
         
         checker = FilesystemHealthCheck(str(tmp_path))
         result = await checker.check()
@@ -124,7 +124,7 @@ class TestHealthAggregation:
     @pytest.mark.asyncio
     async def test_all_healthy(self):
         """Test when all components are healthy."""
-        from server.health import HealthChecker
+        from kb_server.health import HealthChecker
         
         # Mock all checkers as healthy
         mock_checkers = {
@@ -160,7 +160,7 @@ class TestHealthAggregation:
     @pytest.mark.asyncio
     async def test_critical_component_unhealthy(self):
         """Test when critical component is unhealthy."""
-        from server.health import HealthChecker
+        from kb_server.health import HealthChecker
         
         # Mock critical component as unhealthy
         mock_checkers = {
@@ -196,7 +196,7 @@ class TestHealthAggregation:
     @pytest.mark.asyncio
     async def test_non_critical_component_unhealthy(self):
         """Test when non-critical component is unhealthy."""
-        from server.health import HealthChecker
+        from kb_server.health import HealthChecker
         
         # Mock non-critical component (cache) as unhealthy
         mock_checkers = {
@@ -238,7 +238,7 @@ class TestHealthHTTPEndpoints:
     @pytest.mark.asyncio
     async def test_health_endpoint_basic(self):
         """Test basic /health endpoint."""
-        from server.health_server import app
+        from kb_server.health_server import app
         from fastapi.testclient import TestClient
         
         client = TestClient(app)
@@ -252,7 +252,7 @@ class TestHealthHTTPEndpoints:
     @pytest.mark.asyncio
     async def test_health_endpoint_detailed(self):
         """Test detailed /health/detailed endpoint."""
-        from server.health_server import app
+        from kb_server.health_server import app
         from fastapi.testclient import TestClient
         
         client = TestClient(app)
@@ -280,7 +280,7 @@ class TestHealthHTTPEndpoints:
     @pytest.mark.asyncio
     async def test_ready_endpoint(self):
         """Test /ready endpoint for Kubernetes readiness."""
-        from server.health_server import app
+        from kb_server.health_server import app
         from fastapi.testclient import TestClient
         
         client = TestClient(app)
@@ -294,7 +294,7 @@ class TestHealthHTTPEndpoints:
     @pytest.mark.asyncio
     async def test_alive_endpoint(self):
         """Test /alive endpoint for Kubernetes liveness."""
-        from server.health_server import app
+        from kb_server.health_server import app
         from fastapi.testclient import TestClient
         
         client = TestClient(app)
@@ -312,7 +312,7 @@ class TestHealthCheckLatency:
     @pytest.mark.asyncio
     async def test_latency_measurement(self):
         """Test that latency is measured correctly."""
-        from server.health import measure_latency
+        from kb_server.health import measure_latency
         
         async def slow_operation():
             await asyncio.sleep(0.1)  # 100ms
@@ -329,7 +329,7 @@ class TestHealthCheckLatency:
     @pytest.mark.asyncio
     async def test_latency_on_error(self):
         """Test latency measurement when operation fails."""
-        from server.health import measure_latency
+        from kb_server.health import measure_latency
         
         async def failing_operation():
             await asyncio.sleep(0.05)
@@ -350,7 +350,7 @@ class TestHealthCheckCaching:
     @pytest.mark.asyncio
     async def test_health_check_caching(self):
         """Test that health checks are cached appropriately."""
-        from server.health import CachedHealthChecker
+        from kb_server.health import CachedHealthChecker
         
         call_count = 0
         

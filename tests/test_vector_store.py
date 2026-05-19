@@ -24,11 +24,11 @@ def _stub_modules():
     sys.modules.setdefault("embed_client", ec)
 
     # Stub server.cache.manager (pulled in by real embed_client)
-    cm = types.ModuleType("server.cache.manager")
+    cm = types.ModuleType("kb_server.cache.manager")
     class FakeCM:
         pass
     cm.CacheManager = FakeCM
-    sys.modules.setdefault("server.cache.manager", cm)
+    sys.modules.setdefault("kb_server.cache.manager", cm)
 
     # Stub qdrant_client and sub-modules used at import time
     for mod in [
@@ -70,7 +70,7 @@ _stub_modules()
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "server"))
 
 # Now import VectorStore — will use the stubs above
-from vector_store import VectorStore  # noqa: E402
+from kb_server.vector_store import VectorStore  # noqa: E402
 
 
 # ── WR-01/02: assert → RuntimeError ─────────────────────────────────────────

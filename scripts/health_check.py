@@ -25,7 +25,7 @@ else:
 
 async def check_embedding():
     print("\n[1/3] Testando embedding backend...")
-    from embed_client import (
+    from kb_server.embed_client import (
         BACKEND,
         LMS_BASE_URL,
         LMS_HOST,
@@ -79,7 +79,7 @@ async def check_embedding():
 
 async def check_qdrant():
     print("\n[2/3] Testando conexão com Qdrant...")
-    from vector_store import (
+    from kb_server.vector_store import (
         QDRANT_HOST,
         QDRANT_PATH,
         QDRANT_PORT,
@@ -103,7 +103,7 @@ async def check_qdrant():
 
 async def check_search(store):
     print("\n[3/3] Testando busca semântica...")
-    from embed_client import get_embedding
+    from kb_server.embed_client import get_embedding
 
     try:
         vec = await get_embedding("teste de busca")

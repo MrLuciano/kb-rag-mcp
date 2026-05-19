@@ -11,7 +11,7 @@ class _SparseTextEmbedding:
 _fastembed.SparseTextEmbedding = _SparseTextEmbedding
 sys.modules.setdefault("fastembed", _fastembed)
 
-from server.retrieval.hybrid_search import HybridSearcher
+from kb_server.retrieval.hybrid_search import HybridSearcher
 
 
 def make_result(chunk_id: str, score: float) -> dict:

@@ -2,8 +2,8 @@
 import json
 import pytest
 from pathlib import Path
-from server.evaluation.ragas_pipeline import RAGASEvaluator
-from server.evaluation.dataset import GoldenDataset
+from kb_server.evaluation.ragas_pipeline import RAGASEvaluator
+from kb_server.evaluation.dataset import GoldenDataset
 
 
 @pytest.fixture

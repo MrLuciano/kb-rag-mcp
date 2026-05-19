@@ -2,7 +2,7 @@ import json
 import tempfile
 from pathlib import Path
 import pytest
-from server.evaluation.dataset import GoldenDataset
+from kb_server.evaluation.dataset import GoldenDataset
 
 
 def test_load_empty_dataset():

@@ -263,7 +263,7 @@ class TestHealthCheckIntegration:
         
         # Check it's importable
         try:
-            import server.health_server
+            import kb_server.health_server
         except ImportError as e:
             pytest.fail(f"Cannot import health_server: {e}")
     
@@ -273,7 +273,7 @@ class TestHealthCheckIntegration:
         assert module_path.exists()
         
         try:
-            import server.health
+            import kb_server.health
         except ImportError as e:
             pytest.fail(f"Cannot import health: {e}")
 

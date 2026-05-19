@@ -4,7 +4,7 @@ import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 import pytest
-from server.telemetry.query_logger import QueryLogger
+from kb_server.telemetry.query_logger import QueryLogger
 
 
 @pytest.fixture
@@ -257,7 +257,7 @@ def test_log_query_no_connection_leak_on_exception(temp_db, monkeypatch):
     def patched_connect(path, **kwargs):
         return TrackingConnection(original_connect(path, **kwargs))
 
-    monkeypatch.setattr("server.telemetry.query_logger.sqlite3.connect", patched_connect)
+    monkeypatch.setattr("kb_server.telemetry.query_logger.sqlite3.connect", patched_connect)
 
     with pytest.raises(_sqlite3.OperationalError):
         logger.log_query(

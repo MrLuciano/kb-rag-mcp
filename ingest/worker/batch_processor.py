@@ -201,7 +201,7 @@ class BatchDocumentProcessor:
             chunk_texts = [chunk.text for chunk in all_chunks]
             
             # Import here to avoid circular dependency
-            from server.embed_client import get_embeddings_batch
+            from kb_server.embed_client import get_embeddings_batch
             
             log.info(
                 f"Batch embedding {len(chunk_texts)} chunks "

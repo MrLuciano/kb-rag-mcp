@@ -32,7 +32,7 @@ def _ensure_stubs():
         "starlette.applications",
         "starlette.routing",
         "fastapi",
-        "prometheus_client",
+        # prometheus_client is a real installed package — do not stub it
     ]:
         sys.modules.setdefault(mod_name, types.ModuleType(mod_name))
 
@@ -121,21 +121,21 @@ def _ensure_stubs():
     sys.modules.setdefault("embed_client", ec)
 
     # server.cache.manager stub
-    cm = types.ModuleType("server.cache.manager")
+    cm = types.ModuleType("kb_server.cache.manager")
     class FakeCM:
         pass
     cm.CacheManager = FakeCM
-    sys.modules.setdefault("server.cache.manager", cm)
+    sys.modules.setdefault("kb_server.cache.manager", cm)
 
     # server.retrieval stubs
-    for mod in ["server.retrieval", "server.retrieval.hybrid_search",
-                "server.retrieval.reranker"]:
+    for mod in ["kb_server.retrieval", "kb_server.retrieval.hybrid_search",
+                "kb_server.retrieval.reranker"]:
         sys.modules.setdefault(mod, types.ModuleType(mod))
 
     # server.telemetry stubs
-    for mod in ["server.telemetry", "server.telemetry.query_logger"]:
+    for mod in ["kb_server.telemetry", "kb_server.telemetry.query_logger"]:
         sys.modules.setdefault(mod, types.ModuleType(mod))
-    ql_mod = sys.modules["server.telemetry.query_logger"]
+    ql_mod = sys.modules["kb_server.telemetry.query_logger"]
     if not hasattr(ql_mod, "QueryLogger"):
         class QueryLogger:
             def __init__(self, *a, **kw): pass
@@ -144,9 +144,9 @@ def _ensure_stubs():
         ql_mod.QueryLogger = QueryLogger
 
     # server.analytics / server.optimization stubs
-    for mod in ["server.analytics", "server.analytics.query_analyzer",
-                "server.optimization", "server.optimization.chunking_experiments",
-                "server.ui", "server.ui.app"]:
+    for mod in ["kb_server.analytics", "kb_server.analytics.query_analyzer",
+                "kb_server.optimization", "kb_server.optimization.chunking_experiments",
+                "kb_server.ui", "kb_server.ui.app"]:
         sys.modules.setdefault(mod, types.ModuleType(mod))
 
 
@@ -179,7 +179,7 @@ def _make_chunk(text="hello world", source="doc.md", score=0.9,
 def test_search_kb_returns_text_content_on_results(monkeypatch):
     """WR-08: _search_kb returns list[TextContent] containing result text."""
     import importlib
-    srv = importlib.import_module("server.server")
+    srv = importlib.import_module("kb_server.server")
 
     fake_vector = [0.1] * 768
 
@@ -204,7 +204,7 @@ def test_search_kb_returns_text_content_on_results(monkeypatch):
 def test_search_kb_returns_no_results_message_when_store_empty(monkeypatch):
     """WR-08: _search_kb returns 'no results' TextContent when store returns []."""
     import importlib
-    srv = importlib.import_module("server.server")
+    srv = importlib.import_module("kb_server.server")
 
     async def fake_embed(query): return [0.0] * 768
     monkeypatch.setattr(srv, "get_embedding", fake_embed)
@@ -223,7 +223,7 @@ def test_search_kb_returns_no_results_message_when_store_empty(monkeypatch):
 def test_search_kb_passes_filters_to_store(monkeypatch):
     """WR-08: filters (product, doc_type, filter_type) are forwarded to store.search()."""
     import importlib
-    srv = importlib.import_module("server.server")
+    srv = importlib.import_module("kb_server.server")
 
     async def fake_embed(query): return [0.0] * 768
     monkeypatch.setattr(srv, "get_embedding", fake_embed)

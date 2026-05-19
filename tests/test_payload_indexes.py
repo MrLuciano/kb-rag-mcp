@@ -26,7 +26,7 @@ class TestPayloadIndexCreation:
     @pytest.mark.asyncio
     async def test_create_index_on_new_collection(self):
         """Test that indexes are created when new collection is created."""
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
 
         store = VectorStore()
         
@@ -65,7 +65,7 @@ class TestPayloadIndexCreation:
     @pytest.mark.asyncio
     async def test_index_creation_is_non_fatal(self):
         """Test that index creation failures don't prevent collection use."""
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
 
         store = VectorStore()
         
@@ -89,7 +89,7 @@ class TestPayloadIndexCreation:
     @pytest.mark.asyncio
     async def test_no_duplicate_index_on_existing_collection(self):
         """Test that indexes aren't recreated for existing collections."""
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
 
         store = VectorStore()
         
@@ -168,7 +168,7 @@ class TestPayloadIndexPerformance:
         if not os.getenv("QDRANT_HOST"):
             pytest.skip("Integration test requires QDRANT_HOST")
         
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
 
         store = VectorStore()
         store.collection = "test_payload_indexes"

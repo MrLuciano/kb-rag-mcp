@@ -3,7 +3,7 @@ import pytest
 import tempfile
 import sqlite3
 from pathlib import Path
-from server.telemetry.query_logger import QueryLogger
+from kb_server.telemetry.query_logger import QueryLogger
 
 
 @pytest.fixture

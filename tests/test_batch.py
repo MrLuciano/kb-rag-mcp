@@ -41,11 +41,11 @@ def mock_qdrant_client():
 @pytest.mark.asyncio
 async def test_http_client_connection_pooling():
     """Test HTTP client is created with connection pooling."""
-    with patch("server.embed_client.httpx.AsyncClient") as mock_client_cls:
+    with patch("kb_server.embed_client.httpx.AsyncClient") as mock_client_cls:
         mock_instance = AsyncMock()
         mock_client_cls.return_value = mock_instance
         
-        from server import embed_client
+        from kb_server import embed_client
         
         # Reset global client
         embed_client._http_client = None
@@ -69,11 +69,11 @@ async def test_http_client_connection_pooling():
 @pytest.mark.asyncio
 async def test_http_client_close():
     """Test HTTP client cleanup."""
-    with patch("server.embed_client.httpx.AsyncClient") as mock_client_cls:
+    with patch("kb_server.embed_client.httpx.AsyncClient") as mock_client_cls:
         mock_instance = AsyncMock()
         mock_client_cls.return_value = mock_instance
         
-        from server import embed_client
+        from kb_server import embed_client
         
         # Reset and create client
         embed_client._http_client = None
@@ -91,7 +91,7 @@ async def test_http_client_close():
 async def test_qdrant_connection_pooling_http():
     """Test Qdrant client HTTP connection."""
     with (
-        patch("server.vector_store.AsyncQdrantClient") as mock_client_cls,
+        patch("kb_server.vector_store.AsyncQdrantClient") as mock_client_cls,
         patch.dict("os.environ", {"QDRANT_GRPC": "false"}),
     ):
         mock_instance = AsyncMock()
@@ -101,7 +101,7 @@ async def test_qdrant_connection_pooling_http():
         )
         mock_instance.create_collection = AsyncMock()
         
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
         
         store = VectorStore()
         await store.connect()
@@ -120,7 +120,7 @@ async def test_qdrant_connection_pooling_http():
 async def test_qdrant_connection_pooling_grpc():
     """Test Qdrant client gRPC connection."""
     with (
-        patch("server.vector_store.AsyncQdrantClient") as mock_client_cls,
+        patch("kb_server.vector_store.AsyncQdrantClient") as mock_client_cls,
         patch.dict(
             "os.environ", {"QDRANT_GRPC": "true", "QDRANT_GRPC_PORT": "6334"}
         ),
@@ -132,7 +132,7 @@ async def test_qdrant_connection_pooling_grpc():
         )
         mock_instance.create_collection = AsyncMock()
         
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
         
         store = VectorStore()
         await store.connect()
@@ -153,7 +153,7 @@ async def test_qdrant_connection_pooling_grpc():
 async def test_batch_embedding_openai_compat_native_api():
     """Test batch embedding uses native OpenAI-compatible batch API."""
     with (
-        patch("server.embed_client._http") as mock_http,
+        patch("kb_server.embed_client._http") as mock_http,
         patch.dict("os.environ", {"EMBED_BACKEND": "openai-compat"}),
     ):
         mock_client = AsyncMock()
@@ -170,7 +170,7 @@ async def test_batch_embedding_openai_compat_native_api():
         }
         mock_client.post.return_value = mock_response
         
-        from server.embed_client import get_embeddings_batch
+        from kb_server.embed_client import get_embeddings_batch
         
         texts = ["text 1", "text 2", "text 3"]
         vectors = await get_embeddings_batch(
@@ -196,7 +196,7 @@ async def test_batch_embedding_openai_compat_native_api():
 async def test_batch_embedding_cache_integration():
     """Test batch embedding uses cache efficiently."""
     with (
-        patch("server.embed_client._http") as mock_http,
+        patch("kb_server.embed_client._http") as mock_http,
         patch.dict("os.environ", {"EMBED_BACKEND": "openai-compat"}),
     ):
         mock_client = AsyncMock()
@@ -210,11 +210,11 @@ async def test_batch_embedding_cache_integration():
         }
         mock_client.post.return_value = mock_response
         
-        from server.embed_client import (
+        from kb_server.embed_client import (
             get_embeddings_batch,
             init_cache,
         )
-        from server.cache.manager import CacheManager
+        from kb_server.cache.manager import CacheManager
         
         # Initialize cache
         cache = CacheManager(backend="lru", max_size_mb=10)
@@ -239,7 +239,7 @@ async def test_batch_embedding_cache_integration():
 async def test_batch_embedding_handles_large_batches():
     """Test batch embedding splits large inputs into sub-batches."""
     with (
-        patch("server.embed_client._http") as mock_http,
+        patch("kb_server.embed_client._http") as mock_http,
         patch.dict("os.environ", {"EMBED_BACKEND": "openai-compat"}),
     ):
         mock_client = AsyncMock()
@@ -262,7 +262,7 @@ async def test_batch_embedding_handles_large_batches():
         
         mock_client.post.side_effect = create_response
         
-        from server.embed_client import get_embeddings_batch
+        from kb_server.embed_client import get_embeddings_batch
         
         # 100 texts with batch_size=32
         texts = [f"text {i}" for i in range(100)]
@@ -281,7 +281,7 @@ async def test_batch_embedding_handles_large_batches():
 async def test_batch_embedding_preserves_order():
     """Test batch embedding returns vectors in correct order."""
     with (
-        patch("server.embed_client._http") as mock_http,
+        patch("kb_server.embed_client._http") as mock_http,
         patch.dict("os.environ", {"EMBED_BACKEND": "openai-compat"}),
     ):
         mock_client = AsyncMock()
@@ -298,7 +298,7 @@ async def test_batch_embedding_preserves_order():
         }
         mock_client.post.return_value = mock_response
         
-        from server.embed_client import get_embeddings_batch
+        from kb_server.embed_client import get_embeddings_batch
         
         texts = ["first", "second", "third"]
         vectors = await get_embeddings_batch(
@@ -319,7 +319,7 @@ async def test_batch_embedding_preserves_order():
 @pytest.mark.asyncio
 async def test_qdrant_batch_upsert_basic():
     """Test basic batch upsert operation."""
-    with patch("server.vector_store.AsyncQdrantClient") as mock_client_cls:
+    with patch("kb_server.vector_store.AsyncQdrantClient") as mock_client_cls:
         mock_client = AsyncMock()
         mock_client_cls.return_value = mock_client
         mock_client.get_collections = AsyncMock(
@@ -328,7 +328,7 @@ async def test_qdrant_batch_upsert_basic():
             )
         )
         
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
         
         store = VectorStore()
         store.client = mock_client
@@ -363,7 +363,7 @@ async def test_qdrant_batch_upsert_basic():
 async def test_qdrant_batch_upsert_splits_large_batches():
     """Test batch upsert splits large inputs correctly."""
     with (
-        patch("server.vector_store.AsyncQdrantClient") as mock_client_cls,
+        patch("kb_server.vector_store.AsyncQdrantClient") as mock_client_cls,
         patch.dict("os.environ", {"QDRANT_BATCH_SIZE": "50"}),
     ):
         mock_client = AsyncMock()
@@ -374,7 +374,7 @@ async def test_qdrant_batch_upsert_splits_large_batches():
             )
         )
         
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
         
         store = VectorStore()
         store.client = mock_client
@@ -407,7 +407,7 @@ async def test_qdrant_batch_upsert_splits_large_batches():
 @pytest.mark.asyncio
 async def test_qdrant_parallel_batch_upsert():
     """Test parallel batch upsert for large datasets."""
-    with patch("server.vector_store.AsyncQdrantClient") as mock_client_cls:
+    with patch("kb_server.vector_store.AsyncQdrantClient") as mock_client_cls:
         mock_client = AsyncMock()
         mock_client_cls.return_value = mock_client
         mock_client.get_collections = AsyncMock(
@@ -425,7 +425,7 @@ async def test_qdrant_parallel_batch_upsert():
         
         mock_client.upsert = mock_upsert
         
-        from server.vector_store import VectorStore
+        from kb_server.vector_store import VectorStore
         
         store = VectorStore()
         store.client = mock_client
@@ -480,7 +480,7 @@ async def test_batch_processor_end_to_end(tmp_path):
     mock_registry.mark_indexed = Mock()
     
     with (
-        patch("server.embed_client.get_embeddings_batch") as mock_embed,
+        patch("kb_server.embed_client.get_embeddings_batch") as mock_embed,
         patch("ingest.ingest.parse_document") as mock_parse,
         patch("ingest.classifier.classify_document") as mock_classify,
     ):

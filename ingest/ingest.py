@@ -293,8 +293,8 @@ async def process_file(
     Processa um arquivo e insere seus chunks no Qdrant.
     Retorna (chunks_gerados, status) onde status é 'ok'|'skipped'|'error'.
     """
-    from classifier import classify
-    from embed_client import get_embeddings_batch
+    from ingest.classifier import classify
+    from kb_server.embed_client import get_embeddings_batch
 
     ext = file_path.suffix.lower()
     file_type = EXT_TYPE_MAP.get(ext)
@@ -406,8 +406,8 @@ async def run_ingest(
     sync: bool = False,
 ):
     """Executa a ingestão completa ou de um arquivo específico."""
-    from registry import IngestRegistry
-    from vector_store import VectorStore
+    from ingest.registry import IngestRegistry
+    from kb_server.vector_store import VectorStore
 
     store = VectorStore()
     registry = IngestRegistry()
@@ -509,7 +509,7 @@ def cmd_status(args):
     """Exibe relatório do registry sem rodar ingestão."""
     import datetime
 
-    from registry import IngestRegistry
+    from ingest.registry import IngestRegistry
 
     registry = IngestRegistry()
     registry.connect()
