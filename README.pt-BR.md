@@ -25,14 +25,14 @@ Servidor MCP (Model Context Protocol) pronto para produção que permite busca s
 
 ## 🚀 Início Rápido
 
-### Gaming Machine (Windows + WSL2 + LM Studio)
+### Local Machine (Windows + WSL2 + LM Studio)
 
 ```bash
 # 1. Inicie o LM Studio no Windows com o modelo nomic-embed-text-v1.5
 # 2. No WSL2:
 git clone https://github.com/seususername/kb-rag-mcp ~/kb-rag-mcp
 cd ~/kb-rag-mcp
-bash scripts/setup.sh gaming
+bash scripts/setup.sh local
 
 # 3. Ingira seus documentos
 source .venv/bin/activate
@@ -42,7 +42,7 @@ python ingest/ingest.py --docs /mnt/d/seus-documentos
 python scripts/health_check.py
 
 # 5. Configure o Claude Code
-# Copie o bloco "gaming" de config/mcp-clients.json para:
+# Copie o bloco "local" de config/mcp-clients.json para:
 # %APPDATA%\Claude\claude_desktop_config.json
 ```
 
@@ -52,7 +52,7 @@ python scripts/health_check.py
 # Ubuntu 24.04 ou similar:
 git clone https://github.com/seususername/kb-rag-mcp /opt/kb-rag-mcp
 cd /opt/kb-rag-mcp
-bash scripts/setup.sh proxmox
+bash scripts/setup.sh lxc
 
 # Ingira documentos com 4 workers
 source .venv/bin/activate
@@ -88,11 +88,11 @@ cd kb-rag-mcp
 #### 2. Execute o Setup
 
 ```bash
-# Gaming machine (LM Studio com GPU):
-bash scripts/setup.sh gaming
+# Local machine (LM Studio com GPU):
+bash scripts/setup.sh local
 
 # Servidor Linux (Ollama CPU):
-bash scripts/setup.sh proxmox
+bash scripts/setup.sh lxc
 
 # Setup manual:
 python -m venv .venv
@@ -104,7 +104,7 @@ pip install -r requirements.txt
 
 ```bash
 # Copie o template apropriado
-cp config/.env.gaming .env     # ou .env.proxmox
+cp config/.env.local .env     # ou .env.lxc
 
 # Edite com suas configurações
 vim .env
@@ -116,7 +116,7 @@ vim .env
 # Backend de embedding
 EMBED_BACKEND=openai-compat    # lmstudio-sdk, openai-compat, ollama
 EMBED_MODEL=text-embedding-nomic-embed-text-v1.5-embedding
-LMS_BASE_URL=http://192.168.1.177:1234   # URL do LM Studio (sem /v1)
+LMS_BASE_URL=http://<LM_STUDIO_HOST>:1234   # URL do LM Studio (sem /v1)
 
 # Vector store
 QDRANT_HOST=localhost
@@ -183,7 +183,7 @@ Edite `%APPDATA%\Claude\claude_desktop_config.json`:
 {
   "mcpServers": {
     "kb-rag": {
-      "url": "http://192.168.1.200:8765/sse"
+      "url": "http://<LXC_SERVER_HOST>:8765/sse"
     }
   }
 }
@@ -579,7 +579,7 @@ pip-sync requirements.txt
 
 | Cenário | CPU | RAM | Disco | GPU |
 |---------|-----|-----|-------|-----|
-| **Gaming** (8845HS + LM Studio) | 8 cores | 32 GB | 30 GB | iGPU Radeon 780M |
+| **Local Machine** (local CPU + LM Studio) | 8 cores | 32 GB | 30 GB | iGPU |
 | **Servidor** (Ollama CPU-only) | 6 vCPU | 8-12 GB | 30 GB | Não |
 | **Produção** (Alta demanda) | 16 cores | 64 GB | 100 GB | NVIDIA RTX |
 

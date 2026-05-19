@@ -51,14 +51,14 @@ MCP client.
 
 ### 🚀 Quick Start
 
-#### Option 1: Gaming Machine (Windows + WSL2 + LM Studio)
+#### Option 1: Local Machine (Windows + WSL2 + LM Studio)
 
 ```bash
 # 1. Start LM Studio on Windows with nomic-embed-text-v1.5
 # 2. In WSL2:
 git clone https://github.com/yourusername/kb-rag-mcp ~/kb-rag-mcp
 cd ~/kb-rag-mcp
-bash scripts/setup.sh gaming
+bash scripts/setup.sh local
 
 # 3. Ingest documents
 source .venv/bin/activate
@@ -67,7 +67,7 @@ python ingest/ingest.py --docs /mnt/d/your-docs
 # 4. Health check
 python scripts/health_check.py
 
-# 5. Configure Claude Code (copy config/mcp-clients.json → gaming block)
+# 5. Configure Claude Code (copy config/mcp-clients.json → local block)
 ```
 
 #### Option 2: Linux Server (Ollama)
@@ -76,7 +76,7 @@ python scripts/health_check.py
 # On Ubuntu 24.04:
 git clone https://github.com/yourusername/kb-rag-mcp /opt/kb-rag-mcp
 cd /opt/kb-rag-mcp
-bash scripts/setup.sh proxmox
+bash scripts/setup.sh lxc
 
 # Ingest documents
 source .venv/bin/activate
@@ -391,7 +391,7 @@ CACHE_TTL=3600        # Cache TTL in seconds
 {
   "mcpServers": {
     "kb-rag": {
-      "url": "http://192.168.1.200:8765/sse"
+      "url": "http://<LXC_SERVER_HOST>:8765/sse"
     }
   }
 }
@@ -1246,14 +1246,14 @@ TXT, Markdown e código-fonte (~7 GB+). Compatível com **Claude Code**,
 
 ### 🚀 Início Rápido
 
-#### Opção 1: Gaming Machine (Windows + WSL2 + LM Studio)
+#### Opção 1: Local Machine (Windows + WSL2 + LM Studio)
 
 ```bash
 # 1. Inicie o LM Studio no Windows com nomic-embed-text-v1.5
 # 2. No WSL2:
 git clone https://github.com/seususername/kb-rag-mcp ~/kb-rag-mcp
 cd ~/kb-rag-mcp
-bash scripts/setup.sh gaming
+bash scripts/setup.sh local
 
 # 3. Ingira documentos
 source .venv/bin/activate
@@ -1262,7 +1262,7 @@ python ingest/ingest.py --docs /mnt/d/seus-docs
 # 4. Verificação de saúde
 python scripts/health_check.py
 
-# 5. Configure o Claude Code (copie config/mcp-clients.json → bloco gaming)
+# 5. Configure o Claude Code (copie config/mcp-clients.json → bloco local)
 ```
 
 #### Opção 2: Servidor Linux (Ollama)
@@ -1271,7 +1271,7 @@ python scripts/health_check.py
 # No Ubuntu 24.04:
 git clone https://github.com/seususername/kb-rag-mcp /opt/kb-rag-mcp
 cd /opt/kb-rag-mcp
-bash scripts/setup.sh proxmox
+bash scripts/setup.sh lxc
 
 # Ingira documentos
 source .venv/bin/activate
@@ -1306,11 +1306,11 @@ cd kb-rag-mcp
 **2. Execute o script de setup**
 
 ```bash
-# Para gaming machine (LM Studio):
-bash scripts/setup.sh gaming
+# Para local machine (LM Studio):
+bash scripts/setup.sh local
 
 # Para servidor Linux (Ollama):
-bash scripts/setup.sh proxmox
+bash scripts/setup.sh lxc
 
 # Setup manual:
 python -m venv .venv
@@ -1322,7 +1322,7 @@ pip install -r requirements.txt
 
 ```bash
 # Copie a config apropriada
-cp config/.env.gaming .env  # ou .env.proxmox
+cp config/.env.local .env  # ou .env.lxc
 
 # Edite .env com suas configurações
 vim .env
@@ -1405,7 +1405,7 @@ CACHE_TTL=3600        # TTL do cache em segundos
 {
   "mcpServers": {
     "kb-rag": {
-      "url": "http://192.168.1.200:8765/sse"
+      "url": "http://<LXC_SERVER_HOST>:8765/sse"
     }
   }
 }
