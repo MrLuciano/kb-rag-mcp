@@ -22,9 +22,9 @@ Remove all personal/environment-specific identifiers from the project and replac
 | `config/.env.proxmox` → `config/.env.lxc` | Rename file, replace all "proxmox" references inside |
 | `config/mcp-clients.json` | Replace IP with `<LM_STUDIO_HOST>` |
 | `kb_server/embed_client.py` | Replace IP, add recommended model comment block |
-| `kb_server/server.py` | Replace any IP or env references |
+| `kb_server/server.py` | Replace any occurrence of `192.168.*` IP addresses |
 | `server/embed_client.py` | Same as kb_server version |
-| `server/server.py` | Same |
+| `server/server.py` | Replace any occurrence of `192.168.*` IP addresses |
 | `server/evaluation/golden_dataset.json` | Replace all OpenText products with generic examples |
 | `scripts/setup.sh` | Replace "gaming"/"proxmox" env file references |
 | `README.md` | Terminology, IP, hardware spec, embedding recommendation |
@@ -86,7 +86,10 @@ Replace the 10 OpenText-specific examples with 10 generic software product examp
 
 Maintain identical JSON structure: `query`, `expected_answer`, `expected_docs`, `metadata` (product, version, doc_type).  
 Use version `3.2` (neutral, plausible).  
-Cover doc_types: `install_guide`, `admin_guide`, `release_notes`, `overview`.
+Cover doc_types: `install_guide`, `admin_guide`, `release_notes`, `overview`.  
+Distribution: 4 entries for `AppServer`, 3 for `DataSync`, 3 for `AdminPortal`.
+
+Note: `server/evaluation/golden_dataset.json` is the only copy — there is no duplicate under `kb_server/`.
 
 ---
 
