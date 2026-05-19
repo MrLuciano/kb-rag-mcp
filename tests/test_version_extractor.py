@@ -29,8 +29,8 @@ class TestVersionExtractor:
 
     def test_extract_numeric_from_filename(self, extractor):
         """Extract numeric version from filename."""
-        path = Path("/docs/ArchiveCenter_22.3_Admin_Guide.pdf")
-        assert extractor.extract(path) == "22.3"
+        path = Path("/docs/AppServer_32.0_Admin_Guide.pdf")
+        assert extractor.extract(path) == "32.0"
 
     def test_extract_numeric_three_parts(self, extractor):
         """Extract three-part numeric version."""
@@ -57,10 +57,10 @@ class TestVersionExtractor:
 
     def test_extract_from_parent_dir(self, extractor):
         """Extract version from parent directory."""
-        path = Path("/docs/xECM/CE 24.4/manual.pdf")
+        path = Path("/docs/DataSync/32.0/manual.pdf")
         version = extractor.extract(path)
-        # Should extract from parent dir "CE 24.4"
-        assert "24.4" in version
+        # Should extract from parent dir "32.0"
+        assert "32.0" in version
 
     def test_extract_from_grandparent_dir(self, extractor):
         """Extract version from grandparent directory."""
@@ -103,9 +103,9 @@ class TestVersionExtractor:
 
     def test_version_in_path_component(self, extractor):
         """Extract version from anywhere in path component."""
-        path = Path("/docs/ArchiveCenter_22.3_Documentation/manual.pdf")
+        path = Path("/docs/AppServer_32.0_Documentation/manual.pdf")
         version = extractor.extract(path)
-        assert "22.3" in version
+        assert "32.0" in version
 
     def test_multiple_numeric_patterns(self, extractor):
         """When multiple patterns match, return first match."""

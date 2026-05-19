@@ -267,7 +267,7 @@ export_registry_json(sys.stdout)
 python3 -c "
 from ingest.cli.export import export_registry_json
 import sys
-export_registry_json(sys.stdout, product='ArchiveCenter')
+export_registry_json(sys.stdout, product='AppServer')
 " > archivecenter_queries.json
 ```
 

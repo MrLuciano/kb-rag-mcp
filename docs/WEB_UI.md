@@ -37,7 +37,7 @@ Default URL: http://localhost:8001
 Browse all indexed documents with:
 
 **Filters:**
-- Product (e.g., "ArchiveCenter", "xECM")
+- Product (e.g., "AppServer", "DataSync")
 - Document Type (e.g., "install_guide", "api_guide")
 - Version (e.g., "23.4", "1.0.0")
 - Status (completed, failed, pending)
@@ -159,9 +159,9 @@ LIMIT 20 OFFSET 0
 ### Filter by Product
 
 1. Go to http://localhost:8001/ui/browse
-2. Enter "ArchiveCenter" in Product field
+2. Enter "AppServer" in Product field
 3. Click Filter
-4. See only ArchiveCenter documents
+4. See only AppServer documents
 
 ### View Document Details
 

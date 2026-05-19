@@ -48,7 +48,7 @@ Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 - ✅ FASE 14: Observability and Audit (Days 113-122)
 - ✅ FASE 15: Advanced Infrastructure (Days 123-136)
 - ✅ FASE 16: RAG Performance and Accuracy (Days 137-150)
-- ✅ QA Pipeline: OTCS corpus evaluation (Hit Rate 100%, MRR 0.78)
+- ✅ QA Pipeline: QA evaluation (Hit Rate 100%, MRR 0.78)
 
 ## FASE 1: Foundation and Testing Infrastructure
 Goals:
@@ -474,7 +474,7 @@ Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 - FASE 14: Observability and Audit (10 days)
 - FASE 15: Advanced Infrastructure (14 days)
 - FASE 16: RAG Performance and Accuracy (14 days)
-- QA Pipeline: OTCS corpus evaluation — Hit Rate 100%, MRR 0.78 ✅
+- QA Pipeline: QA evaluation — Hit Rate 100%, MRR 0.78 ✅
 
 **Total:** ~6 months for complete feature set — **DELIVERED**
 
@@ -490,4 +490,4 @@ All phases shipped. No pending phases.
 
 **v1.2.0 (FASEs 13-14):** Ingestion automation (file watcher, version extractor), observability (query logger, web UI).
 
-**v1.3.0 (FASEs 15-16 + QA):** Advanced infrastructure (multi-collection, Kubernetes), RAG accuracy (RAGAS pipeline, golden dataset), OTCS QA pipeline validated.
+**v1.3.0 (FASEs 15-16 + QA):** Advanced infrastructure (multi-collection, Kubernetes), RAG accuracy (RAGAS pipeline, golden dataset), QA pipeline validated.

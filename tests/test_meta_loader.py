@@ -303,8 +303,8 @@ class TestValidDocTypes:
     def test_arbitrary_product_accepted(self, loader, temp_dir):
         """Any string should be accepted for product."""
         test_products = [
-            "ArchiveCenter",
-            "xECM",
+            "AppServer",
+            "DataSync",
             "MyCustomProduct",
             "Product-With-Dashes",
             "Product123",

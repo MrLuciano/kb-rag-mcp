@@ -245,14 +245,12 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
 # Complementa a detecção automática por pasta com aliases
 
 PRODUCT_ALIASES: dict[str, str] = {
-    "archive": "ArchiveCenter",
-    "contentserver": "ContentServer",
-    "content server": "ContentServer",
-    "xecm": "xECM",
-    "extended ecm": "xECM",
-    "otds": "OTDS",
-    "directory services": "OTDS",
-    "wem": "WEM",
+    "appserver": "AppServer",
+    "app server": "AppServer",
+    "datasync": "DataSync",
+    "data sync": "DataSync",
+    "adminportal": "AdminPortal",
+    "admin portal": "AdminPortal",
     "adobe": "Adobe",
     "reccordsmanagement": "RecordsManagement",
     "records management": "RecordsManagement",
@@ -262,16 +260,9 @@ PRODUCT_ALIASES: dict[str, str] = {
 
 # Padrões de produto inferíveis do próprio nome do arquivo
 PRODUCT_FROM_NAME: list[tuple[str, list[str]]] = [
-    ("ArchiveCenter", [r"archive.center", r"\bar\d{6}", r"archive.server"]),
-    ("ContentServer", [r"content.server", r"lles", r"\bcs\d{2}\b"]),
-    ("xECM", [r"extended.ecm", r"\bxecm\b", r"powerdocs", r"exstream"]),
-    ("OTDS", [r"directory.services", r"\botds\b"]),
-    ("WEM", [r"web.experience", r"\bwem\b", r"\bwcm\b"]),
-    ("AppWorks", [r"appworks"]),
-    (
-        "ProcessSuite",
-        [r"process.suite", r"process.platform", r"appworks.platform"],
-    ),
+    ("AppServer", [r"app.?server", r"\bappserver\b"]),
+    ("DataSync", [r"data.?sync", r"\bdatasync\b"]),
+    ("AdminPortal", [r"admin.?portal", r"\badminportal\b"]),
     ("DocumentFilters", [r"document.filters"]),
     ("TeleForm", [r"teleform"]),
     ("Adobe", [r"\badobe\b", r"adobe.sign", r"docusign"]),

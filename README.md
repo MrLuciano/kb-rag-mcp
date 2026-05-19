@@ -489,8 +489,8 @@ Search documents by version (automatically extracted from filenames/paths):
 # MCP tool usage
 search_kb(
     query="installation steps",
-    product="ArchiveCenter",
-    version="22.3"  # Only search 22.3 docs
+    product="AppServer",
+    version="3.2"  # Only search 3.2 docs
 )
 ```
 
@@ -508,7 +508,7 @@ Override automatic classification with `_meta.json` files:
 
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide",
   "files": {
     "install.pdf": {

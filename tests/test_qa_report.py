@@ -11,7 +11,7 @@ def test_report_minimal():
     }
     md = render_report(data)
     assert isinstance(md, str)
-    assert "## OTCS KB QA Report" in md
+    assert "## KB QA Report" in md
     assert "Hit Rate: 85%" in md
     assert "MRR: 0.67" in md
     assert "PASS" in md or "FAIL" in md

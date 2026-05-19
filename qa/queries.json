@@ -1,14 +1,14 @@
 [
   {
-    "question": "How do I set up notifications for a new ArchiveCenter document?",
+    "question": "How do I configure AppServer connection pools?",
     "answer_chunk_id": "107ed7fe-cb4a-45eb-9412-6098aeadaa36"
   },
   {
-    "question": "Where do I find the OTCS login troubleshooting steps?",
+    "question": "What are the system requirements for DataSync?",
     "answer_chunk_id": "f6e762df-0b46-44ee-ae86-67b3ced1d2e7"
   },
   {
-    "question": "What is the maximum upload size for OTCS documents?",
+    "question": "How to create admin users in AdminPortal?",
     "answer_chunk_id": "80690500-9adb-4687-9a5f-f85b772fc04f"
   }
 ]

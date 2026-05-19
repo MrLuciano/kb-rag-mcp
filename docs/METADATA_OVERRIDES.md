@@ -33,13 +33,13 @@ The metadata override system allows you to manually specify product and doc_type
 In any documentation directory:
 
 ```bash
-cd /path/to/docs/ArchiveCenter_22.3
+cd /path/to/docs/AppServer_3.2
 nano _meta.json
 ```
 
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide"
 }
 ```
@@ -50,14 +50,14 @@ Override individual files within the directory:
 
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide",
   "files": {
     "installation_guide.pdf": {
       "doc_type": "installation_guide"
     },
     "troubleshooting.pdf": {
-      "product": "ArchiveCenter Enterprise",
+      "product": "AppServer Enterprise",
       "doc_type": "troubleshooting_guide"
     }
   }
@@ -68,10 +68,10 @@ Override individual files within the directory:
 
 ```bash
 # Overrides are automatically detected during ingestion
-kb-rag ingest /path/to/docs/ArchiveCenter_22.3
+kb-rag ingest /path/to/docs/AppServer_3.2
 
 # Check classifications
-kb-rag query "installation" --product "ArchiveCenter"
+kb-rag query "installation" --product "AppServer"
 ```
 
 ---
@@ -97,7 +97,7 @@ kb-rag query "installation" --product "ArchiveCenter"
 
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide",
   "files": {
     "install.pdf": {
@@ -171,7 +171,7 @@ When multiple sources provide metadata, the system uses this priority:
 **Directory structure:**
 ```
 /docs/
-  _meta.json          → product: "ArchiveCenter"
+  _meta.json          → product: "AppServer"
   manual.pdf
   install.pdf
 ```
@@ -179,7 +179,7 @@ When multiple sources provide metadata, the system uses this priority:
 **_meta.json:**
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide",
   "files": {
     "install.pdf": {
@@ -196,11 +196,11 @@ kb-rag ingest /docs --product "Override"
 
 **Result:**
 - `manual.pdf`:
-  - product: "ArchiveCenter" (from _meta.json directory default)
+  - product: "AppServer" (from _meta.json directory default)
   - doc_type: "admin_guide" (from _meta.json directory default)
   
 - `install.pdf`:
-  - product: "ArchiveCenter" (from _meta.json directory default)
+  - product: "AppServer" (from _meta.json directory default)
   - doc_type: "installation_guide" (from _meta.json file-specific)
 
 **CLI override ignored** because _meta.json takes precedence.
@@ -217,7 +217,7 @@ kb-rag ingest /docs --product "Override"
 
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "files": {
     "AC_Admin_Guide_v22.3.pdf": {
       "doc_type": "admin_guide"
@@ -268,7 +268,7 @@ kb-rag ingest /docs --product "Override"
 
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "files": {
     "manual.pdf": {
       "doc_type": "admin_guide"
@@ -291,8 +291,8 @@ kb-rag ingest /docs --product "Override"
 
 ```
 /docs/
-  ArchiveCenter/
-    _meta.json         → product: "ArchiveCenter"
+  AppServer/
+    _meta.json         → product: "AppServer"
     22.3/
       _meta.json       → doc_type: "admin_guide"
       admin_guide.pdf
@@ -301,10 +301,10 @@ kb-rag ingest /docs --product "Override"
       user_guide.pdf
 ```
 
-**ArchiveCenter/_meta.json:**
+**AppServer/_meta.json:**
 ```json
 {
-  "product": "ArchiveCenter"
+  "product": "AppServer"
 }
 ```
 
@@ -317,7 +317,7 @@ kb-rag ingest /docs --product "Override"
 
 **Result:**
 - `22.3/admin_guide.pdf`:
-  - product: "ArchiveCenter" (inherited from parent)
+  - product: "AppServer" (inherited from parent)
   - doc_type: "admin_guide" (from local _meta.json)
 
 ### Scenario 5: Enterprise Editions
@@ -330,15 +330,15 @@ kb-rag ingest /docs --product "Override"
 {
   "files": {
     "standard_guide.pdf": {
-      "product": "ArchiveCenter Standard",
+      "product": "AppServer Standard",
       "doc_type": "user_guide"
     },
     "enterprise_guide.pdf": {
-      "product": "ArchiveCenter Enterprise",
+      "product": "AppServer Enterprise",
       "doc_type": "user_guide"
     },
     "enterprise_admin.pdf": {
-      "product": "ArchiveCenter Enterprise",
+      "product": "AppServer Enterprise",
       "doc_type": "admin_guide"
     }
   }
@@ -354,7 +354,7 @@ kb-rag ingest /docs --product "Override"
 **Good:**
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide",
   "files": {
     "special.pdf": {
@@ -370,9 +370,9 @@ kb-rag ingest /docs --product "Override"
 ```json
 {
   "files": {
-    "file1.pdf": {"product": "ArchiveCenter", "doc_type": "admin_guide"},
-    "file2.pdf": {"product": "ArchiveCenter", "doc_type": "admin_guide"},
-    "file3.pdf": {"product": "ArchiveCenter", "doc_type": "admin_guide"}
+    "file1.pdf": {"product": "AppServer", "doc_type": "admin_guide"},
+    "file2.pdf": {"product": "AppServer", "doc_type": "admin_guide"},
+    "file3.pdf": {"product": "AppServer", "doc_type": "admin_guide"}
   }
 }
 ```
@@ -385,7 +385,7 @@ Only override what's necessary:
 
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide",
   "files": {
     "install.pdf": {
@@ -413,7 +413,7 @@ Add comments (JSON5 style, if using parser that supports it):
 
 ```json
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide",
   "files": {
     // Installation guide has different doc_type
@@ -437,7 +437,7 @@ Add comments (JSON5 style, if using parser that supports it):
 kb-rag ingest /path/to/docs --force
 
 # Verify classifications
-kb-rag query "test" --product "ArchiveCenter" --limit 5
+kb-rag query "test" --product "AppServer" --limit 5
 ```
 
 ---
@@ -466,13 +466,13 @@ ERROR: Invalid JSON in _meta.json: Expecting ',' delimiter
 ```json
 // Bad
 {
-  "product": "ArchiveCenter"  // Missing comma
+  "product": "AppServer"  // Missing comma
   "doc_type": "admin_guide"
 }
 
 // Good
 {
-  "product": "ArchiveCenter",
+  "product": "AppServer",
   "doc_type": "admin_guide"
 }
 ```
@@ -545,12 +545,12 @@ Use directory structure to apply overrides conditionally:
 ```
 /docs/
   current/
-    _meta.json  → {"product": "ArchiveCenter 23.1"}
+    _meta.json  → {"product": "AppServer 3.2"}
   archive/
     22.3/
-      _meta.json  → {"product": "ArchiveCenter 22.3"}
+      _meta.json  → {"product": "AppServer 3.2"}
     22.2/
-      _meta.json  → {"product": "ArchiveCenter 22.2"}
+      _meta.json  → {"product": "AppServer 3.1"}
 ```
 
 ### Partial Overrides
@@ -580,7 +580,7 @@ from pathlib import Path
 
 docs_dir = Path("/path/to/docs")
 meta = {
-    "product": "ArchiveCenter",
+    "product": "AppServer",
     "doc_type": "admin_guide",
     "files": {}
 }
@@ -704,7 +704,7 @@ EOF
 # Create for each subdirectory
 find /docs -type d -exec bash -c '
   cd "$1" && 
-  echo "{\"product\": \"ArchiveCenter\"}" > _meta.json
+  echo "{\"product\": \"AppServer\"}" > _meta.json
 ' _ {} \;
 ```
 

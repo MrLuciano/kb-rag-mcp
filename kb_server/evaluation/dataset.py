@@ -14,7 +14,7 @@ class GoldenDataset:
             "query": "How to install SSL?",
             "expected_answer": "Configure SSL in server.xml...",
             "expected_docs": ["admin_guide_ch5.pdf"],
-            "metadata": {"product": "ArchiveCenter", "version": "23.4"}
+            "metadata": {"product": "AppServer", "version": "3.2"}
         }
     ]
     """

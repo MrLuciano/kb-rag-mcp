@@ -64,7 +64,7 @@ python scripts/migrations/create_payload_indexes.py
 **What:** Combines semantic (dense) + keyword (BM25 sparse) search using RRF fusion
 
 **When To Use:**
-- Queries with specific versions ("22.3", "CE 24.4")
+- Queries with specific versions ("22.3", "3.2")
 - Product codes or technical IDs
 - Exact terminology important
 - When semantic search misses obvious matches
@@ -149,7 +149,7 @@ RERANKER_CACHE_TTL=3600  # Future: cache reranked results
 # Default (dense only, with indexes)
 search_kb(
     query="backup procedures",
-    product="ArchiveCenter",  # Fast filter via index
+    product="AppServer",  # Fast filter via index
 )
 # ~50ms, good recall
 ```
@@ -158,8 +158,8 @@ search_kb(
 ```python
 # Hybrid for exact term matching
 search_kb(
-    query="xECM CE 24.4 installation",
-    product="xECM",
+    query="DataSync 3.2 installation",
+    product="DataSync",
     hybrid=True,
 )
 # ~100ms, better recall on version
@@ -181,7 +181,7 @@ search_kb(
 # Both hybrid + rerank
 search_kb(
     query="Archive Center 22.3 LDAP troubleshooting",
-    product="ArchiveCenter",
+    product="AppServer",
     hybrid=True,
     rerank=True,
     top_k=5,

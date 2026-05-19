@@ -110,7 +110,7 @@ async def list_tools() -> list[types.Tool]:
                 "de documentação técnica e padrões. "
                 "Retorna os chunks mais relevantes com score, fonte e "
                 "metadados. "
-                "Filtre por product (ex: 'ArchiveCenter', 'xECM', 'OTDS') "
+                "Filtre por product (ex: 'AppServer', 'DataSync', 'AdminPortal') "
                 "e/ou doc_type (ex: 'install_guide', 'release_notes', "
                 "'standard', 'training') para resultados mais precisos. "
                 "Use sempre que precisar de informações sobre instalação, "
@@ -135,8 +135,7 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "Filtrar por produto. "
-                            "Exemplos: ArchiveCenter, ContentServer, xECM,"
-                            "OTDS, WEM, AppWorks, ProcessSuite, Adobe, SAP,"
+                            "Exemplos: AppServer, DataSync, AdminPortal, Adobe, SAP,"
                             "ISO, geral"
                         ),
                     },
@@ -214,7 +213,7 @@ async def list_tools() -> list[types.Tool]:
                     "product": {
                         "type": "string",
                         "description": "Filtrar por produto "
-                        "(ex: ArchiveCenter, xECM, OTDS)",
+                        "(ex: AppServer, DataSync, AdminPortal)",
                     },
                     "doc_type": {
                         "type": "string",

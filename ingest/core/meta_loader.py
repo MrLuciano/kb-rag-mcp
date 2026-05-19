@@ -26,9 +26,9 @@ Validation:
 
 Usage:
     >>> loader = MetaLoader()
-    >>> meta = loader.load_meta(Path("/docs/xECM"))
+    >>> meta = loader.load_meta(Path("/docs/DataSync"))
     >>> overrides = loader.get_metadata(
-    ...     Path("/docs/xECM/manual.pdf"),
+    ...     Path("/docs/DataSync/manual.pdf"),
     ...     meta
     ... )
 """

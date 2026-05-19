@@ -18,7 +18,7 @@ The version filtering system automatically extracts version information from doc
 ### Key Features
 
 - **Automatic extraction**: Version detected from filename or directory path
-- **Multiple patterns**: Supports CE 24.4, v2.5, 22.3, version 16.2
+- **Multiple patterns**: Supports 3.2, v2.5, 22.3, version 16.2
 - **Priority extraction**: Filename > parent directory > grandparent directory
 - **Search filtering**: Filter results by exact version match
 - **Payload indexing**: Fast version-filtered queries
@@ -34,10 +34,10 @@ Versions are automatically extracted during ingestion:
 
 ```bash
 # Ingest documents with version in filename
-kb-rag ingest /docs/ArchiveCenter_22.3_Admin_Guide.pdf
+kb-rag ingest /docs/AppServer_3.2_Admin_Guide.pdf
 
 # Or in directory structure
-kb-rag ingest /docs/ArchiveCenter/CE\ 24.4/
+kb-rag ingest /docs/AppServer/CE\ 24.4/
 ```
 
 ### 2. Search with Version Filter
@@ -46,13 +46,13 @@ kb-rag ingest /docs/ArchiveCenter/CE\ 24.4/
 # Via MCP tool
 result = search_kb(
     query="installation steps",
-    product="ArchiveCenter",
+    product="AppServer",
     version="22.3"  # Only return 22.3 docs
 )
 
 # Or via CLI (if implemented)
 kb-rag query "installation steps" \
-    --product ArchiveCenter \
+    --product AppServer \
     --version "22.3"
 ```
 
@@ -89,21 +89,21 @@ for result in results:
 - `16.2` → `"16.2"`
 
 **Examples:**
-- `ArchiveCenter_22.3_Guide.pdf` → `"22.3"`
+- `AppServer_3.2_Guide.pdf` → `"22.3"`
 - `Manual_v22.3.pdf` → `"22.3"`
 - `/docs/22.3/manual.pdf` → `"22.3"`
 
-### Pattern 2: CE Prefix (e.g., CE 24.4)
+### Pattern 2: CE Prefix (e.g., 3.2)
 
 **Pattern:** `\bCE\s+(\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)\b`
 
 **Matches:**
-- `CE 24.4` → `"CE 24.4"`
-- `CE 24.4.1` → `"CE 24.4.1"`
+- `3.2` → `"3.2"`
+- `3.2.1` → `"3.2.1"`
 
 **Examples:**
-- `ArchiveCenter_CE_24.4_Guide.pdf` → `"CE 24.4"`
-- `/docs/CE 24.4/manual.pdf` → `"CE 24.4"`
+- `AppServer_3.2_Guide.pdf` → `"3.2"`
+- `/docs/3.2/manual.pdf` → `"3.2"`
 
 ### Pattern 3: v Prefix (e.g., v2.5)
 
@@ -114,7 +114,7 @@ for result in results:
 - `v2.5.3` → `"v2.5.3"`
 
 **Examples:**
-- `ArchiveCenter_v2.5_Guide.pdf` → `"v2.5"`
+- `AppServer_v2.5_Guide.pdf` → `"v2.5"`
 - `Manual-v2.5.pdf` → `"v2.5"`
 - `/docs/v2.5/manual.pdf` → `"v2.5"`
 
@@ -134,9 +134,9 @@ for result in results:
 
 When multiple patterns match, the **first match** is used:
 
-**Example:** `ArchiveCenter_CE_24.4_v2.5.pdf`
-- Matches: CE 24.4, v2.5, 24.4, 2.5
-- Extracted: `"CE 24.4"` (CE pattern has priority)
+**Example:** `AppServer_3.2_v2.5.pdf`
+- Matches: 3.2, v2.5, 24.4, 2.5
+- Extracted: `"3.2"` (CE pattern has priority)
 
 ---
 
@@ -166,23 +166,23 @@ Versions are searched in this order:
 ### Example 2: Parent Directory
 
 ```
-/docs/CE 24.4/manual.pdf
+/docs/3.2/manual.pdf
 ```
 
 - Filename: `manual.pdf` → no match
-- Parent: `CE 24.4` → `"CE 24.4"` ✓ (used)
+- Parent: `3.2` → `"3.2"` ✓ (used)
 - Grandparent: `docs` → no match
 
-**Result:** `version="CE 24.4"`
+**Result:** `version="3.2"`
 
 ### Example 3: Grandparent Directory
 
 ```
-/docs/22.3/ArchiveCenter/manual.pdf
+/docs/3.2/AppServer/manual.pdf
 ```
 
 - Filename: `manual.pdf` → no match
-- Parent: `ArchiveCenter` → no match
+- Parent: `AppServer` → no match
 - Grandparent: `22.3` → `"22.3"` ✓ (used)
 
 **Result:** `version="22.3"`
@@ -222,22 +222,22 @@ def search_kb(
 # Search only 22.3 docs
 results = search_kb(
     query="How do I configure SSL?",
-    product="ArchiveCenter",
+    product="AppServer",
     version="22.3",
     limit=10
 )
 
-# Search CE 24.4 docs
+# Search 3.2 docs
 results = search_kb(
     query="new features",
-    product="ArchiveCenter",
-    version="CE 24.4"
+    product="AppServer",
+    version="3.2"
 )
 
 # Search without version filter (all versions)
 results = search_kb(
     query="installation",
-    product="ArchiveCenter"
+    product="AppServer"
 )
 ```
 
@@ -264,7 +264,7 @@ from server.vector_store import VectorStore
 store = VectorStore()
 results = store.search(
     query="authentication",
-    product="ArchiveCenter",
+    product="AppServer",
     version="22.3",
     limit=10
 )
@@ -290,7 +290,7 @@ def hybrid_search(
 
 # filters dict can include version
 filters = {
-    "product": "ArchiveCenter",
+    "product": "AppServer",
     "version": "22.3"  # NEW in FASE 13
 }
 ```
@@ -304,8 +304,8 @@ hybrid = HybridSearch(vector_store)
 results = hybrid.search(
     query="performance tuning",
     filters={
-        "product": "ArchiveCenter",
-        "version": "CE 24.4"
+        "product": "AppServer",
+        "version": "3.2"
     },
     limit=10
 )
@@ -317,12 +317,12 @@ results = hybrid.search(
 
 ### Scenario 1: Multi-Version Documentation
 
-**Challenge:** Company maintains docs for versions 22.1, 22.3, 23.1, CE 24.4
+**Challenge:** Company maintains docs for versions 22.1, 22.3, 23.1, 3.2
 
 **Directory structure:**
 ```
 /docs/
-  ArchiveCenter/
+  AppServer/
     22.1/
       admin_guide.pdf
       user_guide.pdf
@@ -332,7 +332,7 @@ results = hybrid.search(
     23.1/
       admin_guide.pdf
       user_guide.pdf
-    CE 24.4/
+    3.2/
       admin_guide.pdf
       user_guide.pdf
 ```
@@ -343,18 +343,18 @@ results = hybrid.search(
 # Customer on 22.3
 search_kb(
     query="installation steps",
-    product="ArchiveCenter",
+    product="AppServer",
     version="22.3"
 )
 # Returns only 22.3 docs
 
-# Customer on CE 24.4
+# Customer on 3.2
 search_kb(
     query="installation steps",
-    product="ArchiveCenter",
-    version="CE 24.4"
+    product="AppServer",
+    version="3.2"
 )
-# Returns only CE 24.4 docs
+# Returns only 3.2 docs
 ```
 
 ### Scenario 2: Migration Planning
@@ -367,15 +367,15 @@ search_kb(
 # What's in old version?
 old_features = search_kb(
     query="authentication methods",
-    product="ArchiveCenter",
+    product="AppServer",
     version="22.3"
 )
 
 # What's in new version?
 new_features = search_kb(
     query="authentication methods",
-    product="ArchiveCenter",
-    version="CE 24.4"
+    product="AppServer",
+    version="3.2"
 )
 
 # Compare differences
@@ -391,7 +391,7 @@ new_features = search_kb(
 # Search only 23.1 docs and known issues
 search_kb(
     query="database connection timeout",
-    product="ArchiveCenter",
+    product="AppServer",
     version="23.1",
     doc_type="troubleshooting_guide"
 )
@@ -407,7 +407,7 @@ search_kb(
 # Don't specify version
 search_kb(
     query="system requirements",
-    product="ArchiveCenter"
+    product="AppServer"
 )
 # Returns docs from all versions
 ```
@@ -420,18 +420,18 @@ search_kb(
 
 **Good:**
 ```
-/docs/ArchiveCenter/22.3/
-/docs/ArchiveCenter/23.1/
-/docs/ArchiveCenter/CE 24.4/
+/docs/AppServer/22.3/
+/docs/AppServer/23.1/
+/docs/AppServer/3.2/
 ```
 
 **Why:** Clear hierarchy, version easily extracted
 
 **Bad:**
 ```
-/docs/ArchiveCenter_v22_3/
-/docs/ArchiveCenter-23point1/
-/docs/ArchiveCenter_CE_24_4/
+/docs/AppServer_3.2/
+/docs/AppServer-3.2/
+/docs/AppServer_3.2/
 ```
 
 **Why:** Inconsistent patterns, harder extraction
@@ -441,10 +441,10 @@ search_kb(
 **Good:**
 ```
 # Option A: Directory
-/docs/22.3/ArchiveCenter_Admin_Guide.pdf
+/docs/3.2/AppServer_Admin_Guide.pdf
 
 # Option B: Filename
-/docs/ArchiveCenter_22.3_Admin_Guide.pdf
+/docs/AppServer_3.2_Admin_Guide.pdf
 ```
 
 **Why:** Version clearly associated with content
@@ -452,7 +452,7 @@ search_kb(
 **Bad:**
 ```
 # Version nowhere in path
-/docs/ArchiveCenter/Admin_Guide.pdf
+/docs/AppServer/Admin_Guide.pdf
 ```
 
 **Why:** No version extracted
@@ -464,13 +464,13 @@ When searching, use **exact version string** as extracted:
 **Good:**
 ```python
 version="22.3"    # If extracted as "22.3"
-version="CE 24.4"  # If extracted as "CE 24.4"
+version="3.2"  # If extracted as "3.2"
 ```
 
 **Bad:**
 ```python
 version="22"      # Won't match "22.3"
-version="24.4"    # Won't match "CE 24.4"
+version="24.4"    # Won't match "3.2"
 ```
 
 ### 4. Check Extraction Before Searching
@@ -497,7 +497,7 @@ Then use exact strings in searches.
 # Good
 search_kb(
     query="installation",
-    product="ArchiveCenter",
+    product="AppServer",
     version="22.3"
 )
 
@@ -517,7 +517,7 @@ Version information is stored in the payload:
 ```python
 {
     "file": "/docs/22.3/manual.pdf",
-    "product": "ArchiveCenter",
+    "product": "AppServer",
     "doc_type": "admin_guide",
     "version": "22.3",  # NEW in FASE 13
     "chunk_index": 0,
@@ -567,7 +567,7 @@ results = search(query="test", version="22.3")
 # Fast: Combines multiple indexes
 results = search(
     query="test",
-    product="ArchiveCenter",  # Indexed
+    product="AppServer",  # Indexed
     doc_type="admin_guide",   # Indexed
     version="22.3"            # Indexed
 )
@@ -590,34 +590,34 @@ results = search(
 
 1. **No version in path**
    ```
-   /docs/ArchiveCenter/manual.pdf
+   /docs/AppServer/manual.pdf
    # No version anywhere
    ```
    
    **Fix:** Rename file or reorganize directory:
    ```
-   /docs/ArchiveCenter/22.3/manual.pdf
+   /docs/AppServer/22.3/manual.pdf
    ```
 
 2. **Version format not recognized**
    ```
-   ArchiveCenter_version_22-3.pdf  # Hyphen, not dot
+   AppServer_version_22-3.pdf  # Hyphen, not dot
    ```
    
    **Fix:** Use supported format:
    ```
-   ArchiveCenter_version_22.3.pdf
+   AppServer_version_22.3.pdf
    ```
 
 3. **Version too deep in hierarchy**
    ```
-   /docs/22.3/products/ArchiveCenter/guides/admin.pdf
+   /docs/22.3/products/AppServer/guides/admin.pdf
    # Version is great-grandparent, not checked
    ```
    
    **Fix:** Move version closer:
    ```
-   /docs/products/ArchiveCenter/22.3/admin.pdf
+   /docs/products/AppServer/22.3/admin.pdf
    ```
 
 ### Version Filter Returns No Results
@@ -628,13 +628,13 @@ results = search(
 
 1. **Wrong version string**
    ```python
-   # Document has version="CE 24.4"
+   # Document has version="3.2"
    search_kb(version="24.4")  # Won't match
    ```
    
    **Fix:** Use exact string:
    ```python
-   search_kb(version="CE 24.4")
+   search_kb(version="3.2")
    ```
 
 2. **Version not in collection**
@@ -651,13 +651,13 @@ results = search(
 
 3. **Case sensitivity**
    ```python
-   # Document has version="CE 24.4"
+   # Document has version="3.2"
    search_kb(version="ce 24.4")  # Won't match
    ```
    
    **Fix:** Match case exactly:
    ```python
-   search_kb(version="CE 24.4")
+   search_kb(version="3.2")
    ```
 
 ### Inconsistent Versions
@@ -667,11 +667,11 @@ results = search(
 **Example:**
 ```
 # File 1
-/docs/ArchiveCenter_22.3/manual_v23.1.pdf
+/docs/AppServer_3.2/manual_v23.1.pdf
 → version="v23.1" (filename priority)
 
 # File 2
-/docs/ArchiveCenter_22.3/guide.pdf
+/docs/AppServer_3.2/guide.pdf
 → version="22.3" (directory)
 ```
 
@@ -679,12 +679,12 @@ results = search(
 
 ```
 # Option A: All in directory
-/docs/ArchiveCenter_22.3/
+/docs/AppServer_3.2/
   manual.pdf → "22.3"
   guide.pdf  → "22.3"
 
 # Option B: All in filename
-/docs/ArchiveCenter/
+/docs/AppServer/
   manual_22.3.pdf → "22.3"
   guide_22.3.pdf  → "22.3"
 ```
@@ -739,7 +739,7 @@ all_results = []
 for version in versions:
     results = search_kb(
         query="installation",
-        product="ArchiveCenter",
+        product="AppServer",
         version=version
     )
     all_results.extend(results)
@@ -785,7 +785,7 @@ from ingest.core.version_extractor import extract_version
 version = extract_version("/docs/22.3/manual.pdf")
 print(version)  # "22.3"
 
-version = extract_version("/docs/ArchiveCenter_v2.5_Guide.pdf")
+version = extract_version("/docs/AppServer_v2.5_Guide.pdf")
 print(version)  # "v2.5"
 ```
 
@@ -815,7 +815,7 @@ version = extractor.extract_from_filename("manual_v22.3.pdf")
 print(version)  # "v22.3"
 
 # From full path with priority
-version = extractor.extract_from_path("/docs/CE 24.4/manual_v23.1.pdf")
+version = extractor.extract_from_path("/docs/3.2/manual_v23.1.pdf")
 print(version)  # "v23.1" (filename priority)
 ```
 

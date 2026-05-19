@@ -15,10 +15,10 @@ The first match is used as the version.
 
 Examples:
     >>> extractor = VersionExtractor()
-    >>> extractor.extract(Path("/docs/ArchiveCenter_22.3_Admin.pdf"))
-    "22.3"
-    >>> extractor.extract(Path("/docs/xECM/CE 24.4/manual.pdf"))
-    "CE 24.4"
+    >>> extractor.extract(Path("/docs/AppServer_32.0_Admin.pdf"))
+    "32.0"
+    >>> extractor.extract(Path("/docs/DataSync/32.0/manual.pdf"))
+    "32.0"
     >>> extractor.extract(Path("/docs/Release Notes for version 16.2.pdf"))
     "16.2"
     >>> extractor.extract(Path("/docs/file_without_version.pdf"))

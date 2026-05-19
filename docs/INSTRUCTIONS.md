@@ -215,7 +215,7 @@ Nenhuma reorganização de pastas é necessária.
 | Pasta | product |
 |---|---|
 | `Archive/` | `product_archive` |
-| `ContentServer/` | `product_content` |
+| `AppServer/` | `product_content` |
 | `ECM/` | `product_ecm` |
 | `DirectoryServices/` | `product_directory` |
 | `wem/` | `product_wem` |
@@ -309,7 +309,7 @@ CREATE TABLE files (
 python ingest/ingest.py --docs /path/to/docs
 
 # Com produto explícito (override do classifier)
-python ingest/ingest.py --docs /path --product ContentServer
+python ingest/ingest.py --docs /path --product AppServer
 
 # Arquivo único
 python ingest/ingest.py --file /path/to/doc.pdf
