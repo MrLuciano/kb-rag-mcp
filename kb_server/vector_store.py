@@ -14,6 +14,10 @@ from kb_server.embed_client import get_embed_dim
 from qdrant_client import AsyncQdrantClient  # type: ignore[import]
 from qdrant_client import models as qmodels  # type: ignore[import]
 from qdrant_client.models import Distance  # type: ignore[import]
+from qdrant_client.http.models import (  # type: ignore[import]
+    NamedSparseVector,
+    SparseVector,
+)
 from qdrant_client.models import (
     FieldCondition,
     Filter,
@@ -202,6 +206,92 @@ class VectorStore:
             }
             for r in response.points
         ]
+
+    async def search_sparse(
+        self,
+        sparse_vector: dict[int, float],
+        top_k: int = 5,
+        filter_type: str | None = None,
+        product: str | None = None,
+        doc_type: str | None = None,
+        version: str | None = None,
+        collection_name: str | None = None,
+    ) -> list[dict]:
+        """
+        BM25 sparse vector search against Qdrant.
+
+        Requires the target collection to have a sparse vector field named
+        ``"sparse"``. If the collection does not have sparse vectors (common
+        for existing collections), this method returns an empty list so the
+        caller can gracefully fall back to dense-only results.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+        if not sparse_vector:
+            return []
+
+        conditions = []
+        if filter_type:
+            conditions.append(
+                FieldCondition(
+                    key="file_type", match=MatchValue(value=filter_type)
+                )
+            )
+        if product:
+            conditions.append(
+                FieldCondition(
+                    key="product", match=MatchValue(value=product)
+                )
+            )
+        if doc_type:
+            conditions.append(
+                FieldCondition(
+                    key="doc_type", match=MatchValue(value=doc_type)
+                )
+            )
+        if version:
+            conditions.append(
+                FieldCondition(
+                    key="version", match=MatchValue(value=version)
+                )
+            )
+
+        query_filter = Filter(must=conditions) if conditions else None
+        indices = list(sparse_vector.keys())
+        values = list(sparse_vector.values())
+        named_sparse = NamedSparseVector(
+            name="sparse",
+            vector=SparseVector(indices=indices, values=values),
+        )
+
+        try:
+            response = await self.client.query_points(
+                collection_name=collection_name or self.collection,
+                query=named_sparse,
+                limit=top_k,
+                query_filter=query_filter,
+                with_payload=True,
+            )
+            return [
+                {
+                    "chunk_id": str(r.id),
+                    "score": r.score,
+                    "text": r.payload.get("text", ""),
+                    "source_file": r.payload.get("source_file", ""),
+                    "file_type": r.payload.get("file_type", ""),
+                    "product": r.payload.get("product", ""),
+                    "doc_type": r.payload.get("doc_type", "document"),
+                    "page": r.payload.get("page"),
+                    "chunk_index": r.payload.get("chunk_index"),
+                }
+                for r in response.points
+            ]
+        except Exception as e:
+            log.warning(
+                "Sparse search failed "
+                f"(collection may lack sparse index): {e}"
+            )
+            return []
 
     # ── Upsert ───────────────────────────────────────────────────────
 

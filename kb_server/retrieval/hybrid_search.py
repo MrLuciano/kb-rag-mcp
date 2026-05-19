@@ -148,29 +148,22 @@ class HybridSearcher:
             )
             return dense_results[:top_k]
         
-        # Step 3: Sparse search
-        # Note: This requires Qdrant to support sparse vectors in the collection
-        # For now, we'll implement RRF with dense results only and add TODO
-        # for full sparse search implementation when collection is migrated
-        
-        # TODO: Implement actual sparse search when collection has sparse vectors
-        # sparse_results = await vector_store.search_sparse(
-        #     sparse_vector=sparse_vector,
-        #     top_k=retrieve_k,
-        #     filter_type=filter_type,
-        #     product=product,
-        #     doc_type=doc_type,
-        # )
-        
-        # For now, use weighted dense search as placeholder
-        log.info(
-            "Sparse search not yet implemented, using dense results only"
+        # Step 3: Sparse search via Qdrant BM25 sparse vectors
+        log.info("Performing sparse (BM25) search")
+        sparse_results = await vector_store.search_sparse(
+            sparse_vector=sparse_vector,
+            top_k=retrieve_k,
+            filter_type=filter_type,
+            product=product,
+            doc_type=doc_type,
+            version=version,
         )
-        
-        # Step 4: RRF fusion (currently with dense only)
+        log.info(f"Sparse search returned {len(sparse_results)} results")
+
+        # Step 4: RRF fusion of dense and sparse results
         fused_results = self._rrf_fusion(
             dense_results=dense_results,
-            sparse_results=[],  # Empty until sparse search implemented
+            sparse_results=sparse_results,
         )
         
         return fused_results[:top_k]

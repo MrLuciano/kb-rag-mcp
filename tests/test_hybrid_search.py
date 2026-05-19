@@ -48,6 +48,57 @@ class TestHybridSearcher:
         assert len(fused) == 2
         assert fused[0]["id"] == "1"
 
+    @pytest.mark.asyncio
+    async def test_sparse_path_exercised(self, hybrid_searcher):
+        """Proves sparse search is called and RRF receives non-empty sparse results."""
+        mock_vector_store = AsyncMock()
+        dense_results = [{"id": "1", "score": 0.9, "text": "doc"}]
+        sparse_results = [{"id": "1", "score": 0.85, "text": "doc"}]
+        mock_vector_store.search = AsyncMock(return_value=dense_results)
+        mock_vector_store.search_sparse = AsyncMock(return_value=sparse_results)
+
+        sparse_vec = {42: 0.5, 99: 0.8}
+        with patch.object(
+            hybrid_searcher,
+            "generate_sparse_vector",
+            new=AsyncMock(return_value=sparse_vec),
+        ):
+            with patch.object(
+                hybrid_searcher, "_rrf_fusion", wraps=hybrid_searcher._rrf_fusion
+            ) as mock_rrf:
+                await hybrid_searcher.search(
+                    vector_store=mock_vector_store,
+                    query_vector=[0.1] * 768,
+                    query_text="test query",
+                    top_k=5,
+                )
+                mock_vector_store.search_sparse.assert_called_once()
+                call_kwargs = mock_rrf.call_args
+                assert len(call_kwargs.kwargs.get("sparse_results", [])) > 0, \
+                    "sparse_results passed to _rrf_fusion must be non-empty"
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_dense_when_sparse_empty(self, hybrid_searcher):
+        """When sparse vector is empty, only dense results are returned."""
+        mock_vector_store = AsyncMock()
+        dense_results = [{"id": "1", "score": 0.9, "text": "doc"}]
+        mock_vector_store.search = AsyncMock(return_value=dense_results)
+        mock_vector_store.search_sparse = AsyncMock(return_value=[])
+
+        with patch.object(
+            hybrid_searcher,
+            "generate_sparse_vector",
+            new=AsyncMock(return_value={}),
+        ):
+            results = await hybrid_searcher.search(
+                vector_store=mock_vector_store,
+                query_vector=[0.1] * 768,
+                query_text="test query",
+                top_k=5,
+            )
+            mock_vector_store.search_sparse.assert_not_called()
+            assert results == dense_results[:5]
+
 
 class TestHybridSearchCLI:
     @pytest.mark.asyncio
