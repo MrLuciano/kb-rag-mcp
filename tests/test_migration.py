@@ -132,3 +132,59 @@ def test_export_includes_env_template(tmp_path, monkeypatch):
     with tf.open(out_pkg, "r:gz") as tar:
         names = tar.getnames()
     assert "env.template" in names
+
+
+def test_import_restores_databases(tmp_path, monkeypatch):
+    """Import extracts DBs from package to target directory."""
+    from scripts.migrate.export import export_kb
+    from scripts.migrate.import_ import import_kb
+
+    # Create source DBs
+    meta_db = tmp_path / "src" / "kb_metadata.db"
+    meta_db.parent.mkdir()
+    meta_db.write_bytes(b"SQLite metadata original")
+
+    def fake_snapshot(qdrant_url, collection, out_dir):
+        snap = Path(out_dir) / "snapshot.snapshot"
+        snap.write_bytes(b"snap")
+        return snap
+
+    monkeypatch.setattr("scripts.migrate.export._take_qdrant_snapshot", fake_snapshot)
+
+    pkg = tmp_path / "export.tar.gz"
+    export_kb(output=pkg, metadata_db=meta_db, qdrant_url="http://localhost:6333", collection="kb_docs")
+
+    # Import to new location
+    dest_dir = tmp_path / "restore"
+    dest_dir.mkdir()
+
+    def fake_restore(qdrant_url, collection, snapshot_path):
+        pass  # skip actual Qdrant restore in unit test
+
+    monkeypatch.setattr("scripts.migrate.import_.restore_qdrant_snapshot", fake_restore)
+
+    import_kb(package=pkg, target_dir=dest_dir, qdrant_url="http://localhost:6333", collection="kb_docs")
+
+    assert (dest_dir / "kb_metadata.db").exists()
+    assert (dest_dir / "kb_metadata.db").read_bytes() == b"SQLite metadata original"
+
+
+def test_import_rejects_invalid_package(tmp_path, monkeypatch):
+    """Import raises ValueError for a corrupted package."""
+    from scripts.migrate.import_ import import_kb
+
+    bad_pkg = tmp_path / "bad.tar.gz"
+    import tarfile
+    with tarfile.open(bad_pkg, "w:gz") as tar:
+        f = tmp_path / "junk.txt"
+        f.write_text("junk")
+        tar.add(f, arcname="junk.txt")
+
+    def fake_restore(qdrant_url, collection, snapshot_path):
+        pass
+
+    monkeypatch.setattr("scripts.migrate.import_.restore_qdrant_snapshot", fake_restore)
+
+    with pytest.raises(ValueError, match="invalid"):
+        import_kb(package=bad_pkg, target_dir=tmp_path / "out",
+                  qdrant_url="http://localhost:6333", collection="kb_docs")
