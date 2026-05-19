@@ -349,3 +349,18 @@ class TestRealDeployment:
     def test_update_script(self):
         """Test update script workflow."""
         pytest.skip("Requires deployed system")
+
+
+class TestGrafanaDashboard:
+    """Test Grafana dashboard configuration."""
+
+    def test_grafana_dashboard_exists(self):
+        """Grafana dashboard JSON file must exist and be valid."""
+        import json
+        dashboard_path = Path("deployment/config/grafana-dashboard.json")
+        assert dashboard_path.exists(), "grafana-dashboard.json not found"
+        with open(dashboard_path) as f:
+            data = json.load(f)
+        assert "panels" in data, "Dashboard must have panels"
+        assert "title" in data, "Dashboard must have title"
+        assert len(data["panels"]) > 5, "Dashboard should have at least 6 panels"
