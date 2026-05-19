@@ -13,10 +13,11 @@ Qdrant, and exposes it as an MCP (Model Context Protocol) server for use by AI
 assistants such as Claude. It runs entirely on-premises: embeddings are generated
 by a local LM Studio instance, no data leaves the network.
 
-The system is designed for bare-metal deployment on Linux with systemd. It
-supports multi-format ingestion (PDF, DOCX, XLSX, PPTX, TXT, legacy Office),
-job-based async processing, LRU+Redis caching, hybrid dense+sparse search,
-cross-encoder reranking, a web UI for document browsing, query telemetry, and a
+The system is designed for bare-metal deployment on Linux with systemd or
+Kubernetes. It supports multi-format ingestion (PDF, DOCX, XLSX, PPTX, TXT,
+legacy Office, ZIP), job-based async processing, LRU+Redis caching, hybrid
+dense+sparse search, cross-encoder reranking, multi-collection routing, a web UI
+for document browsing, query telemetry, Prometheus/Grafana observability, and a
 QA evaluation pipeline.
 
 ---
@@ -35,9 +36,9 @@ QA evaluation pipeline.
   └──────┬──────┘                            │
          │ vectors + metadata                │
          ▼                                   │
-  ┌─────────────┐                            │
-  │   Qdrant    │  (local Docker)            │
-  │  vector DB  │                            │
+  ┌─────────────┐    CollectionManager       │
+  │   Qdrant    │◄── multi-collection        │
+  │  vector DB  │    routing (FASE 15)       │
   └──────┬──────┘                            │
          │ search                            │
          ▼                                   │
@@ -56,8 +57,9 @@ QA evaluation pipeline.
 **Data flow (ingest):** file scanner → classifier → chunker → embed_client →
 vector_store → Qdrant
 
-**Data flow (search):** MCP tool call → embed query → vector_store.search →
-optional hybrid (BM25+dense RRF) → optional reranker → return ranked chunks
+**Data flow (search):** MCP tool call → CollectionRouter.resolve → embed query →
+vector_store.search → optional hybrid (BM25+dense RRF) → optional reranker →
+return ranked chunks
 
 ---
 
@@ -65,8 +67,9 @@ optional hybrid (BM25+dense RRF) → optional reranker → return ranked chunks
 
 | Component | Package | Key Files | Purpose |
 |---|---|---|---|
-| MCP server | `kb_server` | `server.py` | Exposes `search_kb`, `list_kb_stats`, `get_chunk` MCP tools |
-| Vector store | `kb_server` | `vector_store.py` | Qdrant async client, search, batch insert, payload indexes |
+| MCP server | `kb_server` | `server.py` | Exposes `search_kb`, `list_documents`, `get_chunk`, `kb_stats`, `list_collections` MCP tools |
+| Collection routing | `kb_server/collections` | `manager.py`, `router.py` | CollectionManager (CRUD) + CollectionRouter (resolve/ensure), FASE 15 |
+| Vector store | `kb_server` | `vector_store.py` | Qdrant async client, search, batch insert, payload indexes, collection_name override |
 | Embed client | `kb_server` | `embed_client.py` | LM Studio / Ollama / OpenAI-compat embedding, batch, cache |
 | LRU cache | `kb_server/cache` | `lru.py`, `manager.py`, `redis.py` | In-memory LRU with optional Redis fallback |
 | Hybrid search | `kb_server/retrieval` | `hybrid_search.py` | Dense + BM25 sparse with RRF fusion |
@@ -80,8 +83,26 @@ optional hybrid (BM25+dense RRF) → optional reranker → return ranked chunks
 | Worker pool | `ingest/worker` | `pool.py`, `worker.py`, `limiter.py` | Async workers with token-bucket rate limiting |
 | Validators | `ingest/validation` | `pipeline.py`, `format.py`, `size.py`, `content.py` | Pre-ingest file validation |
 | File watcher | `ingest/watcher` | `file_watcher.py` | watchdog-based auto-ingest on file changes |
+| Migration tools | `scripts/migrate` | `export.py`, `import_.py`, `validate.py` | Export/import/validate Qdrant snapshots + env |
 | QA pipeline | `qa` | `run_qa.py`, `metrics.py`, `embedder.py`, `report.py` | End-to-end retrieval quality evaluation |
 | Evaluation | `kb_server/evaluation` | `dataset.py`, `golden_dataset.json` | Golden dataset management |
+| Grafana dashboard | `deployment/config` | `grafana-dashboard.json` | 18-panel dashboard: ingestion, workers, cache, embedding API |
+| Helm chart | `deployment/helm/kb-rag-mcp` | `Chart.yaml`, `values.yaml`, `templates/` | Kubernetes deployment (Deployment, StatefulSet, HPA, Services) |
+
+---
+
+## MCP Tools
+
+| Tool | Description | Key Parameters |
+|---|---|---|
+| `search_kb` | Semantic search over the knowledge base | `query`, `top_k`, `product`, `doc_type`, `version`, `filter_type`, `hybrid`, `rerank`, `collection` |
+| `list_documents` | List indexed documents with optional filters | `product`, `doc_type`, `filter_type`, `limit`, `collection` |
+| `get_chunk` | Return a specific chunk with context window | `chunk_id`, `context_window` |
+| `kb_stats` | Collection statistics (doc count, breakdown by product/type) | — |
+| `list_collections` | List all available Qdrant collections | — |
+
+The `collection` parameter on `search_kb` and `list_documents` is optional;
+omitting it routes to `QDRANT_COLLECTION` (default: `kb_docs`).
 
 ---
 
@@ -99,7 +120,7 @@ root — it is loaded automatically before `kb_server` is imported.
 | `EMBED_MODEL` | `text-embedding-nomic-embed-text-v1.5-embedding` | Model name |
 | `QDRANT_HOST` | `localhost` | Qdrant host |
 | `QDRANT_PORT` | `6333` | Qdrant HTTP port |
-| `QDRANT_COLLECTION` | `kb_docs` | Default collection name |
+| `QDRANT_COLLECTION` | `kb_docs` | Default collection name (multi-collection default) |
 | `SCORE_THRESHOLD` | `0.35` | Minimum relevance score for search results |
 | `MCP_TRANSPORT` | `stdio` | MCP transport: `stdio` or `sse` |
 | `LOG_PATH` | `/tmp/kb-mcp.log` | Log file path |
@@ -226,16 +247,15 @@ docker run -d -p 6333:6333 -p 6334:6334 \
   qdrant/qdrant
 ```
 
-Or via docker-compose if available in the repo.
-
 ### 3. Ingest documents
 
 ```bash
 # Ingest a directory tree
 PYTHONPATH=. python -m ingest.cli.main ingest --path /path/to/docs --product MyProduct
 
-# Or use the job system
-PYTHONPATH=. kb-rag ingest --path /path/to/docs --product MyProduct --workers 4
+# Ingest into a named collection (multi-collection, FASE 15)
+PYTHONPATH=. python -m ingest.cli.main ingest --path /path/to/docs --product MyProduct \
+  --collection custom_kb
 ```
 
 ### 4. Start the MCP server
@@ -260,6 +280,24 @@ PYTHONPATH=. python -m kb_server.ui.run_ui
 ```bash
 PYTHONPATH=. python -m kb_server.health_server
 # GET http://localhost:8081/health
+# GET http://localhost:8081/metrics  (Prometheus)
+```
+
+### Kubernetes (optional)
+
+See [KUBERNETES.md](KUBERNETES.md) for full Helm-based deployment guide.
+
+```bash
+helm install kb-rag-mcp ./deployment/helm/kb-rag-mcp
+```
+
+### Migration (backup/restore)
+
+See [MIGRATION.md](MIGRATION.md) for export/import/validate guide.
+
+```bash
+bash scripts/kb-migrate.sh export ./backup-$(date +%Y%m%d).tar.gz
+bash scripts/kb-migrate.sh import ./backup-20260518.tar.gz
 ```
 
 ---
@@ -284,15 +322,6 @@ Last run: 2026-05-18 against the ingested `kb_docs` collection.
 PYTHONPATH=. python -m qa.run_qa --eval --output ./QA_REPORT_OTCS.md
 ```
 
-### Re-run full pipeline (ingest + eval)
-
-```bash
-PYTHONPATH=. python -m qa.run_qa \
-  --otcs-path /path/to/OTCS \
-  --workers 4 \
-  --output ./QA_REPORT_OTCS.md
-```
-
 ---
 
 ## Test Suite
@@ -308,7 +337,7 @@ PYTHONPATH=. pytest --cov=kb_server --cov=ingest --cov=qa --cov-report=term-miss
 PYTHONPATH=. pytest -m "not integration"
 ```
 
-**Current status:** 224 passing, 35 failing (pre-existing, non-critical), 8 skipped  
+**Current status:** 268 passing, 19 failing (pre-existing, non-critical), 2 skipped  
 **Coverage target:** 70%+ overall, critical paths prioritized  
 **Key test files:**
 
@@ -318,10 +347,13 @@ PYTHONPATH=. pytest -m "not integration"
 | `tests/test_vector_store.py` | VectorStore search and upsert |
 | `tests/test_hybrid_search.py` | Hybrid search RRF fusion |
 | `tests/test_reranker.py` | Cross-encoder reranking |
+| `tests/test_collection_manager.py` | CollectionManager CRUD (FASE 15) |
+| `tests/test_collection_router.py` | CollectionRouter resolve/ensure (FASE 15) |
 | `tests/test_qa_metrics.py` | QA pipeline metrics (hit rate, MRR) |
 | `tests/test_job_system.py` | Job queue lifecycle |
 | `tests/test_legacy_parsers.py` | Legacy Office format extractors (.doc, .xls, .odt, etc.) |
 | `tests/test_zip_handler.py` | ZIP recursive extraction (depth, size limits) |
+| `tests/test_migration.py` | Migration export/import/validate (SHA256 manifests) |
 | `tests/e2e/` | End-to-end deployment and health workflows |
 
 ---
@@ -333,23 +365,35 @@ All planned phases are complete. See [PLAN.md](PLAN.md) for full specifications.
 | FASE | Title | Status | Key Deliverable |
 |---|---|---|---|
 | 1 | Foundation & Testing Infrastructure | ✅ Complete | pytest setup, pip-tools, type hints |
-| 1.5 | Migration Tools | ✅ Complete | export/import .tar.gz, SHA256 manifest |
+| 1.5 | Migration Tools | ✅ Complete | export/import .tar.gz, SHA256 manifest, kb-migrate.sh |
 | 2 | Job Management & Scheduler | ✅ Complete | SQLite job queue, priority scheduler |
 | 3 | Worker Pool & Rate Limiter | ✅ Complete | Async worker pool, token bucket limiter |
-| 4 | Progress Tracking & Observability | ✅ Complete | Prometheus metrics, structured logging |
+| 4 | Progress Tracking & Observability | ✅ Complete | 28 Prometheus metrics, structured logging |
 | 5 | Cache System | ✅ Complete | LRU cache, optional Redis, RAM auto-tune |
 | 6 | CLI Refactor & Job Control | ✅ Complete | Click CLI, job commands, legacy wrapper |
 | 7 | Document Validators & Quality | ✅ Complete | Format/size/content validators |
 | 8 | Connection Pooling & Batch Optimization | ✅ Complete | Batch embeddings, batch Qdrant inserts |
-| 9 | Production Hardening | ✅ Complete | systemd services, health checks, backup |
-| 10 | Documentation & Final QA | ✅ Complete | E2E tests, benchmarks, docs |
-| 11 | Expanded Ingestion | ✅ Complete | Legacy Office, ZIP recursive extraction |
-| 12 | Search Quality Enhancement | ✅ Complete | Hybrid search (BM25+dense), reranker |
+| 9 | Production Hardening | ✅ Complete | systemd services, Grafana dashboard, health checks, backup |
+| 10 | Documentation & Final QA | ✅ Complete | E2E tests, benchmarks, SECURITY.md |
+| 11 | Expanded Ingestion | ✅ Complete | Legacy Office parsers, ZIP recursive extraction |
+| 12 | Search Quality Enhancement | ✅ Complete | Hybrid search (BM25+dense), cross-encoder reranker |
 | 13 | Ingestion Automation | ✅ Complete | File watcher, version extractor, _meta.json |
 | 14 | Observability & Audit | ✅ Complete | Query logger, registry export, web UI |
-| 15 | Advanced Infrastructure | ✅ Complete | Multi-collection, Kubernetes/Helm |
+| 15 | Advanced Infrastructure | ✅ Complete | Multi-collection routing, Kubernetes/Helm chart |
 | 16 | RAG Performance & Accuracy | ✅ Complete | RAGAS pipeline, golden dataset, experiments |
 | QA | OTCS QA Pipeline | ✅ Complete | End-to-end eval, Hit Rate 100%, MRR 0.78 |
+
+---
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the full threat model, hardening checklist, and
+known limitations.
+
+**Summary:** KB-RAG-MCP is an internal, trusted-network service with no
+authentication. For production deployments exposed beyond localhost, apply the
+hardening steps in SECURITY.md (Qdrant API key, nginx auth, TLS, systemd
+sandboxing).
 
 ---
 
@@ -357,24 +401,20 @@ All planned phases are complete. See [PLAN.md](PLAN.md) for full specifications.
 
 **LM Studio must be reachable before any kb_server import**  
 `embed_client.py` reads `LMS_BASE_URL` at module import time. Load `.env` before
-importing `kb_server` — `qa/run_qa.py` does this correctly. If you write new
-entry points, follow the same pattern.
+importing `kb_server`. If you write new entry points, follow the same pattern.
 
 **QDRANT_COLLECTION must be set before VectorStore() is constructed**  
 `VectorStore.__init__` reads `QDRANT_COLLECTION` via `os.getenv`. Setting it
 after construction has no effect. Always set the env var before instantiating
 the store.
 
-**38 pre-existing test failures**  
-The failing tests are in `test_reranker.py` (requires model download) and
-`test_payload_indexes.py` (requires live Qdrant with data). They do not affect
-production behavior.
+**Pre-existing test failures (non-critical)**  
+`test_reranker.py` requires model download; `test_payload_indexes.py` requires
+live Qdrant with data. These do not affect production behavior.
 
 **QA golden dataset has 3 queries**  
-`qa/queries.json` contains 3 queries against the OTCS corpus. For a more
-rigorous evaluation, add more queries with verified chunk IDs from the ingested
-collection.
+For a more rigorous evaluation, add more queries with verified chunk IDs from the
+ingested collection to `qa/queries.json`.
 
-**No authentication**  
-The MCP server, web UI, and health endpoint have no auth. Deploy on a trusted
-internal network only.
+**No authentication by default**  
+The MCP server, web UI, and health endpoint have no auth. See [SECURITY.md](SECURITY.md).

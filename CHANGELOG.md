@@ -7,7 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added - FASE 16: RAG Performance and Accuracy (2026-05-16)
+### Added - FASE 15: Multi-Collection Routing + Kubernetes (2026-05-19)
+
+- **CollectionManager** (`kb_server/collections/manager.py`)
+  - CRUD operations: list, create, delete, exists
+  - Mirrors HNSW config and payload indexes from VectorStore
+  - Lazy import of `qdrant_client.models` inside method body (test-stub safe)
+  - 10 unit tests in `tests/test_collection_manager.py`
+
+- **CollectionRouter** (`kb_server/collections/router.py`)
+  - `resolve()` — strict mode: raises `CollectionNotFoundError` if collection absent (read paths)
+  - `ensure()` — auto-create mode for write/ingest paths
+  - 7 unit tests in `tests/test_collection_router.py`
+
+- **MCP server updates** (`kb_server/server.py`)
+  - Optional `collection=` parameter on `search_kb` and `list_documents`
+  - New `list_collections` MCP tool
+  - Backward compatible: defaults to `QDRANT_COLLECTION` env var when not specified
+  - `_search_kwargs` dict pattern avoids breaking `FakeStore` in smoke tests
+
+- **Helm chart** (`deployment/helm/kb-rag-mcp/`)
+  - `Deployment` with liveness/readiness probes
+  - `StatefulSet` for Qdrant + PVC (50 Gi default)
+  - `HorizontalPodAutoscaler` (2–10 replicas, 70% CPU target)
+  - `Services`, `ConfigMap`, `_helpers.tpl`
+  - `values.yaml` with fully configurable defaults (resources, Redis, Ingress)
+  - `ServiceMonitor` support for Prometheus Operator
+
+- **Documentation:** `docs/KUBERNETES.md` — full Kubernetes deployment guide
+
+### Added - SECURITY.md (2026-05-19)
+
+- Threat model: attack surface, trust boundaries, known vectors
+- Hardening guide: Qdrant API key, nginx auth, TLS, systemd sandboxing, secrets
+- Known limitations: internal-only design assumption explicit
+- E2E test: `TestSecurityDoc::test_security_doc_exists`
+
+### Added - Grafana Dashboard (2026-05-18)
+
+- `deployment/config/grafana-dashboard.json` — 18-panel dashboard
+  - Ingestion throughput, worker pool, cache hit rate, batch processing, latency
+- `deployment/config/grafana-provisioning/` — datasource + dashboard YAML for auto-provisioning
+
+### Added - FASE 1.5: Migration Tools (2026-05-17)
+
+- **`scripts/migrate/export.py`** — snapshots Qdrant collection + sanitized env to `migration_package/`
+- **`scripts/migrate/import_.py`** — restores with SHA256 manifest validation gate
+- **`scripts/migrate/validate.py`** — standalone manifest verifier
+- **`scripts/kb-migrate.sh`** — shell wrapper: `export | import | validate` subcommands
+- SHA256 integrity chain prevents partial/corrupt imports
+- Documentation: `docs/MIGRATION.md`
+
+### Added - FASE 11: Legacy Formats + ZIP (2026-05-17)
+
+- **`ingest/parsers/legacy_office.py`** — extractors for `.doc`, `.xls`, `.ppt`, `.odt`, `.ods`, `.odp`, `.wpd`
+  - Fallback chain: python-docx → antiword → LibreOffice CLI
+- **`ingest/parsers/zip_handler.py`** — recursive ZIP extraction up to 2 levels, 500 MB/entry limit
+- Both parsers wired into `EXT_TYPE_MAP` and `EXTRACTORS` in ingest pipeline
+- Documentation: `docs/LEGACY_FORMATS.md`
+
+
 
 - **Query Analyzer**
   - Analyzes FASE 14 query logs to identify patterns

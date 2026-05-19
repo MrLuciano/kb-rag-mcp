@@ -89,6 +89,9 @@ kb-rag-mcp/
 │   ├── server.py          # Entrypoint MCP — registra tools, roteia chamadas
 │   ├── embed_client.py    # Abstração multi-backend de embedding
 │   ├── vector_store.py    # Wrapper do Qdrant (search, upsert, list, stats)
+│   ├── collections/       # Roteamento multi-coleção (FASE 15)
+│   │   ├── manager.py     # CollectionManager — CRUD de coleções Qdrant
+│   │   └── router.py      # CollectionRouter — resolve/ensure por parâmetro
 │   ├── cache/             # Sistema de cache (LRU + Redis opcional)
 │   │   ├── lru.py         # Cache LRU com auto-tune de RAM
 │   │   ├── redis.py       # Backend Redis opcional
@@ -127,10 +130,23 @@ kb-rag-mcp/
 │   ├── .env.proxmox       # Variáveis para Proxmox LXC
 │   └── mcp-clients.json   # Configs para Claude Code e OpenCode
 ├── scripts/
+│   ├── migrate/           # Ferramentas de migração (FASE 1.5)
+│   │   ├── export.py      # Exporta snapshot Qdrant + env sanitizado
+│   │   ├── import_.py     # Importa com validação SHA256
+│   │   └── validate.py    # Valida manifesto SHA256
+│   ├── kb-migrate.sh      # Wrapper shell: export/import/validate
 │   ├── setup.sh           # Instalação de dependências por perfil
 │   ├── health_check.py    # Testa embedding + Qdrant + busca E2E
-│   ├── start-kb-rag.ps1   # Autostart WSL2 no Windows
-│   └── kb-mcp.service     # Unit systemd para Proxmox
+│   └── start-kb-rag.ps1   # Autostart WSL2 no Windows
+├── deployment/
+│   ├── systemd/           # Units systemd para bare-metal
+│   ├── config/
+│   │   ├── grafana-dashboard.json       # Dashboard Grafana 18 painéis
+│   │   └── grafana-provisioning/        # Datasource + dashboard YAML
+│   └── helm/kb-rag-mcp/  # Helm chart Kubernetes (FASE 15)
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       └── templates/     # Deployment, StatefulSet, HPA, Services, ConfigMap
 ├── tests/
 │   ├── conftest.py        # Fixtures pytest
 │   ├── test_legacy_parsers.py # Formatos legados (.doc, .xls, .odt, ...)
@@ -675,24 +691,24 @@ from kb_server.embed_client import get_embedding
 
 Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes completos.
 
-### Alta Prioridade (pendente)
+### Alta Prioridade (implementado)
 
-- [ ] **Reranking:** Cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) sobre top-20
-- [ ] **Busca híbrida:** Combinar vetorial + BM25 (Qdrant `SparseVector`)
-- [ ] **Payload indexing:** Índices em `product` e `doc_type` no Qdrant
+- [x] **Reranking:** Cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) sobre top-20 — `kb_server/retrieval/reranker.py`
+- [x] **Busca híbrida:** Dense + BM25 sparse com RRF fusion — `kb_server/retrieval/hybrid_search.py`
+- [x] **Payload indexing:** Índices em `product`, `doc_type`, `source` no Qdrant
 
-### Média Prioridade (pendente)
+### Média Prioridade (implementado)
 
-- [ ] **File watcher:** `watchdog` para ingestão automática
-- [ ] **Versão no payload:** Extrair versão do produto (ex: `22.3`, `CE 24.4`)
-- [ ] **_meta.json por pasta:** Override de product/doc_type sem mover arquivos
+- [x] **File watcher:** `watchdog` para ingestão automática — `ingest/watcher/file_watcher.py`
+- [x] **Versão no payload:** Extração de versão do produto (ex: `22.3`, `CE 24.4`) — `ingest/core/version_extractor.py`
+- [x] **_meta.json por pasta:** Override de product/doc_type sem mover arquivos
 
-### Baixa Prioridade (pendente)
+### Baixa Prioridade (implementado)
 
-- [ ] **UI de inspeção:** FastAPI + HTMX para navegação/testes
-- [ ] **Métricas de uso:** Logar queries, docs retornados, scores
-- [ ] **Múltiplas coleções (FASE 15):** Coleção por produto ou contexto + Kubernetes/Helm
-- [ ] **Export do registry:** CSV/JSON para auditoria
+- [x] **UI de inspeção:** FastAPI + HTMX para navegação/testes — `kb_server/ui/`
+- [x] **Métricas de uso:** Query logger SQLite 90 dias — `kb_server/telemetry/`
+- [x] **Múltiplas coleções (FASE 15):** `CollectionManager` + `CollectionRouter` + tool `list_collections` + Kubernetes/Helm
+- [x] **Export do registry:** CSV/JSON para auditoria — `ingest/cli/export.py`
 
 ---
 

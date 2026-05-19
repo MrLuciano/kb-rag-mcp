@@ -57,6 +57,9 @@ kb-rag-mcp/
 │   ├── server.py          # Entrypoint MCP — registra tools, roteia calls
 │   ├── embed_client.py    # Abstração de embedding (multi-backend)
 │   ├── vector_store.py    # Abstração Qdrant (search, upsert, list, stats)
+│   ├── collections/       # Multi-collection routing (FASE 15)
+│   │   ├── manager.py     # CollectionManager — CRUD de coleções Qdrant
+│   │   └── router.py      # CollectionRouter — resolve/ensure por parâmetro
 │   ├── cache/             # LRU cache + Redis opcional
 │   ├── retrieval/         # Hybrid search (BM25+dense RRF) + reranker
 │   ├── ui/                # Web UI FastAPI+HTMX
@@ -78,15 +81,28 @@ kb-rag-mcp/
 │   └── queries.json       # Dataset de queries para avaliação
 ├── observability/
 │   └── metrics.py         # 28 métricas Prometheus (kb_* prefix)
+├── scripts/
+│   ├── migrate/           # Ferramentas de migração (FASE 1.5)
+│   │   ├── export.py      # Exporta snapshot Qdrant + env sanitizado
+│   │   ├── import_.py     # Importa com validação SHA256
+│   │   └── validate.py    # Valida manifesto SHA256
+│   ├── kb-migrate.sh      # Wrapper shell: export/import/validate
+│   ├── setup.sh           # Instalação de dependências por perfil
+│   ├── health_check.py    # Testa embedding + Qdrant + busca end-to-end
+│   └── start-kb-rag.ps1   # Autostart WSL2 no Windows (PowerShell)
+├── deployment/
+│   ├── systemd/           # Units systemd para bare-metal
+│   ├── config/
+│   │   ├── grafana-dashboard.json          # Dashboard Grafana 18 painéis
+│   │   └── grafana-provisioning/           # Datasource + dashboard YAML
+│   └── helm/kb-rag-mcp/   # Helm chart Kubernetes (FASE 15)
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       └── templates/     # Deployment, StatefulSet, HPA, Services, ConfigMap
 ├── config/
 │   ├── .env.gaming        # Variáveis para gaming machine
 │   ├── .env.proxmox       # Variáveis para Proxmox LXC
 │   └── mcp-clients.json   # Configs prontas para Claude Code e OpenCode
-├── scripts/
-│   ├── setup.sh           # Instalação de dependências por perfil
-│   ├── health_check.py    # Testa embedding + Qdrant + busca end-to-end
-│   ├── start-kb-rag.ps1   # Autostart WSL2 no Windows (PowerShell)
-│   └── kb-mcp.service     # Unit systemd para Proxmox
 ├── docs/
 │   ├── REFERENCE.md       # Referência técnica principal
 │   ├── INSTRUCTIONS.md    # Este arquivo (inglês)
@@ -837,14 +853,20 @@ class MetaLoader:
 
 ---
 
-#### Múltiplas coleções (FASE 15)
-**Solução resumida:**
-- `CollectionManager` em `server/collections/manager.py`
-- Naming: `kb_docs_{product}` ou `kb_docs_{context}`
-- Parâmetro `collection` no `search_kb` (opcional)
-- Env var `DEFAULT_COLLECTION=kb_docs`
+#### ✅ Múltiplas coleções (FASE 15 — implementado)
+**Solução implementada:**
+- `CollectionManager` em `kb_server/collections/manager.py` — CRUD (list/create/delete/exists)
+  - Espelha HNSW config e payload indexes do VectorStore
+- `CollectionRouter` em `kb_server/collections/router.py`
+  - `resolve()` — estrito, lança `CollectionNotFoundError` se coleção não existe (paths de leitura)
+  - `ensure()` — cria automaticamente se não existe (paths de ingestão)
+- Parâmetro opcional `collection` em `search_kb` e `list_documents`
+- Nova MCP tool: `list_collections` — lista todas as coleções disponíveis
+- Backward compatible: sem `collection` roteia para `QDRANT_COLLECTION` (padrão `kb_docs`)
 
-**Arquivos:** `server/collections/{manager.py, router.py}`
+**Arquivos:** `kb_server/collections/{__init__.py, manager.py, router.py}`,
+              `kb_server/server.py` (modificado), `kb_server/vector_store.py` (modificado)
+**Testes:** `tests/test_collection_manager.py` (10 testes), `tests/test_collection_router.py` (7 testes)
 
 ---
 
@@ -858,15 +880,20 @@ class MetaLoader:
 
 ---
 
-#### Kubernetes support (FASE 15)
-**Solução resumida:**
-- Helm chart em `deployment/kubernetes/kb-rag/`
-- 4 deployments: server, health, scheduler, qdrant (StatefulSet)
-- ConfigMap para env vars, Secret para API keys
-- HPA opcional, PVC para SQLite/Qdrant
-- Liveness/Readiness probes
+#### ✅ Kubernetes support (FASE 15 — implementado)
+**Solução implementada:**
+- Helm chart em `deployment/helm/kb-rag-mcp/`
+  - `Deployment` para kb-server com liveness/readiness probes
+  - `StatefulSet` para Qdrant + PVC (50 Gi padrão)
+  - `HorizontalPodAutoscaler` (2–10 réplicas, target 70% CPU)
+  - `Services` para kb-server e Qdrant
+  - `ConfigMap` para env vars
+  - `_helpers.tpl` com macros de labels
+- `values.yaml` com defaults configuráveis (réplicas, recursos, Redis opcional, Ingress)
+- Suporte a `ServiceMonitor` para Prometheus Operator
 
-**Arquivos:** `deployment/kubernetes/kb-rag/{Chart.yaml, values.yaml, templates/}`
+**Arquivos:** `deployment/helm/kb-rag-mcp/{Chart.yaml, values.yaml, templates/}`
+**Docs:** `docs/KUBERNETES.md`
 
 ---
 

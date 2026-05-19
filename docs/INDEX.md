@@ -9,10 +9,11 @@
 - [README.md](../README.md) — Quick start, installation, usage
 - [REFERENCE.md](REFERENCE.md) — **Living reference: architecture, components, config, ops, QA results**
 - [TESTING.md](TESTING.md) — Testing strategy and guidelines
+- [CHANGELOG.md](CHANGELOG.md) — Release history and per-FASE change log
 
 ## Technical Reference
 
-- [INSTRUCTIONS.md](INSTRUCTIONS.md) — Complete technical instructions
+- [INSTRUCTIONS.md](INSTRUCTIONS.md) — Complete technical instructions (EN)
 - [INSTRUCTIONS.pt-BR.md](INSTRUCTIONS.pt-BR.md) — Instruções técnicas completas (PT-BR)
 - [PLAN.md](PLAN.md) — Implementation roadmap (all 16 FASEs + QA pipeline)
 
@@ -25,7 +26,11 @@
 - [QUERY_ANALYSIS.md](QUERY_ANALYSIS.md) — Query telemetry and analysis
 - [RAG_EVALUATION.md](RAG_EVALUATION.md) — RAGAS pipeline, golden dataset, metrics
 - [WEB_UI.md](WEB_UI.md) — Web UI for document browsing and search testing
-- [OPERATIONS.md](OPERATIONS.md) — systemd services, backup, monitoring
+- [LEGACY_FORMATS.md](LEGACY_FORMATS.md) — Legacy Office (.doc/.xls/.ppt) and ZIP extraction rules
+- [MIGRATION.md](MIGRATION.md) — Export, import, and validate knowledge base backups
+- [OPERATIONS.md](OPERATIONS.md) — systemd services, backup, Prometheus, Grafana monitoring
+- [KUBERNETES.md](KUBERNETES.md) — Kubernetes deployment guide (Helm chart, multi-collection)
+- [SECURITY.md](SECURITY.md) — Threat model, hardening checklist, known limitations
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Common issues and fixes
 
 ## Historical Archive
@@ -64,8 +69,8 @@ FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
 
 | Metric | Value |
 |---|---|
-| **Tests passing** | 252 |
-| **Tests failing** | 38 (pre-existing, non-critical) |
+| **Tests passing** | 268 |
+| **Tests failing** | 19 (pre-existing, non-critical) |
 | **Coverage target** | 70%+ overall |
 | **Phases completed** | 16 + QA pipeline |
 | **QA Hit Rate** | 100% (OTCS corpus) |
@@ -88,3 +93,4 @@ FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
 **Understanding a past decision?**
 1. Check [PLAN.md](PLAN.md) for the FASE spec
 2. Check [archive/](archive/) for the completion report
+3. Check [CHANGELOG.md](CHANGELOG.md) for the commit history
