@@ -5,16 +5,21 @@ Embedding client com suporte a múltiplos backends:
   - lmstudio-rest  → REST API própria do LM Studio: POST /api/v0/embeddings
   - openai-compat  → API compatível OpenAI: POST /v1/embeddings
                      RECOMENDADO para LM Studio remoto (outro IP na rede)
-  - ollama         → Ollama nativo (recomendado para Proxmox/Linux)
+  - ollama         → Ollama native (recommended for LXC Server / Linux)
 
 Selecione via variável de ambiente EMBED_BACKEND.
 
 IMPORTANTE — URLs esperadas por backend:
-  lmstudio-sdk:   LMS_HOST=192.168.1.177  LMS_PORT=1234  (sem path)
-  lmstudio-rest:  LMS_BASE_URL=http://192.168.1.177:1234  (sem /api ou /v*)
-  openai-compat:  LMS_BASE_URL=http://192.168.1.177:1234  (sem /v1)
+  lmstudio-sdk:   LMS_HOST=<LM_STUDIO_HOST>  LMS_PORT=1234  (sem path)
+  lmstudio-rest:  LMS_BASE_URL=http://<LM_STUDIO_HOST>:1234  (sem /api ou /v*)
+  openai-compat:  LMS_BASE_URL=http://<LM_STUDIO_HOST>:1234  (sem /v1)
   ollama:         OLLAMA_HOST=http://localhost:11434
 """
+
+# Recommended embedding models (via LM Studio or Ollama):
+#   - nomic-embed-text v1.5  — balanced, multilingual, MIT license (768-dim)
+#   - mxbai-embed-large-v1   — fast on CPU, MTEB top-10 (1024-dim)
+#   - bge-m3                 — best quality, dense+sparse unified (1024-dim)
 
 import asyncio
 import logging
@@ -37,7 +42,7 @@ MODEL = os.getenv(
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
 # LMS_BASE_URL: aceita qualquer forma que o usuário colocar e normaliza
-# ex: http://192.168.1.177:1234/api/v1  →  http://192.168.1.177:1234
+# e.g.: http://<LM_STUDIO_HOST>:1234/api/v1  →  http://<LM_STUDIO_HOST>:1234
 _raw_lms_url = os.getenv("LMS_BASE_URL", "http://localhost:1234")
 LMS_BASE_URL = re.sub(r"/(api/v\d+|v\d+)/?$", "", _raw_lms_url).rstrip("/")
 
@@ -235,7 +240,7 @@ async def _embed_openai_compat_batch(
 
 
 async def _embed_ollama(text: str) -> list[float]:
-    """Ollama nativo — ideal para Proxmox/Linux sem GPU."""
+    """Ollama native — ideal for LXC Server / Linux without GPU."""
     client = await _http()
     resp = await client.post(
         f"{OLLAMA_URL}/api/embeddings",
