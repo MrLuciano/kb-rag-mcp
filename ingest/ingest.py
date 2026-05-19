@@ -409,7 +409,7 @@ async def run_ingest(
     sync: bool = False,
 ):
     """Executa a ingestão completa ou de um arquivo específico."""
-    from ingest.registry import IngestRegistry
+    from ingest.core.metadata import IngestRegistry
     from kb_server.vector_store import VectorStore
 
     store = VectorStore()
@@ -512,7 +512,7 @@ def cmd_status(args):
     """Exibe relatório do registry sem rodar ingestão."""
     import datetime
 
-    from ingest.registry import IngestRegistry
+    from ingest.core.metadata import IngestRegistry
 
     registry = IngestRegistry()
     registry.connect()

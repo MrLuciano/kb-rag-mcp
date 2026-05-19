@@ -270,12 +270,22 @@ class BatchDocumentProcessor:
         
         # Step 4: Update registry for successful files
         try:
+            from ingest.core.metadata import IngestRegistry
+
+            seen: set[Path] = set()
             for chunk in all_chunks:
                 file_path = chunk.file_path
-                # Mark file as indexed
+                if file_path in seen:
+                    continue
+                seen.add(file_path)
+                _checksum = IngestRegistry.sha256(file_path)
+                _chunks = sum(
+                    1 for c in all_chunks if c.file_path == file_path
+                )
                 self.registry.mark_indexed(
                     str(file_path.relative_to(docs_root)),
-                    checksum="batch",  # TODO: compute actual checksum
+                    checksum=_checksum,
+                    chunks=_chunks,
                 )
         except Exception as e:
             log.warning(f"Registry update failed: {e}")
