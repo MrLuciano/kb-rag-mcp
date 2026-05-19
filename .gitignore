@@ -59,3 +59,4 @@ Thumbs.db
 
 # QA fixtures (do not track PDFs)
 qa/fixtures/*.pdf
+QA_REPORT*.md
