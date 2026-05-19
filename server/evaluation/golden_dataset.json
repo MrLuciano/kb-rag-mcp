@@ -1,101 +1,101 @@
 [
   {
-    "query": "How to install AppServer on Linux?",
-    "expected_answer": "Install prerequisites (Java 17+, PostgreSQL 14+), extract archive to /opt/appserver, run install.sh, configure database connection in config/db.properties, then start with systemctl start appserver.",
-    "expected_docs": ["AppServer_3.2_Install_Guide.pdf"],
+    "query": "How to install ArchiveCenter on Linux?",
+    "expected_answer": "Install prerequisites (Java 11+, PostgreSQL), extract archive to /opt/archivecenter, run install.sh, configure database connection in config.properties",
+    "expected_docs": ["ArchiveCenter_23.4_Install_Guide.pdf"],
     "metadata": {
-      "product": "AppServer",
-      "version": "3.2",
+      "product": "ArchiveCenter",
+      "version": "23.4",
       "doc_type": "install_guide"
     }
   },
   {
-    "query": "What are the minimum hardware requirements for AppServer?",
-    "expected_answer": "Minimum: 4 CPU cores, 8 GB RAM, 100 GB disk. Recommended: 8+ cores, 16 GB RAM, 500 GB SSD.",
-    "expected_docs": ["AppServer_3.2_System_Requirements.pdf"],
+    "query": "What are the hardware requirements for xECM?",
+    "expected_answer": "Minimum: 4 CPU cores, 16GB RAM, 500GB disk. Recommended: 8+ cores, 32GB+ RAM, 1TB+ SSD",
+    "expected_docs": ["xECM_System_Requirements.pdf"],
     "metadata": {
-      "product": "AppServer",
-      "version": "3.2",
+      "product": "xECM",
+      "version": "23.4",
       "doc_type": "overview"
     }
   },
   {
-    "query": "How to configure SSL for AppServer?",
-    "expected_answer": "Generate a keystore with keytool, update server.xml with an SSL connector pointing to the keystore file, set keystorePass, and restart the service.",
-    "expected_docs": ["AppServer_3.2_Admin_Guide.pdf"],
+    "query": "How to configure SSL for OTDS?",
+    "expected_answer": "Generate keystore with keytool, update server.xml with SSL connector, set keystoreFile and keystorePass, restart service",
+    "expected_docs": ["OTDS_Admin_Guide_Security.pdf"],
     "metadata": {
-      "product": "AppServer",
-      "version": "3.2",
+      "product": "OTDS",
+      "version": "23.4",
       "doc_type": "admin_guide"
     }
   },
   {
-    "query": "How to perform a silent installation of AppServer?",
-    "expected_answer": "Create a response file (response.properties) with all required parameters, then run: ./install.sh --silent --response-file response.properties",
-    "expected_docs": ["AppServer_3.2_Install_Guide.pdf"],
+    "query": "What is the command to start the Full Text (OTF) service?",
+    "expected_answer": "The command is 'otf-service-control.sh start'",
+    "expected_docs": ["Content_Suite_Full_Text_Admin_Guide.pdf"],
     "metadata": {
-      "product": "AppServer",
-      "version": "3.2",
+      "product": "ContentSuite",
+      "version": "23.4",
+      "doc_type": "admin_guide"
+    }
+  },
+  {
+    "query": "How to create a new user in Content Server?",
+    "expected_answer": "In Content Server Administration, go to User & Group Management > Users, and click 'Add User'. Fill in the details and assign a license.",
+    "expected_docs": ["Content_Server_Admin_Guide.pdf"],
+    "metadata": {
+      "product": "ContentSuite",
+      "version": "23.4",
+      "doc_type": "admin_guide"
+    }
+  },
+  {
+    "query": "What is the default port for Archive Center Web GUI?",
+    "expected_answer": "The default port for the Archive Center Web Client is 8080.",
+    "expected_docs": ["ArchiveCenter_23.4_Install_Guide.pdf"],
+    "metadata": {
+      "product": "ArchiveCenter",
+      "version": "23.4",
       "doc_type": "install_guide"
     }
   },
   {
-    "query": "How to configure DataSync connection pools?",
-    "expected_answer": "In datasync.properties, set pool.min=5, pool.max=50, pool.timeout=30000. Restart the DataSync service after changes.",
-    "expected_docs": ["DataSync_3.2_Admin_Guide.pdf"],
+    "query": "How to enable debug logging for xECM?",
+    "expected_answer": "In the xecm-server.properties file, set 'log.level.com.opentext.xecm=DEBUG' and restart the application server.",
+    "expected_docs": ["xECM_Admin_Guide.pdf"],
     "metadata": {
-      "product": "DataSync",
-      "version": "3.2",
+      "product": "xECM",
+      "version": "23.4",
       "doc_type": "admin_guide"
     }
   },
   {
-    "query": "What database versions does DataSync 3.2 support?",
-    "expected_answer": "DataSync 3.2 supports PostgreSQL 13–15, MySQL 8.0, Oracle 19c and 21c, and Microsoft SQL Server 2019 and 2022.",
-    "expected_docs": ["DataSync_3.2_Release_Notes.pdf"],
+    "query": "Which database versions are supported by OTDS 23.4?",
+    "expected_answer": "OTDS 23.4 supports PostgreSQL 13-15, Oracle 19c and 21c, and Microsoft SQL Server 2019 and 2022.",
+    "expected_docs": ["OTDS_Release_Notes_23.4.pdf"],
     "metadata": {
-      "product": "DataSync",
-      "version": "3.2",
+      "product": "OTDS",
+      "version": "23.4",
       "doc_type": "release_notes"
     }
   },
   {
-    "query": "How to enable debug logging in DataSync?",
-    "expected_answer": "In datasync-logging.xml, set the root logger level to DEBUG. For component-level logging, add a logger entry: <logger name='com.example.datasync' level='DEBUG'/>. Restart to apply.",
-    "expected_docs": ["DataSync_3.2_Admin_Guide.pdf"],
+    "query": "How to perform a silent installation of Content Server?",
+    "expected_answer": "Use a response file (response.properties) with the command 'setup.sh -f response.properties'.",
+    "expected_docs": ["Content_Server_Install_Guide.pdf"],
     "metadata": {
-      "product": "DataSync",
-      "version": "3.2",
-      "doc_type": "admin_guide"
-    }
-  },
-  {
-    "query": "How to create a new admin user in AdminPortal?",
-    "expected_answer": "Navigate to Settings > User Management > Users, click 'Add User', fill in the required fields, assign the 'admin' role, and click Save.",
-    "expected_docs": ["AdminPortal_3.2_User_Guide.pdf"],
-    "metadata": {
-      "product": "AdminPortal",
-      "version": "3.2",
-      "doc_type": "admin_guide"
-    }
-  },
-  {
-    "query": "What is the default port for the AdminPortal web interface?",
-    "expected_answer": "AdminPortal listens on port 8080 by default. To change it, update the 'server.port' property in application.properties and restart the service.",
-    "expected_docs": ["AdminPortal_3.2_Install_Guide.pdf"],
-    "metadata": {
-      "product": "AdminPortal",
-      "version": "3.2",
+      "product": "ContentSuite",
+      "version": "23.4",
       "doc_type": "install_guide"
     }
   },
   {
-    "query": "How to back up AdminPortal configuration?",
-    "expected_answer": "Run the built-in export tool: ./adminportal-cli.sh export-config --output /backup/adminportal-config-$(date +%Y%m%d).zip. Schedule with cron for automated backups.",
-    "expected_docs": ["AdminPortal_3.2_Admin_Guide.pdf"],
+    "query": "What is the purpose of the 're-index' command in the full-text system?",
+    "expected_answer": "The 're-index' command is used to rebuild the search index from scratch. This is necessary after major configuration changes or to recover from index corruption.",
+    "expected_docs": ["Content_Suite_Full_Text_Admin_Guide.pdf"],
     "metadata": {
-      "product": "AdminPortal",
-      "version": "3.2",
+      "product": "ContentSuite",
+      "version": "23.4",
       "doc_type": "admin_guide"
     }
   }
