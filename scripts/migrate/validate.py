@@ -9,6 +9,7 @@ Checks:
 """
 import hashlib
 import json
+import os
 import tarfile
 import tempfile
 from pathlib import Path
@@ -35,7 +36,11 @@ def validate_package(package_path: Path) -> dict:
         tmp_path = Path(tmp)
         try:
             with tarfile.open(package_path, "r:gz") as tar:
-                tar.extractall(tmp_path)
+                safe_members = [
+                    m for m in tar.getmembers()
+                    if not os.path.isabs(m.name) and ".." not in m.name
+                ]
+                tar.extractall(tmp_path, members=safe_members)
         except Exception as e:
             return {"valid": False, "errors": [f"Extraction failed: {e}"], "files": []}
 

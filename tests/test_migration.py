@@ -21,11 +21,6 @@ def _make_fake_package(tmp_path: Path) -> Path:
         digest = hashlib.sha256(f.read_bytes()).hexdigest()
         manifest[f.name] = digest
     (pkg_dir / "manifest.json").write_text(json.dumps(manifest))
-    # Add manifest itself
-    manifest["manifest.json"] = hashlib.sha256(
-        (pkg_dir / "manifest.json").read_bytes()
-    ).hexdigest()
-    (pkg_dir / "manifest.json").write_text(json.dumps(manifest))
 
     pkg_path = tmp_path / "test.tar.gz"
     with tarfile.open(pkg_path, "w:gz") as tar:
