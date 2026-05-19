@@ -66,26 +66,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CLEAN-01 | — | Pending |
-| CLEAN-02 | — | Pending |
-| CLEAN-03 | — | Pending |
-| CLEAN-04 | — | Pending |
-| CLEAN-05 | — | Pending |
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| TEST-04 | — | Pending |
-| DEPL-01 | — | Pending |
-| DEPL-02 | — | Pending |
-| DEPL-03 | — | Pending |
+| CLEAN-01 | Phase 1 | Pending |
+| CLEAN-02 | Phase 1 | Pending |
+| CLEAN-03 | Phase 1 | Pending |
+| CLEAN-04 | Phase 1 | Pending |
+| CLEAN-05 | Phase 1 | Pending |
+| DATA-01 | Phase 2 | Pending |
+| DATA-02 | Phase 2 | Pending |
+| DATA-03 | Phase 2 | Pending |
+| TEST-01 | Phase 3 | Pending |
+| TEST-02 | Phase 3 | Pending |
+| TEST-03 | Phase 3 | Pending |
+| TEST-04 | Phase 3 | Pending |
+| DEPL-01 | Phase 4 | Pending |
+| DEPL-02 | Phase 4 | Pending |
+| DEPL-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 15 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 15 ⚠️
+- Mapped to phases: 15 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-19*
