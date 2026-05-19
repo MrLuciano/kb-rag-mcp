@@ -32,7 +32,7 @@
 ## 1. Visão Geral
 
 Servidor MCP (Model Context Protocol) que expõe busca semântica sobre base de conhecimento local
-de ~7 GB+ de documentação técnica de produtos (OpenText ECM/EIM) e padrões (ISO 15489, LGPD).
+de documentação técnica e manuais de produtos.
 
 O servidor é consumido por **Claude Code** e **OpenCode** via protocolo MCP, permitindo que LLMs
 recuperem automaticamente trechos relevantes de documentação durante tarefas de desenvolvimento.
@@ -62,17 +62,17 @@ Métricas Prometheus + Logging Estruturado
 
 ## 2. Ambientes de Execução
 
-### Gaming Machine (Primária)
+### Local Machine (Primary)
 
-- **Hardware:** AMD Ryzen 7 8845HS, 32 GB RAM, iGPU Radeon 780M (RDNA 3)
+- **Hardware:** Local machine with GPU or iGPU
 - **OS:** Windows 11 Pro
 - **Embedding:** LM Studio no Windows com aceleração Vulkan
 - **Servidor MCP:** Python no WSL2 (Ubuntu 24.04)
 - **Vector Store:** Qdrant em Docker no WSL2
-- **Acesso:** LM Studio via `http://192.168.1.177:1234` (IP fixo LAN)
+- **Acesso:** LM Studio via `http://<LM_STUDIO_HOST>:1234` (IP fixo LAN)
 - **Transport:** stdio via `wsl.exe` invocado pelo Claude Code no Windows
 
-### Proxmox LXC (Secundária / Always-On)
+### LXC Server (Secondary / Always-On)
 
 - **Hardware:** LXC Ubuntu 24.04, 6 vCPU, 8-12 GB RAM, CPU only
 - **Embedding:** Ollama local (`nomic-embed-text`)
@@ -126,8 +126,8 @@ kb-rag-mcp/
 │   ├── metrics.py         # Hit rate, MRR, p50_score
 │   └── queries.json       # Dataset de queries para avaliação
 ├── config/
-│   ├── .env.gaming        # Variáveis para gaming machine
-│   ├── .env.proxmox       # Variáveis para Proxmox LXC
+│   ├── .env.local         # Variáveis para local machine
+│   ├── .env.lxc           # Variáveis para LXC Server
 │   └── mcp-clients.json   # Configs para Claude Code e OpenCode
 ├── scripts/
 │   ├── migrate/           # Ferramentas de migração (FASE 1.5)
@@ -163,7 +163,7 @@ kb-rag-mcp/
 ├── requirements.in        # Dependências top-level
 ├── requirements.txt       # Dependências pinadas (pip-compile)
 ├── pyproject.toml         # Config black/isort/mypy/pytest
-└── .env                   # Config ativa (cópia de .env.gaming ou .env.proxmox)
+└── .env                   # Config ativa (cópia de .env.local ou .env.lxc)
 ```
 
 ---
@@ -201,7 +201,7 @@ O código normaliza `LMS_BASE_URL` removendo path final:
 
 \`\`\`python
 LMS_BASE_URL = re.sub(r"/(api/v\d+|v\d+)/?$", "", raw_url).rstrip("/")
-# "http://192.168.1.177:1234/api/v1" → "http://192.168.1.177:1234"
+# "http://<LM_STUDIO_HOST>:1234/api/v1" → "http://<LM_STUDIO_HOST>:1234"
 \`\`\`
 
 Cada backend adiciona o path correto:
@@ -613,8 +613,8 @@ Ver `requirements.in` para dependências top-level legíveis.
 - psutil>=5.9.0 (para auto-tuning de RAM)
 
 **Embedding:**
-- lmstudio>=1.0.0 (gaming machine)
-- ollama>=0.2.0 (opcional, servidor)
+- lmstudio>=1.0.0 (local machine with LM Studio)
+- ollama>=0.2.0 (opcional, lxc server)
 
 **Extratores:**
 - python-docx, openpyxl, python-pptx, pymupdf, docling (opcional)
@@ -716,7 +716,7 @@ Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes completos.
 
 \`\`\`bash
 # Setup inicial
-bash scripts/setup.sh gaming       # ou proxmox
+bash scripts/setup.sh local        # ou lxc
 python scripts/health_check.py
 
 # Ingestão
@@ -727,12 +727,12 @@ python ingest/ingest.py --status --list
 # Servidor (teste manual)
 python kb_server/server.py
 
-# Gaming machine — autostart
+# Local machine — autostart
 pwsh scripts/start-kb-rag.ps1
 pwsh scripts/start-kb-rag.ps1 -Status
 pwsh scripts/start-kb-rag.ps1 -Stop
 
-# Proxmox — systemd
+# LXC Server — systemd
 sudo systemctl status kb-mcp
 sudo journalctl -u kb-mcp -f
 
@@ -749,19 +749,11 @@ curl http://localhost:9090/metrics | grep kb_
 
 ## 17. Contexto de Negócio
 
-A KB contém documentação de produtos **OpenText ECM/EIM**:
+A KB pode conter qualquer documentação técnica. Nomes de produtos e tipos de documentos são classificados automaticamente via metadados.
 
-- **Archive Center** — Servidor de arquivamento (10.x até 24.x)
-- **Content Server** — Repositório de conteúdo empresarial
-- **Extended ECM (xECM)** — ECM integrado com SAP
-- **OTDS** — OpenText Directory Services (auth/authz)
-- **WEM** — Web Experience Management
-- **AppWorks / Process Suite** — BPM e automação
-- **Adobe Sign / DocuSign** — Assinatura eletrônica
-- **Padrões:** ISO 15489, LGPD
-
-**Objetivo:** Apoiar engenheiros e consultores que trabalham com esses produtos,
-usando LLMs (Claude Code) para acelerar desenvolvimento, configuração e troubleshooting.
+**Objetivo:** Apoiar engenheiros e consultores no dia a dia de
+desenvolvimento, configuração e troubleshooting, usando LLMs (Claude Code)
+para acelerar o trabalho.
 
 ---
 

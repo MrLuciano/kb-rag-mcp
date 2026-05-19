@@ -8,7 +8,7 @@
 ## 1. Visão Geral
 
 Servidor MCP (Model Context Protocol) que expõe busca semântica sobre uma knowledge base local
-de ~7 GB de documentação técnica de produtos OpenText e padrões como ISO 15489.
+de documentação técnica e manuais de produtos.
 
 O servidor é consumido por **Claude Code** e **OpenCode** via protocolo MCP, permitindo que o
 LLM recupere automaticamente trechos relevantes de documentação durante tarefas de desenvolvimento.
@@ -32,16 +32,16 @@ Claude Code / OpenCode
 
 ## 2. Ambiente de Execução
 
-### Gaming Machine (primária)
-- **Hardware:** AMD Ryzen 7 8845HS, 32 GB RAM, iGPU Radeon 780M (RDNA 3)
+### Local Machine (primary)
+- **Hardware:** Local machine with GPU or iGPU
 - **OS:** Windows 11 Pro
 - **Embedding:** LM Studio rodando no Windows nativo com aceleração Vulkan
 - **Servidor MCP:** Python no WSL2 (Ubuntu 24.04)
 - **Vector store:** Qdrant em Docker no WSL2
-- **Acesso:** LM Studio acessível via `http://192.168.1.177:1234` (IP fixo na rede local)
+- **Acesso:** LM Studio acessível via `http://<LM_STUDIO_HOST>:1234` (IP fixo na rede local)
 - **Transport MCP:** stdio via `wsl.exe` invocado pelo Claude Code no Windows
 
-### Proxmox LXC (secundário / always-on)
+### LXC Server (secondary / always-on)
 - **Hardware:** LXC Ubuntu 24.04, 6 vCPU, 8–12 GB RAM, CPU only
 - **Embedding:** Ollama local (`nomic-embed-text`)
 - **Transport MCP:** SSE em `http://<ip-lxc>:8765/sse`
@@ -100,8 +100,8 @@ kb-rag-mcp/
 │       ├── values.yaml
 │       └── templates/     # Deployment, StatefulSet, HPA, Services, ConfigMap
 ├── config/
-│   ├── .env.gaming        # Variáveis para gaming machine
-│   ├── .env.proxmox       # Variáveis para Proxmox LXC
+│   ├── .env.local         # Variáveis para local machine
+│   ├── .env.lxc           # Variáveis para LXC Server
 │   └── mcp-clients.json   # Configs prontas para Claude Code e OpenCode
 ├── docs/
 │   ├── REFERENCE.md       # Referência técnica principal
@@ -113,7 +113,7 @@ kb-rag-mcp/
 │   └── registry.db        # SQLite — gerado automaticamente na primeira ingestão
 ├── docker-compose.yml     # Qdrant
 ├── requirements.txt
-└── .env                   # Cópia ativa de .env.gaming ou .env.proxmox
+└── .env                   # Cópia ativa de .env.local ou .env.lxc
 ```
 
 ---
@@ -146,8 +146,8 @@ que leia `os.getenv()` — padrão crítico mantido em todos os entrypoints.
 O código normaliza `LMS_BASE_URL` removendo qualquer path final:
 ```python
 LMS_BASE_URL = re.sub(r"/(api/v\d+|v\d+)/?$", "", raw_url).rstrip("/")
-# "http://192.168.1.177:1234/api/v1"  →  "http://192.168.1.177:1234"
-# "http://192.168.1.177:1234/v1"      →  "http://192.168.1.177:1234"
+# "http://<LM_STUDIO_HOST>:1234/api/v1"  →  "http://<LM_STUDIO_HOST>:1234"
+# "http://<LM_STUDIO_HOST>:1234/v1"      →  "http://<LM_STUDIO_HOST>:1234"
 ```
 Cada backend então adiciona o path correto:
 - `openai-compat` → `{LMS_BASE_URL}/v1/embeddings`
@@ -165,7 +165,7 @@ Busca semântica principal. Parâmetros:
 |---|---|---|---|
 | `query` | string | ✓ | Pergunta ou termo |
 | `top_k` | integer | — | Resultados (1–20, padrão: 5) |
-| `product` | string | — | Filtro: `ArchiveCenter`, `ContentServer`, `xECM`, `OTDS`, `WEM`, `AppWorks`, `ProcessSuite`, `Adobe`, `SAP`, `ISO`, `geral` |
+| `product` | string | — | Filtro de produto (inferido pelo classifier) |
 | `doc_type` | string | — | Filtro: ver taxonomia abaixo |
 | `filter_type` | string | — | Formato do arquivo: `pdf`, `docx`, `xlsx`, `pptx`, `txt`, `code` |
 
@@ -214,13 +214,13 @@ Nenhuma reorganização de pastas é necessária.
 
 | Pasta | product |
 |---|---|
-| `Archive/` | `ArchiveCenter` |
-| `ContentServer/` | `ContentServer` |
-| `xECM/` | `xECM` |
-| `OTDS/` | `OTDS` |
-| `wem/` | `WEM` |
+| `Archive/` | `product_archive` |
+| `ContentServer/` | `product_content` |
+| `ECM/` | `product_ecm` |
+| `DirectoryServices/` | `product_directory` |
+| `wem/` | `product_wem` |
 | `Adobe/` | `Adobe` |
-| `ReccordsManagement/` | `RecordsManagement` |
+| `RecordsManagement/` | `RecordsManagement` |
 | `varios/`, raiz | `geral` |
 
 Produtos também são inferidos do nome do arquivo quando o arquivo está em `varios/` ou na raiz.
@@ -309,7 +309,7 @@ CREATE TABLE files (
 python ingest/ingest.py --docs /path/to/docs
 
 # Com produto explícito (override do classifier)
-python ingest/ingest.py --docs /path --product ArchiveCenter
+python ingest/ingest.py --docs /path --product ContentServer
 
 # Arquivo único
 python ingest/ingest.py --file /path/to/doc.pdf
@@ -336,7 +336,7 @@ python ingest/ingest.py --status --list     # lista todos
 
 ## 8. Configuração dos Clientes MCP
 
-### Claude Code — Gaming Machine (WSL2)
+### Claude Code — Local Machine (WSL2)
 
 Arquivo: `%APPDATA%\Claude\claude_desktop_config.json`
 
@@ -356,7 +356,7 @@ Arquivo: `%APPDATA%\Claude\claude_desktop_config.json`
 }
 ```
 
-### Claude Code — Proxmox (SSE)
+### Claude Code — LXC Server (SSE)
 
 Arquivo: `~/.claude/settings.json`
 
@@ -364,7 +364,7 @@ Arquivo: `~/.claude/settings.json`
 {
   "mcpServers": {
     "kb-rag": {
-      "url": "http://192.168.1.200:8765/sse"
+      "url": "http://<LXC_SERVER_HOST>:8765/sse"
     }
   }
 }
@@ -399,8 +399,8 @@ httpx>=0.27.0
 python-dotenv>=1.0.0
 
 # Embedding (instalar conforme backend)
-lmstudio>=1.0.0             # gaming machine — SDK nativo
-# ollama>=0.2.0             # proxmox
+lmstudio>=1.0.0             # lmstudio>=1.0.0 (local machine with LM Studio)
+# ollama>=0.2.0             # lxc server
 
 # Extratores
 python-docx>=1.1.0
@@ -716,8 +716,8 @@ class VersionExtractor:
 ```
 
 **Testes:**
-- `"ArchiveCenter_22.3_Admin_Guide.pdf"` → `"22.3"`
-- `"/docs/xECM/CE 24.4/manual.pdf"` → `"CE 24.4"`
+- `"ProductName_22.3_Admin_Guide.pdf"` → `"22.3"`
+- `"/docs/ecm/CE 24.4/manual.pdf"` → `"CE 24.4"`
 - `"Release Notes for version 16.2"` → `"16.2"`
 - Arquivo sem versão → `None`
 
@@ -916,8 +916,8 @@ class MetaLoader:
 
 ```bash
 # Setup inicial
-bash scripts/setup.sh gaming        # gaming machine
-bash scripts/setup.sh proxmox       # Proxmox LXC
+bash scripts/setup.sh local         # local machine
+bash scripts/setup.sh lxc           # LXC Server
 
 # Verificar saúde dos componentes
 python scripts/health_check.py
@@ -933,12 +933,12 @@ python ingest/ingest.py --status --list
 # Iniciar servidor (teste manual)
 python kb_server/server.py
 
-# Gaming machine — autostart
+# Local machine — autostart
 pwsh scripts/start-kb-rag.ps1
 pwsh scripts/start-kb-rag.ps1 -Status
 pwsh scripts/start-kb-rag.ps1 -Stop
 
-# Proxmox — systemd
+# LXC Server — systemd
 sudo systemctl status kb-mcp
 sudo journalctl -u kb-mcp -f
 
@@ -952,21 +952,12 @@ curl http://localhost:6333/collections  # lista coleções
 
 ## 13. Contexto de Negócio
 
-A KB contém documentação técnica de produtos **OpenText** (ECM/EIM):
-
-- **Archive Center** — servidor de arquivamento, múltiplas versões (10.x até 24.x)
-- **Content Server** — repositório de conteúdo empresarial
-- **Extended ECM (xECM)** — ECM integrado com SAP e outras plataformas
-- **OTDS** — OpenText Directory Services (autenticação/autorização)
-- **WEM** — Web Experience Management
-- **AppWorks / Process Suite** — BPM e automação de processos
-- **Adobe Sign / DocuSign** — assinatura eletrônica
-- **Padrões:** ISO 15489 (gestão de documentos), LGPD
+A KB pode conter qualquer documentação técnica. Nomes de produtos e tipos de documentos são classificados automaticamente via metadados.
 
 Documentos incluem: guias de administração e instalação, release notes, upgrade guides,
-guias de configuração de cenários, APIs, materiais de treinamento (VILT), apresentações,
-case studies, normas ISO e artefatos de release.
+guias de configuração de cenários, APIs, materiais de treinamento, apresentações,
+case studies, normas e artefatos de release.
 
-O objetivo principal é apoiar **engenheiros e consultores** que trabalham com esses produtos
-no dia a dia de desenvolvimento, configuração e troubleshooting, usando LLMs como Claude Code
+O objetivo principal é apoiar **engenheiros e consultores** no dia a dia de
+desenvolvimento, configuração e troubleshooting, usando LLMs como Claude Code
 para acelerar o trabalho.
