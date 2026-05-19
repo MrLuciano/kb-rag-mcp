@@ -242,6 +242,32 @@ curl http://localhost:8000/metrics
 # - kb_rag_filesystem_free_bytes
 ```
 
+### Grafana Dashboard
+
+**Import manually:**
+1. Open Grafana UI → Dashboards → Import
+2. Upload `deployment/config/grafana-dashboard.json`
+3. Select your Prometheus datasource
+4. Click Import
+
+**Provision automatically (Grafana 7+):**
+```bash
+# Copy provisioning configs to Grafana
+sudo cp deployment/config/grafana-provisioning/datasources/prometheus.yaml \
+  /etc/grafana/provisioning/datasources/
+sudo cp deployment/config/grafana-provisioning/dashboards/kb-rag.yaml \
+  /etc/grafana/provisioning/dashboards/
+sudo cp deployment/config/grafana-dashboard.json \
+  /etc/grafana/provisioning/dashboards/
+sudo systemctl restart grafana-server
+```
+
+**Dashboard panels (18 total, 4 sections):**
+- **Ingestion Overview:** jobs created, active jobs, files processed, chunks generated, job duration p50/p95/p99, files/s rate
+- **Workers & Rate Limiter:** pool utilization gauge, pool size/queue, token bucket tokens/waits
+- **Embedding API & Batch:** latency p50/p95, throughput chunks/s, embedding batches/s
+- **Cache:** hit rate gauge, hits/misses/evictions, cache size bytes/entries
+
 ---
 
 ## Common Tasks
