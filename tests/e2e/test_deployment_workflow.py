@@ -364,3 +364,16 @@ class TestGrafanaDashboard:
         assert "panels" in data, "Dashboard must have panels"
         assert "title" in data, "Dashboard must have title"
         assert len(data["panels"]) > 5, "Dashboard should have at least 6 panels"
+
+
+class TestSecurityDoc:
+    """Test security documentation exists and covers required topics."""
+
+    def test_security_doc_exists(self):
+        """SECURITY.md must exist and cover key topics."""
+        security_path = Path("docs/SECURITY.md")
+        assert security_path.exists(), "docs/SECURITY.md not found"
+        content = security_path.read_text()
+        for topic in ["threat", "authentication", "network", "hardening"]:
+            assert topic.lower() in content.lower(), \
+                f"SECURITY.md should cover '{topic}'"
