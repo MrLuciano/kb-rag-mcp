@@ -11,14 +11,8 @@ import click
 
 # Load .env before any imports that need env vars
 _project_root = Path(__file__).parent.parent.parent
-_env_file = _project_root / ".env"
-try:
-    from dotenv import load_dotenv
-
-    if _env_file.exists():
-        load_dotenv(_env_file, override=True)
-except ImportError:
-    pass
+from config.bootstrap_env import bootstrap_env
+bootstrap_env()
 
 # Add server/ to path for imports
 sys.path.insert(0, str(_project_root / "server"))

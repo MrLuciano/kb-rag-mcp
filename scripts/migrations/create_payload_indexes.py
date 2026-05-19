@@ -24,14 +24,12 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from dotenv import load_dotenv
+from config.bootstrap_env import bootstrap_env
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import PayloadSchemaType
 
 # Load .env
-env_file = Path(__file__).parent.parent.parent / ".env"
-if env_file.exists():
-    load_dotenv(env_file, override=True)
+bootstrap_env()
 
 # Configure logging
 logging.basicConfig(

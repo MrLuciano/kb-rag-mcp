@@ -21,25 +21,9 @@ import uuid
 from pathlib import Path
 
 # ── CRÍTICO: carrega o .env ANTES de qualquer import que leia variáveis ──────
-# Procura o .env na raiz do projeto (um nível acima de ingest/)
 _project_root = Path(__file__).parent.parent
-_env_file = _project_root / ".env"
-try:
-    from dotenv import load_dotenv
-
-    if _env_file.exists():
-        load_dotenv(_env_file, override=True)
-        # Confirma silenciosamente que carregou
-    else:
-        print(f"[WARN] .env não encontrado em {_env_file}", file=sys.stderr)
-except ImportError:
-    print(
-        (
-            "[WARN] python-dotenv não instalado."
-            " Instale: pip install python-dotenv"
-        ),
-        file=sys.stderr,
-    )
+from config.bootstrap_env import bootstrap_env
+bootstrap_env()
 
 # Agora adiciona o server/ ao path para imports de embed_client e vector_store
 sys.path.insert(0, str(_project_root / "server"))

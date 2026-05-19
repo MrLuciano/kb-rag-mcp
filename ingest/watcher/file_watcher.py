@@ -239,10 +239,8 @@ def main():
     )
 
     # Load environment
-    from dotenv import load_dotenv
-
-    env_path = Path(__file__).parent.parent.parent / ".env"
-    load_dotenv(env_path, override=True)
+    from config.bootstrap_env import bootstrap_env
+    bootstrap_env()
 
     # Get configuration
     watch_path = os.getenv("WATCH_PATH") or os.getenv("DOCS_PATH")

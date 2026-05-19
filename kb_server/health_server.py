@@ -15,14 +15,8 @@ import sys
 from pathlib import Path
 
 # ── Load .env before any os.getenv
-try:
-    from dotenv import load_dotenv
-
-    _env = Path(__file__).parent.parent / ".env"
-    if _env.exists():
-        load_dotenv(_env, override=True)
-except ImportError:
-    pass
+from config.bootstrap_env import bootstrap_env
+bootstrap_env()
 
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse

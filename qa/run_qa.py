@@ -6,13 +6,8 @@ import logging
 from pathlib import Path
 
 # Load .env FIRST — before any kb_server import reads env vars at module level
-_env_file = Path(__file__).parent.parent / ".env"
-if _env_file.exists():
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(_env_file, override=True)
-    except ImportError:
-        pass
+from config.bootstrap_env import bootstrap_env
+bootstrap_env()
 
 # IMPORTANT: Import kb_server package AFTER .env is loaded, and before any
 # mcp imports, to prevent mcp's 'server' submodule from shadowing ours.

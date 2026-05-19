@@ -10,17 +10,13 @@ import asyncio
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
+from config.bootstrap_env import bootstrap_env
 
 # ── Carrega .env ANTES de qualquer import que leia os.getenv ─────────
 _project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(_project_root / "server"))
 
-_env_file = _project_root / ".env"
-if _env_file.exists():
-    load_dotenv(_env_file, override=True)
-else:
-    print(f"[WARN] .env não encontrado em {_env_file}", file=sys.stderr)
+bootstrap_env()
 
 
 async def check_embedding():
