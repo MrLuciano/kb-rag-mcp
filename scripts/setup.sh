@@ -4,12 +4,12 @@
 # Execute uma vez após clonar o projeto.
 #
 # Uso:
-#   bash scripts/setup.sh gaming    # gaming machine (WSL2 + LM Studio)
-#   bash scripts/setup.sh proxmox   # Proxmox LXC (Ollama)
+#   bash scripts/setup.sh local    # local machine (WSL2 + LM Studio)
+#   bash scripts/setup.sh lxc      # LXC Server (Ollama)
 # ──────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
-PROFILE="${1:-gaming}"
+PROFILE="${1:-local}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "================================================"
@@ -28,7 +28,7 @@ pip install -r "$PROJECT_ROOT/requirements.txt" --quiet
 
 # ── Dependências específicas por perfil ───────────────────────────────────────
 echo "[3/5] Configurando perfil: $PROFILE"
-if [ "$PROFILE" = "proxmox" ]; then
+if [ "$PROFILE" = "lxc" ]; then
     pip install ollama --quiet
     # Instala Ollama se não existir
     if ! command -v ollama &>/dev/null; then
@@ -37,7 +37,7 @@ if [ "$PROFILE" = "proxmox" ]; then
     fi
     echo "  Baixando modelo de embedding nomic-embed-text..."
     ollama pull nomic-embed-text || true
-elif [ "$PROFILE" = "gaming" ]; then
+elif [ "$PROFILE" = "local" ]; then
     echo "  → Certifique-se de que o LM Studio está rodando no Windows"
     echo "  → Carregue o modelo nomic-embed-text-v1.5 no LM Studio"
     echo "  → Inicie o servidor local (porta 1234)"
