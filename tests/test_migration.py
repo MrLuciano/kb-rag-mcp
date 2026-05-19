@@ -117,7 +117,7 @@ def test_export_includes_env_template(tmp_path, monkeypatch):
 
     # Create a fake .env file in tmp_path
     env_file = tmp_path / ".env"
-    env_file.write_text("LMS_BASE_URL=http://192.168.1.177:1234\nQDRANT_COLLECTION=kb_docs\n")
+    env_file.write_text("LMS_BASE_URL=http://<LM_STUDIO_HOST>:1234\nQDRANT_COLLECTION=kb_docs\n")
 
     out_pkg = tmp_path / "export.tar.gz"
     export_kb(

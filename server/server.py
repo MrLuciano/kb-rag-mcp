@@ -103,7 +103,7 @@ async def list_tools() -> list[types.Tool]:
             name="search_kb",
             description=(
                 "Busca semântica na knowledge base local de documentação "
-                "de produtos OpenText e padrões técnicos. "
+                "de documentação técnica e padrões. "
                 "Retorna os chunks mais relevantes com score, fonte e "
                 "metadados. "
                 "Filtre por product (ex: 'ArchiveCenter', 'xECM', 'OTDS') "
