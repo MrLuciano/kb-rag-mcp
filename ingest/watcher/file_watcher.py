@@ -32,7 +32,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 from threading import Timer
-from typing import Callable
+from typing import Callable, Optional
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -113,6 +113,7 @@ class DocWatcher(FileSystemEventHandler):
         docs_path: Path,
         debounce_seconds: int = 30,
         ignore_patterns: list[str] | None = None,
+        delete_handler: Optional[Callable[[str], None]] = None,
     ):
         """
         Initialize document watcher.
@@ -129,6 +130,7 @@ class DocWatcher(FileSystemEventHandler):
         self.ignore_patterns = (
             ignore_patterns if ignore_patterns else self.IGNORE_PATTERNS
         )
+        self.delete_handler = delete_handler
         log.info(
             f"DocWatcher initialized for {docs_path} "
             f"(debounce={debounce_seconds}s, "
@@ -183,13 +185,19 @@ class DocWatcher(FileSystemEventHandler):
         )
 
     def on_deleted(self, event):
-        """Handle file deletion."""
+        """Handle file deletion — remove vectors from Qdrant."""
         if self.should_ignore(event.src_path):
             return
-
         log.info(f"File deleted: {event.src_path}")
-        # TODO: Implement deletion from Qdrant (future phase)
-        # For now, just log the deletion
+        if self.delete_handler is not None:
+            try:
+                self.delete_handler(event.src_path)
+            except Exception as e:
+                log.error(
+                    f"Failed to handle deletion for "
+                    f"{event.src_path}: {e}",
+                    exc_info=True,
+                )
 
     def _trigger_ingestion(self, path: str, events: list[str]):
         """
@@ -266,10 +274,35 @@ def main():
     # Initialize components
     from ingest.core.metadata import MetadataStore
     from ingest.job.manager import JobManager
+    from kb_server.vector_store import VectorStore
+    from ingest.core.metadata import IngestRegistry
+    import asyncio
 
     db_path = Path(os.getenv("KB_METADATA_DB", "kb_metadata.db"))
     store = MetadataStore(db_path)
     job_manager = JobManager(store)
+
+    vector_store = VectorStore()
+    asyncio.run(vector_store.connect())
+
+    registry = IngestRegistry()
+    registry.connect()
+
+    def _delete_handler(src_path: str) -> None:
+        try:
+            rel_path = str(Path(src_path).relative_to(watch_path))
+        except ValueError:
+            log.warning(
+                f"Could not derive relative path for {src_path}, "
+                f"using absolute path"
+            )
+            rel_path = src_path
+        try:
+            asyncio.run(vector_store.delete_document(rel_path))
+            registry.mark_deleted(rel_path)
+            log.info(f"Deleted vectors + registry entry: {rel_path}")
+        except Exception as e:
+            log.error(f"Deletion cleanup failed for {rel_path}: {e}")
 
     # Create handler
     handler = DocWatcher(
@@ -277,6 +310,7 @@ def main():
         docs_path=watch_path,
         debounce_seconds=debounce_seconds,
         ignore_patterns=ignore_patterns or None,
+        delete_handler=_delete_handler,
     )
 
     # Start observer

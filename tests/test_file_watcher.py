@@ -153,20 +153,69 @@ class TestDocWatcher:
 
         job_manager.create_job.assert_called_once()
 
-    def test_on_deleted_logs_only(self, watcher, job_manager):
-        """File deletion should only log (deletion not implemented)."""
+    def test_on_deleted_no_handler(self, job_manager, docs_path):
+        """on_deleted with no handler set is a no-op."""
+        watcher = DocWatcher(
+            job_manager, docs_path=docs_path, debounce_seconds=0.1
+        )
         event = Mock()
         event.src_path = "/path/test.pdf"
-
-        # Mock is_dir to return False
         with patch.object(Path, "is_dir", return_value=False):
-            # Mock suffix to return .pdf
-            with patch.object(Path, "suffix", new_callable=lambda: property(lambda self: ".pdf")):
-                watcher.on_deleted(event)
-                time.sleep(0.05)
-
-        # Should not create job for deletion
+            watcher.on_deleted(event)  # must not raise
         job_manager.create_job.assert_not_called()
+
+    def test_on_deleted_with_handler_calls_callback(
+        self, job_manager, docs_path, tmp_path
+    ):
+        """on_deleted calls delete_handler with the file path."""
+        handler = Mock()
+        watcher = DocWatcher(
+            job_manager,
+            docs_path=docs_path,
+            debounce_seconds=0.1,
+            delete_handler=handler,
+        )
+        test_file = tmp_path / "doc.pdf"
+        test_file.write_text("content")
+        event = Mock()
+        event.src_path = str(test_file)
+        with patch.object(Path, "is_dir", return_value=False):
+            watcher.on_deleted(event)
+        handler.assert_called_once_with(str(test_file))
+
+    def test_on_deleted_ignored_file_skips_handler(
+        self, job_manager, docs_path
+    ):
+        """on_deleted does not call handler for ignored files."""
+        handler = Mock()
+        watcher = DocWatcher(
+            job_manager,
+            docs_path=docs_path,
+            debounce_seconds=0.1,
+            delete_handler=handler,
+        )
+        event = Mock()
+        event.src_path = "/path/file.tmp"
+        watcher.on_deleted(event)
+        handler.assert_not_called()
+
+    def test_on_deleted_handler_exception_does_not_propagate(
+        self, job_manager, docs_path, tmp_path
+    ):
+        """Exceptions in delete_handler are caught and logged."""
+        handler = Mock(side_effect=Exception("qdrant unavailable"))
+        watcher = DocWatcher(
+            job_manager,
+            docs_path=docs_path,
+            debounce_seconds=0.1,
+            delete_handler=handler,
+        )
+        test_file = tmp_path / "doc.pdf"
+        test_file.write_text("content")
+        event = Mock()
+        event.src_path = str(test_file)
+        with patch.object(Path, "is_dir", return_value=False):
+            watcher.on_deleted(event)  # must NOT raise
 
     def test_debounce_batches_changes(self, watcher, job_manager, tmp_path):
         """Multiple changes within window create single job."""
