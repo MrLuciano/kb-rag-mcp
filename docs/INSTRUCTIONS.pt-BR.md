@@ -83,35 +83,45 @@ Métricas Prometheus + Logging Estruturado
 
 ## 3. Estrutura de Arquivos
 
-\`\`\`
+```
 kb-rag-mcp/
-├── server/
+├── kb_server/
 │   ├── server.py          # Entrypoint MCP — registra tools, roteia chamadas
 │   ├── embed_client.py    # Abstração multi-backend de embedding
 │   ├── vector_store.py    # Wrapper do Qdrant (search, upsert, list, stats)
-│   └── cache/             # Sistema de cache (FASE 5)
-│       ├── lru.py         # Cache LRU com auto-tune de RAM
-│       ├── redis.py       # Backend Redis opcional
-│       └── manager.py     # Interface unificada
+│   ├── cache/             # Sistema de cache (LRU + Redis opcional)
+│   │   ├── lru.py         # Cache LRU com auto-tune de RAM
+│   │   ├── redis.py       # Backend Redis opcional
+│   │   └── manager.py     # Interface unificada
+│   ├── retrieval/         # Busca híbrida (BM25+dense RRF) + reranker
+│   ├── ui/                # Web UI FastAPI+HTMX
+│   └── telemetry/         # Query logger SQLite (90 dias de retenção)
 ├── ingest/
 │   ├── ingest.py          # Pipeline de ingestão — CLI principal
 │   ├── classifier.py      # Classificação product/doc_type via regex
-│   ├── registry.py        # Controle de estado (SQLite v1 — legado)
+│   ├── registry.py        # Controle de estado (SQLite)
+│   ├── parsers/
+│   │   ├── legacy_office.py  # .doc, .xls, .ppt, .odt, .ods, .odp, .wpd
+│   │   └── zip_handler.py    # Extração recursiva de arquivos ZIP
 │   ├── core/
 │   │   └── metadata.py    # Schema v2 (jobs, job_progress, files)
-│   ├── job/               # Sistema de jobs (FASE 2)
+│   ├── job/               # Sistema de jobs SQLite com prioridades
 │   │   ├── models.py      # Dataclasses Job/JobStatus/JobPriority
 │   │   ├── manager.py     # JobManager (CRUD + lifecycle)
 │   │   └── scheduler.py   # Scheduler com prioridades
-│   └── worker/            # Pool de workers (FASE 3)
+│   └── worker/            # Pool async + rate limiter token bucket
 │       ├── limiter.py     # Rate limiter (token bucket)
 │       ├── worker.py      # FileWorker com retry logic
 │       ├── pool.py        # WorkerPool assíncrono
 │       └── executor.py    # JobExecutor (scheduler + workers)
-├── observability/         # Observabilidade (FASE 4)
+├── observability/
 │   ├── logging.py         # Logging estruturado (JSON)
-│   ├── metrics.py         # Métricas Prometheus (15 métricas)
+│   ├── metrics.py         # 28 métricas Prometheus (kb_* prefix)
 │   └── progress.py        # Progress tracking com ETA
+├── qa/
+│   ├── run_qa.py          # Pipeline de avaliação QA
+│   ├── metrics.py         # Hit rate, MRR, p50_score
+│   └── queries.json       # Dataset de queries para avaliação
 ├── config/
 │   ├── .env.gaming        # Variáveis para gaming machine
 │   ├── .env.proxmox       # Variáveis para Proxmox LXC
@@ -122,23 +132,23 @@ kb-rag-mcp/
 │   ├── start-kb-rag.ps1   # Autostart WSL2 no Windows
 │   └── kb-mcp.service     # Unit systemd para Proxmox
 ├── tests/
-│   ├── conftest.py        # Fixtures pytest (FASE 1)
-│   ├── test_job_system.py # 34 testes do sistema de jobs
-│   └── test_worker_system.py # 23 testes do worker pool
+│   ├── conftest.py        # Fixtures pytest
+│   ├── test_legacy_parsers.py # Formatos legados (.doc, .xls, .odt, ...)
+│   ├── test_zip_handler.py    # Extração ZIP (profundidade, tamanho)
+│   └── e2e/               # Testes end-to-end
 ├── docs/
-│   ├── TESTING.md         # Estratégia de testes
-│   ├── PLAN.md            # Roadmap de 12 fases
-│   ├── FASE1_COMPLETION.md → FASE5_COMPLETION.md  # Relatórios
-│   └── INSTRUCTIONS.md    # Este documento (versão EN)
+│   ├── REFERENCE.md       # Referência técnica principal
+│   ├── LEGACY_FORMATS.md  # Formatos legados e regras ZIP
+│   ├── PLAN.md            # Roadmap de 16+ fases
+│   └── INSTRUCTIONS.pt-BR.md  # Este documento
 ├── data/
 │   └── kb_metadata.db     # SQLite v2 (jobs + files)
 ├── docker-compose.yml     # Qdrant
 ├── requirements.in        # Dependências top-level
 ├── requirements.txt       # Dependências pinadas (pip-compile)
 ├── pyproject.toml         # Config black/isort/mypy/pytest
-├── .flake8                # Config flake8
 └── .env                   # Config ativa (cópia de .env.gaming ou .env.proxmox)
-\`\`\`
+```
 
 ---
 
@@ -262,11 +272,21 @@ Inferida automaticamente por `ingest/classifier.py` via regex no nome do arquivo
 | file_type | Extensões | Biblioteca | Fallback |
 |-----------|-----------|------------|----------|
 | `pdf` | .pdf | docling | PyMuPDF (fitz) |
-| `docx` | .docx, .doc | python-docx | — |
-| `xlsx` | .xlsx, .xls | openpyxl | — |
-| `pptx` | .pptx, .ppt | python-pptx | — |
+| `docx` | .docx | python-docx | — |
+| `doc` | .doc | docx2txt | python-docx |
+| `xlsx` | .xlsx | openpyxl | — |
+| `xls` | .xls | xlrd | — |
+| `pptx` | .pptx | python-pptx | — |
+| `ppt` | .ppt | python-pptx (best-effort) | — (falha com binary .ppt) |
+| `odt` | .odt | odfpy | — |
+| `ods` | .ods | odfpy | — |
+| `odp` | .odp | odfpy | — |
+| `wpd` | .wpd | heuristic latin-1 | — (qualidade baixa) |
 | `txt` | .txt, .md, .rst | built-in | — |
 | `code` | .py .ts .js .java .go ... | built-in | — |
+| `zip` | .zip | stdlib zipfile (recursivo) | — (máx 2 níveis, 500 MB/entry) |
+
+Veja [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes sobre formatos legados e extração ZIP.
 
 ### Configurações de Chunking
 
@@ -538,8 +558,8 @@ auto_mb = max(100, min(4096, available_mb // 10))  # 10% da RAM
 
 **Integração com embed_client.py:**
 \`\`\`python
-from server.cache import CacheManager
-from server.embed_client import init_cache
+from kb_server.cache import CacheManager
+from kb_server.embed_client import init_cache
 from observability.metrics import MetricsCollector
 
 metrics = MetricsCollector()
@@ -626,7 +646,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 
 # Só depois:
-from server.embed_client import get_embedding
+from kb_server.embed_client import get_embedding
 \`\`\`
 
 **Razão:** `embed_client.py` e `vector_store.py` leem `os.getenv()` no nível de módulo.
@@ -647,24 +667,31 @@ from server.embed_client import get_embedding
 
 ## 15. Melhorias Planejadas
 
-### Alta Prioridade
+### ✅ Implementado (FASE 11)
+
+- **Formatos legados:** `.doc` (docx2txt), `.xls` (xlrd), `.ppt` (python-pptx),
+  `.odt`/`.ods`/`.odp` (odfpy), `.wpd` (heurístico) — `ingest/parsers/legacy_office.py`
+- **Extração ZIP:** Recursiva até 2 níveis, 500 MB/entry limit — `ingest/parsers/zip_handler.py`
+
+Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes completos.
+
+### Alta Prioridade (pendente)
 
 - [ ] **Reranking:** Cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) sobre top-20
 - [ ] **Busca híbrida:** Combinar vetorial + BM25 (Qdrant `SparseVector`)
 - [ ] **Payload indexing:** Índices em `product` e `doc_type` no Qdrant
 
-### Média Prioridade
+### Média Prioridade (pendente)
 
 - [ ] **File watcher:** `watchdog` para ingestão automática
-- [ ] **Suporte a ZIP:** Extrair e ingerir conteúdo de .zip
 - [ ] **Versão no payload:** Extrair versão do produto (ex: `22.3`, `CE 24.4`)
 - [ ] **_meta.json por pasta:** Override de product/doc_type sem mover arquivos
 
-### Baixa Prioridade
+### Baixa Prioridade (pendente)
 
 - [ ] **UI de inspeção:** FastAPI + HTMX para navegação/testes
 - [ ] **Métricas de uso:** Logar queries, docs retornados, scores
-- [ ] **Múltiplas coleções:** Coleção por produto ou contexto
+- [ ] **Múltiplas coleções (FASE 15):** Coleção por produto ou contexto + Kubernetes/Helm
 - [ ] **Export do registry:** CSV/JSON para auditoria
 
 ---
@@ -682,7 +709,7 @@ python ingest/ingest.py --docs /caminho/docs
 python ingest/ingest.py --status --list
 
 # Servidor (teste manual)
-python server/server.py
+python kb_server/server.py
 
 # Gaming machine — autostart
 pwsh scripts/start-kb-rag.ps1
@@ -722,5 +749,5 @@ usando LLMs (Claude Code) para acelerar desenvolvimento, configuração e troubl
 
 ---
 
-**Última atualização:** 2026-05-15  
-**Versão:** 2.0 (FASE 1-5 completas)
+**Última atualização:** 2026-05-18  
+**Versão:** 3.0 (FASE 1-11 completas — formatos legados e ZIP implementados)

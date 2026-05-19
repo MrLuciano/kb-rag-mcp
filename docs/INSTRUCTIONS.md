@@ -16,7 +16,7 @@ LLM recupere automaticamente trechos relevantes de documentação durante tarefa
 ### Fluxo de dados
 
 ```
-Documentos locais (PDF, DOCX, XLSX, PPTX, TXT, código)
+Documentos locais (PDF, DOCX, XLSX, PPTX, TXT, formatos legados, ZIP, código)
     │
     ▼  ingest/ingest.py
 Extração de texto  →  Chunking  →  Embedding (LM Studio / Ollama)
@@ -24,7 +24,7 @@ Extração de texto  →  Chunking  →  Embedding (LM Studio / Ollama)
     ▼
 Qdrant (vector store local, Docker)
     │
-    ▼  server/server.py  [protocolo MCP]
+    ▼  kb_server/server.py  [protocolo MCP]
 Claude Code / OpenCode
 ```
 
@@ -53,14 +53,31 @@ Claude Code / OpenCode
 
 ```
 kb-rag-mcp/
-├── server/
+├── kb_server/
 │   ├── server.py          # Entrypoint MCP — registra tools, roteia calls
 │   ├── embed_client.py    # Abstração de embedding (multi-backend)
-│   └── vector_store.py    # Abstração Qdrant (search, upsert, list, stats)
+│   ├── vector_store.py    # Abstração Qdrant (search, upsert, list, stats)
+│   ├── cache/             # LRU cache + Redis opcional
+│   ├── retrieval/         # Hybrid search (BM25+dense RRF) + reranker
+│   ├── ui/                # Web UI FastAPI+HTMX
+│   └── telemetry/         # Query logger SQLite
 ├── ingest/
 │   ├── ingest.py          # Pipeline de ingestão — CLI principal
 │   ├── classifier.py      # Inferência de product e doc_type por regex
-│   └── registry.py        # Controle de estado (SQLite) — evita re-ingestão
+│   ├── registry.py        # Controle de estado (SQLite) — evita re-ingestão
+│   ├── parsers/
+│   │   ├── legacy_office.py  # .doc, .xls, .ppt, .odt, .ods, .odp, .wpd
+│   │   └── zip_handler.py    # Extração recursiva de arquivos ZIP
+│   ├── job/               # Sistema de jobs SQLite com prioridades
+│   ├── worker/            # Pool async + rate limiter token bucket
+│   ├── validation/        # Validadores de formato, tamanho, conteúdo
+│   └── watcher/           # File watcher watchdog para auto-ingestão
+├── qa/
+│   ├── run_qa.py          # Pipeline de avaliação QA
+│   ├── metrics.py         # Hit rate, MRR, p50_score
+│   └── queries.json       # Dataset de queries para avaliação
+├── observability/
+│   └── metrics.py         # 28 métricas Prometheus (kb_* prefix)
 ├── config/
 │   ├── .env.gaming        # Variáveis para gaming machine
 │   ├── .env.proxmox       # Variáveis para Proxmox LXC
@@ -70,6 +87,12 @@ kb-rag-mcp/
 │   ├── health_check.py    # Testa embedding + Qdrant + busca end-to-end
 │   ├── start-kb-rag.ps1   # Autostart WSL2 no Windows (PowerShell)
 │   └── kb-mcp.service     # Unit systemd para Proxmox
+├── docs/
+│   ├── REFERENCE.md       # Referência técnica principal
+│   ├── INSTRUCTIONS.md    # Este arquivo (inglês)
+│   ├── INSTRUCTIONS.pt-BR.md  # Este arquivo (português)
+│   ├── LEGACY_FORMATS.md  # Formatos legados e regras de extração ZIP
+│   └── ...
 ├── data/
 │   └── registry.db        # SQLite — gerado automaticamente na primeira ingestão
 ├── docker-compose.yml     # Qdrant
@@ -210,13 +233,23 @@ Produtos também são inferidos do nome do arquivo quando o arquivo está em `va
 | file_type | Extensões | Biblioteca | Fallback |
 |---|---|---|---|
 | `pdf` | .pdf | docling | PyMuPDF (fitz) |
-| `docx` | .docx, .doc | python-docx | — |
-| `xlsx` | .xlsx, .xls | openpyxl | — |
-| `pptx` | .pptx, .ppt | python-pptx | — |
+| `docx` | .docx | python-docx | — |
+| `doc` | .doc | docx2txt | python-docx |
+| `xlsx` | .xlsx | openpyxl | — |
+| `xls` | .xls | xlrd | — |
+| `pptx` | .pptx | python-pptx | — |
+| `ppt` | .ppt | python-pptx (best-effort) | — (falha com binary .ppt) |
+| `odt` | .odt | odfpy | — |
+| `ods` | .ods | odfpy | — |
+| `odp` | .odp | odfpy | — |
+| `wpd` | .wpd | heuristic latin-1 | — (qualidade baixa) |
 | `txt` | .txt, .md, .rst | built-in | — |
 | `code` | .py .ts .js .java .go .rs .cpp .c .cs .yaml .yml .json .xml .sh .sql | built-in | — |
+| `zip` | .zip | stdlib zipfile (recursivo) | — (máx 2 níveis, 500 MB/entry) |
 
-Arquivos ignorados: `.mp4`, `.avi`, `.jpg`, `.png`, `.ini`, `.zip` (exceto indexados como `release_artifact`).
+Veja [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes sobre formatos legados e extração ZIP.
+
+Arquivos ignorados: `.mp4`, `.avi`, `.jpg`, `.png`, `.ini`, `.exe`, `.dll`.
 
 ### Configurações de chunking por tipo
 
@@ -300,7 +333,7 @@ Arquivo: `%APPDATA%\Claude\claude_desktop_config.json`
         "-d", "Ubuntu-24.04",
         "--",
         "/home/SEU_USER/kb-rag-mcp/.venv/bin/python",
-        "/home/SEU_USER/kb-rag-mcp/server/server.py"
+        "/home/SEU_USER/kb-rag-mcp/kb_server/server.py"
       ]
     }
   }
@@ -332,7 +365,7 @@ Arquivo: `opencode.json` (raiz do projeto ou `~/.config/opencode/`)
       "type": "local",
       "command": ["wsl.exe", "-d", "Ubuntu-24.04", "--",
         "/home/SEU_USER/kb-rag-mcp/.venv/bin/python",
-        "/home/SEU_USER/kb-rag-mcp/server/server.py"]
+        "/home/SEU_USER/kb-rag-mcp/kb_server/server.py"]
     }
   }
 }
@@ -432,36 +465,18 @@ Ingestão dos 7 GB leva estimadamente 3–6 horas em CPU only.
 
 ### Alta prioridade
 
-#### Older Office formats (FASE 11)
-**Problema:** Leitor de documentos MS Office falha com formatos legados (.doc, .xls, .ppt) 
-e formatos alternativos (WordPerfect .wpd, OpenDocument .odt/.ods/.odp).
+#### ✅ Formatos legados (FASE 11 — implementado)
 
-**Solução técnica:**
-- Criar `ingest/parsers/legacy_office.py` com fallback chain:
-  1. **python-docx2txt** para `.doc` (Word 97-2003)
-  2. **xlrd** para `.xls` (Excel 97-2003)  
-  3. **python-pptx** ou **textract** para `.ppt` (PowerPoint 97-2003)
-  4. **textract** ou **unoconv** para `.wpd` (WordPerfect)
-  5. **odfpy** para `.odt`, `.ods`, `.odp` (OpenDocument)
-- Fallback final: **textract** (wrapper para Tika/Tesseract) para qualquer formato
-- Adicionar ao `document_processor.py` parser factory
-- Validação: tamanho máximo 100MB, timeout 60s por arquivo
+Suporte completo a formatos legados implementado em `ingest/parsers/`:
 
-**Arquivos afetados:**
-- `requirements.in`: adicionar `python-docx2txt`, `xlrd`, `odfpy`, `textract`
-- `ingest/parsers/legacy_office.py`: novo módulo
-- `ingest/core/document_processor.py`: registrar novos parsers
-- `tests/test_legacy_parsers.py`: testes com fixtures reais
+- `.doc` — docx2txt → python-docx fallback
+- `.xls` — xlrd (Excel 97-2003)
+- `.ppt` — python-pptx best-effort
+- `.odt`, `.ods`, `.odp` — odfpy (OpenDocument)
+- `.wpd` — extração heurística latin-1
+- `.zip` — stdlib zipfile, recursivo até 2 níveis, 500 MB/entry limit
 
-**Testes:**
-- Criar fixtures: `tests/fixtures/legacy/sample.{doc,xls,ppt,wpd,odt}`
-- Teste unitário para cada formato
-- Teste de fallback quando parser primário falha
-- Validação de encoding (UTF-8 no output)
-
-**Critério de aceitação:**
-- 90% dos formatos legados na KB atual são parseados com sucesso
-- Fallback gracioso com log quando nenhum parser funciona
+Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes completos.
 
 ---
 
@@ -628,159 +643,11 @@ if __name__ == "__main__":
 
 ### Média prioridade
 
-#### Watcher de arquivos (FASE 13)
-**Problema:** Operador precisa rodar manualmente `ingest.py` quando documentos 
-são adicionados ou atualizados. Processo manual propenso a esquecimento.
+#### ✅ Suporte a ZIP (FASE 11 — implementado)
 
-**Solução técnica:**
-- `watchdog` monitorando `WATCH_PATH` (env var, default: DOCS_PATH):
-  ```python
-  from watchdog.observers import Observer
-  from watchdog.events import FileSystemEventHandler
-  
-  class DocWatcher(FileSystemEventHandler):
-      def on_created(self, event):
-          self.schedule_ingestion(event.src_path)
-      
-      def on_modified(self, event):
-          self.schedule_ingestion(event.src_path)
-      
-      def schedule_ingestion(self, path):
-          # Debounce: wait 30s, merge multiple changes
-          # Trigger job via JobManager
-  ```
-- Debounce: agrupar mudanças em janela de 30s para evitar jobs duplicados
-- Ignorar arquivos temporários: `.tmp`, `.swp`, `.~`, `~$`
-- systemd service: `kb-rag-watcher.service`
-
-**Arquivos afetados:**
-- `requirements.in`: adicionar `watchdog>=3.0.0`
-- `ingest/watcher/file_watcher.py`: novo módulo
-- `ingest/watcher/debouncer.py`: janela de debounce
-- `deployment/systemd/kb-rag-watcher.service`: novo service
-- `tests/test_file_watcher.py`: testes unitários
-- `tests/e2e/test_auto_ingestion.py`: teste E2E (criar arquivo → job)
-
-**Configuração:**
-```bash
-# .env
-WATCH_PATH=/path/to/docs
-WATCH_DEBOUNCE_SECONDS=30
-WATCH_IGNORE_PATTERNS=.tmp,.swp,.~,~$*
-WATCH_RECURSIVE=true
-```
-
-**systemd service:**
-```ini
-[Unit]
-Description=KB-RAG File Watcher
-After=kb-rag-server.service
-Requires=kb-rag-server.service
-
-[Service]
-Type=simple
-User=kb-rag
-WorkingDirectory=/opt/kb-rag
-ExecStart=/opt/kb-rag/venv/bin/python -m ingest.watcher.file_watcher
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=kb-rag.target
-```
-
-**Testes:**
-- Criar arquivo → watcher detecta em <30s
-- Modificar arquivo → job de re-ingestão criado
-- Ignorar .tmp → não cria job
-- Múltiplas mudanças em 30s → 1 job único
-
-**Critério de aceitação:**
-- Watcher detecta mudanças em <30s
-- Debounce funciona (agrupa mudanças)
-- Service roda continuamente sem crash
-- Ignora corretamente arquivos temporários
-
----
-
-#### Suporte a ZIP (FASE 11)
-**Problema:** Documentação frequentemente vem em arquivos `.zip`. Atualmente 
-precisa extrair manualmente antes de ingerir.
-
-**Solução técnica:**
-- Parser `ingest/parsers/zip_handler.py`:
-  - Extração recursiva até 2 níveis (evitar zip bombs)
-  - Limite: skip arquivos >500MB dentro do ZIP
-  - Preservar path relativo como `source_path` metadata
-  - Reusar parsers existentes para cada arquivo extraído
-  - Cleanup: deletar arquivos temporários após ingestão
-- Adicionar ao parser factory em `document_processor.py`
-
-**Arquivos afetados:**
-- `ingest/parsers/zip_handler.py`: novo módulo
-- `ingest/core/document_processor.py`: registrar ZIP parser
-- `tests/test_zip_parser.py`: testes com ZIPs aninhados
-- `tests/fixtures/archives/`: ZIPs de teste
-
-**Implementação:**
-```python
-import zipfile
-import tempfile
-from pathlib import Path
-
-class ZipHandler:
-    MAX_DEPTH = 2
-    MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
-    
-    def extract_and_parse(self, zip_path, depth=0):
-        if depth > self.MAX_DEPTH:
-            logger.warning(f"Max depth {self.MAX_DEPTH} reached")
-            return []
-        
-        results = []
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with zipfile.ZipFile(zip_path) as zf:
-                for member in zf.namelist():
-                    if member.endswith('/'):  # skip directories
-                        continue
-                    
-                    # Check size
-                    info = zf.getinfo(member)
-                    if info.file_size > self.MAX_FILE_SIZE:
-                        logger.warning(f"Skip large file: {member}")
-                        continue
-                    
-                    # Extract
-                    extract_path = zf.extract(member, tmpdir)
-                    
-                    # Recursive if nested ZIP
-                    if member.endswith('.zip'):
-                        results.extend(
-                            self.extract_and_parse(extract_path, depth+1)
-                        )
-                    else:
-                        # Parse with existing parsers
-                        content = parse_file(extract_path)
-                        results.append({
-                            'content': content,
-                            'source_path': f"{zip_path}!/{member}",
-                            'relative_path': member
-                        })
-        
-        return results
-```
-
-**Testes:**
-- ZIP simples com 3 PDFs → 3 documentos ingeridos
-- ZIP aninhado (ZIP dentro de ZIP) → extração recursiva
-- ZIP com arquivo >500MB → skip com warning
-- ZIP com 4 níveis → para no nível 2
-
-**Critério de aceitação:**
-- Extrai e ingere todos os arquivos de ZIPs
-- Recursão limitada a 2 níveis
-- Skip de arquivos grandes com log
-- Cleanup de arquivos temporários
+Implementado em `ingest/parsers/zip_handler.py`. Extração recursiva até 2 níveis,
+limite de 500 MB por entry, preservação de `source_path` no payload.
+Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para as regras completas.
 
 ---
 
@@ -1037,7 +904,7 @@ python ingest/ingest.py --docs /mnt/c/Recebedor/learning
 python ingest/ingest.py --status --list
 
 # Iniciar servidor (teste manual)
-python server/server.py
+python kb_server/server.py
 
 # Gaming machine — autostart
 pwsh scripts/start-kb-rag.ps1

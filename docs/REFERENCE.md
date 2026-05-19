@@ -75,6 +75,7 @@ optional hybrid (BM25+dense RRF) → optional reranker → return ranked chunks
 | Query telemetry | `kb_server/telemetry` | `query_logger.py` | SQLite query log, 90-day retention |
 | Health server | `kb_server` | `health_server.py`, `health.py` | HTTP health endpoint for systemd/monitoring |
 | Ingest pipeline | `ingest` | `ingest.py`, `registry.py`, `classifier.py` | File scan, classify, chunk, embed, upsert |
+| Legacy parsers | `ingest/parsers` | `legacy_office.py`, `zip_handler.py` | .doc, .xls, .ppt, .odt, .ods, .odp, .wpd, .zip |
 | Job system | `ingest/job` | `manager.py`, `scheduler.py`, `models.py` | SQLite-backed async job queue with priorities |
 | Worker pool | `ingest/worker` | `pool.py`, `worker.py`, `limiter.py` | Async workers with token-bucket rate limiting |
 | Validators | `ingest/validation` | `pipeline.py`, `format.py`, `size.py`, `content.py` | Pre-ingest file validation |
@@ -174,6 +175,29 @@ root — it is loaded automatically before `kb_server` is imported.
 | `HEALTH_PORT` | `8081` | Health server port |
 | `SSE_HOST` | `0.0.0.0` | MCP SSE transport host |
 | `SSE_PORT` | `8000` | MCP SSE transport port |
+
+---
+
+## Supported File Formats
+
+| Extension(s) | Type | Parser | Notes |
+|---|---|---|---|
+| `.pdf` | PDF | docling → PyMuPDF fallback | Best quality; extracts text per page |
+| `.docx` | Word 2007+ | python-docx | — |
+| `.doc` | Word 97-2003 | docx2txt → python-docx fallback | Compatibility mode files work well |
+| `.xlsx` | Excel 2007+ | openpyxl | All sheets extracted |
+| `.xls` | Excel 97-2003 | xlrd | All sheets as separate chunks |
+| `.pptx` | PowerPoint 2007+ | python-pptx | Per-slide extraction |
+| `.ppt` | PowerPoint 97-2003 | python-pptx (best-effort) | Binary `.ppt` may fail; save as `.pptx` |
+| `.odt` | OpenDocument Text | odfpy | Full paragraph extraction |
+| `.ods` | OpenDocument Spreadsheet | odfpy | All sheets extracted |
+| `.odp` | OpenDocument Presentation | odfpy | Per-slide extraction |
+| `.wpd` | WordPerfect | heuristic text strip | Low quality; latin-1 decode only |
+| `.txt` `.md` `.rst` | Plain text | built-in | — |
+| `.py` `.ts` `.js` `.java` `.go` `.rs` `.cpp` `.c` `.cs` `.yaml` `.yml` `.json` `.xml` `.sh` `.sql` | Code | built-in | — |
+| `.zip` | ZIP archive | stdlib + recursive | Up to 2 nesting levels; 500 MB/entry limit |
+
+See [LEGACY_FORMATS.md](LEGACY_FORMATS.md) for full details on legacy and ZIP extraction rules.
 
 ---
 
@@ -284,7 +308,7 @@ PYTHONPATH=. pytest --cov=kb_server --cov=ingest --cov=qa --cov-report=term-miss
 PYTHONPATH=. pytest -m "not integration"
 ```
 
-**Current status:** 252 passing, 38 failing (pre-existing, non-critical), 9 skipped  
+**Current status:** 224 passing, 35 failing (pre-existing, non-critical), 8 skipped  
 **Coverage target:** 70%+ overall, critical paths prioritized  
 **Key test files:**
 
@@ -296,6 +320,8 @@ PYTHONPATH=. pytest -m "not integration"
 | `tests/test_reranker.py` | Cross-encoder reranking |
 | `tests/test_qa_metrics.py` | QA pipeline metrics (hit rate, MRR) |
 | `tests/test_job_system.py` | Job queue lifecycle |
+| `tests/test_legacy_parsers.py` | Legacy Office format extractors (.doc, .xls, .odt, etc.) |
+| `tests/test_zip_handler.py` | ZIP recursive extraction (depth, size limits) |
 | `tests/e2e/` | End-to-end deployment and health workflows |
 
 ---
