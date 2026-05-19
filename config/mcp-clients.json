@@ -2,7 +2,7 @@
   "_comment": "Configurações MCP para Claude Code e OpenCode",
   "_instrucoes": "Copie o bloco do seu cenário para o arquivo de config correto.",
 
-  "_claude_code_gaming_wsl2": {
+  "_claude_code_local_wsl2": {
     "_arquivo": "%APPDATA%\\Claude\\claude_desktop_config.json  (Windows)",
     "mcpServers": {
       "kb-rag": {
@@ -16,7 +16,7 @@
         "env": {
           "EMBED_BACKEND": "lmstudio-sdk",
           "EMBED_MODEL": "nomic-embed-text-v1.5",
-          "LMS_BASE_URL": "http://host.docker.internal:1234",
+          "LMS_BASE_URL": "http://<LM_STUDIO_HOST>:1234",
           "QDRANT_HOST": "localhost",
           "QDRANT_PORT": "6333",
           "MCP_TRANSPORT": "stdio"
@@ -25,30 +25,30 @@
     }
   },
 
-  "_claude_code_proxmox_ssh": {
+  "_claude_code_lxc_ssh": {
     "_arquivo": "~/.claude/settings.json  (Linux/macOS)",
     "mcpServers": {
       "kb-rag": {
         "command": "ssh",
         "args": [
-          "-T", "kb-proxmox",
+          "-T", "kb-lxc",
           "/opt/kb-rag/.venv/bin/python /opt/kb-rag/server/server.py"
         ]
       }
     }
   },
 
-  "_claude_code_proxmox_sse": {
+  "_claude_code_lxc_sse": {
     "_arquivo": "~/.claude/settings.json",
-    "_nota": "Use quando MCP_TRANSPORT=sse no Proxmox",
+    "_nota": "Use quando MCP_TRANSPORT=sse no LXC",
     "mcpServers": {
       "kb-rag": {
-        "url": "http://192.168.1.200:8765/sse"
+        "url": "http://<LXC_SERVER_HOST>:8765/sse"
       }
     }
   },
 
-  "_opencode_gaming": {
+  "_opencode_local": {
     "_arquivo": "opencode.json  (na raiz do projeto ou ~/.config/opencode/opencode.json)",
     "mcp": {
       "kb-rag": {
@@ -68,12 +68,12 @@
     }
   },
 
-  "_opencode_proxmox_sse": {
+  "_opencode_lxc_sse": {
     "_arquivo": "opencode.json",
     "mcp": {
       "kb-rag": {
         "type": "sse",
-        "url": "http://192.168.1.200:8765/sse"
+        "url": "http://<LXC_SERVER_HOST>:8765/sse"
       }
     }
   }
