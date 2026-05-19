@@ -60,3 +60,10 @@ Thumbs.db
 # QA fixtures (do not track PDFs)
 qa/fixtures/*.pdf
 QA_REPORT*.md
+
+# Environment / secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+config/.env.*
+!config/.env.template
