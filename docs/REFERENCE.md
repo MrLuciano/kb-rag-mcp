@@ -8,7 +8,7 @@
 ## What This Is
 
 KB-RAG-MCP is a production-grade RAG (Retrieval-Augmented Generation) pipeline
-that ingests OpenText product documentation, stores it as vector embeddings in
+that ingests technical documentation, stores it as vector embeddings in
 Qdrant, and exposes it as an MCP (Model Context Protocol) server for use by AI
 assistants such as Claude. It runs entirely on-premises: embeddings are generated
 by a local LM Studio instance, no data leaves the network.
@@ -302,7 +302,7 @@ bash scripts/kb-migrate.sh import ./backup-20260518.tar.gz
 
 ---
 
-## QA Results (OTCS Corpus)
+## QA Results
 
 Last run: 2026-05-18 against the ingested `kb_docs` collection.
 
@@ -319,7 +319,7 @@ Last run: 2026-05-18 against the ingested `kb_docs` collection.
 ### Re-run QA eval (skip re-ingest)
 
 ```bash
-PYTHONPATH=. python -m qa.run_qa --eval --output ./QA_REPORT_OTCS.md
+PYTHONPATH=. python -m qa.run_qa --eval --output ./QA_REPORT.md
 ```
 
 ---
@@ -381,7 +381,7 @@ All planned phases are complete. See [PLAN.md](PLAN.md) for full specifications.
 | 14 | Observability & Audit | ✅ Complete | Query logger, registry export, web UI |
 | 15 | Advanced Infrastructure | ✅ Complete | Multi-collection routing, Kubernetes/Helm chart |
 | 16 | RAG Performance & Accuracy | ✅ Complete | RAGAS pipeline, golden dataset, experiments |
-| QA | OTCS QA Pipeline | ✅ Complete | End-to-end eval, Hit Rate 100%, MRR 0.78 |
+| QA | QA Evaluation Pipeline | ✅ Complete | End-to-end eval, Hit Rate 100%, MRR 0.78 |
 
 ---
 

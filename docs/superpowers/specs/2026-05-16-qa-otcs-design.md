@@ -1,4 +1,4 @@
-# QA Review — OTCS Production Corpus
+# QA Review — Evaluation Corpus
 
 **Date:** 2026-05-16
 **Status:** Approved, pending implementation
@@ -8,10 +8,10 @@
 
 ## 1. Goal
 
-Execute a full Quality Assurance review of the kb-rag-mcp RAG pipeline using the
-OpenText Content Server (OTCS) production documentation corpus as real-world input.
+Execute a full Quality Assurance review of the kb-rag-mcp RAG pipeline using a
+production documentation corpus as real-world input.
 
-**Primary goal (A):** End-to-end pipeline validation — ingest the full OTCS corpus,
+**Primary goal (A):** End-to-end pipeline validation — ingest the full evaluation corpus,
 run 20 representative queries, measure whether the system retrieves the right
 documents with good scores. Confirm the pipeline works with real data.
 
@@ -25,9 +25,9 @@ in the golden dataset for future LLM-as-judge evaluation (no LLM judge in this r
 
 | Input | Value |
 |---|---|
-| Corpus path | `/mnt/c/Users/luciano.marinho/git/OTCS` |
+| Corpus path | `/mnt/c/Users/luciano.marinho/git/corpus` |
 | Document count | 271 files (PDF, DOCX, PPTX) across version subdirs + root |
-| Product tag | `otcs` |
+| Product tag | `docs` |
 | Embedding backend | FastEmbed (built-in, no external server) |
 | Qdrant | Docker (`docker run -d --rm -p 6333:6333 qdrant/qdrant`) |
 | LLM judge | None (heuristics only) |
@@ -39,32 +39,32 @@ in the golden dataset for future LLM-as-judge evaluation (no LLM judge in this r
 ```
 qa/
 ├── run_qa.py              # Orchestrator — single entry point
-├── queries.json           # 20 curated OTCS queries with expected metadata
+├── queries.json           # 20 curated queries with expected metadata
 ├── fixtures/              # 5-doc tiny PDF fixture corpus for integration tests
 │   └── *.pdf
 └── __init__.py
 
 docs/
-└── QA_REPORT_OTCS.md      # Generated output (committed after run)
+└── QA_REPORT.md           # Generated output (committed after run)
 
 server/evaluation/
-└── golden_dataset.json    # Replaced: 20 real OTCS Q&A pairs (was synthetic)
+└── golden_dataset.json    # Replaced: 20 real Q&A pairs (was synthetic)
 ```
 
 ### Orchestrator stages (`run_qa.py`)
 
-1. **Preflight** — verify Docker available, `.venv` active, `OTCS_PATH` exists
+1. **Preflight** — verify Docker available, `.venv` active, `CORPUS_PATH` exists
 2. **Qdrant** — `docker run -d --rm -p 6333:6333 qdrant/qdrant`, poll `/healthz`
-3. **Ingest** — call `ingest.py` programmatically (full OTCS corpus, `BACKEND=fastembed`, `product=otcs`, `workers=4`)
+3. **Ingest** — call `ingest.py` programmatically (full corpus, `BACKEND=fastembed`, `product=docs`, `workers=4`)
 4. **Probe** — run 20 queries via `store.search()` directly, collect results + latency
 5. **Metrics** — compute heuristic RAGAS-lite metrics
-6. **Report** — write `docs/QA_REPORT_OTCS.md`
-7. **Golden dataset** — overwrite `server/evaluation/golden_dataset.json` with 20 real OTCS entries
+6. **Report** — write `docs/QA_REPORT.md`
+7. **Golden dataset** — overwrite `server/evaluation/golden_dataset.json` with 20 real entries
 
 ### Entry point
 
 ```bash
-python qa/run_qa.py [--otcs-path PATH] [--workers N] [--skip-ingest]
+python qa/run_qa.py [--corpus-path PATH] [--workers N] [--skip-ingest]
 ```
 
 `--skip-ingest` allows re-running the probe/metrics/report against an already-ingested collection.
@@ -79,7 +79,7 @@ python qa/run_qa.py [--otcs-path PATH] [--workers N] [--skip-ingest]
 {
   "id": "install-01",
   "category": "installation",
-  "query": "How to install Content Server 22.1 on Windows 2016?",
+  "query": "How to install AppServer 22.1 on Windows 2016?",
   "expected_doc_keywords": ["install", "22.1", "windows"],
   "min_expected_score": 0.5
 }
@@ -89,13 +89,13 @@ python qa/run_qa.py [--otcs-path PATH] [--workers N] [--skip-ingest]
 
 | Category | Count | Representative query |
 |---|---|---|
-| Installation | 4 | "How to install Content Server 22.1 on Windows 2016?" |
-| Administration | 4 | "How to configure Content Server cluster management?" |
-| Search & Index | 3 | "How does OpenText Search Engine work in version 22?" |
-| Workflow & Forms | 3 | "What are best practices for Content Server workflow design?" |
-| SDK & Development | 3 | "How to use the Content Server SDK schema reference?" |
-| WebReports | 2 | "How to design WebReports in Content Server 20.2?" |
-| Records Management | 1 | "How does OpenText Records Management work in Content Server?" |
+| Installation | 4 | "How to install AppServer 22.1 on Windows 2016?" |
+| Administration | 4 | "How to configure AppServer cluster management?" |
+| Search & Index | 3 | "How does the Search Engine work in version 22?" |
+| Workflow & Forms | 3 | "What are best practices for workflow design?" |
+| SDK & Development | 3 | "How to use the SDK schema reference?" |
+| WebReports | 2 | "How to design WebReports in version 20.2?" |
+| Records Management | 1 | "How does Records Management work in AppServer?" |
 
 ---
 
@@ -162,10 +162,10 @@ production modules. Existing test suite stays green.
 
 ---
 
-## 7. Report Format (`docs/QA_REPORT_OTCS.md`)
+## 7. Report Format (`docs/QA_REPORT.md`)
 
 ```markdown
-# KB-RAG-MCP QA Report — OTCS Corpus
+# KB-RAG-MCP QA Report — Evaluation Corpus
 Date: ...   Corpus: 271 docs   Backend: fastembed   Model: ...
 
 ## Overall Verdict: PASS / FAIL
@@ -195,12 +195,12 @@ After the probe run, `server/evaluation/golden_dataset.json` is overwritten with
 
 ```json
 {
-  "query": "How to install Content Server 22.1 on Windows 2016?",
+  "query": "How to install AppServer 22.1 on Windows 2016?",
   "expected_answer": "(top chunk text, first 400 chars)",
   "expected_docs": ["<source_file of rank-1 result>"],
   "retrieved_contexts": ["<chunk text 1>", "...", "<chunk text 5>"],
   "metadata": {
-    "product": "otcs",
+    "product": "docs",
     "category": "installation",
     "hit": true,
     "top_score": 0.82
@@ -208,7 +208,7 @@ After the probe run, `server/evaluation/golden_dataset.json` is overwritten with
 }
 ```
 
-This replaces the 10 synthetic ArchiveCenter examples with real OTCS ground truth.
+This replaces the 10 synthetic examples with real ground truth.
 
 ---
 
