@@ -96,14 +96,16 @@ def _ensure_stubs():
 
     # qdrant_client.http.models needs stub symbols
     models = sys.modules["qdrant_client.http.models"]
-    for name in ["Distance", "VectorParams", "PointStruct", "Filter",
+    for name in ["Distance", "VectorParams", "HnswConfigDiff", "PointStruct", "Filter",
                  "FieldCondition", "MatchValue", "PayloadSchemaType", "HasIdCondition"]:
         if not hasattr(models, name):
-            setattr(models, name, type(name, (), {})())
+            # Create as a class (not instance) so it can be called and have class attrs
+            stub_cls = type(name, (), {"COSINE": "Cosine", "__init__": lambda self, **kw: None})
+            setattr(models, name, stub_cls)
 
     # Also mirror into qdrant_client.models
     qm = sys.modules["qdrant_client.models"]
-    for name in ["Distance", "VectorParams", "PointStruct", "Filter",
+    for name in ["Distance", "VectorParams", "HnswConfigDiff", "PointStruct", "Filter",
                  "FieldCondition", "MatchValue", "PayloadSchemaType", "HasIdCondition"]:
         if not hasattr(qm, name):
             setattr(qm, name, getattr(models, name))

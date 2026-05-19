@@ -1,0 +1,42 @@
+{{- /*
+Services for kb-server (and optionally Redis)
+*/ -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kb-rag-mcp.fullname" . }}
+  labels:
+    {{- include "kb-rag-mcp.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: mcp
+      port: {{ .Values.service.port }}
+      targetPort: mcp
+      protocol: TCP
+    - name: health
+      port: {{ .Values.service.healthPort }}
+      targetPort: health
+      protocol: TCP
+  selector:
+    {{- include "kb-rag-mcp.selectorLabels" . | nindent 4 }}
+{{- if .Values.redis.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kb-rag-mcp.fullname" . }}-redis
+  labels:
+    {{- include "kb-rag-mcp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: {{ .Values.redis.service.port }}
+      targetPort: redis
+      protocol: TCP
+  selector:
+    {{- include "kb-rag-mcp.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+{{- end }}

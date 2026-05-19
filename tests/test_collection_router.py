@@ -1,0 +1,79 @@
+"""Tests for CollectionRouter."""
+from __future__ import annotations
+
+from unittest.mock import AsyncMock
+
+import pytest
+
+from kb_server.collections.router import CollectionNotFoundError, CollectionRouter
+
+
+@pytest.fixture
+def manager():
+    m = AsyncMock()
+    return m
+
+
+@pytest.fixture
+def router(manager):
+    return CollectionRouter(manager, default_collection="kb_docs")
+
+
+# ------------------------------------------------------------------
+# resolve
+# ------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_resolve_none_returns_default(manager, router):
+    manager.collection_exists.return_value = True
+    result = await router.resolve(None)
+    assert result == "kb_docs"
+    manager.collection_exists.assert_awaited_once_with("kb_docs")
+
+
+@pytest.mark.asyncio
+async def test_resolve_existing_returns_name(manager, router):
+    manager.collection_exists.return_value = True
+    result = await router.resolve("custom")
+    assert result == "custom"
+
+
+@pytest.mark.asyncio
+async def test_resolve_missing_raises_error(manager, router):
+    manager.collection_exists.return_value = False
+    with pytest.raises(CollectionNotFoundError, match="custom"):
+        await router.resolve("custom")
+
+
+@pytest.mark.asyncio
+async def test_resolve_missing_default_raises_error(manager, router):
+    manager.collection_exists.return_value = False
+    with pytest.raises(CollectionNotFoundError, match="kb_docs"):
+        await router.resolve(None)
+
+
+# ------------------------------------------------------------------
+# ensure
+# ------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_ensure_none_uses_default(manager, router):
+    manager.create_collection.return_value = False  # already existed
+    result = await router.ensure(None)
+    assert result == "kb_docs"
+    manager.create_collection.assert_awaited_once_with("kb_docs")
+
+
+@pytest.mark.asyncio
+async def test_ensure_creates_if_missing(manager, router):
+    manager.create_collection.return_value = True  # was created
+    result = await router.ensure("new_col")
+    assert result == "new_col"
+    manager.create_collection.assert_awaited_once_with("new_col")
+
+
+@pytest.mark.asyncio
+async def test_ensure_returns_existing(manager, router):
+    manager.create_collection.return_value = False  # already existed
+    result = await router.ensure("existing")
+    assert result == "existing"

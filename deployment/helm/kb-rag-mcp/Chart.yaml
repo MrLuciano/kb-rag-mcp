@@ -1,0 +1,15 @@
+apiVersion: v2
+name: kb-rag-mcp
+description: KB-RAG-MCP — Semantic RAG Pipeline with MCP interface
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - rag
+  - mcp
+  - knowledge-base
+  - llm
+  - qdrant
+home: https://github.com/your-org/kb-rag-mcp
+maintainers:
+  - name: kb-rag-mcp maintainers

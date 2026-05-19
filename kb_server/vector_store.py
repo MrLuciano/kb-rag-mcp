@@ -146,6 +146,7 @@ class VectorStore:
         product: str | None = None,
         doc_type: str | None = None,
         version: str | None = None,  # FASE 13: Version filter
+        collection_name: str | None = None,  # FASE 15: multi-collection override
     ) -> list[dict]:
         """Busca semântica com filtros opcionais por
         file_type, product, doc_type, e version (FASE 13).
@@ -179,7 +180,7 @@ class VectorStore:
         query_filter = Filter(must=conditions) if conditions else None
 
         response = await self.client.query_points(
-            collection_name=self.collection,
+            collection_name=collection_name or self.collection,
             query=vector,
             limit=top_k,
             query_filter=query_filter,
@@ -285,6 +286,7 @@ class VectorStore:
         product: str | None = None,
         doc_type: str | None = None,
         limit: int = 50,
+        collection_name: str | None = None,  # FASE 15: multi-collection override
     ) -> list[dict]:
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
@@ -313,7 +315,7 @@ class VectorStore:
 
         while len(docs) < limit:
             results, offset = await self.client.scroll(
-                collection_name=self.collection,
+                collection_name=collection_name or self.collection,
                 scroll_filter=query_filter,
                 limit=500,
                 offset=offset,

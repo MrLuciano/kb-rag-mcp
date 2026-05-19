@@ -29,6 +29,8 @@ from mcp.server.sse import SseServerTransport
 from mcp.server.stdio import stdio_server
 from kb_server.vector_store import VectorStore
 from kb_server.telemetry.query_logger import QueryLogger
+from kb_server.collections.manager import CollectionManager
+from kb_server.collections.router import CollectionRouter, CollectionNotFoundError
 
 # ── Logging ───────────────────────────────────────────────────────
 logging.basicConfig(
@@ -62,6 +64,8 @@ QUERY_LOG_CLEANUP_INTERVAL_HOURS = int(
 # ── Inicialização ─────────────────────────────────────────────────
 app = Server("kb-rag")
 store = VectorStore()
+collection_manager: CollectionManager | None = None
+collection_router: CollectionRouter | None = None
 
 # FASE 14: Initialize query logger if enabled
 query_logger = None
@@ -185,6 +189,13 @@ async def list_tools() -> list[types.Tool]:
                         ),
                         "default": False,
                     },
+                    "collection": {
+                        "type": "string",
+                        "description": (
+                            "FASE 15: Nome da coleção Qdrant a consultar. "
+                            "Omita para usar a coleção padrão (QDRANT_COLLECTION)."
+                        ),
+                    },
                 },
                 "required": ["query"],
             },
@@ -221,6 +232,13 @@ async def list_tools() -> list[types.Tool]:
                         "description": "Máximo de documentos a retornar "
                         "(padrão: 50)",
                         "default": 50,
+                    },
+                    "collection": {
+                        "type": "string",
+                        "description": (
+                            "FASE 15: Nome da coleção Qdrant a consultar. "
+                            "Omita para usar a coleção padrão."
+                        ),
                     },
                 },
                 "required": [],
@@ -260,6 +278,15 @@ async def list_tools() -> list[types.Tool]:
             "breakdown por produto e tipo de conteúdo.",
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
+        types.Tool(
+            name="list_collections",
+            description=(
+                "FASE 15: Lista todas as coleções Qdrant disponíveis. "
+                "Use para descobrir coleções antes de chamar search_kb "
+                "ou list_documents com o parâmetro collection."
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
     ]
 
 
@@ -276,6 +303,8 @@ async def call_tool(
             return await _get_chunk(arguments)
         elif name == "kb_stats":
             return await _kb_stats()
+        elif name == "list_collections":
+            return await _list_collections()
         else:
             return [
                 types.TextContent(
@@ -307,6 +336,15 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     version = args.get("version")  # FASE 13: Version filter
     hybrid = args.get("hybrid", False)
     rerank = args.get("rerank", False)
+    collection_param = args.get("collection")
+
+    # FASE 15: resolve target collection (raises CollectionNotFoundError if missing)
+    target_collection = getattr(store, "collection", None)
+    if collection_router is not None:
+        try:
+            target_collection = await collection_router.resolve(collection_param)
+        except CollectionNotFoundError as exc:
+            return [types.TextContent(type="text", text=str(exc))]
 
     log.info(
         f"search_kb: '{query}' top_k={top_k} product={product} "
@@ -341,14 +379,17 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         )
     else:
         # Standard dense vector search
-        results = await store.search(
+        _search_kwargs: dict = dict(
             vector=vector,
             top_k=retrieve_k,
             filter_type=filter_type,
             product=product,
             doc_type=doc_type,
-            version=version,  # FASE 13: Pass version filter
+            version=version,  # FASE 13
         )
+        if target_collection is not None:
+            _search_kwargs["collection_name"] = target_collection  # FASE 15
+        results = await store.search(**_search_kwargs)
     
     # FASE 12: Apply reranking if enabled
     if rerank and results:
@@ -466,12 +507,23 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
 
 
 async def _list_documents(args: dict) -> list[types.TextContent]:
-    docs = await store.list_documents(
+    collection_param = args.get("collection")
+    target_collection = getattr(store, "collection", None)
+    if collection_router is not None:
+        try:
+            target_collection = await collection_router.resolve(collection_param)
+        except CollectionNotFoundError as exc:
+            return [types.TextContent(type="text", text=str(exc))]
+
+    _list_kwargs: dict = dict(
         filter_type=args.get("filter_type"),
         product=args.get("product"),
         doc_type=args.get("doc_type"),
         limit=args.get("limit", 50),
     )
+    if target_collection is not None:
+        _list_kwargs["collection_name"] = target_collection  # FASE 15
+    docs = await store.list_documents(**_list_kwargs)
 
     if not docs:
         return [
@@ -551,6 +603,20 @@ async def _kb_stats() -> list[types.TextContent]:
 # ENTRYPOINT
 # ──────────────────────────────────────────────────────────────────
 
+async def _list_collections() -> list[types.TextContent]:
+    """FASE 15: List all Qdrant collections."""
+    if collection_manager is None:
+        return [types.TextContent(type="text", text="CollectionManager not initialized.")]
+    names = await collection_manager.list_collections()
+    if not names:
+        return [types.TextContent(type="text", text="Nenhuma coleção encontrada.")]
+    lines = [f"## Coleções disponíveis ({len(names)})\n"]
+    for name in sorted(names):
+        marker = " ← padrão" if name == store.collection else ""
+        lines.append(f"- `{name}`{marker}")
+    return [types.TextContent(type="text", text="\n".join(lines))]
+
+
 
 async def _schedule_log_cleanup() -> None:
     """CR-04: Periodically purge query log entries older than retention window.
@@ -573,8 +639,12 @@ async def _schedule_log_cleanup() -> None:
 
 
 async def main():
+    global collection_manager, collection_router
     log.info(f"KB RAG MCP Server iniciando (transport={TRANSPORT})")
     await store.connect()
+    collection_manager = CollectionManager(store.client, vector_size=store.dim)
+    collection_router = CollectionRouter(collection_manager, default_collection=store.collection)
+    log.info(f"CollectionRouter initialized (default='{store.collection}')")
 
     # CR-04: Schedule periodic query log cleanup
     if query_logger:
