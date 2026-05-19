@@ -7,6 +7,7 @@
 ## Getting Started
 
 - [README.md](../README.md) — Quick start, installation, usage
+- [FEATURES.md](../FEATURES.md) — Complete feature reference — all 16 implemented features
 - [REFERENCE.md](REFERENCE.md) — **Living reference: architecture, components, config, ops, QA results**
 - [TESTING.md](TESTING.md) — Testing strategy and guidelines
 - [CHANGELOG.md](CHANGELOG.md) — Release history and per-FASE change log
@@ -61,7 +62,7 @@ FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
 | 14 | Observability & Audit | ✅ Complete |
 | 15 | Advanced Infrastructure | ✅ Complete |
 | 16 | RAG Performance & Accuracy | ✅ Complete |
-| QA | OTCS QA Pipeline | ✅ Complete |
+| QA | QA Evaluation Pipeline | ✅ Complete |
 
 ---
 
@@ -73,7 +74,7 @@ FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
 | **Tests failing** | 19 (pre-existing, non-critical) |
 | **Coverage target** | 70%+ overall |
 | **Phases completed** | 16 + QA pipeline |
-| **QA Hit Rate** | 100% (OTCS corpus) |
+| **QA Hit Rate** | 100% |
 | **QA MRR** | 0.78 |
 
 ---
