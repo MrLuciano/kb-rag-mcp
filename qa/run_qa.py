@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument("--docs-path", type=str, help="Path to docs root (for ingest)")
     parser.add_argument("--workers", type=int, default=4, help="Number of ingest workers to use")
     parser.add_argument("--eval", action="store_true", help="Run only QA eval (skip ingestion)")
-    parser.add_argument("--output", type=str, default="QA_REPORT_OTCS.md", help="Report output path")
+    parser.add_argument("--output", type=str, default="QA_REPORT.md", help="Report output path")
     return parser.parse_args()
 
 async def run_ingest_stage(docs_path, workers):
