@@ -66,8 +66,7 @@ def validate_package(package_path: Path) -> dict:
             else:
                 files_found.append(filename)
 
-    if len(errors) == 0:
-        files_found.append("manifest.json")
+    files_found.append("manifest.json")
     return {"valid": len(errors) == 0, "errors": errors, "files": files_found}
 
 

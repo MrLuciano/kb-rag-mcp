@@ -49,7 +49,10 @@ def _sha256(path: Path) -> str:
 
 def _sanitize_env(env_path: Path) -> str:
     """Return sanitized .env content with secret values redacted."""
+    # Explicit secrets list for well-known keys that don't match the pattern
     SECRET_KEYS = {"LMS_BASE_URL", "REDIS_URL", "REDIS_PASSWORD"}
+    # Catch-all: redact any key whose name contains these substrings
+    SECRET_PATTERNS = {"password", "secret", "token", "key"}
     lines = []
     for line in env_path.read_text().splitlines():
         stripped = line.strip()
@@ -58,7 +61,7 @@ def _sanitize_env(env_path: Path) -> str:
             continue
         if "=" in stripped:
             key = stripped.split("=", 1)[0].strip()
-            if key in SECRET_KEYS:
+            if key in SECRET_KEYS or any(p in key.lower() for p in SECRET_PATTERNS):
                 lines.append(f"{key}=<REPLACE_ME>")
                 continue
         lines.append(line)
@@ -83,6 +86,13 @@ def export_kb(
         qdrant_url: Qdrant base URL
         collection: Collection name to snapshot
         env_file: .env path (auto-detected if None)
+
+    Note:
+        The Qdrant snapshot step is best-effort. If it fails (e.g. Qdrant not
+        running), a warning is printed and the package is created without vector
+        data. Restoring such a package will restore only the SQLite databases.
+        Use --require-snapshot (future flag) if you need to guarantee vectors are
+        included.
     """
     output = Path(output)
     project_root = Path(__file__).parent.parent.parent
