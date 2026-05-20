@@ -147,9 +147,9 @@ def _ensure_stubs():
 
     # server.analytics / server.optimization stubs
     for mod in ["kb_server.analytics", "kb_server.analytics.query_analyzer",
-                "kb_server.optimization", "kb_server.optimization.chunking_experiments",
-                "kb_server.ui", "kb_server.ui.app"]:
+                "kb_server.optimization", "kb_server.optimization.chunking_experiments"]:
         sys.modules.setdefault(mod, types.ModuleType(mod))
+    # kb_server.ui is a real package with routes — do not stub it
 
 
 _ensure_stubs()
