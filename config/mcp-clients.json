@@ -55,7 +55,7 @@
         "type": "local",
         "command": [
           "wsl.exe",
-          "-d", "Ubuntu-24.04",
+          "-d", "Debian",
           "--",
           "/home/SEU_USER/kb-rag-mcp/.venv/bin/python",
           "/home/SEU_USER/kb-rag-mcp/server/server.py"
