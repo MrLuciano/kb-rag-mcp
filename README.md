@@ -51,41 +51,94 @@ MCP client.
 
 ### 🚀 Quick Start
 
-#### Option 1: Local Machine (Windows + WSL2 + LM Studio)
+> **Prerequisites:** Python 3.11+, Docker (for Qdrant), and an embedding backend
+> (LM Studio, Ollama, or any OpenAI-compatible server).
+
+#### Option 1: One-command setup (recommended)
 
 ```bash
-# 1. Start LM Studio on Windows with nomic-embed-text-v1.5
-# 2. In WSL2:
-git clone https://github.com/yourusername/kb-rag-mcp ~/kb-rag-mcp
-cd ~/kb-rag-mcp
-bash scripts/setup.sh local
+git clone https://github.com/your-org/kb-rag-mcp
+cd kb-rag-mcp
 
-# 3. Ingest documents
-source .venv/bin/activate
-python ingest/ingest.py --docs /mnt/d/your-docs
-
-# 4. Health check
-python scripts/health_check.py
-
-# 5. Configure Claude Code (copy config/mcp-clients.json → local block)
+# Starts Qdrant, installs deps, launches the MCP server
+bash scripts/quickstart.sh --docs /path/to/your/docs
 ```
 
-#### Option 2: Linux Server (Ollama)
+The script:
+1. Copies `config/.env.template` → `.env` (edit `EMBED_URL`, `EMBED_MODEL` before re-running)
+2. Creates `.venv/` and installs all Python dependencies
+3. Starts Qdrant via Docker Compose
+4. Launches the MCP server in the background (`logs/kb-rag-mcp.log`)
+5. Ingests documents from the path you provide
+
+#### Option 2: Docker Compose (full stack)
 
 ```bash
-# On Ubuntu 24.04:
-git clone https://github.com/yourusername/kb-rag-mcp /opt/kb-rag-mcp
-cd /opt/kb-rag-mcp
-bash scripts/setup.sh lxc
+cp config/.env.template .env   # fill in EMBED_URL and EMBED_MODEL
+docker compose up -d
+```
 
-# Ingest documents
-source .venv/bin/activate
-python ingest/ingest.py --docs /opt/docs --workers 4
+#### Option 3: Manual setup
 
-# Install as systemd service
-sudo cp scripts/kb-mcp.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now kb-mcp
+```bash
+# 1. Start Qdrant
+docker compose up -d qdrant
+
+# 2. Install Python deps
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && pip install -e .
+
+# 3. Configure
+cp config/.env.template .env
+#    → edit .env: set EMBED_URL, EMBED_MODEL, DOCS_PATH
+
+# 4. Start MCP server
+python -m kb_server.server
+
+# 5. Ingest your docs
+python ingest/ingest.py --docs /path/to/your/docs
+```
+
+#### Connect your AI assistant
+
+Add to your MCP client configuration (Claude, OpenCode, Cursor, Copilot):
+
+```json
+{
+  "mcpServers": {
+    "kb-rag": {
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+```
+
+For **stdio mode** (no SSE, default for Claude Code):
+
+```json
+{
+  "mcpServers": {
+    "kb-rag": {
+      "command": "python",
+      "args": ["-m", "kb_server.server"],
+      "cwd": "/path/to/kb-rag-mcp",
+      "env": { "MCP_TRANSPORT": "stdio" }
+    }
+  }
+}
+```
+
+#### Verify everything is working
+
+```bash
+# Qdrant
+curl http://localhost:6333/healthz
+
+# MCP server health
+curl http://localhost:8080/health
+
+# Ask your AI assistant:
+# "Search the knowledge base for <topic in your docs>"
 ```
 
 ---

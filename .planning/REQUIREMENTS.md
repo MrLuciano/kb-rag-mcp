@@ -30,9 +30,9 @@ Requirements for the release-readiness milestone. All 16 features exist; this mi
 
 ### Deployment
 
-- [ ] **DEPL-01**: Production `Dockerfile` with multi-stage build producing a slim image
-- [ ] **DEPL-02**: Quick-start script (`scripts/quickstart.sh`): clone → configure `.env` → start services → verify health
-- [ ] **DEPL-03**: `README.md` end-to-end getting-started guide: install, configure, ingest docs, connect AI tool
+- [x] **DEPL-01**: Production `Dockerfile` with multi-stage build producing a slim image
+- [x] **DEPL-02**: Quick-start script (`scripts/quickstart.sh`): clone → configure `.env` → start services → verify health
+- [x] **DEPL-03**: `README.md` end-to-end getting-started guide: install, configure, ingest docs, connect AI tool
 
 ## v2 Requirements
 
@@ -78,9 +78,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TEST-02 | Phase 3 | Pending |
 | TEST-03 | Phase 3 | Pending |
 | TEST-04 | Phase 3 | Pending |
-| DEPL-01 | Phase 4 | Pending |
-| DEPL-02 | Phase 4 | Pending |
-| DEPL-03 | Phase 4 | Pending |
+| DEPL-01 | Phase 4 | Complete |
+| DEPL-02 | Phase 4 | Complete |
+| DEPL-03 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 15 total
