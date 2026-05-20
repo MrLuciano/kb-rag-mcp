@@ -8,7 +8,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="kb-rag-mcp",
-    version="2.0.0",
+    version="1.0.0",
     description="Knowledge Base RAG system with job management",
     author="KB-RAG Team",
     python_requires=">=3.11",
