@@ -10,7 +10,7 @@ setup(
     name="kb-rag-mcp",
     version="1.0.0",
     description="Knowledge Base RAG system with job management",
-    author="KB-RAG Team",
+    author="Luciano Marinho",
     python_requires=">=3.11",
     packages=find_packages(include=["ingest*", "server*", "observability*"]),
     install_requires=[
