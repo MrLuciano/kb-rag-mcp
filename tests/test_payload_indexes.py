@@ -46,15 +46,16 @@ class TestPayloadIndexCreation:
         assert mock_client.create_collection.called
         
         # Verify indexes created for both fields
-        assert mock_client.create_payload_index.call_count == 2
+        assert mock_client.create_payload_index.call_count == 3
         
-        # Check that both 'product' and 'doc_type' were indexed
+        # Check that 'product', 'doc_type', and 'version' were indexed
         calls = mock_client.create_payload_index.call_args_list
         indexed_fields = [
             call.kwargs["field_name"] for call in calls
         ]
         assert "product" in indexed_fields
         assert "doc_type" in indexed_fields
+        assert "version" in indexed_fields
         
         # Verify keyword schema used
         for call in calls:
@@ -153,6 +154,7 @@ class TestMigrationScript:
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="requires live Qdrant instance")
 class TestPayloadIndexPerformance:
     """
     Integration tests for payload index performance.
