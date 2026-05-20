@@ -49,7 +49,8 @@ def _stub_modules():
     for name in [
         "Distance", "VectorParams", "PointStruct", "Filter",
         "FieldCondition", "MatchValue", "PayloadSchemaType",
-        "HasIdCondition",
+        "HasIdCondition", "NamedSparseVector", "SparseVector",
+        "FilterSelector",
     ]:
         if not hasattr(models, name):
             setattr(models, name, type(name, (), {})())
@@ -59,7 +60,8 @@ def _stub_modules():
     for name in [
         "Distance", "VectorParams", "PointStruct", "Filter",
         "FieldCondition", "MatchValue", "PayloadSchemaType",
-        "HasIdCondition",
+        "HasIdCondition", "NamedSparseVector", "SparseVector",
+        "FilterSelector",
     ]:
         if not hasattr(qm, name):
             setattr(qm, name, getattr(models, name))
