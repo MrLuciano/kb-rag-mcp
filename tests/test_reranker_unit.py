@@ -126,3 +126,127 @@ async def test_load_model_failure_propagates():
                 raise RuntimeError("model load failed")
             mp.setattr(CrossEncoderReranker, "_load_model", bad_load)
             await reranker.rerank("query", [_make_result(0)])
+
+
+# ---------------------------------------------------------------------------
+# _load_model (lines 53-69)
+# ---------------------------------------------------------------------------
+
+
+def test_load_model_sets_model_attribute():
+    """_load_model() sets self.model when CrossEncoder is importable."""
+    reranker = CrossEncoderReranker()
+    assert reranker.model is None
+
+    fake_ce = MagicMock()
+    with pytest.MonkeyPatch().context() as mp:
+        # Patch the sentence_transformers import inside _load_model
+        fake_st = MagicMock()
+        fake_st.CrossEncoder.return_value = fake_ce
+        mp.setitem(sys.modules, "sentence_transformers", fake_st)
+        reranker._load_model()
+
+    assert reranker.model is fake_ce
+
+
+def test_load_model_raises_import_error_when_missing():
+    """_load_model() raises ImportError if sentence_transformers absent."""
+    reranker = CrossEncoderReranker()
+
+    with pytest.MonkeyPatch().context() as mp:
+        # Remove sentence_transformers so import fails
+        mp.setitem(sys.modules, "sentence_transformers", None)
+        with pytest.raises((ImportError, Exception)):
+            reranker._load_model()
+
+
+# ---------------------------------------------------------------------------
+# rerank_with_cache (lines 148-155)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_rerank_with_cache_second_call_uses_cache():
+    """rerank_with_cache() calls model.predict only once on cache hit."""
+    reranker = CrossEncoderReranker()
+    results = [_make_result(i) for i in range(3)]
+    reranker.model = _make_mock_model([0.3, 0.7, 0.5])
+
+    # Build a simple async cache
+    _store: dict = {}
+
+    async def cache_get(key):
+        return _store.get(key)
+
+    async def cache_set(key, value, ttl=None):
+        _store[key] = value
+
+    cache = MagicMock()
+    cache.get = cache_get
+    cache.set = cache_set
+
+    # First call — model.predict should be called
+    await reranker.rerank_with_cache("q", results, cache_manager=cache)
+    first_call_count = reranker.model.predict.call_count
+
+    # Second call with same query + results — should hit cache
+    await reranker.rerank_with_cache("q", results, cache_manager=cache)
+    second_call_count = reranker.model.predict.call_count
+
+    assert first_call_count == 1
+    assert second_call_count == 1  # no additional call on cache hit
+
+
+@pytest.mark.asyncio
+async def test_rerank_with_cache_stores_result():
+    """rerank_with_cache() stores computed result in cache for future use."""
+    reranker = CrossEncoderReranker()
+    results = [_make_result(0), _make_result(1)]
+    reranker.model = _make_mock_model([0.9, 0.1])
+
+    _store: dict = {}
+
+    async def cache_get(key):
+        return _store.get(key)
+
+    async def cache_set(key, value, ttl=None):
+        _store[key] = value
+
+    cache = MagicMock()
+    cache.get = cache_get
+    cache.set = cache_set
+
+    out = await reranker.rerank_with_cache("q", results, cache_manager=cache)
+
+    # Cache must have been populated
+    assert len(_store) == 1
+    cached_value = list(_store.values())[0]
+    assert [r["chunk_id"] for r in out] == [r["chunk_id"] for r in cached_value]
+
+
+# ---------------------------------------------------------------------------
+# get_reranker singleton (lines 176-178)
+# ---------------------------------------------------------------------------
+
+
+def test_get_reranker_returns_singleton():
+    """get_reranker() returns same instance on repeated calls."""
+    import kb_server.retrieval.reranker as reranker_module
+
+    reranker_module._reranker = None
+    from kb_server.retrieval.reranker import get_reranker
+
+    a = get_reranker()
+    b = get_reranker()
+    assert a is b
+
+
+def test_get_reranker_creates_cross_encoder_instance():
+    """get_reranker() returns a CrossEncoderReranker instance."""
+    import kb_server.retrieval.reranker as reranker_module
+
+    reranker_module._reranker = None
+    from kb_server.retrieval.reranker import get_reranker
+
+    result = get_reranker()
+    assert isinstance(result, CrossEncoderReranker)
