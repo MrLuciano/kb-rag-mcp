@@ -234,8 +234,8 @@ End-to-end evaluation: query log analysis, a versioned golden dataset, RAGAS met
 **Key files:**
 - `qa/run_qa.py` — QA pipeline entrypoint; runs eval against `queries.json`
 - `qa/metrics.py` — Hit Rate, MRR, p50_score
-- `server/analytics/query_analyzer.py` — analyzes query logs for low-score and zero-result patterns
-- `server/evaluation/golden_dataset.json` — 10 hand-curated evaluation examples
-- `server/evaluation/ragas_pipeline.py` — RAGAS evaluator stub (LLM integration optional)
+- `kb_server/analytics/query_analyzer.py` — analyzes query logs for low-score and zero-result patterns
+- `kb_server/evaluation/golden_dataset.json` — 10 hand-curated evaluation examples
+- `kb_server/evaluation/ragas_pipeline.py` — RAGAS evaluator stub (LLM integration optional)
 
 **Status:** ✅ Implemented
