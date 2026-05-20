@@ -55,10 +55,10 @@ def show(ctx: click.Context, job_id: str) -> None:
             matching = [j for j in jobs if j.job_id.startswith(job_id)]
 
             if not matching:
-                console.print("[red]✗ Job not found:[/red] {job_id}")
+                console.print(f"[red]✗ Job not found:[/red] {job_id}")
                 sys.exit(1)
             elif len(matching) > 1:
-                console.print("[red]✗ Ambiguous job ID:[/red] {job_id}")
+                console.print(f"[red]✗ Ambiguous job ID:[/red] {job_id}")
                 sys.exit(1)
 
             job = matching[0]
@@ -67,7 +67,7 @@ def show(ctx: click.Context, job_id: str) -> None:
         _display_progress(job)
 
     except Exception as e:  # noqa: F841
-        console.print("[red]✗ Error showing progress:[/red] {e}")
+        console.print(f"[red]✗ Error showing progress:[/red] {e}")
         sys.exit(1)
 
 
@@ -100,17 +100,17 @@ def follow(ctx: click.Context, job_id: str, interval: float) -> None:
             matching = [j for j in jobs if j.job_id.startswith(job_id)]
 
             if not matching:
-                console.print("[red]✗ Job not found:[/red] {job_id}")
+                console.print(f"[red]✗ Job not found:[/red] {job_id}")
                 sys.exit(1)
             elif len(matching) > 1:
-                console.print("[red]✗ Ambiguous job ID:[/red] {job_id}")
+                console.print(f"[red]✗ Ambiguous job ID:[/red] {job_id}")
                 sys.exit(1)
 
             full_job_id = matching[0].job_id
 
         # Follow progress
         console.print(
-            "[dim]Following job {full_job_id[:8]}... "
+            f"[dim]Following job {full_job_id[:8]}... "
             "(Ctrl+C to stop)[/dim]\n"
         )
 
@@ -140,7 +140,7 @@ def follow(ctx: click.Context, job_id: str, interval: float) -> None:
                 # Update or create progress task
                 if task_id is None:
                     task_id = progress.add_task(
-                        "Job {full_job_id[:8]}",
+                        f"Job {full_job_id[:8]}",
                         total=max(job.total_files, 1),
                         status=job.status.value,
                     )
@@ -158,7 +158,9 @@ def follow(ctx: click.Context, job_id: str, interval: float) -> None:
                     "failed",
                     "cancelled",
                 ):
-                    console.print("\n[bold]Job {job.status.value}![/bold]")
+                    console.print(
+                        f"\n[bold]Job {job.status.value}![/bold]"
+                    )
                     _display_progress(job)
                     break
 
@@ -167,7 +169,7 @@ def follow(ctx: click.Context, job_id: str, interval: float) -> None:
     except KeyboardInterrupt:
         console.print("\n[dim]Stopped following[/dim]")
     except Exception as e:  # noqa: F841
-        console.print("[red]✗ Error following progress:[/red] {e}")
+        console.print(f"[red]✗ Error following progress:[/red] {e}")
         sys.exit(1)
 
 
@@ -187,7 +189,7 @@ def _display_progress(job) -> None:
     if job.total_files > 0:
         pct = (job.processed_files / job.total_files) * 100
         progress_text = (
-            "{job.processed_files}/{job.total_files} files ({pct:.0f}%)"
+            f"{job.processed_files}/{job.total_files} files ({pct:.0f}%)"
         )
     else:
         progress_text = "0/0 files"
@@ -199,7 +201,7 @@ def _display_progress(job) -> None:
 
     table.add_row("Job ID", job.job_id[:8])
     table.add_row(
-        "Status", "[{status_color}]{job.status.value}[/{status_color}]"
+        "Status", f"[{status_color}]{job.status.value}[/]"
     )
     table.add_row("Progress", progress_text)
     table.add_row("Total chunks", str(job.total_chunks))
@@ -211,7 +213,7 @@ def _display_progress(job) -> None:
         # Duration or ETA
         if job.completed_at:
             duration = (job.completed_at - job.started_at).total_seconds()
-            table.add_row("Duration", "{duration:.1f}s")
+            table.add_row("Duration", f"{duration:.1f}s")
         elif job.status.value == "running" and job.processed_files > 0:
             # Estimate ETA
             import time
@@ -220,10 +222,10 @@ def _display_progress(job) -> None:
             rate = job.processed_files / elapsed
             remaining = job.total_files - job.processed_files
             eta_seconds = remaining / rate if rate > 0 else 0
-            table.add_row("ETA", "~{eta_seconds:.0f}s")
+            table.add_row("ETA", f"~{eta_seconds:.0f}s")
 
     if job.error:
-        table.add_row("Error", "[red]{job.error}[/red]")
+        table.add_row("Error", f"[red]{job.error}[/red]")
 
     # Display in panel
     panel = Panel(

@@ -193,8 +193,8 @@ def list_jobs(ctx: click.Context, status: str | None, limit: int) -> None:
             # Progress
             if job.total_files > 0:
                 pct = (job.processed_files / job.total_files) * 100
-                progress = "{job.processed_files}/{job.total_files}"
-                progress += " ({pct:.0f}%)"
+                progress = f"{job.processed_files}/{job.total_files}"
+                progress += f" ({pct:.0f}%)"
             else:
                 progress = "0/0"
 
@@ -206,7 +206,7 @@ def list_jobs(ctx: click.Context, status: str | None, limit: int) -> None:
 
             table.add_row(
                 short_id,
-                "[{status_color}]{job.status.value}[/{status_color}]",
+                f"[{status_color}]{job.status.value}[/]",
                 str(job.priority.value),
                 str(Path(job.docs_path).name),
                 progress,
@@ -214,7 +214,7 @@ def list_jobs(ctx: click.Context, status: str | None, limit: int) -> None:
             )
 
         console.print(table)
-        console.print("\nShowing {len(jobs)} job(s)")
+        console.print(f"\nShowing {len(jobs)} job(s)")
 
     except Exception as e:  # noqa: F841
         console.print(f"[red]✗ Error listing jobs:[/red] {e}")
@@ -242,12 +242,12 @@ def show(ctx: click.Context, job_id: str) -> None:
             matching = [j for j in jobs if j.job_id.startswith(job_id)]
 
             if not matching:
-                console.print("[red]✗ Job not found:[/red] {job_id}")
+                console.print(f"[red]✗ Job not found:[/red] {job_id}")
                 sys.exit(1)
             elif len(matching) > 1:
                 console.print(
-                    "[red]✗ Ambiguous job ID:[/red] {job_id} "
-                    "matches {len(matching)} jobs"
+                    f"[red]✗ Ambiguous job ID:[/red] {job_id} "
+                    f"matches {len(matching)} jobs"
                 )
                 sys.exit(1)
 
@@ -255,52 +255,52 @@ def show(ctx: click.Context, job_id: str) -> None:
 
         # Display job details
         console.print("\n[bold]Job Details[/bold]")
-        console.print("{'─' * 50}")
-        console.print("Job ID:       {job.job_id}")
-        console.print("Status:       {job.status.value}")
-        console.print("Priority:     {job.priority.value}")
-        console.print("Path:         {job.docs_path}")
-        console.print("Product:      {job.product_override or '(auto)'}")
-        console.print("Workers:      {job.workers}")
-        console.print("Clean:        {job.clean}")
-        console.print("Force:        {job.force}")
+        console.print("─" * 50)
+        console.print(f"Job ID:       {job.job_id}")
+        console.print(f"Status:       {job.status.value}")
+        console.print(f"Priority:     {job.priority.value}")
+        console.print(f"Path:         {job.docs_path}")
+        console.print(f"Product:      {job.product_override or '(auto)'}")
+        console.print(f"Workers:      {job.workers}")
+        console.print(f"Clean:        {job.clean}")
+        console.print(f"Force:        {job.force}")
 
         # Timestamps - job already has datetime objects
         console.print(
-            "Created:      {job.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+            f"Created:      {job.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
         )
 
         if job.started_at:
             console.print(
                 "Started:      "
-                "{job.started_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                f"{job.started_at.strftime('%Y-%m-%d %H:%M:%S')}"
             )
 
         if job.completed_at:
             console.print(
                 "Completed:    "
-                "{job.completed_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                f"{job.completed_at.strftime('%Y-%m-%d %H:%M:%S')}"
             )
 
             # Duration
             duration = (job.completed_at - job.started_at).total_seconds()
-            console.print("Duration:     {duration:.1f}s")
+            console.print(f"Duration:     {duration:.1f}s")
 
         # Progress
         console.print("\n[bold]Progress[/bold]")
-        console.print("{'─' * 50}")
-        console.print("Total files:      {job.total_files}")
-        console.print("Processed files:  {job.processed_files}")
-        console.print("Total chunks:     {job.total_chunks}")
+        console.print("─" * 50)
+        console.print(f"Total files:      {job.total_files}")
+        console.print(f"Processed files:  {job.processed_files}")
+        console.print(f"Total chunks:     {job.total_chunks}")
 
         if job.total_files > 0:
             pct = (job.processed_files / job.total_files) * 100
-            console.print("Progress:         {pct:.1f}%")
+            console.print(f"Progress:         {pct:.1f}%")
 
         # Error
         if job.error:
             console.print("\n[bold red]Error[/bold red]")
-            console.print("{'─' * 50}")
+            console.print("─" * 50)
             console.print(job.error)
 
     except Exception as e:  # noqa: F841
@@ -329,17 +329,17 @@ def pause(ctx: click.Context, job_id: str) -> None:
             matching = [j for j in jobs if j.job_id.startswith(job_id)]
 
             if not matching:
-                console.print("[red]✗ Job not found:[/red] {job_id}")
+                console.print(f"[red]✗ Job not found:[/red] {job_id}")
                 sys.exit(1)
             elif len(matching) > 1:
-                console.print("[red]✗ Ambiguous job ID:[/red] {job_id}")
+                console.print(f"[red]✗ Ambiguous job ID:[/red] {job_id}")
                 sys.exit(1)
 
             full_job_id = matching[0].job_id
             manager.pause_job(full_job_id)
 
         console.print(
-            "[green]✓[/green] Job paused: [bold]{full_job_id[:8]}[/bold]"
+            f"[green]✓[/green] Job paused: [bold]{full_job_id[:8]}[/bold]"
         )
 
     except Exception as e:  # noqa: F841
@@ -368,17 +368,17 @@ def resume(ctx: click.Context, job_id: str) -> None:
             matching = [j for j in jobs if j.job_id.startswith(job_id)]
 
             if not matching:
-                console.print("[red]✗ Job not found:[/red] {job_id}")
+                console.print(f"[red]✗ Job not found:[/red] {job_id}")
                 sys.exit(1)
             elif len(matching) > 1:
-                console.print("[red]✗ Ambiguous job ID:[/red] {job_id}")
+                console.print(f"[red]✗ Ambiguous job ID:[/red] {job_id}")
                 sys.exit(1)
 
             full_job_id = matching[0].job_id
             manager.resume_job(full_job_id)
 
         console.print(
-            "[green]✓[/green] Job resumed: [bold]{full_job_id[:8]}[/bold]"
+            f"[green]✓[/green] Job resumed: [bold]{full_job_id[:8]}[/bold]"
         )
 
     except Exception as e:  # noqa: F841
@@ -407,18 +407,18 @@ def cancel(ctx: click.Context, job_id: str) -> None:
             matching = [j for j in jobs if j.job_id.startswith(job_id)]
 
             if not matching:
-                console.print("[red]✗ Job not found:[/red] {job_id}")
+                console.print(f"[red]✗ Job not found:[/red] {job_id}")
                 sys.exit(1)
             elif len(matching) > 1:
-                console.print("[red]✗ Ambiguous job ID:[/red] {job_id}")
+                console.print(f"[red]✗ Ambiguous job ID:[/red] {job_id}")
                 sys.exit(1)
 
             full_job_id = matching[0].job_id
             manager.cancel_job(full_job_id)
 
         console.print(
-            "[green]✓[/green] Job cancelled: "
-            "[bold]{full_job_id[:8]}[/bold]"
+            f"[green]✓[/green] Job cancelled: "
+            f"[bold]{full_job_id[:8]}[/bold]"
         )
 
     except Exception as e:  # noqa: F841
@@ -473,18 +473,18 @@ def clean(ctx: click.Context, status: str, days: int, dry_run: bool) -> None:
 
         if not to_clean:
             console.print(
-                "[yellow]No {status} jobs older than "
-                "{days} days found[/yellow]"
+                f"[yellow]No {status} jobs older than "
+                f"{days} days found[/yellow]"
             )
             return
 
         if dry_run:
             console.print(
-                "[yellow]Dry run: would delete {len(to_clean)} "
+                f"[yellow]Dry run: would delete {len(to_clean)} "
                 "job(s)[/yellow]"
             )
             for job in to_clean:
-                console.print("  - {job.job_id[:8]} ({job.docs_path})")
+                console.print(f"  - {job.job_id[:8]} ({job.docs_path})")
             return
 
         # Delete jobs

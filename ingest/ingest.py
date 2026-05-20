@@ -280,6 +280,28 @@ def chunk_text(text: str, file_type: str) -> list[str]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# DOCUMENT PARSING HELPER
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def parse_document(file_path: Path) -> list[dict]:
+    """
+    Parse a document file into a list of chunk dicts.
+
+    Returns a list of dicts with keys: text, file_type, page (optional).
+    Returns an empty list if the file type is unsupported.
+    """
+    ext = file_path.suffix.lower()
+    file_type = EXT_TYPE_MAP.get(ext)
+    if not file_type:
+        return []
+    extractor = EXTRACTORS.get(file_type)
+    if not extractor:
+        return []
+    return extractor(file_path)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # PIPELINE PRINCIPAL
 # ─────────────────────────────────────────────────────────────────────────────
 

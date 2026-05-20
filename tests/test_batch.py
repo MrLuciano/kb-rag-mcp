@@ -121,9 +121,8 @@ async def test_qdrant_connection_pooling_grpc():
     """Test Qdrant client gRPC connection."""
     with (
         patch("kb_server.vector_store.AsyncQdrantClient") as mock_client_cls,
-        patch.dict(
-            "os.environ", {"QDRANT_GRPC": "true", "QDRANT_GRPC_PORT": "6334"}
-        ),
+        patch("kb_server.vector_store.QDRANT_GRPC", True),
+        patch("kb_server.vector_store.QDRANT_GRPC_PORT", 6334),
     ):
         mock_instance = AsyncMock()
         mock_client_cls.return_value = mock_instance
@@ -131,15 +130,15 @@ async def test_qdrant_connection_pooling_grpc():
             return_value=Mock(collections=[])
         )
         mock_instance.create_collection = AsyncMock()
-        
+
         from kb_server.vector_store import VectorStore
-        
+
         store = VectorStore()
         await store.connect()
-        
+
         # Verify gRPC connection
         call_kwargs = mock_client_cls.call_args.kwargs
-        
+
         assert call_kwargs.get("prefer_grpc") is True
         assert call_kwargs.get("grpc_port") == 6334
 

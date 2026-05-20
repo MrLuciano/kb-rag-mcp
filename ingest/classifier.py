@@ -425,3 +425,26 @@ def classify(
         pass
 
     return result
+
+
+def classify_document(
+    file_path: Path,
+    product_override: str | None = None,
+) -> dict[str, str]:
+    """
+    Convenience wrapper around classify() that uses the file's parent
+    directory as docs_root. Used by batch_processor and other callers
+    that do not have a separate docs_root.
+
+    Args:
+        file_path: Path to file being classified
+        product_override: Optional product name override
+
+    Returns:
+        dict with product, doc_type, and optionally version keys
+    """
+    return classify(
+        file_path,
+        docs_root=file_path.parent,
+        product_override=product_override,
+    )
