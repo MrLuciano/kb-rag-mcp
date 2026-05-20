@@ -22,6 +22,7 @@ from pathlib import Path
 
 # ── CRÍTICO: carrega o .env ANTES de qualquer import que leia variáveis ──────
 _project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(_project_root))
 from config.bootstrap_env import bootstrap_env
 bootstrap_env()
 
