@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Release-Readiness
-status: complete
-stopped_at: "v1.0 milestone closed — all 4 phases shipped, 15/15 requirements met."
-last_updated: "2026-05-19T00:00:00.000Z"
-last_activity: 2026-05-19 -- v1.0 milestone closed; 491 tests passing, 88% kb_server branch coverage
+milestone: v1.1
+milestone_name: Quality & Operational Excellence
+status: planning
+last_updated: "2026-05-21T20:49:12.738Z"
+last_activity: 2026-05-21
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,13 +24,15 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Milestone: v1.0 — SHIPPED 2026-05-19
-All 4 phases complete. All 15 v1 requirements met.
-Next: Run `/gsd-new-milestone` to define v1.1 requirements and roadmap.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-21 — Milestone v1.1 started
 
 ## Accumulated Context
 
 ### Key Decisions (v1.0)
+
 - `kb_server/` is single canonical module; `server/` deleted
 - `bootstrap_env()` in `config/` — single env-loading entry point
 - `IngestRegistry` → `ingest/core/metadata.py`
@@ -40,6 +41,7 @@ Next: Run `/gsd-new-milestone` to define v1.1 requirements and roadmap.
 - MagicMock pollution from qdrant_client stubs — use `getattr(x, 'value', x)` pattern for enum comparisons
 
 ### Known Tech Debt
+
 - `PayloadSchemaType` assertion weakened in `test_payload_indexes.py`
 - `helm lint` not validated (helm not installed in WSL dev)
 - LM Studio must be running locally for live ingest/eval

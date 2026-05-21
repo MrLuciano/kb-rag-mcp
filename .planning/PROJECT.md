@@ -8,6 +8,20 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
+## Current Milestone: v1.1 Quality & Operational Excellence
+
+**Goal:** Harden the server for real-world remote deployment, expand test coverage with proper isolation mocking, and enforce a quality gate.
+
+**Target features:**
+- SSE stability fix + regression tests (handle_sse NoneType crash on starlette 1.0.0)
+- Python 3.13 compatibility — CI matrix + any 3.11-only constructs fixed
+- OTCS-specific doc tagging — auto-tag ingested docs by product area
+- Ingest status / health CLI — `kb-ingest status` with last run, doc count, errors
+- Unit tests for all Python source with mocks for Qdrant, LM Studio, all external deps
+- Logging coverage — all methods logged; structured log coverage audit
+- Quality gate — coverage threshold enforced in CI; target ≥90% branch on `kb_server/`
+- Documentation improvements — inline docstrings, architecture, operational runbook
+
 ## Current State (v1.0)
 
 - **Shipped:** 2026-05-19
@@ -52,7 +66,21 @@ AI assistants stop hallucinating about closed-source products — every answer i
 
 ### Active
 
-*No active requirements. Planning next milestone with `/gsd-new-milestone`.*
+- [ ] **SSE-01**: SSE `handle_sse` returns `Response()` on disconnect; regression test covers starlette 1.0.0 + Python 3.13
+- [ ] **SSE-02**: No `307 Temporary Redirect` loop on POST to `/messages/`; trailing-slash consistency verified
+- [ ] **COMPAT-01**: All CI jobs run on Python 3.11 and Python 3.13 without failures
+- [ ] **COMPAT-02**: No Python 3.11-only syntax constructs remain that break on 3.13
+- [ ] **INGEST-01**: Ingested OTCS docs are auto-tagged by product area (WebReports, xECM, Workflow, etc.) without manual `--product` flag
+- [ ] **INGEST-02**: `kb-ingest status` command shows last ingest time, total docs, total chunks, error count per source
+- [ ] **TEST-01**: Every Python module in `kb_server/` and `ingest/` has a corresponding unit test file
+- [ ] **TEST-02**: All unit tests run without requiring Qdrant, LM Studio, or Redis — external deps fully mocked
+- [ ] **TEST-03**: Integration tests remain separate and clearly marked; can be skipped with `pytest -m "not integration"`
+- [ ] **LOG-01**: Every public method in `kb_server/` emits at least one structured log entry at appropriate level
+- [ ] **LOG-02**: Log coverage audit report produced; gaps resolved
+- [ ] **QUAL-01**: CI enforces ≥90% branch coverage on `kb_server/`; build fails on regression
+- [ ] **QUAL-02**: `pyproject.toml` `[tool.coverage.report]` `fail_under = 90` set and tested
+- [ ] **DOC-01**: All public functions and classes in `kb_server/` and `ingest/` have English docstrings
+- [ ] **DOC-02**: `docs/` folder updated to reflect v1.1 changes (architecture, ingest workflow, remote deploy)
 
 ### Out of Scope
 
@@ -109,4 +137,4 @@ AI assistants stop hallucinating about closed-source products — every answer i
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-19 after v1.0 milestone*
+*Last updated: 2026-05-21 — v1.1 milestone started*
