@@ -10,10 +10,13 @@ import asyncio
 import sys
 from pathlib import Path
 
+# Add project root before importing local packages.
+_project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(_project_root))
+
 from config.bootstrap_env import bootstrap_env
 
 # ── Carrega .env ANTES de qualquer import que leia os.getenv ─────────
-_project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(_project_root / "server"))
 
 bootstrap_env()
