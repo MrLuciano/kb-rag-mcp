@@ -24,6 +24,30 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 *Not yet planned. Run `/gsd-new-milestone` to define requirements and roadmap for v1.1.*
 
+## Backlog
+
+### Phase 999.1: Source code comments and documentation all in English (BACKLOG)
+
+**Goal:** Ensure all inline comments, docstrings, log messages, and internal documentation across Python source files are written in English for consistency and open-source readiness.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.2: Update docs folder, README all languages, add Spanish README (BACKLOG)
+
+**Goal:** Sync the `docs/` folder with all changes shipped since v1.0, update README.md and README.pt-BR.md to reflect current state, and add a new README.es.md in Spanish.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
