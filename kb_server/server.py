@@ -649,9 +649,10 @@ async def main():
     if TRANSPORT == "sse":
         import uvicorn
         from starlette.applications import Starlette
+        from starlette.responses import Response
         from starlette.routing import Mount, Route
 
-        sse = SseServerTransport("/messages")
+        sse = SseServerTransport("/messages/")
 
         async def handle_sse(request):
             async with sse.connect_sse(
@@ -660,11 +661,12 @@ async def main():
                 await app.run(
                     streams[0], streams[1], app.create_initialization_options()
                 )
+            return Response()
 
         starlette_app = Starlette(
             routes=[
                 Route("/sse", endpoint=handle_sse),
-                Mount("/messages", app=sse.handle_post_message),
+                Mount("/messages/", app=sse.handle_post_message),
             ]
         )
 
