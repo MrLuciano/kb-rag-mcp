@@ -130,6 +130,50 @@ Plans:
 
 ---
 
+### Phase 999.3: System health dashboard — single page served via httpd pod (BACKLOG)
+
+**Goal:** Consolidate health/status access to all subsystems (Qdrant health, kb-rag-mcp server, ingestion status) into a single beautiful dashboard page served in a httpd pod.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.4: PowerShell script opens ports for all subsystems (BACKLOG)
+
+**Goal:** Ensure `scripts/start-kb-rag.ps1` opens the required ports for all subsystems (Qdrant, MCP server, health server) automatically during local/dev setup.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.5: Automatic document classification — Vendor/Product/Subsystem/Version (BACKLOG)
+
+**Goal:** During ingestion, auto-classify documents with attributes: Vendor, Product, Subsystem, Module, Document Type, Version. Classification inferred from filename, folder path, and first-page content (title, header, footer). Pattern: `OpenText Documentum Webtop Administrator Guide 23.4.pdf`.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.6: Reclassification capability for document database (BACKLOG)
+
+**Goal:** When automatic classification (999.5) is ready, provide a mechanism to reclassify already-ingested documents — either reclassify in-place in the database, or re-ingest with updated metadata.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
