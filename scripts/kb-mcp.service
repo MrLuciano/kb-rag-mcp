@@ -1,6 +1,6 @@
 [Unit]
 Description=KB RAG MCP Server
-Documentation=https://github.com/seu-usuario/kb-rag-mcp
+Documentation=https://github.com/MrLuciano/kb-rag-mcp
 After=network.target docker.service
 Wants=docker.service
 
