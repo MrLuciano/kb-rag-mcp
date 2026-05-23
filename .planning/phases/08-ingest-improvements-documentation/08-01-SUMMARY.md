@@ -101,5 +101,16 @@ None — no external service configuration required.
 
 ---
 
+## Self-Check: PASSED
+
+- [x] SUMMARY.md exists at `.planning/phases/08-ingest-improvements-documentation/08-01-SUMMARY.md`
+- [x] All 4 commits found: `f08ee20`, `66b8e73`, `cca93c7`, `9a3a564`
+- [x] Python imports work: PRODUCT_ALIASES=29 entries, PRODUCT_FROM_NAME=22 entries
+- [x] STATE.md and ROADMAP.md not modified
+- [x] All 38 tests pass (pytest tests/test_classifier.py -x -v)
+- [x] No deviations from plan
+- [x] No stubs detected — all added aliases and patterns are real, tests are concrete
+- [x] No threat flags — no new network endpoints, auth paths, or schema changes introduced
+
 *Phase: 08-ingest-improvements-documentation*
 *Completed: 2026-05-23*
