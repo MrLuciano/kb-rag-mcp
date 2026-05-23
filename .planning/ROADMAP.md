@@ -83,20 +83,32 @@ Plans:
 
 ### Phase 7: Logging, Quality Gate & Coverage Enforcement
 
-**Goal:** All public methods emit structured logs; CI enforces ≥90% branch coverage on `kb_server/` and fails the build on regression.
+**Goal:** All public methods emit structured logs; CI enforces ≥90% branch coverage on `kb_server/` and `ingest/` and fails the build on regression.
 
 **Milestone:** v1.1
 **Requirements:** LOG-01, LOG-02, QUAL-01, QUAL-02
 
 **Success criteria:**
-1. `pytest --cov=kb_server --cov-fail-under=90` exits 0 on CI
+1. `pytest --cov=kb_server --cov=ingest --cov-fail-under=90` exits 0 on CI
 2. `pyproject.toml` `fail_under = 90` is set and a deliberate coverage regression causes CI to fail
 3. Every public method in `kb_server/` has at least one log entry (verified by audit script)
 4. Logging audit report committed to `docs/logging-audit.md`
 
-**Plans:**
-- [ ] 7-01: Quality gate — set `fail_under = 90` in `pyproject.toml`, update CI workflow, verify enforcement
-- [ ] 7-02: Logging coverage audit + gap fill — audit all public methods, add missing log calls, commit audit report
+**Plans:** 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Quality gate: set `fail_under = 90` in `pyproject.toml`, update CI workflow with coverage enforcement on PR-to-master
+- [ ] 07-02-PLAN.md — Logging coverage audit + gap fill: audit all public methods, add missing log calls to kb_server/ and ingest/, commit audit report
+
+### Wave Dependencies
+**Wave 1** *(both plans are independent — no blocking dependencies)*
+
+**Cross-cutting constraints:**
+- Quality gate must cover both `kb_server/` and `ingest/` (D-01, D-02)
+- Coverage exclusions are inline `# pragma: no cover` only — no centralized excludes (D-05)
+- Both `pyproject.toml` `fail_under` and CI `--cov-fail-under` must be set (D-06)
+- Coverage enforcement runs on PR to master only (D-07)
+- CI coverage step covers both `--cov=kb_server --cov=ingest` (D-08)
 
 ---
 
@@ -113,10 +125,27 @@ Plans:
 3. All public functions and classes in `kb_server/` and `ingest/` have English docstrings
 4. `docs/` contains updated architecture, ingest workflow, and remote deployment guide
 
-**Plans:**
-- [ ] 8-01: OTCS auto-tagging — filename/path heuristic classifier for WebReports, xECM, Workflow, CSIDE, etc.
-- [ ] 8-02: `kb-ingest status` CLI command — query `kb_metadata.db` and Qdrant for live stats
-- [ ] 8-03: Documentation pass — English docstrings for all public APIs; update `docs/` with v1.1 runbook
+**Plans:** 3 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — OTCS auto-tagging: extend PRODUCT_ALIASES and PRODUCT_FROM_NAME in classifier.py for 10 OTCS product areas
+- [ ] 08-02-PLAN.md — `kb-ingest status` CLI: Rich table querying IngestRegistry per-source summary
+- [ ] 08-03-PLAN.md — Documentation pass: docstring audit script, English Google-style docstring sweep, docs/ refresh with Mermaid diagrams
+
+### Wave Dependencies
+**Wave 1** (independent — no blocking dependencies):
+- 08-01 (OTCS aliases), 08-02 (status CLI)
+
+**Wave 2** *(depends on Wave 1 completion for docstring coverage of new code)*:
+- 08-03 (docstrings + docs refresh)
+
+**Cross-cutting constraints:**
+- OTCS detection: directory name takes priority over filename patterns (D-02)
+- OTCS aliases go inline in classifier.py, not separate file (D-03)
+- Docstrings: translate Portuguese + fill gaps + full Google-style (D-04, D-05)
+- Docstring gaps identified via automated script, fixed in bulk (D-06)
+- Full docs refresh of all 22 docs, not just 3 required (D-07)
+- Architecture diagrams in Mermaid only (D-08)
 
 ## Backlog
 
