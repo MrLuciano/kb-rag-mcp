@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Quality & Operational Excellence
-status: Defining requirements
-last_updated: "2026-05-22T16:08:28.955Z"
-last_activity: 2026-05-21 — Milestone v1.1 started
+status: Planning completed for Phase 5
+last_updated: "2026-05-22T16:45:00.000Z"
+last_activity: 2026-05-22 — Phase 5 plans created (SSE regression tests + CI matrix)
 progress:
   total_phases: 10
   completed_phases: 0
-  total_plans: 0
+  total_plans: 2
   completed_plans: 0
   percent: 0
 ---
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-21 — Milestone v1.1 started
+Phase: 5 — SSE Stability & Python 3.13 Compatibility
+Plan: 05-01 and 05-02 created
+Status: Planning completed
+Last activity: 2026-05-22 — Phase 5 plans created
 
 ## Accumulated Context
 
@@ -39,6 +39,13 @@ Last activity: 2026-05-21 — Milestone v1.1 started
 - fastembed BM25 for sparse vectors (embedded, no separate server)
 - `asyncio_mode = STRICT` — all async tests need `@pytest.mark.asyncio`
 - MagicMock pollution from qdrant_client stubs — use `getattr(x, 'value', x)` pattern for enum comparisons
+
+### Phase 5 Planning Decisions
+
+- SSE tests: both unit (mocked connect_sse) and integration (TestClient connect/disconnect) per user decision
+- CI matrix: Python 3.11, 3.12, 3.13 via GitHub Actions strategy.matrix, on push/PR only (no nightly cron)
+- starlette >=1.0.0 pinned in requirements.in per user decision
+- pip-compile --python-version 3.13 for proactive dep check (no proactive grep scan per user decision)
 
 ### Known Tech Debt
 

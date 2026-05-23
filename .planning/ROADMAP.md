@@ -23,7 +23,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 ### v1.1 Quality & Operational Excellence
 
-- [ ] Phase 5: SSE Stability & Python 3.13 Compatibility (0/2 plans)
+- [ ] Phase 5: SSE Stability & Python 3.13 Compatibility (2/2 plans)
 - [ ] Phase 6: Test Coverage & Isolation (0/3 plans)
 - [ ] Phase 7: Logging, Quality Gate & Coverage Enforcement (0/2 plans)
 - [ ] Phase 8: Ingest Improvements & Documentation (0/3 plans)
@@ -43,9 +43,11 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 3. Full test suite passes on Python 3.11 and Python 3.13 in CI matrix
 4. No `DeprecationWarning` from Python 3.13 in the test run
 
-**Plans:**
-- [ ] 5-01: SSE handler fix + regression tests (`handle_sse` returns `Response()`, trailing slash, starlette 1.0.0)
-- [ ] 5-02: Python 3.13 CI matrix + compatibility audit (`tox`/GitHub Actions matrix, fix any 3.11-only constructs)
+**Plans:** 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — SSE regression tests (unit + integration), starlette version pin
+- [ ] 05-02-PLAN.md — CI matrix (3.11, 3.12, 3.13), dependency compatibility audit
 
 ---
 
@@ -182,7 +184,7 @@ Plans:
 | 2. Data Integrity & Security | v1.0 | 3/3 | Complete | 2026-05-17 |
 | 3. Test Coverage & CI | v1.0 | 3/3 | Complete | 2026-05-19 |
 | 4. Deployment & Release | v1.0 | 3/3 | Complete | 2026-05-19 |
-| 5. SSE Stability & Python 3.13 | v1.1 | 0/2 | Planning | — |
+| 5. SSE Stability & Python 3.13 | v1.1 | 2/2 | Ready | — |
 | 6. Test Coverage & Isolation | v1.1 | 0/3 | Pending | — |
 | 7. Logging, Quality Gate & Coverage | v1.1 | 0/2 | Pending | — |
 | 8. Ingest Improvements & Docs | v1.1 | 0/3 | Pending | — |
