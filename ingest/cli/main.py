@@ -21,6 +21,7 @@ sys.path.insert(0, str(_project_root / "server"))
 from ingest.cli.db import db_group  # noqa: E402
 from ingest.cli.job import job_group  # noqa: E402
 from ingest.cli.progress import progress_group  # noqa: E402
+from ingest.cli.status import status_group  # noqa: E402
 
 
 @click.group()
@@ -72,6 +73,7 @@ def info(ctx: click.Context) -> None:
 cli.add_command(db_group)
 cli.add_command(job_group)
 cli.add_command(progress_group)
+cli.add_command(status_group)
 
 
 if __name__ == "__main__":
