@@ -25,3 +25,11 @@ markers = [
     "fase12: Tests targeting FASE 12 features (hybrid search, reranking).",
     "cli: CLI integration tests that exercise click commands end-to-end.",
 ]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = false
