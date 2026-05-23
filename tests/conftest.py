@@ -39,9 +39,13 @@ def mock_qdrant_client():
         yield mock
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='session')
 def mock_embed_client():
-    """Patch embed client to return fixed vectors without any backend."""
+    """Patch embed client to return fixed vectors without any backend.
+
+    NOT autouse — only applies when a test file explicitly declares this
+    fixture. Embed-client-specific tests manage their own mocking.
+    """
     try:
         import kb_server.embed_client as ec
     except ImportError:
@@ -58,8 +62,12 @@ def mock_embed_client():
         yield
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='session')
 def mock_redis_cache():
-    """Patch RedisCache so tests never connect to Redis."""
+    """Patch RedisCache so tests never connect to Redis.
+
+    NOT autouse — only applies when a test file explicitly declares this
+    fixture. Redis-specific tests manage their own mocking.
+    """
     with patch("kb_server.cache.redis.RedisCache", autospec=True) as mock:
         yield mock
