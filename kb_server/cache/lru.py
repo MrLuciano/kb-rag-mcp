@@ -33,7 +33,10 @@ class CacheEntry:
         """Check if entry has exceeded TTL."""
         if self.ttl is None:
             return False
-        return (time.time() - self.created_at) > self.ttl
+        expired = (time.time() - self.created_at) > self.ttl
+        if expired:
+            logger.debug("CacheEntry expired: key='%s'", self.key)
+        return expired
 
 
 class LRUCache:
@@ -103,16 +106,19 @@ class LRUCache:
         with self._lock:
             entry = self._cache.get(key)
             if entry is None:
+                logger.debug("Cache miss: key='%s'", key)
                 return None
 
             # Check expiry
             if entry.is_expired():
                 self._evict(key, "expired")
+                logger.debug("Cache entry expired: key='%s'", key)
                 return None
 
             # Update LRU order
             self._cache.move_to_end(key)
             entry.last_accessed = time.time()
+            logger.debug("Cache hit: key='%s'", key)
             return entry.value
 
     def put(
@@ -181,15 +187,19 @@ class LRUCache:
         with self._lock:
             if key in self._cache:
                 self._evict(key, "manual")
+                logger.debug("Cache invalidated: key='%s'", key)
                 return True
+            logger.debug("Cache invalidate miss: key='%s'", key)
             return False
 
     def clear(self) -> None:
         """Remove all entries from cache."""
         with self._lock:
+            count = len(self._cache)
             keys = list(self._cache.keys())
             for key in keys:
                 self._evict(key, "clear")
+        logger.info("Cache cleared: %d entries removed", count)
 
     def _evict(self, key: str, reason: str) -> None:
         """Internal: evict entry and update size."""
@@ -215,6 +225,7 @@ class LRUCache:
     def stats(self) -> dict[str, Any]:
         """Return cache statistics."""
         with self._lock:
+            logger.debug("Cache stats requested")
             return {
                 "size_bytes": self._current_size_bytes,
                 "size_mb": self._current_size_bytes / (1024 * 1024),
@@ -239,4 +250,5 @@ class LRUCache:
             Hex digest of concatenated parts
         """
         combined = "|".join(str(p) for p in parts)
-        return hashlib.sha256(combined.encode("utf-8")).hexdigest()
+        digest = hashlib.sha256(combined.encode("utf-8")).hexdigest()
+        return digest

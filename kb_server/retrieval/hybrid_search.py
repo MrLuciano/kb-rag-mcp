@@ -235,5 +235,6 @@ def get_hybrid_searcher() -> HybridSearcher:
     """Get or create global hybrid searcher instance."""
     global _hybrid_searcher
     if _hybrid_searcher is None:
+        log.info("Creating global HybridSearcher instance")
         _hybrid_searcher = HybridSearcher()
     return _hybrid_searcher

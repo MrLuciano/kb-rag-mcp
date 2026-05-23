@@ -22,7 +22,8 @@ def audit_file(filepath: Path) -> dict:
         except SyntaxError:
             return {"module": str(filepath), "error": "SyntaxError"}
 
-    log_levels = {"log.info", "log.debug", "log.warning", "log.error", "log.exception"}
+    log_methods = {"info", "debug", "warning", "error", "exception"}
+    log_vars = {"log", "logger", "log_reg", "lgr"}
 
     results = {}
     for node in ast.walk(tree):
@@ -31,13 +32,9 @@ def audit_file(filepath: Path) -> dict:
                 continue
             has_log = False
             for child in ast.walk(node):
-                if isinstance(child, ast.Call):
-                    if isinstance(child.func, ast.Attribute):
-                        call_str = (
-                            f"{ast.unparse(child.func.value)}."
-                            f"{child.func.attr}"
-                        )
-                        if call_str in log_levels:
+                if isinstance(child, ast.Call) and isinstance(child.func, ast.Attribute):
+                    if child.func.attr in log_methods:
+                        if isinstance(child.func.value, ast.Name) and child.func.value.id in log_vars:
                             has_log = True
                             break
             results[node.name] = has_log

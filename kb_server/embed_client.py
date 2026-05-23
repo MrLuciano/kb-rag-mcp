@@ -465,14 +465,19 @@ async def get_embeddings_batch(
 
 def get_embed_dim() -> int:
     """Retorna a dimensão esperada do modelo configurado."""
-    return KNOWN_DIMS.get(MODEL, 768)
+    dim = KNOWN_DIMS.get(MODEL, 768)
+    log.debug("Embed dim for model '%s': %d", MODEL, dim)
+    return dim
 
 
 def get_cache_stats() -> dict:
     """Return cache statistics."""
     if _embed_cache is None:
+        log.debug("Cache stats: disabled")
         return {"status": "disabled"}
-    return _embed_cache.stats()
+    stats = _embed_cache.stats()
+    log.debug("Cache stats: %s", stats)
+    return stats
 
 
 async def close() -> None:
@@ -492,6 +497,7 @@ async def health_check() -> dict:
     """Verifica se o backend de embedding está respondendo."""
     try:
         vec = await get_embedding("health check")
+        log.info("Embedding health check OK: backend=%s model=%s dims=%d", BACKEND, MODEL, len(vec))
         return {
             "status": "ok",
             "backend": BACKEND,
@@ -499,4 +505,5 @@ async def health_check() -> dict:
             "dims": len(vec),
         }
     except Exception as e:
+        log.warning("Embedding health check FAILED: %s", e)
         return {"status": "error", "backend": BACKEND, "error": str(e)}

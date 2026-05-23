@@ -1,9 +1,12 @@
 """Query logger for RAG observability."""
 import json
+import logging
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any
+
+log = logging.getLogger(__name__)
 
 
 class QueryLogger:
@@ -17,6 +20,7 @@ class QueryLogger:
         """Initialize query logger with database path."""
         self.db_path = db_path
         self._ensure_schema()
+        log.info("QueryLogger initialized: db=%s", db_path)
     
     def _ensure_schema(self) -> None:
         """Create query_log table if it doesn't exist."""
@@ -90,6 +94,10 @@ class QueryLogger:
                 avg_score,
                 latency_ms
             ))
+        log.debug(
+            "Query logged: text='%s...' results=%d latency=%.0fms",
+            query_text[:50], result_count, latency_ms,
+        )
     
     def cleanup_old_queries(self, retention_days: int = 90) -> int:
         """
@@ -112,6 +120,7 @@ class QueryLogger:
             )
             deleted_count = cursor.rowcount
         
+        log.info("Cleaned up %d old queries (retention=%d days)", deleted_count, retention_days)
         return deleted_count
     
     def get_query_stats(self) -> Dict[str, float]:
@@ -133,10 +142,12 @@ class QueryLogger:
             """)
             row = cursor.fetchone()
         
-        return {
+        stats = {
             'total_queries': row[0] or 0,
             'avg_latency_ms': row[1] or 0.0,
             'avg_results': row[2] or 0.0,
             'avg_max_score': row[3] or 0.0,
             'avg_min_score': row[4] or 0.0
         }
+        log.debug("Query stats: %s", stats)
+        return stats

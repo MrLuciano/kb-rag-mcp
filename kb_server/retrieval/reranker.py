@@ -174,5 +174,6 @@ def get_reranker() -> CrossEncoderReranker:
     """Get or create global reranker instance."""
     global _reranker
     if _reranker is None:
+        log.info("Creating global CrossEncoderReranker instance")
         _reranker = CrossEncoderReranker()
     return _reranker

@@ -74,6 +74,7 @@ class CacheManager:
                 self._metrics.cache_misses.labels(
                     backend=self._backend_type
                 ).inc()
+        logger.debug("Cache get: key='%s' hit=%s", key, value is not None)
         return value
 
     def put(
@@ -92,6 +93,7 @@ class CacheManager:
             ttl: TTL in seconds
         """
         self._cache.put(key, value, size_bytes=size_bytes, ttl=ttl)
+        logger.debug("Cache put: key='%s'", key)
 
     def invalidate(self, key: str) -> bool:
         """Remove entry from cache.
@@ -99,16 +101,20 @@ class CacheManager:
         Returns:
             True if key was present and removed
         """
-        return self._cache.invalidate(key)
+        result = self._cache.invalidate(key)
+        logger.debug("Cache invalidate: key='%s' removed=%s", key, result)
+        return result
 
     def clear(self) -> None:
         """Remove all entries from cache."""
         self._cache.clear()
+        logger.info("Cache manager cleared")
 
     def stats(self) -> dict[str, Any]:
         """Return cache statistics."""
         base_stats = self._cache.stats()
         base_stats["backend"] = self._backend_type
+        logger.debug("Cache stats requested")
         return base_stats
 
     def _on_evict(self, key: str, value: Any, reason: str) -> None:

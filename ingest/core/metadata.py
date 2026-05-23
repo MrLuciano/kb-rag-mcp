@@ -277,6 +277,7 @@ class IngestRegistry:
         self.db_path = resolved_db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
+        log_reg.debug("IngestRegistry initialized: db=%s", self.db_path)
 
     def connect(self) -> None:
         self._conn = sqlite3.connect(self.db_path)
@@ -288,6 +289,7 @@ class IngestRegistry:
         if self._conn is not None:
             self._conn.close()
             self._conn = None
+            log_reg.debug("Registry connection closed")
 
     def __enter__(self):
         self.connect()
@@ -344,12 +346,16 @@ class IngestRegistry:
             "SELECT sha256, status FROM files WHERE path = ?", (rel_path,)
         ).fetchone()
         if row is None:
+            log_reg.debug("needs_ingest '%s': novo", rel_path)
             return True, "novo"
         if row["status"] == "error":
+            log_reg.debug("needs_ingest '%s': re-tentativa", rel_path)
             return True, "erro anterior — tentando novamente"
         current_hash = self.sha256(path)
         if current_hash != row["sha256"]:
+            log_reg.debug("needs_ingest '%s': modificado", rel_path)
             return True, "conteúdo modificado"
+        log_reg.debug("needs_ingest '%s': sem alterações", rel_path)
         return False, "sem alterações"
 
     def get_record(self, rel_path: str) -> dict | None:
@@ -357,6 +363,7 @@ class IngestRegistry:
         row = self._conn.execute(
             "SELECT * FROM files WHERE path = ?", (rel_path,)
         ).fetchone()
+        log_reg.debug("get_record '%s': %s", rel_path, "encontrado" if row else "não encontrado")
         return dict(row) if row else None
 
     def mark_ok(
@@ -401,6 +408,7 @@ class IngestRegistry:
             ),
         )
         self._conn.commit()
+        log_reg.info("Marked ok: '%s' chunks=%d", rel_path, chunks)
 
     def mark_error(
         self,
@@ -436,6 +444,7 @@ class IngestRegistry:
             ),
         )
         self._conn.commit()
+        log_reg.warning("Marked error: '%s' error='%s'", rel_path, error[:100])
 
     def mark_deleted(self, rel_path: str) -> None:
         assert self._conn is not None, "Database connection not established."
@@ -444,6 +453,7 @@ class IngestRegistry:
             (rel_path,),
         )
         self._conn.commit()
+        log_reg.info("Marked deleted: '%s'", rel_path)
 
     def summary(self) -> dict:
         assert self._conn is not None, "Database connection not established."
@@ -458,7 +468,9 @@ class IngestRegistry:
                 MAX(indexed_at)                       AS last_indexed
             FROM files
         """).fetchone()
-        return dict(rows)
+        result = dict(rows)
+        log_reg.info("Registry summary: %s", result)
+        return result
 
     def list_errors(self) -> list[dict]:
         assert self._conn is not None, "Database connection not established."
@@ -466,6 +478,7 @@ class IngestRegistry:
             "SELECT path, error_msg, indexed_at FROM files "
             "WHERE status = 'error'"
         ).fetchall()
+        log_reg.debug("Listed %d errors", len(rows))
         return [dict(r) for r in rows]
 
     def list_all(self, status: str | None = None) -> list[dict]:
@@ -480,12 +493,14 @@ class IngestRegistry:
             rows = self._conn.execute(
                 "SELECT * FROM files ORDER BY indexed_at DESC"
             ).fetchall()
+        log_reg.debug("Listed %d files (status=%s)", len(rows), status or "all")
         return [dict(r) for r in rows]
 
     def purge_deleted(self) -> None:
         assert self._conn is not None, "Database connection not established."
         self._conn.execute("DELETE FROM files WHERE status = 'deleted'")
         self._conn.commit()
+        log_reg.info("Purged deleted records")
 
     def reset(self):
         self._conn.execute("DELETE FROM files")
@@ -506,13 +521,17 @@ class IngestRegistry:
                 "SELECT 1 FROM files WHERE path = ? AND status = 'ok'",
                 (rel_path,),
             ).fetchone()
-            return row is not None
+            indexed = row is not None
+            log_reg.debug("is_indexed '%s': %s", rel_path, indexed)
+            return indexed
         row = self._conn.execute(
             "SELECT 1 FROM files WHERE path = ? AND sha256 = ? "
             "AND status = 'ok'",
             (rel_path, checksum),
         ).fetchone()
-        return row is not None
+        indexed = row is not None
+        log_reg.debug("is_indexed '%s' (checksum): %s", rel_path, indexed)
+        return indexed
 
     def mark_indexed(
         self, rel_path: str, checksum: str, chunks: int
@@ -537,3 +556,4 @@ class IngestRegistry:
             (rel_path, checksum, chunks, time.time()),
         )
         self._conn.commit()
+        log_reg.info("Marked indexed: '%s' chunks=%d", rel_path, chunks)

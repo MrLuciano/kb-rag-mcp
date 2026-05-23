@@ -21,6 +21,7 @@ class CollectionManager:
     def __init__(self, client: "AsyncQdrantClient", vector_size: int = 1024) -> None:
         self.client = client
         self.vector_size = vector_size
+        log.info("CollectionManager initialized: vector_size=%d", vector_size)
 
     # ------------------------------------------------------------------
     # Read
@@ -29,12 +30,16 @@ class CollectionManager:
     async def list_collections(self) -> list[str]:
         """Return names of all existing collections."""
         response = await self.client.get_collections()
-        return [c.name for c in response.collections]
+        names = [c.name for c in response.collections]
+        log.debug("Listed %d collections", len(names))
+        return names
 
     async def collection_exists(self, name: str) -> bool:
         """Return True if the named collection exists."""
         existing = await self.list_collections()
-        return name in existing
+        exists = name in existing
+        log.debug("Collection '%s' exists=%s", name, exists)
+        return exists
 
     # ------------------------------------------------------------------
     # Write
