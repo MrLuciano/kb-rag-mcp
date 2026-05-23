@@ -152,3 +152,119 @@ class TestModuleConstants:
             assert isinstance(product, str)
             assert isinstance(patterns, list)
             assert len(patterns) >= 1
+
+
+class TestOtcProductDetection:
+    """OTCS auto-tagging coverage (Phase 8, Plan 01)."""
+
+    # ── Directory-based detection ──
+
+    def test_webreports_directory(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "webreports" / "report.pdf"
+        docs_root.mkdir()
+        (docs_root / "webreports").mkdir()
+        (docs_root / "webreports" / "report.pdf").write_text("")
+        assert infer_product(file_path, docs_root) == "WebReports"
+
+    def test_xecm_directory(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "xecm" / "doc.pdf"
+        docs_root.mkdir()
+        (docs_root / "xecm").mkdir()
+        (docs_root / "xecm" / "doc.pdf").write_text("")
+        assert infer_product(file_path, docs_root) == "xECM"
+
+    def test_workflow_directory(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "workflow" / "process.pdf"
+        docs_root.mkdir()
+        (docs_root / "workflow").mkdir()
+        (docs_root / "workflow" / "process.pdf").write_text("")
+        assert infer_product(file_path, docs_root) == "Workflow"
+
+    def test_cside_directory(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "cside" / "ide.pdf"
+        docs_root.mkdir()
+        (docs_root / "cside").mkdir()
+        (docs_root / "cside" / "ide.pdf").write_text("")
+        assert infer_product(file_path, docs_root) == "CSIDE"
+
+    def test_contentserver_directory(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "contentserver" / "server.pdf"
+        docs_root.mkdir()
+        (docs_root / "contentserver").mkdir()
+        (docs_root / "contentserver" / "server.pdf").write_text("")
+        assert infer_product(file_path, docs_root) == "ContentServer"
+
+    def test_brava_directory(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "brava" / "view.pdf"
+        docs_root.mkdir()
+        (docs_root / "brava").mkdir()
+        (docs_root / "brava" / "view.pdf").write_text("")
+        assert infer_product(file_path, docs_root) == "Brava"
+
+    def test_ot2_directory(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "ot2" / "ot.pdf"
+        docs_root.mkdir()
+        (docs_root / "ot2").mkdir()
+        (docs_root / "ot2" / "ot.pdf").write_text("")
+        assert infer_product(file_path, docs_root) == "OT2"
+
+    # ── Filename-based detection (fallback) ──
+
+    def test_webreports_from_filename(self, tmp_path):
+        """'3-0117 Content Server WebReport Design.pdf' → WebReports"""
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "3-0117 Content Server WebReport Design.pdf"
+        docs_root.mkdir()
+        file_path.write_text("")
+        assert infer_product(file_path, docs_root) == "WebReports"
+
+    def test_xecm_from_filename(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "xECM-Integration-Guide.pdf"
+        docs_root.mkdir()
+        file_path.write_text("")
+        assert infer_product(file_path, docs_root) == "xECM"
+
+    def test_workflow_from_filename(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "Workflow-Admin.pdf"
+        docs_root.mkdir()
+        file_path.write_text("")
+        assert infer_product(file_path, docs_root) == "Workflow"
+
+    # ── Priority tests ──
+
+    def test_directory_takes_priority(self, tmp_path):
+        """Directory name wins over filename pattern."""
+        docs_root = tmp_path / "docs"
+        file_path = docs_root / "workflow" / "WebReport-Overview.pdf"
+        docs_root.mkdir()
+        (docs_root / "workflow").mkdir()
+        (docs_root / "workflow" / "WebReport-Overview.pdf").write_text("")
+        assert infer_product(file_path, docs_root) == "Workflow"
+
+    def test_existing_products_still_work(self, tmp_path):
+        """Regression: AppServer, DataSync, RecordsManagement still resolve."""
+        docs_root = tmp_path / "docs"
+        docs_root.mkdir()
+        # AppServer from directory alias
+        p1 = docs_root / "appserver" / "admin.pdf"
+        p1.parent.mkdir()
+        p1.write_text("")
+        assert infer_product(p1, docs_root) == "AppServer"
+        # DataSync from filename
+        p2 = docs_root / "data-sync-config.pdf"
+        p2.write_text("")
+        assert infer_product(p2, docs_root) == "DataSync"
+        # RecordsManagement from directory
+        p3 = docs_root / "records management" / "rm.pdf"
+        p3.parent.mkdir()
+        p3.write_text("")
+        assert infer_product(p3, docs_root) == "RecordsManagement"
