@@ -16,3 +16,12 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 pythonpath = ["."]
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::pytest.PytestUnknownMarkWarning",
+]
+markers = [
+    "integration: Tests that require live infrastructure (Qdrant, LM Studio, Redis). Skipped via `pytest -m 'not integration'`.",
+    "fase12: Tests targeting FASE 12 features (hybrid search, reranking).",
+    "cli: CLI integration tests that exercise click commands end-to-end.",
+]
