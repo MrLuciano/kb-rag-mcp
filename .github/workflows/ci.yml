@@ -34,7 +34,12 @@ jobs:
       - name: Coverage report
         if: always()
         run: |
-          python -m pytest tests/ --ignore=tests/e2e --ignore=tests/test_sse_handler.py --cov=kb_server --cov-branch --cov-report=term --tb=no -q
+          python -m pytest tests/ --ignore=tests/e2e --ignore=tests/test_sse_handler.py --cov=kb_server --cov=ingest --cov-branch --cov-report=term --tb=no -q
+
+      - name: Coverage enforcement
+        if: github.event_name == 'pull_request' && github.base_ref == 'master'
+        run: |
+          python -m pytest tests/ --ignore=tests/e2e --ignore=tests/test_sse_handler.py --cov=kb_server --cov=ingest --cov-branch --cov-fail-under=90 --tb=no -q
 
       - name: SSE handler tests (separate process)
         run: |
