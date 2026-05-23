@@ -256,6 +256,25 @@ PRODUCT_ALIASES: dict[str, str] = {
     "records management": "RecordsManagement",
     "varios": "geral",
     "templates": "geral",
+    # ── OTCS Product Aliases (Phase 8) ──
+    "contentserver": "ContentServer",
+    "content server": "ContentServer",
+    "webreports": "WebReports",
+    "web reports": "WebReports",
+    "xecm": "xECM",
+    "extended ecm": "xECM",
+    "extendedecm": "xECM",
+    "workflow": "Workflow",
+    "cside": "CSIDE",
+    "content server ide": "CSIDE",
+    "brava": "Brava",
+    "ot2": "OT2",
+    "documentviewer": "DocumentViewer",
+    "document viewer": "DocumentViewer",
+    "apigateway": "APIGateway",
+    "api gateway": "APIGateway",
+    "archivecenter": "ArchiveCenter",
+    "archive center": "ArchiveCenter",
 }
 
 # Padrões de produto inferíveis do próprio nome do arquivo
