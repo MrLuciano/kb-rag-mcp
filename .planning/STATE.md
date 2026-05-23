@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Quality & Operational Excellence
-status: Phase 7 context gathered
-last_updated: "2026-05-23T03:30:00.000Z"
-last_activity: 2026-05-23 -- Phase 7 context gathered (3 gray areas discussed: coverage scope, uncovered margin, enforcement)
+status: Phase 7 fully executed
+last_updated: "2026-05-23T03:50:00.000Z"
+last_activity: 2026-05-23 -- Phase 7 executed (quality gate pyproject.toml + CI enforcement; logging audit script + gap-fill 10 modules + ingest registry)
 progress:
   total_phases: 10
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 3
-  percent: 10
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 5
+  percent: 20
 ---
 
 # Project State
@@ -20,13 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** v1.1 — Phase 6 complete, Phase 7 ready
+**Current focus:** v1.1 — Phase 7 complete, Phase 8 ready
 
 ## Current Position
 
 Phase: 6 — Test Coverage & Isolation — EXECUTED (3 plans)
-Phase 7: Logging & Quality Gate — NOT STARTED
-Last activity: 2026-05-23 -- Phase 6 full execution (classifier tests, mock infra, integration tagging, isolation verification)
+Phase 7: Logging & Quality Gate — EXECUTED (2 plans)
+Last activity: 2026-05-23 -- Phase 7 executed (quality gate pyproject.toml + CI enforcement; logging audit script + gap-fill 10 modules + ingest registry)
 
 ## Phase 6 Outcomes
 
@@ -63,6 +63,38 @@ Last activity: 2026-05-23 -- Phase 6 full execution (classifier tests, mock infr
 - All existing test files were audited: every one is fully mock-isolated; no integration tags needed beyond the 2 already in `test_payload_indexes.py`
 
 ## Accumulated Context
+
+## Phase 7 Outcomes
+
+### Plans Executed
+
+- **07-01**: Quality Gate — `pyproject.toml` coverage config (`fail_under=90`, `branch=true`, `show_missing=true`); CI coverage enforcement step on PR-to-master (`--cov=kb_server --cov=ingest --cov-branch --cov-fail-under=90`)
+- **07-02**: Logging Coverage — `scripts/logging-audit.py` (AST-based scanner); log calls added to 10 kb_server modules + `ingest/core/metadata.py`; `docs/logging-audit.md` report
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| QUAL-01: Coverage threshold config | ✅ | `[tool.coverage.report] fail_under=90` in pyproject.toml; `--cov-branch --cov-fail-under=90` in CI PR-to-master |
+| QUAL-02: Enforcement gate | ✅ | CI step only on `github.event_name == 'pull_request' && github.base_ref == 'master'` |
+| LOG-01: Logging audit script | ✅ | `scripts/logging-audit.py` — scans `kb_server/` + `ingest/` for public methods with log calls |
+| LOG-02: Gap-fill 10 modules | ✅ | 10 kb_server modules + ingest registry; 7 modules at 100%, 3 at 71-86% (utility methods skip) |
+
+### Key Decisions
+
+- Inline `# pragma: no cover` with justification comments (no centralized excludes)
+- Coverage enforcement on PR-to-master only (not every push)
+- Stdlib logging (`kb-mcp.{module}` loggers) — no structlog
+- Audit script handles both `log.*` and `logger.*` naming conventions
+- Utility/accessor methods (`hash_key`, `backend_type`, `conn`, `sha256`) exempt from log calls (noise without value)
+
+### Coverage Baseline
+
+| Module | Branch Coverage |
+|--------|----------------|
+| `kb_server/` | ~88% (baseline) |
+| `ingest/` | TBD (first CI enforcement run) |
+| Logging audit | 50.6% overall; 119/235 public methods with log calls |
 
 ### Key Decisions (v1.0)
 
