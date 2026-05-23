@@ -64,10 +64,20 @@ Plans:
 3. Integration tests are tagged `@pytest.mark.integration` and excluded from unit run
 4. Test count increases by ≥50 new unit tests vs v1.0 baseline (491)
 
-**Plans:**
-- [ ] 6-01: Mock infrastructure — `conftest.py` fixtures for Qdrant, embed client, Redis; remove all live-service assumptions from unit tests
-- [ ] 6-02: Unit test gap fill — write missing test files for all uncovered modules in `kb_server/`
-- [ ] 6-03: Unit test gap fill — write missing test files for all uncovered modules in `ingest/`
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Mock infrastructure: conftest fixtures + registered pytest markers
+- [ ] 06-02-PLAN.md — kb_server test classifier + integration tagging audit
+- [ ] 06-03-PLAN.md — ingest integration tagging + full isolation verification
+
+### Wave Dependencies
+**Wave 2** *(blocked on Wave 1 completion)*
+
+**Cross-cutting constraints:**
+- Every Python module has a dedicated unit test file (TEST-01)
+- `pytest -m "not integration"` requires no Qdrant, LM Studio, or Redis (TEST-02)
+- All integration tests are tagged `@pytest.mark.integration` (TEST-03)
 
 ---
 
@@ -185,6 +195,6 @@ Plans:
 | 3. Test Coverage & CI | v1.0 | 3/3 | Complete | 2026-05-19 |
 | 4. Deployment & Release | v1.0 | 3/3 | Complete | 2026-05-19 |
 | 5. SSE Stability & Python 3.13 | v1.1 | 2/2 | Ready | — |
-| 6. Test Coverage & Isolation | v1.1 | 0/3 | Pending | — |
+| 6. Test Coverage & Isolation | v1.1 | 0/3 | Planned | — |
 | 7. Logging, Quality Gate & Coverage | v1.1 | 0/2 | Pending | — |
 | 8. Ingest Improvements & Docs | v1.1 | 0/3 | Pending | — |
