@@ -294,6 +294,17 @@ PRODUCT_FROM_NAME: list[tuple[str, list[str]]] = [
     ("Apache", [r"\bapache\b"]),
     ("Gradle", [r"\bgradle\b"]),
     ("CMIS", [r"\bcmis\b"]),
+    # ── OTCS Product Filename Patterns (Phase 8) ──
+    ("WebReports", [r"webreport", r"web.?report"]),
+    ("xECM", [r"\bxecm\b", r"extended.?ecm"]),
+    ("Workflow", [r"\bworkflow\b"]),
+    ("CSIDE", [r"\bcside\b", r"content.?server.?ide"]),
+    ("ContentServer", [r"content.?server"]),
+    ("Brava", [r"\bbrava\b"]),
+    ("OT2", [r"\bot2\b"]),
+    ("DocumentViewer", [r"document.?viewer", r"doc.?viewer"]),
+    ("APIGateway", [r"api.?gateway", r"apigateway"]),
+    ("ArchiveCenter", [r"archive.?center", r"archivecenter"]),
 ]
 
 
