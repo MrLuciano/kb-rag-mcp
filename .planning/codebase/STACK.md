@@ -25,7 +25,7 @@
 **Core:**
 - `mcp==1.27.1` — Model Context Protocol server; exposes `search_kb`, `list_documents`, `get_chunk`, `kb_stats` tools
 - `fastapi==0.136.1` — Health check HTTP API (`server/health_server.py`)
-- `starlette==1.0.0` — SSE transport layer for MCP (`server/server.py`)
+- `starlette>=1.0.0` — SSE transport layer for MCP (`server/server.py`)
 - `uvicorn==0.47.0` — ASGI server for SSE and health endpoints
 
 **Ingestion / Parsing:**

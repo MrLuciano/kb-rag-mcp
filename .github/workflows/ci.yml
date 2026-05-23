@@ -9,14 +9,17 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
@@ -26,9 +29,13 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/ --ignore=tests/e2e -q --tb=short
+          python -m pytest tests/ --ignore=tests/e2e --ignore=tests/test_sse_handler.py -q --tb=short
 
       - name: Coverage report
         if: always()
         run: |
-          python -m pytest tests/ --ignore=tests/e2e --cov=kb_server --cov-branch --cov-report=term --tb=no -q
+          python -m pytest tests/ --ignore=tests/e2e --ignore=tests/test_sse_handler.py --cov=kb_server --cov-branch --cov-report=term --tb=no -q
+
+      - name: SSE handler tests (separate process)
+        run: |
+          python -m pytest tests/test_sse_handler.py -q --tb=short
