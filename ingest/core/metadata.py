@@ -472,6 +472,39 @@ class IngestRegistry:
         log_reg.info("Registry summary: %s", result)
         return result
 
+    def per_source_summary(self) -> list[dict]:
+        """
+        Return per-source directory summary from the files table.
+
+        Source directory is the first path component before ``/`` in the
+        ``path`` column. Files at root (no ``/`` in path) are grouped
+        under ``"(root)"``.
+
+        Returns a list of dicts, each with keys: ``source`` (str),
+        ``files`` (int), ``ok`` (int), ``errors`` (int), ``chunks`` (int),
+        ``last_indexed`` (float | None).
+        """
+        assert self._conn is not None, "Database connection not established."
+        rows = self._conn.execute("""
+            SELECT
+                CASE
+                    WHEN INSTR(path, '/') > 0
+                    THEN SUBSTR(path, 1, INSTR(path, '/') - 1)
+                    ELSE '(root)'
+                END AS source,
+                COUNT(*)                                          AS files,
+                SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END)    AS ok,
+                SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) AS errors,
+                COALESCE(SUM(chunks), 0)                          AS chunks,
+                MAX(indexed_at)                                   AS last_indexed
+            FROM files
+            GROUP BY source
+            ORDER BY source
+        """).fetchall()
+        results = [dict(r) for r in rows]
+        log_reg.debug("Per-source summary: %d sources", len(results))
+        return results
+
     def list_errors(self) -> list[dict]:
         assert self._conn is not None, "Database connection not established."
         rows = self._conn.execute(
