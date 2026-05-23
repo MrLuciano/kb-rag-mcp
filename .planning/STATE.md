@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Quality & Operational Excellence
-status: Phase 6 ready to execute
-last_updated: "2026-05-23T02:15:00.000Z"
-last_activity: 2026-05-23 -- Phase 6 planning complete (3 plans)
+status: Phase 7 ready
+last_updated: "2026-05-23T03:00:00.000Z"
+last_activity: 2026-05-23 -- Phase 6 fully executed (3 plans, all TEST-01/02/03 requirements)
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 2
-  percent: 20
+  completed_plans: 5
+  percent: 50
 ---
 
 # Project State
@@ -20,13 +20,43 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** v1.0 shipped — planning next milestone with `/gsd-new-milestone`
+**Current focus:** v1.1 — Phase 6 complete, Phase 7 ready
 
 ## Current Position
 
-Phase: 6 — Test Coverage & Isolation — PLANNED (3 plans ready)
-Phase 5: SSE Stability & Python 3.13 Compatibility — EXECUTED
-Last activity: 2026-05-23 -- Phase 6 planning complete
+Phase: 6 — Test Coverage & Isolation — EXECUTED (3 plans)
+Phase 7: Logging & Quality Gate — NOT STARTED
+Last activity: 2026-05-23 -- Phase 6 full execution (classifier tests, mock infra, integration tagging, isolation verification)
+
+## Phase 6 Outcomes
+
+### Plans Executed
+- **06-01**: Mock infrastructure (3 session fixtures in conftest.py) + pytest marker registration (integration, fase12, cli)
+- **06-02**: 26-unit test_classifier.py + kb_server integration audit (no tags needed — all mock-isolated)
+- **06-03**: Ingest integration audit (no tags needed) + full isolation verification
+
+### Requirements Satisfied
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| TEST-01: Every module has test file | ✅ | ingest/classifier.py → tests/test_classifier.py (26 tests) |
+| TEST-02: Unit tests require no external services | ✅ | `pytest -m "not integration"` — 518 passed, 3 skipped, 2 deselected |
+| TEST-03: Clear integration test tagging | ✅ | 2 integration-tagged tests in test_payload_indexes.py; 520 unit tests pass without them |
+
+### Test Baseline
+| Metric | Count |
+|--------|-------|
+| Total (core) | 525 |
+| Unit (`-m "not integration"`) | 520 |
+| Integration-tagged | 2 |
+| SSE handler (separate process) | 3 |
+| E2E (deployment) | 51 |
+| **Grand total** | **576** |
+| Unit pass rate | 100% |
+
+### Key Decisions
+- `mock_embed_client` and `mock_redis_cache` must NOT be `autouse` — they conflict with test files that manage their own mocking (`test_batch.py`, `test_cache_redis.py`, `test_embed_client_unit.py`)
+- `mock_qdrant_client` is `autouse=True` — critical safety guard against accidental localhost:6333 connections
+- All existing test files were audited: every one is fully mock-isolated; no integration tags needed beyond the 2 already in `test_payload_indexes.py`
 
 ## Accumulated Context
 
@@ -39,15 +69,9 @@ Last activity: 2026-05-23 -- Phase 6 planning complete
 - `asyncio_mode = STRICT` — all async tests need `@pytest.mark.asyncio`
 - MagicMock pollution from qdrant_client stubs — use `getattr(x, 'value', x)` pattern for enum comparisons
 
-### Phase 5 Planning Decisions
-
-- SSE tests: both unit (mocked connect_sse) and integration (TestClient connect/disconnect) per user decision
-- CI matrix: Python 3.11, 3.12, 3.13 via GitHub Actions strategy.matrix, on push/PR only (no nightly cron)
-- starlette >=1.0.0 pinned in requirements.in per user decision
-- pip-compile --python-version 3.13 for proactive dep check (no proactive grep scan per user decision)
-
 ### Known Tech Debt
 
 - `PayloadSchemaType` assertion weakened in `test_payload_indexes.py`
 - `helm lint` not validated (helm not installed in WSL dev)
 - LM Studio must be running locally for live ingest/eval
+- Cross-encoder model lazy-loading deferred to post-Phase 6 (decided D-06)
