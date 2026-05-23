@@ -337,8 +337,8 @@ PYTHONPATH=. pytest --cov=kb_server --cov=ingest --cov=qa --cov-report=term-miss
 PYTHONPATH=. pytest -m "not integration"
 ```
 
-**Current status:** 268 passing, 19 failing (pre-existing, non-critical), 2 skipped  
-**Coverage target:** 70%+ overall, critical paths prioritized  
+**Current status:** 585 passing, 0 failing, 5 skipped  
+**Coverage target:** 90% branch, enforced on kb_server/ + ingest/  
 **Key test files:**
 
 | File | What it tests |

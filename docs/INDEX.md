@@ -11,6 +11,7 @@
 - [REFERENCE.md](REFERENCE.md) — **Living reference: architecture, components, config, ops, QA results**
 - [TESTING.md](TESTING.md) — Testing strategy and guidelines
 - [CHANGELOG.md](CHANGELOG.md) — Release history and per-FASE change log
+- [logging-audit.md](logging-audit.md) — Logging coverage report
 
 ## Technical Reference
 
@@ -63,6 +64,10 @@ FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
 | 15 | Advanced Infrastructure | ✅ Complete |
 | 16 | RAG Performance & Accuracy | ✅ Complete |
 | QA | QA Evaluation Pipeline | ✅ Complete |
+| v1.1-5 | CI Matrix & SSE Fixes | ✅ Complete |
+| v1.1-6 | Test Isolation & Fixtures | ✅ Complete |
+| v1.1-7 | Quality Gate & Logging Coverage | ✅ Complete |
+| v1.1-8 | Ingest Improvements & Documentation | ✅ Wave 1 (OTCS tagging + Status CLI), Wave 2 (Docstrings + Docs refresh)
 
 ---
 
@@ -70,9 +75,9 @@ FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
 
 | Metric | Value |
 |---|---|
-| **Tests passing** | 268 |
-| **Tests failing** | 19 (pre-existing, non-critical) |
-| **Coverage target** | 70%+ overall |
+| **Tests passing** | 585 |
+| **Tests failing** | 0 |
+| **Coverage target** | 90% branch (kb_server/ + ingest/) |
 | **Phases completed** | 16 + QA pipeline |
 | **QA Hit Rate** | 100% |
 | **QA MRR** | 0.78 |

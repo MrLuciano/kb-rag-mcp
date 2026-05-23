@@ -5,7 +5,7 @@ Quick reference for daily operations, maintenance, and monitoring.
 > **Note:** This is a quick reference. For detailed guides, see:
 > - [README.md](../README.md) - Complete setup and usage
 > - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Problem solving
-> - [FASE9_COMPLETION.md](FASE9_COMPLETION.md) - Deployment details
+> - [logging-audit.md](logging-audit.md) — Logging coverage report
 
 ---
 
@@ -318,6 +318,99 @@ sudo -u kb-rag venv/bin/pip install -r requirements.txt
 sudo systemctl restart kb-rag.target
 ```
 
+### Remote Deployment (acemagic/LXC)
+
+Deploy on a remote Ubuntu 22.04+ server without Docker.
+
+#### Prerequisites
+
+```bash
+# Install system dependencies
+sudo apt update
+sudo apt install -y git python3.11 python3.11-venv build-essential curl
+
+# Verify Python version
+python3.11 --version
+```
+
+#### Clone and Setup
+
+```bash
+# Clone repository
+git clone https://github.com/MrLuciano/kb-rag-mcp.git /opt/kb-rag
+cd /opt/kb-rag
+
+# Create virtual environment
+python3.11 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+#### Configure
+
+```bash
+# Copy LXC config template
+cp config/.env.lxc .env
+
+# Edit environment variables
+nano .env
+```
+
+Key variables to adjust for remote deployment:
+
+| Variable | Description | Typical Value |
+|----------|-------------|---------------|
+| `QDRANT_HOST` | Qdrant server address | `localhost` or remote IP |
+| `QDRANT_PORT` | Qdrant gRPC port | `6334` |
+| `EMBED_BACKEND` | Embedding backend | `lmstudio-rest` |
+| `LM_STUDIO_HOST` | LM Studio API host | `localhost` or remote IP |
+| `LM_STUDIO_PORT` | LM Studio API port | `1234` |
+| `SSE_HOST` | MCP SSE bind address | `0.0.0.0` (required for remote access) |
+| `SSE_PORT` | MCP SSE port | `8765` |
+
+#### Run with systemd
+
+```bash
+# Copy systemd service file
+sudo cp scripts/kb-mcp.service /etc/systemd/system/
+
+# Reload and start
+sudo systemctl daemon-reload
+sudo systemctl enable kb-mcp.service
+sudo systemctl start kb-mcp.service
+
+# Check status
+sudo systemctl status kb-mcp.service
+```
+
+#### Health Check
+
+```bash
+# HTTP health endpoint
+curl http://localhost:8080/health
+
+# MCP server info
+python scripts/health_check.py
+
+# Check logs
+sudo journalctl -u kb-mcp.service -n 50 -f
+```
+
+#### Verify Ingestion
+
+```bash
+source .venv/bin/activate
+
+# Check ingest status
+kb-ingest status
+
+# Ingest documents
+kb-ingest ingest --docs /path/to/docs
+```
+
 ### Check Service Resource Limits
 
 ```bash
@@ -355,7 +448,7 @@ curl http://localhost:1234/v1/models  # LM Studio
 
 # 4. Manual start for debugging
 cd /opt/kb-rag
-sudo -u kb-rag venv/bin/python -m server.mcp_server
+sudo -u kb-rag venv/bin/python -m kb_server.server
 ```
 
 ### Out of Disk Space
@@ -488,10 +581,10 @@ sudo -u kb-rag venv/bin/pip install -r requirements.txt
 
 - **Detailed Troubleshooting:** [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 - **Complete Setup Guide:** [README.md](../README.md)
-- **Deployment Details:** [FASE9_COMPLETION.md](FASE9_COMPLETION.md)
+- **Deployment Details:** [archive/FASE9_COMPLETION.md](archive/FASE9_COMPLETION.md)
 - **GitHub Issues:** https://github.com/MrLuciano/kb-rag-mcp/issues
 
 ---
 
-*Quick reference for KB-RAG v0.9.0+ operations*  
-*Last updated: 2026-05-15*
+*Quick reference for KB-RAG-MCP v1.1 operations*  
+*Last updated: 2026-05-23*
