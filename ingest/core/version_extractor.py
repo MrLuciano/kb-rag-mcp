@@ -48,16 +48,17 @@ class VersionExtractor:
     ]
 
     def extract(self, file_path: Path) -> str | None:
-        """
-        Extract version from file path.
+        """Extract version string from a file path.
 
-        Checks filename first, then parent directories.
+        Checks the filename first, then the parent directory name, and
+        finally the grandparent directory name. Uses configurable regex
+        patterns for version detection.
 
         Args:
-            file_path: Path to document file
+            file_path: Path to the document file.
 
         Returns:
-            Version string or None if not found
+            Version string (e.g., '22.3', 'CE 24.4') or None if not found.
         """
         # Sources to check (priority order)
         sources = [
@@ -100,13 +101,14 @@ _extractor = VersionExtractor()
 
 
 def extract_version(file_path: Path) -> str | None:
-    """
-    Convenience function to extract version from path.
+    """Convenience function to extract a version string from a file path.
+
+    Uses the singleton VersionExtractor instance.
 
     Args:
-        file_path: Path to document file
+        file_path: Path to the document file.
 
     Returns:
-        Version string or None if not found
+        Version string or None if not found.
     """
     return _extractor.extract(file_path)

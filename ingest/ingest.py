@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
-Pipeline de ingestão da Knowledge Base.
+Knowledge Base ingestion pipeline.
 
-Suporta: PDF, DOCX, XLSX, PPTX, TXT, MD e código fonte.
-Uso:
-    python ingest.py --docs /caminho/para/docs
-    python ingest.py --docs /caminho --product meu-produto --workers 4
-    python ingest.py --file /caminho/para/arquivo.pdf \
-        # ingestão de arquivo único
-    python ingest.py --clean  # limpa toda a KB antes de reingerir
+Supports PDF, DOCX, XLSX, PPTX, TXT, MD, source code, and legacy
+Office formats. Extracts text, chunks with overlap, generates embeddings,
+and upserts to Qdrant. Tracks file state in the IngestRegistry.
+
+Usage:
+    python ingest.py --docs /path/to/docs
+    python ingest.py --docs /path --product my-product --workers 4
+    python ingest.py --file /path/to/file.pdf
+    python ingest.py --clean  # clear KB before re-ingesting
 """
 
 import argparse
@@ -98,7 +100,17 @@ CHUNK_SETTINGS = {
 
 
 def extract_pdf(path: Path) -> list[dict]:
-    """Extrai texto de PDF preservando estrutura de páginas."""
+    """Extract text from a PDF file preserving page structure.
+
+    Attempts docling first (best for complex PDFs with tables/figures),
+    then falls back to PyMuPDF (fitz) for simpler documents.
+
+    Args:
+        path: Path to the PDF file.
+
+    Returns:
+        List of dicts with 'text' and 'page' keys, or empty list on error.
+    """
     chunks_raw = []
     try:
         # Tenta docling primeiro (melhor para PDFs complexos)
@@ -137,6 +149,15 @@ def extract_pdf(path: Path) -> list[dict]:
 
 
 def extract_docx(path: Path) -> list[dict]:
+    """Extract text from a DOCX file using python-docx.
+
+    Args:
+        path: Path to the DOCX file.
+
+    Returns:
+        List with a single dict containing concatenated paragraph text,
+        or empty list on error.
+    """
     try:
         from docx import Document
 
@@ -152,6 +173,18 @@ def extract_docx(path: Path) -> list[dict]:
 
 
 def extract_xlsx(path: Path) -> list[dict]:
+    """Extract text from an XLSX file using openpyxl.
+
+    Reads all sheets in read-only mode, concatenating rows with tab
+    separators.
+
+    Args:
+        path: Path to the XLSX file.
+
+    Returns:
+        List of dicts with 'text' and 'page' (sheet name) keys,
+        or empty list on error.
+    """
     try:
         import openpyxl
 
@@ -185,6 +218,17 @@ def extract_xlsx(path: Path) -> list[dict]:
 
 
 def extract_pptx(path: Path) -> list[dict]:
+    """Extract text from a PPTX file using python-pptx.
+
+    Iterates through slides collecting text from all shapes.
+
+    Args:
+        path: Path to the PPTX file.
+
+    Returns:
+        List of dicts with 'text' and 'page' (slide number) keys,
+        or empty list on error.
+    """
     try:
         from pptx import Presentation
 
@@ -207,6 +251,15 @@ def extract_pptx(path: Path) -> list[dict]:
 
 
 def extract_text(path: Path) -> list[dict]:
+    """Extract text from a plain text file.
+
+    Args:
+        path: Path to the text file.
+
+    Returns:
+        List with a single dict containing the full file text,
+        or empty list on error.
+    """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
         return [{"text": text, "page": None}]
@@ -216,7 +269,17 @@ def extract_text(path: Path) -> list[dict]:
 
 
 def extract_code(path: Path) -> list[dict]:
-    """Extrai código com comentário de linguagem para melhorar o contexto."""
+    """Extract source code wrapped in a language-marked code block.
+
+    Adds a language identifier (e.g., ```python) for better context.
+
+    Args:
+        path: Path to the source code file.
+
+    Returns:
+        List with a single dict containing the code in a fenced block,
+        or empty list on error.
+    """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
         lang = path.suffix.lstrip(".")
@@ -315,9 +378,22 @@ async def process_file(
     product_override: str | None = None,
     force: bool = False,
 ) -> tuple[int, str]:
-    """
-    Processa um arquivo e insere seus chunks no Qdrant.
-    Retorna (chunks_gerados, status) onde status é 'ok'|'skipped'|'error'.
+    """Process a single file: extract, chunk, embed, and upsert to Qdrant.
+
+    Classifies the file (product, doc_type), computes embeddings via batch
+    API, upserts chunks to the vector store, and updates the registry.
+
+    Args:
+        file_path: Path to the file to process.
+        docs_root: Root directory for relative path computation.
+        store: VectorStore instance for upsert operations.
+        registry: IngestRegistry for tracking file state.
+        product_override: Optional product name override.
+        force: If True, re-ingest even if no changes detected.
+
+    Returns:
+        Tuple of (chunk_count, status) where status is 'ok', 'skipped',
+        or 'error'.
     """
     from ingest.classifier import classify
     from kb_server.embed_client import get_embeddings_batch
@@ -431,7 +507,21 @@ async def run_ingest(
     force: bool = False,
     sync: bool = False,
 ):
-    """Executa a ingestão completa ou de um arquivo específico."""
+    """Run the full ingest pipeline or process a single file.
+
+    Connects to Qdrant and the registry, discovers files to process,
+    runs them with bounded parallelism, logs a summary, and handles
+    sync-deletion of removed files.
+
+    Args:
+        docs_path: Root directory containing documents to ingest.
+        product: Optional product name override for all files.
+        workers: Number of parallel file processors (default 2).
+        single_file: Process a single file instead of a directory.
+        clean: Clear KB and registry before re-ingesting.
+        force: Re-ingest even if no changes detected.
+        sync: Mark deleted files removed from disk in registry.
+    """
     from ingest.core.metadata import IngestRegistry
     from kb_server.vector_store import VectorStore
 
@@ -532,7 +622,7 @@ def _sync_deleted(registry, docs_root: Path, current_files: list[Path]):
 
 
 def cmd_status(args):
-    """Exibe relatório do registry sem rodar ingestão."""
+    """Display registry status report without running ingestion."""
     import datetime
 
     from ingest.core.metadata import IngestRegistry
@@ -543,6 +633,14 @@ def cmd_status(args):
     summary = registry.summary()
 
     def ts(t):
+        """Format a Unix timestamp as a date string.
+
+        Args:
+            t: Unix timestamp (float).
+
+        Returns:
+            Formatted date string 'YYYY-MM-DD HH:MM', or em-dash if None.
+        """
         if not t:
             return "—"
         return datetime.datetime.fromtimestamp(t).strftime("%Y-%m-%d %H:%M")
@@ -585,8 +683,13 @@ def cmd_status(args):
 
 
 def main():
+    """CLI entry point for the ingest pipeline.
+
+    Parses arguments and routes to either the ingest subcommand or the
+    status subcommand. Supports backward-compatible direct flags.
+    """
     parser = argparse.ArgumentParser(
-        description="KB RAG — Pipeline de Ingestão"
+        description="KB RAG — Ingest Pipeline"
     )
     sub = parser.add_subparsers(dest="cmd")
 

@@ -283,16 +283,17 @@ _BACKENDS = {
 
 
 async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
-    """
-    Retorna o vetor de embedding para o texto usando o backend
-    configurado.
+    """Return the embedding vector for the given text using the configured backend.
+
+    Checks the embedding cache first before calling the backend.
+    Backend is selected via the EMBED_BACKEND environment variable.
 
     Args:
-        text: Text to embed
-        use_cache: Whether to use cache (default True)
+        text: Text to embed.
+        use_cache: Whether to use cache (default True).
 
     Returns:
-        Embedding vector
+        Embedding vector as a list of floats.
     """
     # Check cache first
     if use_cache and _embed_cache is not None:
@@ -464,7 +465,7 @@ async def get_embeddings_batch(
 
 
 def get_embed_dim() -> int:
-    """Retorna a dimensão esperada do modelo configurado."""
+    """Return the expected embedding dimension for the configured model."""
     dim = KNOWN_DIMS.get(MODEL, 768)
     log.debug("Embed dim for model '%s': %d", MODEL, dim)
     return dim

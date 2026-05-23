@@ -100,7 +100,6 @@ PORTUGUESE_WORDS: set[str] = {
     "erros",
     "exceção",
     "exceções",
-    "string",
     "booleano",
     "inteiro",
     "chamada",
@@ -113,16 +112,34 @@ PORTUGUESE_WORDS: set[str] = {
 
 
 def _has_portuguese(docstring: str) -> bool:
-    """Heuristic check: returns True if docstring contains Portuguese words."""
+    """Heuristic check: returns True if docstring contains Portuguese words.
+
+    Skips standard Google-style section headers (Args, Returns, Raises)
+    and common English words that overlap with Portuguese.
+    """
     lower = docstring.lower()
-    for word in PORTUGUESE_WORDS:
-        # Word-boundary check using simple substring heuristics
-        if f" {word} " in lower or lower.startswith(f"{word} ") or lower.endswith(f" {word}"):
-            return True
-        # Also check with common punctuation (period, comma, colon, etc.)
-        for suffix in (".", ",", ":", ";", "!", "?", ")", "\n", "'", '"'):
-            if f" {word}{suffix}" in lower or lower == word + suffix:
+    # Skip standard Google-style section headers (false positives)
+    section_headers = {"args", "returns", "raises"}
+    for line in lower.split("\n"):
+        stripped = line.strip()
+        if stripped in ("args:", "returns:", "raises:") or stripped.startswith(
+            ("args: ", "returns: ", "raises: ")
+        ):
+            continue
+        for word in PORTUGUESE_WORDS:
+            if word in section_headers:
+                continue
+            # Word-boundary check using simple substring heuristics
+            if (
+                f" {word} " in line
+                or line.startswith(f"{word} ")
+                or line.endswith(f" {word}")
+            ):
                 return True
+            # Also check with common punctuation
+            for suffix in (".", ",", ":", ";", "!", "?", ")", "\n", "'", '"'):
+                if f" {word}{suffix}" in line or line == word + suffix:
+                    return True
     return False
 
 
@@ -235,15 +252,15 @@ def main():
             try:
                 results = audit_file(py_file)
             except Exception as e:
-                report_lines.append(f"\n{py_file.relative_to(project_root)}: ERROR: {e}")
+                report_lines.append(f"\n{os.path.relpath(str(py_file), str(project_root))}: ERROR: {e}")
                 continue
 
             if not results or "error" in results:
                 if "error" in results:
-                    report_lines.append(f"\n{py_file.relative_to(project_root)}: {results['error']}")
+                    report_lines.append(f"\n{os.path.relpath(str(py_file), str(project_root))}: {results['error']}")
                 continue
 
-            relative = py_file.relative_to(project_root)
+            relative = os.path.relpath(str(py_file), str(project_root))
             has_issues = any(r["status"] != "OK" for r in results.values())
             file_missing = sum(1 for r in results.values() if r["status"] == "MISSING")
             file_portuguese = sum(1 for r in results.values() if r["status"] == "PORTUGUESE")

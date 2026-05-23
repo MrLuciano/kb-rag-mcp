@@ -44,6 +44,19 @@ QDRANT_BATCH_SIZE = int(os.getenv("QDRANT_BATCH_SIZE", "100"))
 
 
 class VectorStore:
+    """Abstraction over Qdrant for vector storage, search, and metadata management.
+
+    Provides semantic search with optional filtering by product, doc_type,
+    version, and file_type. Supports batch upsert operations, sparse vector
+    search for hybrid retrieval, and scroll-based document listing.
+
+    Attributes:
+        client: AsyncQdrantClient instance (None until connect() is called).
+        collection: Name of the default Qdrant collection.
+        dim: Embedding vector dimension.
+        batch_size: Number of points per batch during upsert.
+    """
+
     def __init__(self):
         self.client: AsyncQdrantClient | None = None
         # Read at init time (not module import) so env overrides set before
@@ -53,17 +66,16 @@ class VectorStore:
         self.batch_size = QDRANT_BATCH_SIZE
 
     async def connect(self) -> None:
+        """Connect to Qdrant with connection pooling support.
+
+        Supports HTTP API (default), gRPC API (set QDRANT_GRPC=true for
+        better performance), and embedded mode (set QDRANT_PATH).
+
+        Raises:
+            RuntimeError: If the VectorStore is already connected.
+        """
         if self.client is not None:
             raise RuntimeError("VectorStore already connected")
-
-        """
-        FASE 8: Conecta ao Qdrant com connection pooling.
-        
-        Supports:
-        - HTTP API (default)
-        - gRPC API (set QDRANT_GRPC=true for better performance)
-        - Embedded mode (set QDRANT_PATH)
-        """
         if QDRANT_PATH:
             log.info(f"Qdrant embedded em: {QDRANT_PATH}")
             self.client = AsyncQdrantClient(
@@ -296,21 +308,20 @@ class VectorStore:
     # ── Upsert ───────────────────────────────────────────────────────
 
     async def upsert_chunks(self, chunks: list[dict]) -> None:
+        """Insert or update chunks in Qdrant with efficient batching.
+
+        Each chunk dict must contain: text, vector, source_file, file_type,
+        product, chunk_index, and optionally page and chunk_id.
+        Supports configurable batch size via QDRANT_BATCH_SIZE.
+
+        Args:
+            chunks: List of chunk dicts with vectors and metadata.
+
+        Raises:
+            RuntimeError: If the VectorStore client is not connected.
+        """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
-
-        """
-        FASE 8: Optimized batch insert/update for chunks.
-        
-        Insere ou atualiza chunks no Qdrant com batching eficiente.
-        Cada chunk deve ter: text, vector, source_file, file_type, product,
-                         chunk_index, page (opcional), chunk_id (opcional).
-        
-        Performance improvements:
-        - Configurable batch size via QDRANT_BATCH_SIZE
-        - Parallel batch uploads
-        - Progress logging
-        """
         if not chunks:
             log.warning("upsert_chunks called with empty list")
             return
@@ -347,12 +358,16 @@ class VectorStore:
         log.info(f"Upserted {len(points)} chunks successfully")
 
     async def delete_document(self, source_file: str) -> None:
+        """Delete all chunks belonging to a document by file path.
+
+        Args:
+            source_file: Path of the document to remove.
+
+        Raises:
+            RuntimeError: If the VectorStore client is not connected.
+        """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
-
-        """
-        Remove todos os chunks de um documento pelo caminho do arquivo.
-        """
         await self.client.delete(
             collection_name=self.collection,
             points_selector=qmodels.FilterSelector(
@@ -378,6 +393,24 @@ class VectorStore:
         limit: int = 50,
         collection_name: str | None = None,  # FASE 15: multi-collection override
     ) -> list[dict]:
+        """List indexed documents with optional filtering.
+
+        Uses scroll-based pagination to aggregate chunk counts per document.
+
+        Args:
+            filter_type: Optional file type filter (pdf, docx, etc.).
+            product: Optional product name filter.
+            doc_type: Optional document type filter.
+            limit: Maximum number of documents to return (default 50).
+            collection_name: Override target collection (FASE 15).
+
+        Returns:
+            List of dicts with source_file, file_type, product, doc_type,
+            and chunk_count.
+
+        Raises:
+            RuntimeError: If the VectorStore client is not connected.
+        """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
         conditions = []
@@ -434,13 +467,24 @@ class VectorStore:
     async def get_chunk_with_context(
         self, chunk_id: str, context_window: int = 1
     ) -> list[dict]:
+        """Return a chunk and its neighbors from the same document.
+
+        Retrieves adjacent chunk indices to provide surrounding context.
+
+        Args:
+            chunk_id: ID of the target chunk.
+            context_window: Number of neighboring chunks on each side
+                to include (default 1, range 0-3).
+
+        Returns:
+            List of chunk dicts sorted by chunk_index, or empty list if
+            chunk not found.
+
+        Raises:
+            RuntimeError: If the VectorStore client is not connected.
+        """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
-
-        """
-        Retorna um chunk e seus vizinhos
-        (mesmo documento, índices adjacentes).
-        """
         results = await self.client.retrieve(
             collection_name=self.collection,
             ids=[chunk_id],
@@ -488,9 +532,21 @@ class VectorStore:
     # ── Stats ─────────────────────────────────────────────────────────
 
     async def get_stats(self) -> dict:
+        """Return collection statistics.
+
+        Queries Qdrant for point count, documents, embedding model info,
+        and breakdowns by file type and document type.
+
+        Returns:
+            Dict with total_chunks, total_documents, index_size_mb,
+            embed_model, embed_backend, embed_dim, by_file_type,
+            and by_doc_type.
+
+        Raises:
+            RuntimeError: If the VectorStore client is not connected.
+        """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
-        """Retorna estatísticas da coleção."""
         info = await self.client.get_collection(self.collection)
         count = info.points_count or 0
 
@@ -570,6 +626,12 @@ class VectorStore:
         import asyncio
         
         async def upload_batch(batch_num: int, batch: list) -> None:
+            """Upload a single batch of points to Qdrant.
+
+            Args:
+                batch_num: Batch number (for logging).
+                batch: List of PointStruct points to upload.
+            """
             await self.client.upsert(
                 collection_name=self.collection,
                 points=batch,

@@ -263,6 +263,16 @@ log_reg = logging.getLogger("kb-ingest.registry")
 
 
 class IngestRegistry:
+    """SQLite-backed registry tracking ingested file state and deduplication.
+
+    Maintains a files table with SHA-256 hashes for change detection.
+    Tracks per-file status (ok/error/deleted), chunk counts, and timestamps.
+    Used by the ingest pipeline to determine which files need processing.
+
+    Attributes:
+        db_path: Path to the SQLite database file.
+    """
+
     def __init__(self, db_path: Path | None = None):
         resolved_db_path: Path
         if db_path is not None:
@@ -280,12 +290,17 @@ class IngestRegistry:
         log_reg.debug("IngestRegistry initialized: db=%s", self.db_path)
 
     def connect(self) -> None:
+        """Open database connection and initialize schema.
+
+        Creates the files table and indexes if they do not exist.
+        """
         self._conn = sqlite3.connect(self.db_path)
         self._conn.row_factory = sqlite3.Row
         self._migrate()
         log_reg.info(f"Registry: {self.db_path}")
 
     def close(self) -> None:
+        """Close database connection."""
         if self._conn is not None:
             self._conn.close()
             self._conn = None
@@ -334,6 +349,16 @@ class IngestRegistry:
 
     @staticmethod
     def sha256(path: Path) -> str:
+        """Compute SHA-256 hex digest of a file.
+
+        Reads the file in 64 KB blocks for memory efficiency.
+
+        Args:
+            path: Path to the file.
+
+        Returns:
+            SHA-256 hex digest string.
+        """
         h = hashlib.sha256()
         with open(path, "rb") as f:
             for block in iter(lambda: f.read(65536), b""):
@@ -341,6 +366,18 @@ class IngestRegistry:
         return h.hexdigest()
 
     def needs_ingest(self, path: Path, rel_path: str) -> tuple[bool, str]:
+        """Check if a file needs to be ingested.
+
+        Returns True if the file is new, has a changed SHA-256 hash, or
+        was previously in error status.
+
+        Args:
+            path: Full path to the file on disk.
+            rel_path: Relative path used as the registry key.
+
+        Returns:
+            Tuple of (needs_ingest: bool, reason: str).
+        """
         assert self._conn is not None, "Database connection not established."
         row = self._conn.execute(
             "SELECT sha256, status FROM files WHERE path = ?", (rel_path,)
@@ -359,6 +396,14 @@ class IngestRegistry:
         return False, "sem alterações"
 
     def get_record(self, rel_path: str) -> dict | None:
+        """Retrieve a single file record by relative path.
+
+        Args:
+            rel_path: Relative path of the file.
+
+        Returns:
+            Dict with file fields, or None if not found.
+        """
         assert self._conn is not None, "Database connection not established."
         row = self._conn.execute(
             "SELECT * FROM files WHERE path = ?", (rel_path,)
@@ -375,6 +420,19 @@ class IngestRegistry:
         product: str,
         doc_type: str = "document",
     ) -> None:
+        """Mark a file as successfully ingested.
+
+        Inserts or updates the file record with status 'ok', recording
+        the SHA-256 hash, chunk count, and file metadata.
+
+        Args:
+            path: Full path to the file on disk.
+            rel_path: Relative path for the registry key.
+            chunks: Number of chunks generated.
+            file_type: File type identifier (pdf, docx, etc.).
+            product: Product name.
+            doc_type: Document type classification.
+        """
         assert self._conn is not None, "Database connection not established."
         stat = path.stat()
         self._conn.execute(
@@ -419,6 +477,18 @@ class IngestRegistry:
         product: str,
         doc_type: str = "document",
     ) -> None:
+        """Mark a file as failed during ingestion.
+
+        Sets status to 'error' with the error message for debugging.
+
+        Args:
+            path: Full path to the file on disk.
+            rel_path: Relative path for the registry key.
+            error: Error message describing the failure.
+            file_type: File type identifier.
+            product: Product name.
+            doc_type: Document type classification.
+        """
         assert self._conn is not None, "Database connection not established."
         self._conn.execute(
             """
@@ -447,6 +517,14 @@ class IngestRegistry:
         log_reg.warning("Marked error: '%s' error='%s'", rel_path, error[:100])
 
     def mark_deleted(self, rel_path: str) -> None:
+        """Mark a file as deleted from disk.
+
+        Sets the file status to 'deleted' without removing the record,
+        allowing recovery or audit of removed files.
+
+        Args:
+            rel_path: Relative path of the file to mark.
+        """
         assert self._conn is not None, "Database connection not established."
         self._conn.execute(
             "UPDATE files SET status = 'deleted' WHERE path = ?",
@@ -456,6 +534,12 @@ class IngestRegistry:
         log_reg.info("Marked deleted: '%s'", rel_path)
 
     def summary(self) -> dict:
+        """Return aggregate statistics about all files in the registry.
+
+        Returns:
+            Dict with total, ok, errors, deleted, total_chunks,
+            first_indexed, and last_indexed.
+        """
         assert self._conn is not None, "Database connection not established."
         rows = self._conn.execute("""
             SELECT
@@ -506,6 +590,11 @@ class IngestRegistry:
         return results
 
     def list_errors(self) -> list[dict]:
+        """List all files with error status.
+
+        Returns:
+            List of dicts with path, error_msg, and indexed_at.
+        """
         assert self._conn is not None, "Database connection not established."
         rows = self._conn.execute(
             "SELECT path, error_msg, indexed_at FROM files "
@@ -515,6 +604,14 @@ class IngestRegistry:
         return [dict(r) for r in rows]
 
     def list_all(self, status: str | None = None) -> list[dict]:
+        """List all file records, optionally filtered by status.
+
+        Args:
+            status: Optional status filter ('ok', 'error', 'deleted').
+
+        Returns:
+            List of file record dicts sorted by indexed_at descending.
+        """
         assert self._conn is not None, "Database connection not established."
         if status:
             rows = self._conn.execute(
@@ -530,12 +627,18 @@ class IngestRegistry:
         return [dict(r) for r in rows]
 
     def purge_deleted(self) -> None:
+        """Permanently delete all records with status 'deleted'."""
         assert self._conn is not None, "Database connection not established."
         self._conn.execute("DELETE FROM files WHERE status = 'deleted'")
         self._conn.commit()
         log_reg.info("Purged deleted records")
 
     def reset(self):
+        """Delete all file records from the registry.
+
+        Warning: This is destructive and cannot be undone. Does not
+        affect the vector store — only the tracking registry.
+        """
         self._conn.execute("DELETE FROM files")
         self._conn.commit()
         log_reg.info("Registry resetado.")

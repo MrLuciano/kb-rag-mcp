@@ -315,8 +315,16 @@ PRODUCT_FROM_NAME: list[tuple[str, list[str]]] = [
 
 def infer_doc_type(file_path: Path) -> str:
     """
-    Infere o doc_type a partir do nome do arquivo e do caminho completo.
-    Retorna o doc_type de maior prioridade que corresponder, ou 'document'.
+    Infer document type from the file name and full path.
+
+    Evaluates classification rules by priority order and returns the
+    highest-priority matching doc_type, or 'document' if none match.
+
+    Args:
+        file_path: Path to the file to classify.
+
+    Returns:
+        Document type string (e.g., 'admin_guide', 'standard', 'training').
     """
     # Usa nome + caminho completo como texto de busca, tudo em minúsculas
     text = (file_path.stem + " " + str(file_path)).lower()
@@ -354,11 +362,21 @@ def infer_product(
     file_path: Path, docs_root: Path, product_override: str | None = None
 ) -> str:
     """
-    Infere o produto a partir de:
-    1. Override explícito (--product na CLI)
-    2. Pasta raiz relativa a docs_root
-    3. Nome do arquivo (padrões conhecidos)
+    Infer product name from the file path or explicit override.
+
+    Priority order:
+    1. Explicit product_override parameter
+    2. Root directory name relative to docs_root
+    3. File name patterns (PRODUCT_FROM_NAME)
     4. Fallback: 'geral'
+
+    Args:
+        file_path: Path to the file.
+        docs_root: Root documents directory.
+        product_override: Explicit product name (takes precedence).
+
+    Returns:
+        Product name string.
     """
     if product_override:
         return product_override
@@ -400,24 +418,23 @@ def classify(
     product_override: str | None = None,
 ) -> dict[str, str]:
     """
-    Retorna dict com product, doc_type e version inferidos.
-    Ponto de entrada único usado pelo ingest.py.
+    Classify a file and return inferred product, doc_type, and version.
 
-    FASE 13: Integra version extractor e meta loader.
-
-    Precedência para product/doc_type:
-    1. Override de _meta.json file-specific
-    2. Override de _meta.json directory-level
+    Single entry point used by ingest.py. Applies the following precedence:
+    1. _meta.json file-specific overrides
+    2. _meta.json directory-level overrides
     3. product_override parameter (CLI)
     4. Auto-classification
 
+    FASE 13: Integrates version extractor and meta loader.
+
     Args:
-        file_path: Path to file being classified
-        docs_root: Root docs directory
-        product_override: Optional product override from CLI
+        file_path: Path to file being classified.
+        docs_root: Root docs directory.
+        product_override: Optional product override from CLI.
 
     Returns:
-        Dict with 'product', 'doc_type', and optionally 'version'
+        Dict with 'product', 'doc_type', and optionally 'version'.
     """
     # FASE 13: Load metadata overrides from _meta.json
     try:

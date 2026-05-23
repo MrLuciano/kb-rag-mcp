@@ -1,7 +1,11 @@
 """
-KB RAG MCP Server
-Expõe tools de busca semântica na knowledge base via protocolo MCP.
-Compatível com Claude Code, OpenCode e qualquer cliente MCP.
+KB RAG MCP Server — exposes semantic search tools over the MCP protocol.
+
+Provides search_kb, list_documents, get_chunk, kb_stats, and list_collections
+tools for AI assistants (Claude Code, OpenCode, Cursor, Copilot) to query
+a local knowledge base of ingested documentation. Supports both stdio and SSE
+transports, hybrid search (dense + BM25 sparse), cross-encoder reranking,
+multi-collection routing, and query logging.
 """
 
 import asyncio
@@ -79,6 +83,14 @@ if QUERY_LOG_ENABLED:
 
 @app.list_tools()
 async def list_tools() -> list[types.Tool]:
+    """List all available MCP tools exposed by this server.
+
+    Returns tool definitions for search_kb, list_documents, get_chunk,
+    kb_stats, and list_collections, each with input schema for the client.
+
+    Returns:
+        List of Tool definitions with name, description, and inputSchema.
+    """
     doc_type_enum = [
         "admin_guide",
         "install_guide",
@@ -287,6 +299,19 @@ async def list_tools() -> list[types.Tool]:
 async def call_tool(
     name: str, arguments: dict[str, Any]
 ) -> list[types.TextContent]:
+    """Dispatch a tool call by name with the given arguments.
+
+    Routes tool names to their handler functions (search_kb, list_documents,
+    get_chunk, kb_stats, list_collections). Wraps all exceptions into a
+    structured error response.
+
+    Args:
+        name: Tool name to invoke.
+        arguments: Dictionary of arguments for the tool.
+
+    Returns:
+        List of TextContent responses with results or error message.
+    """
     try:
         if name == "search_kb":
             return await _search_kb(arguments)
@@ -632,6 +657,13 @@ async def _schedule_log_cleanup() -> None:
 
 
 async def main():
+    """Main entry point — connect to Qdrant, initialize routing, start server.
+
+    Connects the VectorStore, initializes CollectionManager and
+    CollectionRouter, schedules periodic query log cleanup, and starts
+    the MCP server on either stdio or SSE transport based on the
+    MCP_TRANSPORT environment variable.
+    """
     global collection_manager, collection_router
     log.info(f"KB RAG MCP Server iniciando (transport={TRANSPORT})")
     await store.connect()
@@ -655,6 +687,17 @@ async def main():
         sse = SseServerTransport("/messages/")
 
         async def handle_sse(request):
+            """Handle SSE (Server-Sent Events) transport connection.
+
+            Creates an SSE stream for bidirectional communication with the
+            MCP client. Returns an empty Response on disconnect.
+
+            Args:
+                request: Starlette HTTP request object.
+
+            Returns:
+                Response indicating disconnection.
+            """
             async with sse.connect_sse(
                 request.scope, request.receive, request._send
             ) as streams:
