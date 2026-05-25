@@ -7,8 +7,12 @@ Detects:
   - MISSING   — no docstring present
   - PORTUGUESE — docstring contains Portuguese-language indicators
   - OK        — English docstring found
+
+Extended with inline comment scanning (--check-inline) and CI gate support
+(--fail-under).
 """
 
+import argparse
 import ast
 import os
 import sys
@@ -108,6 +112,143 @@ PORTUGUESE_WORDS: set[str] = {
     "parâmetros",
     "atributo",
     "atributos",
+    # Extended set for inline comment detection
+    "página",
+    "páginas",
+    "guia",
+    "guias",
+    "taxonomia",
+    "separador",
+    "separadores",
+    "avalia",
+    "avaliar",
+    "critério",
+    "critérios",
+    "mapeamento",
+    "mapear",
+    "binários",
+    "artefatos",
+    "reunião",
+    "apresentação",
+    "treinamento",
+    "referência",
+    "tutorial",
+    "cookbook",
+    "cenário",
+    "cenários",
+    "código",
+    "cache",
+    "cacheado",
+    "chunk",
+    "chunks",
+    "coleção",
+    "coleções",
+    "conexão",
+    "conexões",
+    "conectado",
+    "conectar",
+    "descritor",
+    "descritores",
+    "diretório",
+    "diretórios",
+    "documento",
+    "documentos",
+    "entrada",
+    "extração",
+    "extrações",
+    "filtro",
+    "filtros",
+    "hash",
+    "identificador",
+    "identificadores",
+    "implementação",
+    "implementações",
+    "índice",
+    "índices",
+    "inicialização",
+    "inicializar",
+    "instalação",
+    "instalações",
+    "iteração",
+    "iterações",
+    "log",
+    "logs",
+    "mensagem",
+    "mensagens",
+    "metadados",
+    "método",
+    "métodos",
+    "modelo",
+    "modelos",
+    "namespace",
+    "namespaces",
+    "nível",
+    "níveis",
+    "nota",
+    "notas",
+    "número",
+    "números",
+    "operação",
+    "operações",
+    "parâmetro",
+    "parâmetros",
+    "pipeline",
+    "plugins",
+    "porta",
+    "portas",
+    "prefixo",
+    "prefixos",
+    "processo",
+    "processos",
+    "produto",
+    "produtos",
+    "projeto",
+    "projetos",
+    "query",
+    "queries",
+    "registro",
+    "registros",
+    "regra",
+    "regras",
+    "relatório",
+    "relatórios",
+    "requisição",
+    "requisições",
+    "resposta",
+    "respostas",
+    "resultado",
+    "resultados",
+    "schema",
+    "schemata",
+    "servidor",
+    "servidores",
+    "sistema",
+    "sistemas",
+    "solução",
+    "soluções",
+    "string",
+    "strings",
+    "subdiretório",
+    "subdiretórios",
+    "subsistema",
+    "subsistemas",
+    "suporte",
+    "suportar",
+    "tag",
+    "tags",
+    "template",
+    "templates",
+    "timestamp",
+    "timeout",
+    "tópico",
+    "tópicos",
+    "upload",
+    "url",
+    "urls",
+    "validação",
+    "validações",
+    "versão",
+    "versões",
 }
 
 
@@ -165,6 +306,65 @@ def _has_google_section(docstring: str, section: str) -> bool:
     return False
 
 
+def _is_decorative_line(comment_text: str) -> bool:
+    """Check if a comment line is purely decorative (only ASCII art characters)."""
+    stripped = comment_text.strip()
+    if not stripped:
+        return True
+    # Allow only: #, spaces, ─, -, =, *, +, |, ~, _, >, <, (, ), [, ]
+    decorative_chars = {"#", " ", "─", "-", "=", "*", "+", "|", "~", "_", ">", "<", "(", ")", "[", "]"}
+    for ch in stripped:
+        if ch not in decorative_chars:
+            return False
+    return True
+
+
+def scan_inline_comments(filepath: Path) -> list[dict]:
+    """Scan a Python file for inline comments containing Portuguese words.
+
+    Returns a list of dicts: [{"line": <int>, "text": <str>}, ...]
+    Skips shebang lines, encoding declarations, and purely decorative lines.
+    """
+    findings: list[dict] = []
+    try:
+        with open(filepath, encoding="utf-8") as f:
+            lines = f.readlines()
+    except (OSError, UnicodeDecodeError):
+        return findings
+
+    for line_no, line in enumerate(lines, start=1):
+        stripped = line.strip()
+
+        # Skip empty lines
+        if not stripped:
+            continue
+
+        # Find the first # that is not inside a string (naive: assumes # at
+        # the start of a comment, not inside a string literal)
+        # Skip shebang and encoding declarations
+        if line_no == 1 and stripped.startswith("#!"):
+            continue
+        if "# -*-" in stripped:
+            continue
+
+        # Find comment position
+        comment_idx = stripped.find("#")
+        if comment_idx == -1:
+            continue
+
+        comment_text = stripped[comment_idx + 1 :].strip()
+
+        # Skip purely decorative lines
+        if _is_decorative_line(comment_text):
+            continue
+
+        # Check for Portuguese
+        if _has_portuguese(f" {comment_text} "):
+            findings.append({"line": line_no, "text": comment_text})
+
+    return findings
+
+
 def audit_file(filepath: Path) -> dict[str, dict]:
     """Audit a single Python file for docstring coverage on public functions/classes.
 
@@ -212,21 +412,25 @@ def audit_file(filepath: Path) -> dict[str, dict]:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Docstring coverage audit")
+    parser.add_argument(
+        "--dir", action="append", type=Path,
+        help="Source directories to audit (can be specified multiple times)",
+    )
+    parser.add_argument(
+        "--check-inline", action="store_true",
+        help="Also scan inline comments (#) for Portuguese text",
+    )
+    parser.add_argument(
+        "--fail-under", type=int, default=None,
+        help="Exit non-zero if total Portuguese findings exceed this threshold",
+    )
+    args = parser.parse_args()
+
     project_root = Path(os.environ.get("PROJECT_ROOT", Path.cwd()))
-
-    # Parse --dir flags or use defaults
-    source_dirs: list[Path] = []
-    args = sys.argv[1:]
-    i = 0
-    while i < len(args):
-        if args[i] == "--dir" and i + 1 < len(args):
-            source_dirs.append(Path(args[i + 1]))
-            i += 2
-        else:
-            i += 1
-
-    if not source_dirs:
-        source_dirs = [project_root / "kb_server", project_root / "ingest"]
+    source_dirs: list[Path] = args.dir if args.dir else [
+        project_root / "kb_server", project_root / "ingest"
+    ]
 
     today = date.today().isoformat()
 
@@ -239,6 +443,7 @@ def main():
     total_ok = 0
     total_missing = 0
     total_portuguese = 0
+    total_inline_portuguese = 0
     report_lines: list[str] = []
 
     for src_dir in source_dirs:
@@ -249,39 +454,53 @@ def main():
         py_files = [f for f in py_files if f.name != "__init__.py" and "__pycache__" not in f.parts]
 
         for py_file in py_files:
+            relative = os.path.relpath(str(py_file), str(project_root))
+
+            # Docstring audit
             try:
                 results = audit_file(py_file)
             except Exception as e:
-                report_lines.append(f"\n{os.path.relpath(str(py_file), str(project_root))}: ERROR: {e}")
+                report_lines.append(f"\n{relative}: ERROR: {e}")
                 continue
 
-            if not results or "error" in results:
-                if "error" in results:
-                    report_lines.append(f"\n{os.path.relpath(str(py_file), str(project_root))}: {results['error']}")
+            docstring_issues = False
+            if results and "error" not in results:
+                has_issues = any(r["status"] != "OK" for r in results.values())
+                file_missing = sum(1 for r in results.values() if r["status"] == "MISSING")
+                file_portuguese = sum(1 for r in results.values() if r["status"] == "PORTUGUESE")
+                file_ok = sum(1 for r in results.values() if r["status"] == "OK")
+                total_nodes += len(results)
+                total_ok += file_ok
+                total_missing += file_missing
+                total_portuguese += file_portuguese
+                docstring_issues = has_issues
+
+                if has_issues:
+                    report_lines.append(f"\n{relative}:")
+                    for func_name, result in sorted(results.items()):
+                        if result["status"] != "OK":
+                            report_lines.append(f"  {func_name}: {result['status']} — {result['detail']}")
+            elif results and "error" in results:
+                report_lines.append(f"\n{relative}: {results['error']}")
                 continue
 
-            relative = os.path.relpath(str(py_file), str(project_root))
-            has_issues = any(r["status"] != "OK" for r in results.values())
-            file_missing = sum(1 for r in results.values() if r["status"] == "MISSING")
-            file_portuguese = sum(1 for r in results.values() if r["status"] == "PORTUGUESE")
-            file_ok = sum(1 for r in results.values() if r["status"] == "OK")
-            total_nodes += len(results)
-            total_ok += file_ok
-            total_missing += file_missing
-            total_portuguese += file_portuguese
+            # Inline comment audit (if enabled)
+            inline_findings: list[dict] = []
+            if args.check_inline:
+                inline_findings = scan_inline_comments(py_file)
+                total_inline_portuguese += len(inline_findings)
 
-            if not has_issues:
+            # Decide whether to emit a report line for this file
+            if inline_findings:
+                if not docstring_issues:
+                    report_lines.append(f"\n{relative}:")
+                for finding in inline_findings:
+                    report_lines.append(f"  Inline comment Line {finding['line']}: {finding['text']}")
+                report_lines.append(f"  -> Inline comments: {len(inline_findings)} Portuguese")
+
+            if not docstring_issues and not inline_findings:
                 report_lines.append(f"\n{relative}:")
                 report_lines.append(f"  All {len(results)} public methods have English docstrings ✓")
-                continue
-
-            report_lines.append(f"\n{relative}:")
-            for func_name, result in sorted(results.items()):
-                if result["status"] != "OK":
-                    report_lines.append(f"  {func_name}: {result['status']} — {result['detail']}")
-            report_lines.append(
-                f"  -> {file_ok} OK | {file_missing} MISSING | {file_portuguese} PORTUGUESE"
-            )
 
     print("\n".join(report_lines))
     print()
@@ -289,7 +508,24 @@ def main():
     print(f"  Total public methods/classes: {total_nodes}")
     print(f"  OK: {total_ok}")
     print(f"  MISSING: {total_missing}")
-    print(f"  PORTUGUESE: {total_portuguese}")
+    print(f"  PORTUGUESE docstrings: {total_portuguese}")
+    print(f"  PORTUGUESE inline comments: {total_inline_portuguese}")
+
+    # Fail-under enforcement
+    if args.fail_under is not None:
+        total_findings = total_portuguese + total_inline_portuguese
+        print()
+        if total_findings > args.fail_under:
+            print(
+                f"FAIL: Found {total_findings} Portuguese items "
+                f"(threshold: {args.fail_under})"
+            )
+            sys.exit(1)
+        else:
+            print(
+                f"PASS: Found {total_findings} Portuguese items "
+                f"(threshold: {args.fail_under})"
+            )
 
 
 if __name__ == "__main__":
