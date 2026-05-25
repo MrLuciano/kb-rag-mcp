@@ -15,6 +15,11 @@ import asyncio
 # fully initialised — VectorStore itself doesn't depend on the full server.
 
 def _stub_modules():
+    # Import real qdrant_client before stubs so real model classes (Distance,
+    # PointStruct, etc.) are used — fixes enum comparisons broken by anonymous
+    # type(name, (), {})() stubs.  setdefault below preserves real modules.
+    import qdrant_client  # noqa: F401
+
     # Stub embed_client
     ec = types.ModuleType("embed_client")
     ec.get_embed_dim = lambda: 768
@@ -40,31 +45,12 @@ def _stub_modules():
     ]:
         sys.modules.setdefault(mod, types.ModuleType(mod))
 
-    # Provide the symbols vector_store actually imports from qdrant_client
+    # qdrant_client was imported at the top of _stub_modules(), so all sub-modules
+    # are the real package — no model stubs needed.  Override AsyncQdrantClient
+    # so from qdrant_client import AsyncQdrantClient returns object (safe default)
+    # before the session-scoped conftest fixture patches it.
     qc = sys.modules["qdrant_client"]
-    if not hasattr(qc, "AsyncQdrantClient"):
-        qc.AsyncQdrantClient = object
-
-    models = sys.modules["qdrant_client.http.models"]
-    for name in [
-        "Distance", "VectorParams", "PointStruct", "Filter",
-        "FieldCondition", "MatchValue", "PayloadSchemaType",
-        "HasIdCondition", "NamedSparseVector", "SparseVector",
-        "FilterSelector",
-    ]:
-        if not hasattr(models, name):
-            setattr(models, name, type(name, (), {})())
-
-    # Also expose under qdrant_client.models
-    qm = sys.modules["qdrant_client.models"]
-    for name in [
-        "Distance", "VectorParams", "PointStruct", "Filter",
-        "FieldCondition", "MatchValue", "PayloadSchemaType",
-        "HasIdCondition", "NamedSparseVector", "SparseVector",
-        "FilterSelector",
-    ]:
-        if not hasattr(qm, name):
-            setattr(qm, name, getattr(models, name))
+    qc.AsyncQdrantClient = object
 
 
 _stub_modules()

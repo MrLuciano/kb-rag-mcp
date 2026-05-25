@@ -15,6 +15,11 @@ import asyncio
 # ── Stub heavy dependencies before importing server ──────────────────────────
 
 def _ensure_stubs():
+    # Import real qdrant_client before stubs so real model classes (Distance,
+    # PointStruct, etc.) are used — fixes enum comparisons broken by anonymous
+    # type(name, (), {})() stubs.  setdefault below preserves real modules.
+    import qdrant_client  # noqa: F401
+
     for mod_name in [
         "qdrant_client",
         "qdrant_client.async_qdrant_client",
@@ -94,25 +99,12 @@ def _ensure_stubs():
                 return decorator
         mcp_fastmcp.FastMCP = FastMCP
 
-    # qdrant_client.http.models needs stub symbols
-    models = sys.modules["qdrant_client.http.models"]
-    for name in ["Distance", "VectorParams", "HnswConfigDiff", "PointStruct", "Filter",
-                 "FieldCondition", "MatchValue", "PayloadSchemaType", "HasIdCondition"]:
-        if not hasattr(models, name):
-            # Create as a class (not instance) so it can be called and have class attrs
-            stub_cls = type(name, (), {"COSINE": "Cosine", "__init__": lambda self, **kw: None})
-            setattr(models, name, stub_cls)
-
-    # Also mirror into qdrant_client.models
-    qm = sys.modules["qdrant_client.models"]
-    for name in ["Distance", "VectorParams", "HnswConfigDiff", "PointStruct", "Filter",
-                 "FieldCondition", "MatchValue", "PayloadSchemaType", "HasIdCondition"]:
-        if not hasattr(qm, name):
-            setattr(qm, name, getattr(models, name))
-
+    # qdrant_client was imported at the top of _ensure_stubs(), so all sub-modules
+    # are the real package — no model stubs needed.  Override AsyncQdrantClient
+    # so from qdrant_client import AsyncQdrantClient returns object (safe default)
+    # before the session-scoped conftest fixture patches it.
     qc = sys.modules["qdrant_client"]
-    if not hasattr(qc, "AsyncQdrantClient"):
-        qc.AsyncQdrantClient = object
+    qc.AsyncQdrantClient = object
 
     # embed_client stub
     ec = types.ModuleType("embed_client")
@@ -157,7 +149,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "server"))
 
 
 def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Run a coroutine synchronously, creating an event loop if needed."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

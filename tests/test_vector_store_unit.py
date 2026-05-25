@@ -1,5 +1,5 @@
 """
-Unit tests for kb_server/vector_store.py — targeting ≥80% branch coverage.
+Unit tests for kb_server/vector_store.py — targeting >=80% branch coverage.
 
 Covers the branches missed by test_vector_store.py:
   connect() modes: embedded / gRPC / HTTP
@@ -31,6 +31,11 @@ def _ensure_stubs():
     real qdrant / embed-server running.  Uses setdefault so we never clobber
     a real module that was already imported."""
 
+    # Import real qdrant_client before stubs so real model classes (Distance,
+    # PointStruct, etc.) are used — fixes enum comparisons broken by anonymous
+    # type(name, (), {})() stubs.  setdefault below preserves real modules.
+    import qdrant_client  # noqa: F401
+
     # kb_server.embed_client
     ec_name = "kb_server.embed_client"
     if ec_name not in sys.modules:
@@ -41,43 +46,12 @@ def _ensure_stubs():
         ec.MODEL = "test-model"
         sys.modules[ec_name] = ec
 
-    # Minimal qdrant stubs — real package may already be present in venv,
-    # but we stub at import-key level so AsyncQdrantClient is replaceable.
-    for mod_name in [
-        "qdrant_client",
-        "qdrant_client.async_qdrant_client",
-        "qdrant_client.http",
-        "qdrant_client.http.models",
-        "qdrant_client.models",
-    ]:
-        sys.modules.setdefault(mod_name, types.ModuleType(mod_name))
-
+    # qdrant_client was imported at the top of _ensure_stubs(), so all sub-modules
+    # are the real package — no model stubs needed.  Override AsyncQdrantClient
+    # so from qdrant_client import AsyncQdrantClient returns object (safe default)
+    # before the session-scoped conftest fixture patches it.
     qc = sys.modules["qdrant_client"]
-    if not hasattr(qc, "AsyncQdrantClient"):
-        qc.AsyncQdrantClient = object
-
-    for ns in ["qdrant_client.http.models", "qdrant_client.models"]:
-        mod = sys.modules[ns]
-        for name in [
-            "Distance", "VectorParams", "PointStruct", "Filter",
-            "FieldCondition", "MatchValue", "PayloadSchemaType",
-            "HasIdCondition", "NamedSparseVector", "SparseVector",
-            "FilterSelector",
-        ]:
-            if not hasattr(mod, name):
-                setattr(mod, name, type(name, (), {})())
-
-    # Expose FilterSelector on qdrant_client.models (used as qmodels.FilterSelector)
-    qm = sys.modules["qdrant_client.models"]
-    http_m = sys.modules["qdrant_client.http.models"]
-    for name in [
-        "Distance", "VectorParams", "PointStruct", "Filter",
-        "FieldCondition", "MatchValue", "PayloadSchemaType",
-        "HasIdCondition", "NamedSparseVector", "SparseVector",
-        "FilterSelector",
-    ]:
-        if not hasattr(qm, name):
-            setattr(qm, name, getattr(http_m, name))
+    qc.AsyncQdrantClient = object
 
 
 _ensure_stubs()
@@ -87,40 +61,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from kb_server.vector_store import VectorStore  # noqa: E402
 
-# ── Fix stub callability ──────────────────────────────────────────────────────
-# The existing test_vector_store.py installs *instances* (not classes) into
-# sys.modules via setdefault.  When vector_store.py does
-#   from qdrant_client.models import MatchValue
-# it binds the instance to the module name — which is then not callable.
-# We override those names in the already-imported module namespace with fresh
-# MagicMocks so that code like MatchValue(value=x) works in our tests.
-
+# qdrant_client was imported earlier by _ensure_stubs(), so all model classes
+# are real — no MagicMock fix-ups needed.  _vs_mod references are used by
+# some tests that access VectorStore module internals.
 import kb_server.vector_store as _vs_mod  # noqa: E402
-
-_QDRANT_CALLABLES = [
-    "MatchValue", "FieldCondition", "Filter", "VectorParams",
-    "PointStruct", "Distance", "PayloadSchemaType",
-    "SparseVector", "NamedSparseVector",
-]
-
-# Build a small sentinel so we know what to restore in teardown
-_ORIGINAL_VS_ATTRS = {}
-
-def _patch_vs_callables():
-    """Replace qdrant model stubs with callable MagicMocks in the vs module."""
-    for name in _QDRANT_CALLABLES:
-        _ORIGINAL_VS_ATTRS[name] = getattr(_vs_mod, name, None)
-        setattr(_vs_mod, name, MagicMock(name=name))
-    # Distance.COSINE must exist as an attribute on the MagicMock
-    # (MagicMock auto-creates attributes, so Distance.COSINE already works)
-
-
-_patch_vs_callables()
-
-# Also fix qmodels (used in delete_document as qmodels.FilterSelector)
-import qdrant_client.models as _qm  # noqa: E402
-
-_qm.FilterSelector = MagicMock(name="FilterSelector")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
