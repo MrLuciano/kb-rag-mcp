@@ -1,7 +1,7 @@
 """
 CLI commands for database operations.
 
-FASE 12: Payload indexing and database maintenance commands.
+PHASE 12: Payload indexing and database maintenance commands.
 """
 
 import asyncio

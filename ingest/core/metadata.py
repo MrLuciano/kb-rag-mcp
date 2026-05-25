@@ -383,17 +383,17 @@ class IngestRegistry:
             "SELECT sha256, status FROM files WHERE path = ?", (rel_path,)
         ).fetchone()
         if row is None:
-            log_reg.debug("needs_ingest '%s': novo", rel_path)
-            return True, "novo"
+            log_reg.debug("needs_ingest '%s': new", rel_path)
+            return True, "new"
         if row["status"] == "error":
-            log_reg.debug("needs_ingest '%s': re-tentativa", rel_path)
-            return True, "erro anterior — tentando novamente"
+            log_reg.debug("needs_ingest '%s': retry", rel_path)
+            return True, "previous error — retrying"
         current_hash = self.sha256(path)
         if current_hash != row["sha256"]:
-            log_reg.debug("needs_ingest '%s': modificado", rel_path)
-            return True, "conteúdo modificado"
-        log_reg.debug("needs_ingest '%s': sem alterações", rel_path)
-        return False, "sem alterações"
+            log_reg.debug("needs_ingest '%s': modified", rel_path)
+            return True, "content modified"
+        log_reg.debug("needs_ingest '%s': no changes", rel_path)
+        return False, "no changes"
 
     def get_record(self, rel_path: str) -> dict | None:
         """Retrieve a single file record by relative path.
@@ -408,7 +408,7 @@ class IngestRegistry:
         row = self._conn.execute(
             "SELECT * FROM files WHERE path = ?", (rel_path,)
         ).fetchone()
-        log_reg.debug("get_record '%s': %s", rel_path, "encontrado" if row else "não encontrado")
+        log_reg.debug("get_record '%s': %s", rel_path, "found" if row else "not found")
         return dict(row) if row else None
 
     def mark_ok(
@@ -641,7 +641,7 @@ class IngestRegistry:
         """
         self._conn.execute("DELETE FROM files")
         self._conn.commit()
-        log_reg.info("Registry resetado.")
+        log_reg.info("Registry reset.")
 
     def is_indexed(
         self, rel_path: str, checksum: str | None = None

@@ -1,5 +1,5 @@
 """
-FASE 8: Batch document processor for high-throughput ingestion.
+PHASE 8: Batch document processor for high-throughput ingestion.
 
 Optimizes ingestion by:
 1. Collecting multiple files before processing
@@ -63,7 +63,7 @@ class BatchResult:
 
 class BatchDocumentProcessor:
     """
-    FASE 8: High-throughput batch document processor.
+    PHASE 8: High-throughput batch document processor.
     
     Processes multiple files in optimized batches:
     1. Parse all files → collect chunks

@@ -4,9 +4,9 @@ Knowledge base content classifier.
 Infers dimensions from file name and path:
   - product  : product/system the document belongs to
   - doc_type : content type (admin_guide, standard, training, etc.)
-  - version  : version extracted from file/directory name (FASE 13)
+  - version  : version extracted from file/directory name (PHASE 13)
 
-FASE 13: Supports metadata overrides via _meta.json in directories.
+    PHASE 13: Supports metadata overrides via _meta.json in directories.
 
 No folder reorganization is needed — everything is inferred
 from patterns in the file name and existing directory structure.
@@ -769,8 +769,8 @@ def classify(
     3. product_override parameter (CLI)
     4. Auto-classification
 
-    FASE 11: Adds vendor and subsystem inference.
-    FASE 13: Integrates version extractor and meta loader.
+    PHASE 11: Adds vendor and subsystem inference.
+    PHASE 13: Integrates version extractor and meta loader.
 
     Args:
         file_path: Path to file being classified.
@@ -781,7 +781,7 @@ def classify(
         Dict with 'product', 'doc_type', 'vendor', 'subsystem', and
         optionally 'version'.
     """
-    # FASE 13: Load metadata overrides from _meta.json
+    # PHASE 13: Load metadata overrides from _meta.json
     try:
         from ingest.core.meta_loader import MetaLoader
 
@@ -800,7 +800,7 @@ def classify(
     # Auto-classify (will be overridden if _meta.json specifies)
     auto_product = infer_product(file_path, docs_root, product_override)
     auto_doc_type = infer_doc_type(file_path)
-    # FASE 11: Auto-infer vendor and subsystem
+    # PHASE 11: Auto-infer vendor and subsystem
     auto_vendor = infer_vendor(
         file_path, product_override or auto_product
     )
@@ -809,7 +809,7 @@ def classify(
     # Apply precedence: _meta.json > product_override > auto
     product = overrides.get("product") or auto_product
     doc_type = overrides.get("doc_type") or auto_doc_type
-    # FASE 11: Apply same precedence to vendor/subsystem
+    # PHASE 11: Apply same precedence to vendor/subsystem
     vendor = overrides.get("vendor") or auto_vendor
     subsystem = overrides.get("subsystem") or auto_subsystem
 
@@ -820,7 +820,7 @@ def classify(
         "subsystem": subsystem,
     }
 
-    # FASE 11-02: Apply enrichment from document metadata (gap-fill only,
+    # PHASE 11-02: Apply enrichment from document metadata (gap-fill only,
     # lowest precedence — never overrides _meta.json or auto-classification)
     defaults = {"", "geral", "document"}
     enriched = enrich_classification(file_path, docs_root, result)
@@ -828,7 +828,7 @@ def classify(
         if result[key] in defaults and enriched[key] not in defaults:
             result[key] = enriched[key]
 
-    # FASE 13: Extract version from filename/path
+    # PHASE 13: Extract version from filename/path
     try:
         from ingest.core.version_extractor import extract_version
 

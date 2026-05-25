@@ -406,7 +406,7 @@ async def process_file(
     meta = classify(file_path, docs_root, product_override)
     product = meta["product"]
     doc_type = meta["doc_type"]
-    version = meta.get("version")  # FASE 13: Optional version field
+    version = meta.get("version")  # PHASE 13: Optional version field
     vendor = meta.get("vendor", "")
     subsystem = meta.get("subsystem", "")
     source_file = str(file_path.relative_to(docs_root))
@@ -461,7 +461,7 @@ async def process_file(
                     "page": section.get("page"),
                     "chunk_index": chunk_index,
                 }
-                # FASE 13: Add version if available
+                # PHASE 13: Add version if available
                 if version:
                     chunk_data["version"] = version
                 all_chunks_data.append(chunk_data)
