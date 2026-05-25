@@ -6,9 +6,9 @@ status: planning
 last_updated: "2026-05-25T12:36:41.467Z"
 last_activity: 2026-05-25
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
-  total_plans: 0
+  total_plans: 8
   completed_plans: 0
   percent: 0
 ---
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 08 — ingest-improvements-documentation (COMPLETE)
+**Current focus:** v1.2 Tech Debt & Classification
 
 ## Current Position
 
 Phase: Not started (defining requirements)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-25 — Milestone v1.2 started
+Status: Roadmap created — 3 phases, 9 requirements
+Last activity: 2026-05-25 — Milestone v1.2 roadmap created
 
 ## Phase 6 Outcomes
 
