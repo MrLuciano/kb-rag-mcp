@@ -145,7 +145,8 @@ class MetaLoader:
             meta: Loaded _meta.json dict
 
         Returns:
-            Dict with 'product' and 'doc_type' (or None if not set)
+            Dict with 'product', 'doc_type', 'vendor', 'subsystem'
+            (or None if not set)
         """
         filename = file_path.name
 
@@ -159,12 +160,18 @@ class MetaLoader:
                 "doc_type": file_meta.get(
                     "doc_type", meta.get("doc_type")
                 ),
+                "vendor": file_meta.get("vendor", meta.get("vendor")),
+                "subsystem": file_meta.get(
+                    "subsystem", meta.get("subsystem")
+                ),
             }
 
         # Directory-level defaults
         return {
             "product": meta.get("product"),
             "doc_type": meta.get("doc_type"),
+            "vendor": meta.get("vendor"),
+            "subsystem": meta.get("subsystem"),
         }
 
     def scan_directory(self, directory: Path) -> dict[Path, dict]:

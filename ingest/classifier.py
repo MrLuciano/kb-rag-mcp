@@ -29,12 +29,12 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"\biso\b",
             r"\biso[-_]\d+",
             r"15489",
-            r"lgpd",
+            r"\blgpd\b",
             r"lei.geral",
-            r"gdpr",
-            r"nist",
-            r"compliance",
-            r"regulation",
+            r"\bgdpr\b",
+            r"\bnist\b",  # word boundary to prevent matching "administrator"
+            r"\bcompliance\b",
+            r"\bregulation\b",
         ],
     ),
     # Release notes
@@ -307,6 +307,53 @@ PRODUCT_FROM_NAME: list[tuple[str, list[str]]] = [
     ("ArchiveCenter", [r"archive.?center", r"archivecenter"]),
 ]
 
+# ── Vendor Mapping (Phase 11) ───────────────────────────────────────────────
+# Maps product names to their parent vendors
+
+VENDOR_MAP: dict[str, str] = {
+    # OTCS Products → OpenText
+    "WebReports": "OpenText",
+    "xECM": "OpenText",
+    "Workflow": "OpenText",
+    "CSIDE": "OpenText",
+    "ContentServer": "OpenText",
+    "Brava": "OpenText",
+    "OT2": "OpenText",
+    "DocumentViewer": "OpenText",
+    "APIGateway": "OpenText",
+    "ArchiveCenter": "OpenText",
+    "AppServer": "OpenText",
+    "DataSync": "OpenText",
+    "AdminPortal": "OpenText",
+    "RecordsManagement": "OpenText",
+    # Standards bodies
+    "ISO": "ISO",
+}
+
+# Patterns to detect vendor directly from filename
+FILENAME_VENDOR_PATTERNS: list[tuple[str, list[str]]] = [
+    ("OpenText", [r"\bopentext\b"]),
+    # OT-WebReport, OT_Admin patterns (after normalization: space replaces -/_)
+    ("OpenText", [r"\bot\s+\w"]),
+]
+
+# ── Subsystem Patterns (Phase 11) ───────────────────────────────────────────
+# Patterns to detect functional subsystem from filename
+
+SUBSYSTEM_PATTERNS: list[tuple[str, list[str]]] = [
+    ("API", [r"\bapi\b", r"\bsdk\b", r"\brest\b", r"\bsoap\b", r"\bwebservice"]),
+    ("Security", [r"\bsecurity\b", r"\bauth\b", r"\bpermission\b", r"\bacl\b"]),
+    ("Admin", [r"\badmin\b", r"\badministration\b", r"\boperator\b"]),
+    ("Integration", [r"\bintegration\b", r"\bconnector\b"]),
+    ("Migration", [r"\bmigration\b", r"\bupgrade\b", r"\bupgrad"]),
+    ("Install", [r"\binstall\b", r"\bsetup\b", r"\bdeploy"]),
+    ("Reporting", [r"\breport\b", r"\bdashboard\b"]),
+    ("Performance", [r"\bperformance\b", r"\btuning\b", r"\bscalab"]),
+]
+
+# Skip-list directories for subsystem inference
+SKIP_SUBSYSTEM_DIRS = {"varios", "templates", "archive"}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # FUNÇÕES PÚBLICAS
@@ -356,6 +403,123 @@ def infer_doc_type(file_path: Path) -> str:
                 break
 
     return best_type
+
+
+def infer_vendor(file_path: Path, product: str = "") -> str:
+    """
+    Infer vendor from filename patterns or product-to-vendor mapping.
+
+    Priority order:
+    1. Filename patterns (FILENAME_VENDOR_PATTERNS)
+    2. Parent directory name patterns
+    3. Product-to-vendor mapping (VENDOR_MAP)
+
+    Args:
+        file_path: Path to the file.
+        product: Optional inferred product name for VENDOR_MAP lookup.
+
+    Returns:
+        Vendor string (e.g., 'OpenText', 'ISO') or empty string if unknown.
+    """
+    # Normalize filename + full path text
+    text = (file_path.stem + " " + str(file_path)).lower()
+    text = re.sub(r"[_\-/\\]", " ", text)
+
+    # Check filename patterns first
+    for vendor, patterns in FILENAME_VENDOR_PATTERNS:
+        for pattern in patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                return vendor
+
+    # Check parent directory names
+    for parent in file_path.parents:
+        parent_name = parent.stem.lower()
+        parent_text = re.sub(r"[_\-/]", " ", parent_name)
+        for vendor, patterns in FILENAME_VENDOR_PATTERNS:
+            for pattern in patterns:
+                if re.search(pattern, parent_text, re.IGNORECASE):
+                    return vendor
+
+    # Check VENDOR_MAP with product
+    if product:
+        # Exact match first
+        if product in VENDOR_MAP:
+            return VENDOR_MAP[product]
+        # Check if product contains "ISO" (e.g., "ISO 9001")
+        if "ISO" in product:
+            return "ISO"
+
+    return ""
+
+
+def infer_subsystem(file_path: Path, docs_root: Path) -> str:
+    """
+    Infer subsystem from directory hierarchy or filename patterns.
+
+    Subsystem is a sub-categorization below the product level.
+    Example: "docs/WebReports/Designer/Guide.pdf" → subsystem="Designer"
+
+    Priority order:
+    1. Intermediate directories between docs_root and filename
+    2. Filename patterns (SUBSYSTEM_PATTERNS)
+
+    Args:
+        file_path: Path to the file.
+        docs_root: Root documents directory.
+
+    Returns:
+        Subsystem string or empty string if unknown.
+    """
+    # Try directory-based inference first
+    try:
+        relative = file_path.relative_to(docs_root)
+        parts = list(relative.parts)
+
+        # If there are at least 3 parts: [product_dir, subsystem_dir, ..., filename]
+        # OR at least 2 parts where the first is not a skip-dir and not the file
+        if len(parts) >= 2:
+            # Find the first real directory (skip "varios", "templates", "archive")
+            candidate_idx = 0
+            while (
+                candidate_idx < len(parts) - 1
+                and parts[candidate_idx].lower() in SKIP_SUBSYSTEM_DIRS
+            ):
+                candidate_idx += 1
+
+            # Now look for a subsystem AFTER the product level
+            # If we have parts[candidate_idx] and parts[candidate_idx + 1]
+            # (where the second to last is a directory, not the filename)
+            # The subsystem is the first directory after the product root
+            # or the intermediate directory between root and file
+
+            # Simple approach: get all directories between docs_root and file
+            dir_parts = parts[:-1]  # exclude filename
+
+            if len(dir_parts) >= 2:
+                # Skip skip-list directories at any level
+                filtered = [
+                    d for d in dir_parts if d.lower() not in SKIP_SUBSYSTEM_DIRS
+                ]
+                # If there are 2+ filtered dirs, the 2nd one is the subsystem
+                # e.g., [WebReports, Designer, ...] → Designer
+                if len(filtered) >= 2:
+                    return filtered[1]
+            elif len(dir_parts) == 1:
+                # Single directory between docs_root and file → no subsystem
+                # (that's the product directory itself)
+                pass
+    except ValueError:
+        # Not relative to docs_root - skip directory inference
+        pass
+
+    # Fall back to filename pattern matching
+    name_lower = re.sub(r"[_\-/]", " ", file_path.stem.lower())
+    for subsystem, patterns in SUBSYSTEM_PATTERNS:
+        for pattern in patterns:
+            if re.search(pattern, name_lower, re.IGNORECASE):
+                return subsystem
+
+    return ""
 
 
 def infer_product(
@@ -418,7 +582,8 @@ def classify(
     product_override: str | None = None,
 ) -> dict[str, str]:
     """
-    Classify a file and return inferred product, doc_type, and version.
+    Classify a file and return inferred product, doc_type, vendor, subsystem,
+    and version.
 
     Single entry point used by ingest.py. Applies the following precedence:
     1. _meta.json file-specific overrides
@@ -426,6 +591,7 @@ def classify(
     3. product_override parameter (CLI)
     4. Auto-classification
 
+    FASE 11: Adds vendor and subsystem inference.
     FASE 13: Integrates version extractor and meta loader.
 
     Args:
@@ -434,7 +600,8 @@ def classify(
         product_override: Optional product override from CLI.
 
     Returns:
-        Dict with 'product', 'doc_type', and optionally 'version'.
+        Dict with 'product', 'doc_type', 'vendor', 'subsystem', and
+        optionally 'version'.
     """
     # FASE 13: Load metadata overrides from _meta.json
     try:
@@ -445,19 +612,34 @@ def classify(
         overrides = loader.get_metadata(file_path, meta)
     except Exception:
         # If meta loader fails, use empty overrides
-        overrides = {"product": None, "doc_type": None}
+        overrides = {
+            "product": None,
+            "doc_type": None,
+            "vendor": None,
+            "subsystem": None,
+        }
 
     # Auto-classify (will be overridden if _meta.json specifies)
     auto_product = infer_product(file_path, docs_root, product_override)
     auto_doc_type = infer_doc_type(file_path)
+    # FASE 11: Auto-infer vendor and subsystem
+    auto_vendor = infer_vendor(
+        file_path, product_override or auto_product
+    )
+    auto_subsystem = infer_subsystem(file_path, docs_root)
 
     # Apply precedence: _meta.json > product_override > auto
     product = overrides.get("product") or auto_product
     doc_type = overrides.get("doc_type") or auto_doc_type
+    # FASE 11: Apply same precedence to vendor/subsystem
+    vendor = overrides.get("vendor") or auto_vendor
+    subsystem = overrides.get("subsystem") or auto_subsystem
 
     result = {
         "product": product,
         "doc_type": doc_type,
+        "vendor": vendor,
+        "subsystem": subsystem,
     }
 
     # FASE 13: Extract version from filename/path
