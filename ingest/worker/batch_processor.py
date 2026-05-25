@@ -356,24 +356,26 @@ class BatchDocumentProcessor:
             # Create FileChunk objects
             file_chunks = []
             for idx, chunk_dict in enumerate(chunks_data):
-                file_chunks.append(
-                    FileChunk(
-                        file_path=file_path,
-                        chunk_index=idx,
-                        text=chunk_dict["text"],
-                        metadata={
-                            "source_file": str(
-                                file_path.relative_to(docs_root)
-                            ),
-                            "file_type": chunk_dict.get(
-                                "file_type", "unknown"
-                            ),
-                            "product": product,
-                            "doc_type": doc_type,
-                            "page": chunk_dict.get("page"),
-                        },
+                    file_chunks.append(
+                        FileChunk(
+                            file_path=file_path,
+                            chunk_index=idx,
+                            text=chunk_dict["text"],
+                            metadata={
+                                "source_file": str(
+                                    file_path.relative_to(docs_root)
+                                ),
+                                "file_type": chunk_dict.get(
+                                    "file_type", "unknown"
+                                ),
+                                "product": product,
+                                "doc_type": doc_type,
+                                "vendor": doc_info.get("vendor", ""),
+                                "subsystem": doc_info.get("subsystem", ""),
+                                "page": chunk_dict.get("page"),
+                            },
+                        )
                     )
-                )
             
             return file_chunks
             

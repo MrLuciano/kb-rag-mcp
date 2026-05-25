@@ -407,6 +407,8 @@ async def process_file(
     product = meta["product"]
     doc_type = meta["doc_type"]
     version = meta.get("version")  # FASE 13: Optional version field
+    vendor = meta.get("vendor", "")
+    subsystem = meta.get("subsystem", "")
     source_file = str(file_path.relative_to(docs_root))
 
     # ── Verifica se precisa ingerir ─
@@ -416,7 +418,8 @@ async def process_file(
         if not needs:
             log.debug(f"  SKIP: {source_file} ({reason})")
             return 0, "skipped"
-        log.info(f"[{doc_type:16}] [{product:20}] {source_file}  ({reason})")
+        vendor_tag = f"[{vendor:10}] " if vendor else ""
+        log.info(f"{vendor_tag}[{doc_type:16}] [{product:20}] {source_file}  ({reason})")
     else:
         log.info(f"[{doc_type:16}] [{product:20}] {source_file}  (forçado)")
 
@@ -453,6 +456,8 @@ async def process_file(
                     "file_type": file_type,
                     "product": product,
                     "doc_type": doc_type,
+                    "vendor": vendor,
+                    "subsystem": subsystem,
                     "page": section.get("page"),
                     "chunk_index": chunk_index,
                 }
