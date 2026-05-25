@@ -1,16 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Tech Debt & Classification
-status: All requirements satisfied (CLASSIFY-01, CLASSIFY-02, CLASSIFY-03)
-last_updated: "2026-05-25T18:25:00.000Z"
-last_activity: 2026-05-25 -- Phase 12 English sweep complete (kb_server/)
+milestone: v1.3
+milestone_name: Post-Ship Polish & Infrastructure
+status: Phase 12 complete — 0 Portuguese, English CI gate active
+last_updated: "2026-05-25T20:00:00.000Z"
+last_activity: 2026-05-25 -- Phase 12 complete (English sweep all modules)
 progress:
-  total_phases: 12
-  completed_phases: 3
-  total_plans: 21
-  completed_plans: 14
-  percent: 26
+  total_phases: 16
+  completed_phases: 12
+  percent: 75
 ---
 
 # Project State
@@ -20,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** v1.2 Tech Debt & Classification (COMPLETE)
+**Current focus:** v1.3 Post-Ship Polish & Infrastructure
 
 ## Current Position
 
-Phase: 11 — COMPLETE
-Plan: 2/2 (11-01: Vendor/subsystem inference, 11-02: Metadata enrichment)
-Status: All requirements satisfied (CLASSIFY-01, CLASSIFY-02, CLASSIFY-03)
-Last activity: 2026-05-25 -- v1.2 complete (Phases 9 + 10 + 11)
+Phase: 12 — COMPLETE
+Plan: 3/3 (12-01: kb_server/ English sweep, 12-02: ingest/ English sweep, 12-03: Verification + CI gate)
+Status: 0 Portuguese across all modules; English CI gate active
+Last activity: 2026-05-25 -- Phase 12 complete (0/0 Portuguese kb_server/ + ingest/)
 
 ## Phase 6 Outcomes
 

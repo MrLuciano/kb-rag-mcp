@@ -244,26 +244,27 @@ Plans:
 
 ---
 
-### Phase 12: English comments & docstrings sweep
+### Phase 12: English comments & docstrings sweep (COMPLETED)
 
 **Goal:** Ensure all inline comments, docstrings, log messages, and internal documentation across Python source files are written in English for consistency and open-source readiness.
 
 **Milestone:** v1.3
 **Requirements:** TBD
 **Depends on:** — (independent)
-**Plans:** 3 plans
+**Plans:** 3 plans — all executed 2026-05-25
+
+**Delivered:**
+- All Portuguese content translated to English across ~35 files in `kb_server/` and `ingest/`
+- `scripts/docstring-audit.py` extended with `--check-inline`, `--fail-under`, expanded Portuguese word list
+- `.github/workflows/ci.yml` has `english-audit` job (`--check-inline --fail-under 0`) on every push/PR
+- False positives fixed: English technical terms (cache, chunk, hash, log, pipeline, query, etc.) removed from Portuguese detection set
+- **0 Portuguese docstrings, 0 Portuguese inline comments** — verified by audit script
 
 Plans:
 
-- [ ] 12-01-PLAN.md — Translate kb_server/ Portuguese to English (server.py, embed_client.py, vector_store.py)
-- [x] 12-02-PLAN.md — Translate ingest/ Portuguese to English (classifier.py, ingest.py)
-- [ ] 12-03-PLAN.md — Verification audit script + CI gate
-
-### Wave Dependencies
-
-**Wave 1** *(both plans are independent — no blocking dependencies)*
-
-**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 12-01-PLAN.md — kb_server/ English sweep (server.py, embed_client.py, vector_store.py)
+- [x] 12-02-PLAN.md — ingest/ English sweep (classifier.py, ingest.py)
+- [x] 12-03-PLAN.md — Verification audit script + CI gate
 
 ---
 
@@ -342,7 +343,7 @@ Plans:
 | 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
-| 12. English Comments & Docstrings | v1.3 | 1/3 | In Progress | — |
+| 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
 | 13. Docs Sync & Readme Languages | v1.3 | 0/0 | Planning | — |
 | 14. Health Dashboard | v1.3 | 0/0 | Planning | — |
 | 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
