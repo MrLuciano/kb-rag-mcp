@@ -1,15 +1,15 @@
 """
-Classificador de conteúdo da KB.
+Knowledge base content classifier.
 
-Infere dimensões a partir do nome do arquivo e caminho:
-  - product  : produto/sistema ao qual o documento pertence
-  - doc_type : tipo de conteúdo (admin_guide, standard, training, etc.)
-  - version  : versão extraída do nome do arquivo/diretório (FASE 13)
+Infers dimensions from file name and path:
+  - product  : product/system the document belongs to
+  - doc_type : content type (admin_guide, standard, training, etc.)
+  - version  : version extracted from file/directory name (FASE 13)
 
-FASE 13: Suporta metadata overrides via _meta.json em diretórios.
+FASE 13: Supports metadata overrides via _meta.json in directories.
 
-Nenhuma reorganização de pastas é necessária — tudo é inferido
-por padrões no nome do arquivo e estrutura de diretórios existente.
+No folder reorganization is needed — everything is inferred
+from patterns in the file name and existing directory structure.
 """
 
 import logging
@@ -18,13 +18,13 @@ from pathlib import Path
 
 log = logging.getLogger("kb-ingest")
 
-# ── Taxonomia de doc_type ──────────────
+# ── Doc type taxonomy ──
 # --------------------------------------
-# Cada entrada: (prioridade, doc_type, [padrões regex no nome do arquivo])
-# Maior prioridade = verificado primeiro.
+# Each entry: (priority, doc_type, [regex patterns on filename])
+# Highest priority = checked first.
 
 DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
-    # Padrões ISO / normas / regulamentos
+    # ISO standards / norms / regulations
     (
         100,
         "standard",
@@ -52,7 +52,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"changelog",
         ],
     ),
-    # Guias de upgrade / migração
+    # Upgrade / migration guides
     (
         85,
         "upgrade_guide",
@@ -63,7 +63,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"migration",
         ],
     ),
-    # Guias de instalação
+    # Installation guides
     (
         80,
         "install_guide",
@@ -80,7 +80,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"\bigd\b",
         ],
     ),
-    # Guias de administração
+    # Administration guides
     (
         75,
         "admin_guide",
@@ -94,7 +94,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"operator",
         ],
     ),
-    # Guias de configuração / cenários
+    # Configuration guides / scenarios
     (
         70,
         "config_guide",
@@ -111,7 +111,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"howto",
         ],
     ),
-    # Guias de usuário
+    # User guides
     (
         65,
         "user_guide",
@@ -124,7 +124,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"guia.do.usu",
         ],
     ),
-    # Guias de API / SDK / programação
+    # API / SDK / programming guides
     (
         60,
         "api_guide",
@@ -162,7 +162,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"knowledge.base",
         ],
     ),
-    # Treinamentos / apresentações educacionais
+    # Training / educational presentations
     (
         50,
         "training",
@@ -183,7 +183,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"certificate",
         ],
     ),
-    # Apresentações / visão geral
+    # Presentations / overviews
     (
         45,
         "overview",
@@ -203,7 +203,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"portfolio",
         ],
     ),
-    # Documentos de referência técnica / terminologia
+    # Technical reference documents / terminology
     (
         40,
         "reference",
@@ -218,7 +218,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"technote",
         ],
     ),
-    # Notas de reunião / sessões gravadas
+    # Meeting notes / recorded sessions
     (
         35,
         "meeting",
@@ -230,7 +230,7 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
             r"knowledge.sharing",
         ],
     ),
-    # Artefatos binários / pacotes
+    # Binary artifacts / packages
     (
         10,
         "release_artifact",
@@ -244,8 +244,8 @@ DOC_TYPE_RULES: list[tuple[int, str, list[str]]] = [
     ),
 ]
 
-# ── Mapeamento de pasta raiz → produto ───────────────────────────────────────
-# Complementa a detecção automática por pasta com aliases
+# ── Root folder → product mapping ────────────────────────────────────────────
+# Supplements automatic folder detection with aliases
 
 PRODUCT_ALIASES: dict[str, str] = {
     "appserver": "AppServer",
@@ -280,7 +280,7 @@ PRODUCT_ALIASES: dict[str, str] = {
     "archive center": "ArchiveCenter",
 }
 
-# Padrões de produto inferíveis do próprio nome do arquivo
+# Product patterns inferable from the filename itself
 PRODUCT_FROM_NAME: list[tuple[str, list[str]]] = [
     ("AppServer", [r"app.?server", r"\bappserver\b"]),
     ("DataSync", [r"data.?sync", r"\bdatasync\b"]),
@@ -359,7 +359,7 @@ SKIP_SUBSYSTEM_DIRS = {"varios", "templates", "archive"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FUNÇÕES PÚBLICAS
+# PUBLIC FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -376,12 +376,12 @@ def infer_doc_type(file_path: Path) -> str:
     Returns:
         Document type string (e.g., 'admin_guide', 'standard', 'training').
     """
-    # Usa nome + caminho completo como texto de busca, tudo em minúsculas
+    # Use name + full path as search text, all lowercase
     text = (file_path.stem + " " + str(file_path)).lower()
-    # Substitui separadores por espaço para facilitar matching
+    # Replace separators with spaces for easier matching
     text = re.sub(r"[_\-/\\]", " ", text)
 
-    # Extensão de arquivo sem conteúdo textual → artifact
+    # File extension without textual content → artifact
     if file_path.suffix.lower() in (
         ".zip",
         ".patch",
@@ -392,7 +392,7 @@ def infer_doc_type(file_path: Path) -> str:
     ):
         return "release_artifact"
 
-    # Avalia regras por ordem de prioridade (maior primeiro)
+    # Evaluate rules by priority order (highest first)
     best_priority = -1
     best_type = "document"
 
@@ -548,7 +548,7 @@ def infer_product(
     if product_override:
         return product_override
 
-    # Pasta raiz
+    # Root folder
     try:
         relative = file_path.relative_to(docs_root)
         root_folder = (
@@ -558,18 +558,18 @@ def infer_product(
         root_folder = ""
 
     if root_folder:
-        # Lookup direto no alias map
+        # Direct lookup in alias map
         if root_folder in PRODUCT_ALIASES:
             return PRODUCT_ALIASES[root_folder]
         # Partial match
         for alias, product in PRODUCT_ALIASES.items():
             if alias in root_folder or root_folder in alias:
                 return product
-        # Usa o nome da pasta com capitalização se não estiver no alias
+        # Use the folder name with capitalization if not in alias
         if root_folder not in ("varios", "templates", "archive"):
-            return relative.parts[0]  # preserva capitalização original
+            return relative.parts[0]  # preserve original capitalization
 
-    # Tenta pelo nome do arquivo
+    # Try by file name
     name_lower = re.sub(r"[_\-]", " ", file_path.stem.lower())
     for product, patterns in PRODUCT_FROM_NAME:
         for pattern in patterns:
