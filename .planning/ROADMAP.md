@@ -152,6 +152,11 @@ Plans:
 
 **Plans:** 3 plans
 
+Plans:
+- [ ] 09-01-PLAN.md — Cross-encoder lazy loading verification & hardening (DEBT-01)
+- [ ] 09-02-PLAN.md — Pre-flight health checks + `kb-ingest check health` CLI (DEBT-04)
+- [ ] 09-03-PLAN.md — LM Studio embedding dependency documentation (DEBT-06)
+
 ### Phase 10: CI & Test Infrastructure
 
 **Goal:** Fix MagicMock pollution in the test suite, validate Helm charts in CI, and enforce logging coverage to prevent quality regression.
