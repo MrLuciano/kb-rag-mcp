@@ -19,9 +19,9 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
 
 ### Auto-Classification
 
-- [ ] **CLASSIFY-01**: Documents are auto-classified with Vendor, Product, Subsystem, and Version attributes — inferred from directory hierarchy and filename patterns, extending existing OTCS product detection
-- [ ] **CLASSIFY-02**: Classification gaps are filled by extracting metadata (title, subject, author) and first-page content from PDF/DOCX files — no LLM dependency
-- [ ] **CLASSIFY-03**: Extended classification is backward-compatible with existing OTCS auto-tagging — existing `infer_product()` and `infer_doc_type()` signatures unchanged
+- [x] **CLASSIFY-01**: Documents are auto-classified with Vendor, Product, Subsystem, and Version attributes — inferred from directory hierarchy and filename patterns, extending existing OTCS product detection
+- [x] **CLASSIFY-02**: Classification gaps are filled by extracting metadata (title, subject, author) and first-page content from PDF/DOCX files — no LLM dependency
+- [x] **CLASSIFY-03**: Extended classification is backward-compatible with existing OTCS auto-tagging — existing `infer_product()` and `infer_doc_type()` signatures unchanged
 
 ---
 
@@ -51,7 +51,7 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
 | DEBT-06 | Phase 9 | TBD |
 | DEBT-02 | Phase 10 | Plan 01 ✅ |
 | DEBT-03 | Phase 10 | Plan 02 ✅ |
-| DEBT-05 | Phase 10 | TBD |
-| CLASSIFY-01 | Phase 11 | TBD |
-| CLASSIFY-02 | Phase 11 | TBD |
-| CLASSIFY-03 | Phase 11 | TBD |
+| DEBT-05 | Phase 10 | Plan 03 ✅ |
+| CLASSIFY-01 | Phase 11 | Plan 01 ✅ |
+| CLASSIFY-02 | Phase 11 | Plan 02 ✅ |
+| CLASSIFY-03 | Phase 11 | Plan 01+02 ✅ |

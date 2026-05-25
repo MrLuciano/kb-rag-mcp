@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](.planning/milestones/v1.0-ROADMAP.md)
 - ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23)
-- 🔄 **v1.2 Tech Debt & Classification** — Phases 9–11 (planning)
+- ✅ **v1.2 Tech Debt & Classification** — Phases 9–11 (shipped 2026-05-25)
 
 ## Phases
 
@@ -191,24 +191,33 @@ Plans:
 - 10-02: Real qdrant_client imports in 3 test files — no MagicMock stubs for model classes
 - 10-03: `--fail-under` flag in logging-audit.py; CI enforcement step on PR-to-master
 
-### Phase 11: Auto-Classification
+### Phase 11: Auto-Classification (COMPLETED)
 
 **Goal:** Extend document classifier to extract Vendor, Product, Subsystem, and Version from filename patterns, directory hierarchy, and document metadata — no LLM dependency.
 
 **Milestone:** v1.2
 **Requirements:** CLASSIFY-01, CLASSIFY-02, CLASSIFY-03
 
-**Success criteria:**
-1. A file in `WebReports/` directory or named `OpenText WebReport Administrator Guide 23.4.pdf` is classified with `vendor=OpenText`, `product=WebReports`, `version=23.4`, `doc_type=admin_guide`
-2. Classification fills gaps from PDF/DOCX metadata (title, subject, author, keywords) when filename is ambiguous
-3. Existing `infer_product()`, `infer_doc_type()`, `classify()` signatures unchanged — backward compatible
-4. All tests pass; OTCS product detection still works as before
+**Success criteria — all met:**
+1. ✅ A file named `OpenText WebReport Administrator Guide 23.4.pdf` is classified with `vendor=OpenText`, `product=WebReports`, `version=23.4`, `doc_type=admin_guide`
+2. ✅ Classification fills gaps from PDF/DOCX metadata (title, subject, author, keywords) when filename is ambiguous
+3. ✅ Existing `infer_product()`, `infer_doc_type()`, `classify()` signatures unchanged — backward compatible
+4. ✅ All 585 tests pass; OTCS product detection still works as before
 
-**Plans:** 2 plans
+**Plans:** 2 plans — both executed 2026-05-25
+
+**Delivered:**
+- `infer_vendor()`: Detects OpenText from filename patterns, directory names, and product-to-vendor mapping (15 products mapped)
+- `infer_subsystem()`: Detects subsystem from directory hierarchy (8 functional categories via filename patterns)
+- `extract_document_metadata()`: Extract title/author/subject/keywords from PDF (PyMuPDF) and DOCX (python-docx)
+- `enrich_classification()`: Gap-fills vendor/product/doc_type from document metadata (lowest precedence, never overrides explicit classification)
+- Ingest pipeline stores vendor/subsystem in Qdrant chunk payload
+- Bug fix: `DOC_TYPE_RULES` standard patterns now use word boundaries — no longer false-positive matches on "nist" substring in "Administrator"
+- 72 classifier tests (58 existing + 7 metadata + 7 enrichment), all passing
 
 Plans:
-- [ ] 11-01-PLAN.md — Vendor & subsystem inference + SC1 end-to-end classification
-- [ ] 11-02-PLAN.md — Document metadata extraction, gap-filling enrichment, ingest pipeline integration
+- [x] 11-01-PLAN.md — Vendor & subsystem inference + SC1 end-to-end classification
+- [x] 11-02-PLAN.md — Document metadata extraction, gap-filling enrichment, ingest pipeline integration
 
 ---
 
@@ -283,4 +292,4 @@ Plans:
 | 8. Ingest Improvements & Docs | v1.1 | 3/3 | Complete | 2026-05-23 |
 | 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
-| 11. Auto-Classification | v1.2 | 0/2 | Planning | — |
+| 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
