@@ -11,8 +11,8 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
 ### Operational Debt
 
 - [ ] **DEBT-01**: Cross-encoder model loads lazily on first `predict()` call, not at import time — saves ~500MB memory and ~10s startup latency
-- [ ] **DEBT-02**: Helm chart is validated with `helm lint` in CI pipeline — catches structural errors before deployment
-- [ ] **DEBT-03**: MagicMock pollution from `qdrant_client` sys.modules stubs is resolved across the test suite — enum values compare correctly without `getattr(x, 'value', x)` workaround
+- [x] **DEBT-02**: Helm chart is validated with `helm lint` in CI pipeline — catches structural errors before deployment
+- [x] **DEBT-03**: MagicMock pollution from `qdrant_client` sys.modules stubs is resolved across the test suite — enum values compare correctly without `getattr(x, 'value', x)` workaround
 - [ ] **DEBT-04**: Server startup performs pre-flight health check — warns if Qdrant or LM Studio are unreachable before accepting queries
 - [ ] **DEBT-05**: Logging coverage is enforced via CI gate (`--fail-under` threshold) — prevents regression below current baseline
 - [ ] **DEBT-06**: LM Studio embedding dependency is documented with recommended fallback/startup options in operations guide
@@ -49,8 +49,8 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
 | DEBT-01 | Phase 9 | TBD |
 | DEBT-04 | Phase 9 | TBD |
 | DEBT-06 | Phase 9 | TBD |
-| DEBT-02 | Phase 10 | TBD |
-| DEBT-03 | Phase 10 | TBD |
+| DEBT-02 | Phase 10 | Plan 01 ✅ |
+| DEBT-03 | Phase 10 | Plan 02 ✅ |
 | DEBT-05 | Phase 10 | TBD |
 | CLASSIFY-01 | Phase 11 | TBD |
 | CLASSIFY-02 | Phase 11 | TBD |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Tech Debt & Classification
 status: executing
-last_updated: "2026-05-25T14:06:43.978Z"
-last_activity: 2026-05-25 -- Phase 10 planning complete
+last_updated: "2026-05-25T16:00:00.000Z"
+last_activity: 2026-05-25 -- Phase 10 Wave 1 complete (10-01 + 10-02)
 progress:
   total_phases: 12
   completed_phases: 2
   total_plans: 16
-  completed_plans: 8
+  completed_plans: 10
   percent: 17
 ---
 
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 09 — COMPLETE
-Plan: 3/3 (all executed)
-Status: Ready to execute
-Last activity: 2026-05-25 -- Phase 10 planning complete
+Phase: 10 — IN PROGRESS
+Plan: 2/3 (Wave 1 complete: 10-01 + 10-02)
+Status: Ready for Wave 2 (10-03)
+Last activity: 2026-05-25 -- Phase 10 Wave 1 complete (10-01 + 10-02)
 
 ## Phase 6 Outcomes
 
@@ -97,6 +97,34 @@ Last activity: 2026-05-25 -- Phase 10 planning complete
 | `ingest/` | TBD (first CI enforcement run) |
 | Logging audit | 50.6% overall; 119/235 public methods with log calls |
 
+## Phase 10 Wave 1 Outcomes
+
+### Plans Executed
+
+- **10-01**: Helm chart validation in CI — added `helm-lint` job to `.github/workflows/ci.yml` using `azure/setup-helm@v4` with `helm lint --strict` and `helm template` dry-run
+- **10-02**: Replaced `sys.modules` qdrant_client stubs with real imports in `tests/test_smoke.py`, `tests/test_vector_store.py`, `tests/test_vector_store_unit.py` — removed `_patch_vs_callables()`, `_ORIGINAL_VS_ATTRS`, and `_qm.FilterSelector = MagicMock()` workarounds
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| DEBT-02: Helm chart validated in CI | ✅ | `.github/workflows/ci.yml` has `helm-lint` job with `helm lint --strict` |
+| DEBT-03: Real qdrant model imports | ✅ | No `type(name, (), {})()` stubs for qdrant symbols; full suite 551/556 passed, 0 failed |
+
+### Key Decisions
+
+- **Import real qdrant before stubs:** Adding `import qdrant_client` at top of `_ensure_stubs()` ensures real package loads before `setdefault` loop — preserves real modules instead of anonymous stubs
+- **Separate helm-lint job:** Not part of test matrix — runs once per push/PR, not per Python version
+- **Keep non-qdrant stubs:** MCP, fastembed, and other heavy dependency stubs remain for test-process performance
+- **WSL DrvFs filesystem bug:** Write/Edit tools fail silently on WSL mounts — use Bash heredocs as workaround
+
+### Test Baseline
+
+| Metric | Count |
+|--------|-------|
+| Total (core) | 551 |
+| Unit pass rate | 100% |
+
 ### Key Decisions (v1.0)
 
 - `kb_server/` is single canonical module; `server/` deleted
@@ -104,11 +132,11 @@ Last activity: 2026-05-25 -- Phase 10 planning complete
 - `IngestRegistry` → `ingest/core/metadata.py`
 - fastembed BM25 for sparse vectors (embedded, no separate server)
 - `asyncio_mode = STRICT` — all async tests need `@pytest.mark.asyncio`
-- MagicMock pollution from qdrant_client stubs — use `getattr(x, 'value', x)` pattern for enum comparisons
+- MagicMock pollution from qdrant_client stubs — use `getattr(x, 'value', x)` pattern for enum comparisons (DEBT-03 resolved — no longer needed)
 
 ### Known Tech Debt
 
 - `PayloadSchemaType` assertion weakened in `test_payload_indexes.py`
-- `helm lint` not validated (helm not installed in WSL dev)
+- ~~`helm lint` not validated (helm not installed in WSL dev)~~ ✅ Resolved by DEBT-02
 - LM Studio must be running locally for live ingest/eval
 - Cross-encoder model lazy-loading deferred to post-Phase 6 (decided D-06)

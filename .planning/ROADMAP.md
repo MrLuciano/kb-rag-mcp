@@ -137,25 +137,25 @@ Plans:
 
 ---
 
-### Phase 9: Startup Reliability
+### Phase 9: Startup Reliability (COMPLETED)
 
 **Goal:** Reduce server startup latency, add pre-flight health checks, and document embedding dependencies so operators know when the system is healthy before accepting queries.
 
 **Milestone:** v1.2
 **Requirements:** DEBT-01, DEBT-04, DEBT-06
 
-**Success criteria:**
-1. Server starts without loading the cross-encoder model — first inference loads it lazily (~500MB saved, ~10s faster startup)
-2. Server logs a warning at startup if Qdrant or LM Studio are unreachable
-3. Operators can run `kb-ingest check` (or equivalent) to validate external dependency health
-4. LM Studio dependency and startup options documented in OPERATIONS.md
+**Success criteria — all met:**
+1. ✅ Server starts without loading the cross-encoder model — first inference loads it lazily (~500MB saved, ~10s faster startup)
+2. ✅ Server logs a warning at startup if Qdrant or LM Studio are unreachable
+3. ✅ Operators can run `kb-ingest check` (or equivalent) to validate external dependency health
+4. ✅ LM Studio embedding dependency and documented in OPERATIONS.md
 
 **Plans:** 3 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Cross-encoder lazy loading verification & hardening (DEBT-01)
-- [ ] 09-02-PLAN.md — Pre-flight health checks + `kb-ingest check health` CLI (DEBT-04)
-- [ ] 09-03-PLAN.md — LM Studio embedding dependency documentation (DEBT-06)
+- [x] 09-01-PLAN.md — Cross-encoder lazy loading verification & hardening (DEBT-01)
+- [x] 09-02-PLAN.md — Pre-flight health checks + `kb-ingest check health` CLI (DEBT-04)
+- [x] 09-03-PLAN.md — LM Studio embedding dependency documentation (DEBT-06)
 
 ### Phase 10: CI & Test Infrastructure
 
@@ -165,26 +165,30 @@ Plans:
 **Requirements:** DEBT-02, DEBT-03, DEBT-05
 
 **Success criteria:**
-1. `helm lint` runs in CI and catches structural errors — no more manual-only chart review
-2. All `qdrant_client` enum comparisons in tests work without `getattr(x, 'value', x)` workaround
-3. Logging audit script has `--fail-under` flag; CI enforces threshold on PR-to-master
-4. Full test suite passes with zero pre-existing failures
+1. ✅ `helm lint` runs in CI and catches structural errors — no more manual-only chart review
+2. ✅ All `qdrant_client` enum comparisons in tests work without `getattr(x, 'value', x)` workaround
+3. [ ] Logging audit script has `--fail-under` flag; CI enforces threshold on PR-to-master
+4. ✅ Full test suite passes with zero pre-existing failures
 
 **Plans:** 3 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Helm chart validation in CI with `helm lint --strict` (DEBT-02)
-- [ ] 10-02-PLAN.md — Replace MagicMock-polluted qdrant_client stubs with real model imports (DEBT-03)
+- [x] 10-01-PLAN.md — Helm chart validation in CI with `helm lint --strict` (DEBT-02)
+- [x] 10-02-PLAN.md — Replace MagicMock-polluted qdrant_client stubs with real model imports (DEBT-03)
 - [ ] 10-03-PLAN.md — Logging audit `--fail-under` flag + CI enforcement gate (DEBT-05)
 
 ### Wave Dependencies
-**Wave 1** *(both plans are independent — no blocking dependencies)*
-**Wave 2** *(blocked on Wave 1 — 10-03 modifies ci.yml alongside 10-01)*
+**Wave 1** *(2/2 plans complete)*
+**Wave 2** *(10-03 — blocked on 10-01 for ci.yml)*
 
 **Cross-cutting constraints:**
 - All 3 plans must ship together to satisfy DEBT-02, DEBT-03, DEBT-05
 - Full test suite (576+ tests) must pass at each plan completion
 - CI workflow file must remain valid YAML after each modification
+
+**Wave 1 delivered (2026-05-25):**
+- 10-01: `helm-lint` job added to CI (azure/setup-helm@v4, `helm lint --strict`, `helm template`)
+- 10-02: Real qdrant_client imports in 3 test files — no MagicMock stubs for model classes
 
 ### Phase 11: Auto-Classification
 
@@ -272,6 +276,6 @@ Plans:
 | 6. Test Coverage & Isolation | v1.1 | 3/3 | Complete | 2026-05-22 |
 | 7. Logging, Quality Gate & Coverage | v1.1 | 2/2 | Complete | 2026-05-23 |
 | 8. Ingest Improvements & Docs | v1.1 | 3/3 | Complete | 2026-05-23 |
-| 9. Startup Reliability | v1.2 | 0/3 | Planning | — |
-| 10. CI & Test Infrastructure | v1.2 | 0/3 | Planning | — |
+| 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
+| 10. CI & Test Infrastructure | v1.2 | 2/3 | In Progress | — |
 | 11. Auto-Classification | v1.2 | 0/2 | Planning | — |
