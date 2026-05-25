@@ -44,3 +44,19 @@ jobs:
       - name: SSE handler tests (separate process)
         run: |
           python -m pytest tests/test_sse_handler.py -q --tb=short
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 3.16.x
+
+      - name: Run helm lint
+        run: helm lint deployment/helm/kb-rag-mcp/ --strict
+
+      - name: Run helm template (dry-run)
+        run: helm template deployment/helm/kb-rag-mcp/
