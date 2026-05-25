@@ -1,18 +1,18 @@
 """
-Embedding client com suporte a múltiplos backends:
-  - lmstudio-sdk   → SDK nativo do LM Studio (só funciona se LM Studio
-                     estiver na MESMA máquina ou acessível via LMS_HOST)
-  - lmstudio-rest  → REST API própria do LM Studio: POST /api/v0/embeddings
-  - openai-compat  → API compatível OpenAI: POST /v1/embeddings
-                     RECOMENDADO para LM Studio remoto (outro IP na rede)
+Multi-backend embedding client:
+  - lmstudio-sdk   → Native LM Studio SDK (only works if LM Studio
+                     is on the SAME machine or accessible via LMS_HOST)
+  - lmstudio-rest  → LM Studio REST API: POST /api/v0/embeddings
+  - openai-compat  → OpenAI-compatible API: POST /v1/embeddings
+                     RECOMMENDED for remote LM Studio (different IP on network)
   - ollama         → Ollama native (recommended for LXC Server / Linux)
 
-Selecione via variável de ambiente EMBED_BACKEND.
+Select via the EMBED_BACKEND environment variable.
 
-IMPORTANTE — URLs esperadas por backend:
-  lmstudio-sdk:   LMS_HOST=<LM_STUDIO_HOST>  LMS_PORT=1234  (sem path)
-  lmstudio-rest:  LMS_BASE_URL=http://<LM_STUDIO_HOST>:1234  (sem /api ou /v*)
-  openai-compat:  LMS_BASE_URL=http://<LM_STUDIO_HOST>:1234  (sem /v1)
+IMPORTANT — Expected URLs by backend:
+  lmstudio-sdk:   LMS_HOST=<LM_STUDIO_HOST>  LMS_PORT=1234  (no path)
+  lmstudio-rest:  LMS_BASE_URL=http://<LM_STUDIO_HOST>:1234  (no /api or /v*)
+  openai-compat:  LMS_BASE_URL=http://<LM_STUDIO_HOST>:1234  (no /v1)
   ollama:         OLLAMA_HOST=http://localhost:11434
 """
 
@@ -41,12 +41,12 @@ MODEL = os.getenv(
 )
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
-# LMS_BASE_URL: aceita qualquer forma que o usuário colocar e normaliza
+# LMS_BASE_URL: accepts any user input and normalizes it
 # e.g.: http://<LM_STUDIO_HOST>:1234/api/v1  →  http://<LM_STUDIO_HOST>:1234
 _raw_lms_url = os.getenv("LMS_BASE_URL", "http://localhost:1234")
 LMS_BASE_URL = re.sub(r"/(api/v\d+|v\d+)/?$", "", _raw_lms_url).rstrip("/")
 
-# Para o SDK nativo, extrai host e porta separados
+# For the native SDK, extract host and port separately
 _lms_match = re.match(r"https?://([^:/]+)(?::(\d+))?", LMS_BASE_URL)
 if _lms_match is not None:
     LMS_HOST = os.getenv("LMS_HOST", _lms_match.group(1))
@@ -55,7 +55,7 @@ else:
     LMS_HOST = os.getenv("LMS_HOST", "localhost")
     LMS_PORT = int(os.getenv("LMS_PORT", "1234"))
 
-# dimensões conhecidas por modelo (nome completo ou curto)
+# known dimensions by model (full name or short)
 KNOWN_DIMS = {
     "nomic-embed-text-v1.5": 768,
     "text-embedding-nomic-embed-text-v1.5-embedding": 768,
@@ -71,7 +71,7 @@ HTTP_POOL_MAXSIZE = int(os.getenv("HTTP_POOL_MAXSIZE", "50"))
 HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "60.0"))
 BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "32"))
 
-# ── Cache do cliente httpx e embedding cache
+# ── HTTP client and embedding cache
 _http_client: httpx.AsyncClient | None = None
 _embed_cache: Optional[CacheManager] = None
 _metrics: Optional[MetricsCollector] = None
@@ -139,9 +139,9 @@ async def _http() -> httpx.AsyncClient:
 
 async def _embed_lmstudio_sdk(text: str) -> list[float]:
     """
-    SDK nativo do LM Studio.
-    Requer que o LM Studio daemon esteja acessível via WebSocket.
-    Para servidor remoto, configure LMS_HOST e LMS_PORT.
+    Native LM Studio SDK.
+    Requires LM Studio daemon accessible via WebSocket.
+    For remote server, set LMS_HOST and LMS_PORT.
     """
     try:
         import lmstudio as lms  # type: ignore[import]
@@ -152,7 +152,7 @@ async def _embed_lmstudio_sdk(text: str) -> list[float]:
             loop = asyncio.new_event_loop()
 
         def _call():
-            # Conecta ao host remoto se não for localhost
+            # Connect to remote host if not localhost
             if LMS_HOST not in ("localhost", "127.0.0.1"):
                 client = lms.Client(f"ws://{LMS_HOST}:{LMS_PORT}")
                 return list(client.embedding.model(MODEL).embed(text))
@@ -163,18 +163,18 @@ async def _embed_lmstudio_sdk(text: str) -> list[float]:
 
     except ImportError:
         log.warning(
-            "lmstudio SDK não instalado — usando openai-compat como fallback"
+            "lmstudio SDK not installed — using openai-compat as fallback"
         )
         return await _embed_openai_compat(text)
     except Exception as e:
-        log.warning(f"SDK falhou ({e}) — usando openai-compat como fallback")
+        log.warning(f"SDK failed ({e}) — using openai-compat as fallback")
         return await _embed_openai_compat(text)
 
 
 async def _embed_lmstudio_rest(text: str) -> list[float]:
     """
-    REST API própria do LM Studio: POST /api/v0/embeddings
-    LMS_BASE_URL deve ser apenas http://host:porta (sem path)
+    LM Studio REST API: POST /api/v0/embeddings
+    LMS_BASE_URL must be just http://host:port (no path)
     """
     client = await _http()
     url = f"{LMS_BASE_URL}/api/v0/embeddings"
@@ -186,10 +186,10 @@ async def _embed_lmstudio_rest(text: str) -> list[float]:
 
 async def _embed_openai_compat(text: str) -> list[float]:
     """
-    API compatível com OpenAI: POST /v1/embeddings
-    Funciona com LM Studio local e remoto, Ollama e qualquer
-    servidor compatível.
-    LMS_BASE_URL deve ser apenas http://host:porta (sem /v1)
+    OpenAI-compatible API: POST /v1/embeddings
+    Works with local and remote LM Studio, Ollama, and any
+    compatible server.
+    LMS_BASE_URL must be just http://host:port (no /v1)
     """
     client = await _http()
     url = f"{LMS_BASE_URL}/v1/embeddings"
@@ -272,7 +272,7 @@ async def _embed_ollama_batch(texts: list[str]) -> list[list[float]]:
     return list(results)
 
 
-# ── Dispatcher público
+# ── Public dispatcher
 
 _BACKENDS = {
     "lmstudio-sdk": _embed_lmstudio_sdk,
@@ -306,12 +306,12 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
     fn = _BACKENDS.get(BACKEND)
     if fn is None:
         raise ValueError(
-            f"EMBED_BACKEND inválido: '{BACKEND}'. Opções: {list(_BACKENDS)}"
+            f"Invalid EMBED_BACKEND: '{BACKEND}'. Options: {list(_BACKENDS)}"
         )
 
     try:
         vector = await fn(text)
-        log.debug(f"Embedding gerado: {len(vector)} dims via {BACKEND}")
+        log.debug(f"Embedding generated: {len(vector)} dims via {BACKEND}")
 
         # Cache the result
         if use_cache and _embed_cache is not None:
@@ -322,7 +322,7 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
 
         return vector
     except Exception as e:
-        log.error(f"Erro no embedding ({BACKEND}): {e}")
+        log.error(f"Embedding error ({BACKEND}): {e}")
         raise
 
 
@@ -495,7 +495,7 @@ async def close() -> None:
 
 
 async def health_check() -> dict:
-    """Verifica se o backend de embedding está respondendo."""
+    """Check if the embedding backend is responding."""
     try:
         vec = await get_embedding("health check")
         log.info("Embedding health check OK: backend=%s model=%s dims=%d", BACKEND, MODEL, len(vec))

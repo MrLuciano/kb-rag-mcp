@@ -73,7 +73,7 @@ async def test_search_no_results_returns_empty_message(patch_server_globals):
     assert len(results) == 1
     assert results[0].type == "text"
     # Should indicate no results found
-    assert "Nenhum resultado" in results[0].text or "no result" in results[0].text.lower()
+    assert "No results found" in results[0].text
 
 
 @pytest.mark.asyncio

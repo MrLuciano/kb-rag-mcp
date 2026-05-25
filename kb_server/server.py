@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-# ── Carrega .env antes de qualquer leitura de os.getenv
+# ── Load .env before any os.getenv reads
 from config.bootstrap_env import bootstrap_env
 bootstrap_env()
 
@@ -59,7 +59,7 @@ QUERY_LOG_CLEANUP_INTERVAL_HOURS = int(
     os.getenv("QUERY_LOG_CLEANUP_INTERVAL_HOURS", "24")
 )
 
-# ── Inicialização ─────────────────────────────────────────────────
+# ── Initialization ────────────────────────────────────────────────
 app = Server("kb-rag")
 store = VectorStore()
 collection_manager: CollectionManager | None = None
@@ -112,27 +112,27 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="search_kb",
             description=(
-                "Busca semântica na knowledge base local de documentação "
-                "de documentação técnica e padrões. "
-                "Retorna os chunks mais relevantes com score, fonte e "
-                "metadados. "
-                "Filtre por product (ex: 'AppServer', 'DataSync', 'AdminPortal') "
-                "e/ou doc_type (ex: 'install_guide', 'release_notes', "
-                "'standard', 'training') para resultados mais precisos. "
-                "Use sempre que precisar de informações sobre instalação, "
-                "configuração, APIs, upgrades, normas ISO "
-                "ou exemplos de código."
+                "Semantic search across the local documentation knowledge base "
+                "of technical documentation and standards. "
+                "Returns the most relevant chunks with score, source, and "
+                "metadata. "
+                "Filter by product (e.g. 'AppServer', 'DataSync', 'AdminPortal') "
+                "and/or doc_type (e.g. 'install_guide', 'release_notes', "
+                "'standard', 'training') for more precise results. "
+                "Use whenever you need information about installation, "
+                "configuration, APIs, upgrades, ISO standards, "
+                "or code examples."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Pergunta ou termo a buscar na KB",
+                        "description": "Query or term to search in the knowledge base",
                     },
                     "top_k": {
                         "type": "integer",
-                        "description": "# d resultados (padrão: 5, máx: 20)",
+                        "description": "Number of results (default: 5, max: 20)",
                         "default": TOP_K,
                         "minimum": 1,
                         "maximum": 20,
@@ -140,65 +140,65 @@ async def list_tools() -> list[types.Tool]:
                     "product": {
                         "type": "string",
                         "description": (
-                            "Filtrar por produto. "
-                            "Exemplos: AppServer, DataSync, AdminPortal, Adobe, SAP,"
-                            "ISO, geral"
+                            "Filter by product. "
+                            "Examples: AppServer, DataSync, AdminPortal, Adobe, SAP,"
+                            "ISO, general"
                         ),
                     },
                     "doc_type": {
                         "type": "string",
                         "description": (
-                            "Filtrar por tipo de conteúdo. "
-                            "admin_guide=administração, "
-                            "install_guide=instalação, "
-                            "upgrade_guide=upgrade/migração, "
-                            "config_guide=configuração, "
-                            "release_notes=notas de release, "
+                            "Filter by content type. "
+                            "admin_guide=administration, "
+                            "install_guide=installation, "
+                            "upgrade_guide=upgrade/migration, "
+                            "config_guide=configuration, "
+                            "release_notes=release notes, "
                             "api_guide=API/SDK, "
-                            "howto=tutoriais/case studies, "
-                            "training=treinamentos, overview=visão geral,"
-                            "standard=normas ISO/regulamentos, "
-                            "reference=referência técnica"
+                            "howto=tutorials/case studies, "
+                            "training=training, overview=overview,"
+                            "standard=ISO standards/regulations, "
+                            "reference=technical reference"
                         ),
                         "enum": doc_type_enum,
                     },
                     "version": {
                         "type": "string",
                         "description": (
-                            "FASE 13: Filtrar por versão do produto. "
-                            "Exemplos: 22.3, CE 24.4, v2.5. "
-                            "Use para buscar documentação de versão específica."
+                            "FASE 13: Filter by product version. "
+                            "Examples: 22.3, CE 24.4, v2.5. "
+                            "Use to search documentation for a specific version."
                         ),
                     },
                     "filter_type": {
                         "type": "string",
-                        "description": "Filtrar por formato do arquivo: pdf, "
+                        "description": "Filter by file format: pdf, "
                         "docx, xlsx, pptx, txt, code",
                         "enum": ["pdf", "docx", "xlsx", "pptx", "txt", "code"],
                     },
                     "hybrid": {
                         "type": "boolean",
                         "description": (
-                            "FASE 12: Usar busca híbrida (dense + BM25 sparse). "
-                            "Melhora recall em termos técnicos específicos "
-                            "(versões, códigos, nomes exatos)"
+                            "FASE 12: Use hybrid search (dense + BM25 sparse). "
+                            "Improves recall for specific technical terms "
+                            "(versions, codes, exact names)"
                         ),
                         "default": False,
                     },
                     "rerank": {
                         "type": "boolean",
                         "description": (
-                            "FASE 12: Aplicar reranking com cross-encoder. "
-                            "Melhora precisão dos top resultados "
-                            "(adiciona ~200ms de latência)"
+                            "FASE 12: Apply cross-encoder reranking. "
+                            "Improves top result precision "
+                            "(adds ~200ms latency)"
                         ),
                         "default": False,
                     },
                     "collection": {
                         "type": "string",
                         "description": (
-                            "FASE 15: Nome da coleção Qdrant a consultar. "
-                            "Omita para usar a coleção padrão (QDRANT_COLLECTION)."
+                            "FASE 15: Name of the Qdrant collection to query. "
+                            "Omit to use the default collection (QDRANT_COLLECTION)."
                         ),
                     },
                 },
@@ -208,41 +208,41 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="list_documents",
             description=(
-                "Lista documentos indexados na knowledge base. "
-                "Útil para descobrir quais documentos estão disponíveis "
-                "antes de buscar. "
-                "Filtre por product e/ou doc_type para navegar por categoria."
+                "List indexed documents in the knowledge base. "
+                "Useful for discovering which documents are available "
+                "before searching. "
+                "Filter by product and/or doc_type to navigate by category."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "product": {
                         "type": "string",
-                        "description": "Filtrar por produto "
-                        "(ex: AppServer, DataSync, AdminPortal)",
+                        "description": "Filter by product "
+                        "(e.g. AppServer, DataSync, AdminPortal)",
                     },
                     "doc_type": {
                         "type": "string",
-                        "description": "Filtrar por tipo de conteúdo",
+                        "description": "Filter by content type",
                         "enum": doc_type_enum,
                     },
                     "filter_type": {
                         "type": "string",
-                        "description": "Filtrar por formato: "
+                        "description": "Filter by format: "
                         "pdf, docx, xlsx, pptx, txt, code",
                         "enum": ["pdf", "docx", "xlsx", "pptx", "txt", "code"],
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "Máximo de documentos a retornar "
-                        "(padrão: 50)",
+                        "description": "Maximum number of documents to return "
+                        "(default: 50)",
                         "default": 50,
                     },
                     "collection": {
                         "type": "string",
                         "description": (
-                            "FASE 15: Nome da coleção Qdrant a consultar. "
-                            "Omita para usar a coleção padrão."
+                            "FASE 15: Name of the Qdrant collection to query. "
+                            "Omit to use the default collection."
                         ),
                     },
                 },
@@ -252,23 +252,23 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="get_chunk",
             description=(
-                "Retorna o conteúdo completo de um chunk específico "
-                "com contexto expandido. "
-                "Use após search_kb quando precisar do texto completo "
-                "de um resultado."
+                "Returns the full content of a specific chunk "
+                "with expanded context. "
+                "Use after search_kb when you need the complete text "
+                "of a result."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "chunk_id": {
                         "type": "string",
-                        "description": "ID do chunk (retornado pelo "
+                        "description": "Chunk ID (returned by "
                         "search_kb)",
                     },
                     "context_window": {
                         "type": "integer",
-                        "description": "Chunks vizinhos a incluir para "
-                        "contexto (0-3, padrão: 1)",
+                        "description": "Neighboring chunks to include for "
+                        "context (0-3, default: 1)",
                         "default": 1,
                         "minimum": 0,
                         "maximum": 3,
@@ -279,16 +279,16 @@ async def list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="kb_stats",
-            description="Estatísticas da KB: total de documentos, chunks, "
-            "breakdown por produto e tipo de conteúdo.",
+            description="KB statistics: total documents, chunks, "
+            "breakdown by product and content type.",
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="list_collections",
             description=(
-                "FASE 15: Lista todas as coleções Qdrant disponíveis. "
-                "Use para descobrir coleções antes de chamar search_kb "
-                "ou list_documents com o parâmetro collection."
+                "FASE 15: List all available Qdrant collections. "
+                "Use to discover collections before calling search_kb "
+                "or list_documents with the collection parameter."
             ),
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
@@ -326,14 +326,14 @@ async def call_tool(
         else:
             return [
                 types.TextContent(
-                    type="text", text=f"Tool desconhecida: {name}"
+                    type="text", text=f"Unknown tool: {name}"
                 )
             ]
     except Exception as e:
-        log.error(f"Erro em {name}: {e}", exc_info=True)
+        log.error(f"Error in {name}: {e}", exc_info=True)
         return [
-            types.TextContent(
-                type="text", text=f"Erro ao executar {name}: {str(e)}"
+                types.TextContent(
+                    type="text", text=f"Error executing {name}: {str(e)}"
             )
         ]
 
@@ -457,8 +457,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         return [
             types.TextContent(
                 type="text",
-                text="Nenhum resultado encontrado na knowledge base"
-                " para essa query.",
+                text="No results found in the knowledge base"
+                " for this query.",
             )
         ]
 
@@ -467,30 +467,30 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     # Add search mode indicator
     mode_indicators = []
     if hybrid:
-        mode_indicators.append("híbrida")
+        mode_indicators.append("hybrid")
     if rerank:
         mode_indicators.append("reranked")
     if mode_indicators:
-        lines.append(f"*Busca {' + '.join(mode_indicators)}*\n")
+        lines.append(f"*Search {' + '.join(mode_indicators)}*\n")
     
     for i, r in enumerate(results, 1):
         score_pct = f"{r['score'] * 100:.1f}%"
         lines.append(
-            f"### [{i}] {r['source_file']}  (relevância: {score_pct})"
+            f"### [{i}] {r['source_file']}  (relevance: {score_pct})"
         )
         lines.append(
             f"**ID:** `{r['chunk_id']}`  |  "
-            f"**Produto:** {r.get('product','n/a')}  |  "
-            f"**Tipo:** {r.get('doc_type','n/a')}  |  "
-            f"**Formato:** {r['file_type']}"
+            f"**Product:** {r.get('product','n/a')}  |  "
+            f"**Type:** {r.get('doc_type','n/a')}  |  "
+            f"**Format:** {r['file_type']}"
         )
         if r.get("page"):
-            lines.append(f"**Página/seção:** {r['page']}")
+            lines.append(f"**Page/section:** {r['page']}")
         lines.append("")
         lines.append(r["text"])
         lines.append("\n---")
 
-    lines.append("\n*Use `get_chunk` com o ID para obter contexto expandido.*")
+    lines.append("\n*Use `get_chunk` with the ID to get expanded context.*")
     
     # FASE 14: Log query if enabled
     latency_ms = (time.time() - start_time) * 1000
@@ -545,23 +545,23 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
 
     if not docs:
         return [
-            types.TextContent(
-                type="text", text="Nenhum documento indexado na KB."
-            )
+                types.TextContent(
+                    type="text", text="No documents indexed in the knowledge base."
+                )
         ]
 
-    lines = [f"## Documentos na Knowledge Base ({len(docs)} encontrados)\n"]
+    lines = [f"## Documents in the Knowledge Base ({len(docs)} found)\n"]
     by_dt: dict[str, list] = {}
     for d in docs:
         by_dt.setdefault(d.get("doc_type", "document"), []).append(d)
 
     for dt, items in sorted(by_dt.items()):
-        lines.append(f"### {dt}  ({len(items)} documentos)")
+        lines.append(f"### {dt}  ({len(items)} documents)")
         for d in items:
             lines.append(
-                f"- `{d['source_file']}` — {d['chunk_count']} chunks"
-                f" | produto: {d.get('product','n/a')}"
-                f" | formato: {d['file_type']}"
+            f"- `{d['source_file']}` — {d['chunk_count']} chunks"
+            f" | product: {d.get('product','n/a')}"
+            f" | format: {d['file_type']}"
             )
         lines.append("")
 
@@ -576,7 +576,7 @@ async def _get_chunk(args: dict) -> list[types.TextContent]:
     if not chunks:
         return [
             types.TextContent(
-                type="text", text=f"Chunk `{chunk_id}` não encontrado."
+                type="text", text=f"Chunk `{chunk_id}` not found."
             )
         ]
 
@@ -597,22 +597,22 @@ async def _get_chunk(args: dict) -> list[types.TextContent]:
 async def _kb_stats() -> list[types.TextContent]:
     stats = await store.get_stats()
     lines = [
-        "## Knowledge Base — Estatísticas\n",
-        f"- **Total de documentos:** {stats['total_documents']}",
-        f"- **Total de chunks:** {stats['total_chunks']}",
-        f"- **Tamanho do índice:** {stats['index_size_mb']:.1f} MB",
-        f"- **Modelo de embedding:** {stats['embed_model']}",
-        f"- **Dimensões do vetor:** {stats['embed_dim']}",
-        "\n**Por tipo de conteúdo (doc_type):**",
+        "## Knowledge Base — Statistics\n",
+        f"- **Total documents:** {stats['total_documents']}",
+        f"- **Total chunks:** {stats['total_chunks']}",
+        f"- **Index size:** {stats['index_size_mb']:.1f} MB",
+        f"- **Embedding model:** {stats['embed_model']}",
+        f"- **Vector dimensions:** {stats['embed_dim']}",
+        "\n**By content type (doc_type):**",
     ]
     for dt, count in sorted(stats["by_doc_type"].items(), key=lambda x: -x[1]):
-        lines.append(f"  - {dt}: {count} documentos")
+        lines.append(f"  - {dt}: {count} documents")
 
-    lines.append("\n**Por formato de arquivo:**")
+    lines.append("\n**By file format:**")
     for ft, count in sorted(
         stats["by_file_type"].items(), key=lambda x: -x[1]
     ):
-        lines.append(f"  - {ft}: {count} documentos")
+        lines.append(f"  - {ft}: {count} documents")
 
     return [types.TextContent(type="text", text="\n".join(lines))]
 
@@ -627,10 +627,10 @@ async def _list_collections() -> list[types.TextContent]:
         return [types.TextContent(type="text", text="CollectionManager not initialized.")]
     names = await collection_manager.list_collections()
     if not names:
-        return [types.TextContent(type="text", text="Nenhuma coleção encontrada.")]
-    lines = [f"## Coleções disponíveis ({len(names)})\n"]
+        return [types.TextContent(type="text", text="No collections found.")]
+    lines = [f"## Available collections ({len(names)})\n"]
     for name in sorted(names):
-        marker = " ← padrão" if name == store.collection else ""
+        marker = " ← default" if name == store.collection else ""
         lines.append(f"- `{name}`{marker}")
     return [types.TextContent(type="text", text="\n".join(lines))]
 
@@ -665,7 +665,7 @@ async def main():
     MCP_TRANSPORT environment variable.
     """
     global collection_manager, collection_router
-    log.info(f"KB RAG MCP Server iniciando (transport={TRANSPORT})")
+    log.info(f"KB RAG MCP Server starting (transport={TRANSPORT})")
     await store.connect()
 
     # Pre-flight health checks
@@ -735,14 +735,14 @@ async def main():
             ]
         )
 
-        log.info(f"SSE server em http://{SSE_HOST}:{SSE_PORT}/sse")
+        log.info(f"SSE server at http://{SSE_HOST}:{SSE_PORT}/sse")
         config = uvicorn.Config(
             starlette_app, host=SSE_HOST, port=SSE_PORT, log_level="info"
         )
         server = uvicorn.Server(config)
         await server.serve()
     else:
-        log.info("stdio transport ativo")
+        log.info("stdio transport active")
         async with stdio_server() as (read, write):
             await app.run(read, write, app.create_initialization_options())
 

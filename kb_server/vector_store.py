@@ -1,6 +1,6 @@
 """
-Vector Store — abstração sobre Qdrant.
-Gerencia coleções, busca semântica, filtros e metadados.
+Vector Store — Qdrant abstraction.
+Manages collections, semantic search, filters, and metadata.
 
 FASE 8: Enhanced with connection pooling and batch optimizations.
 """
@@ -77,14 +77,14 @@ class VectorStore:
         if self.client is not None:
             raise RuntimeError("VectorStore already connected")
         if QDRANT_PATH:
-            log.info(f"Qdrant embedded em: {QDRANT_PATH}")
+            log.info(f"Qdrant embedded at: {QDRANT_PATH}")
             self.client = AsyncQdrantClient(
                 path=QDRANT_PATH,
                 timeout=QDRANT_TIMEOUT,
             )
         elif QDRANT_GRPC:
             log.info(
-                f"Qdrant gRPC server em: {QDRANT_HOST}:{QDRANT_GRPC_PORT}"
+                f"Qdrant gRPC server at: {QDRANT_HOST}:{QDRANT_GRPC_PORT}"
             )
             self.client = AsyncQdrantClient(
                 host=QDRANT_HOST,
@@ -93,7 +93,7 @@ class VectorStore:
                 timeout=QDRANT_TIMEOUT,
             )
         else:
-            log.info(f"Qdrant HTTP server em: {QDRANT_HOST}:{QDRANT_PORT}")
+            log.info(f"Qdrant HTTP server at: {QDRANT_HOST}:{QDRANT_PORT}")
             self.client = AsyncQdrantClient(
                 host=QDRANT_HOST,
                 port=QDRANT_PORT,
@@ -102,7 +102,7 @@ class VectorStore:
 
         await self._ensure_collection()
         log.info(
-            f"Conectado ao Qdrant — coleção: {self.collection}, "
+            f"Connected to Qdrant — collection: {self.collection}, "
             f"batch_size: {self.batch_size}"
         )
 
@@ -110,7 +110,7 @@ class VectorStore:
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
 
-        """Cria a coleção se não existir."""
+        """Create the collection if it doesn't exist."""
         existing = [
             c.name for c in (await self.client.get_collections()).collections
         ]
@@ -121,7 +121,7 @@ class VectorStore:
                     size=self.dim, distance=Distance.COSINE
                 ),
             )
-            log.info(f"Coleção '{self.collection}' criada (dim={self.dim})")
+            log.info(f"Collection '{self.collection}' created (dim={self.dim})")
             
             # FASE 12: Create payload indexes for fast filtered queries
             await self._create_payload_indexes()
@@ -145,14 +145,14 @@ class VectorStore:
                     field_schema=PayloadSchemaType.KEYWORD,
                     wait=True,
                 )
-                log.info(f"Índice criado no campo '{field}'")
+                log.info(f"Index created on field '{field}'")
             except Exception as e:
                 # Non-fatal: indexes improve performance but aren't critical
                 log.warning(
-                    f"Falha ao criar índice no campo '{field}': {e}"
+                    f"Failed to create index on field '{field}': {e}"
                 )
 
-    # ── Busca ───────────────────────────────────────────────────────
+    # ── Search ──────────────────────────────────────────────────────
 
     async def search(
         self,
@@ -164,8 +164,8 @@ class VectorStore:
         version: str | None = None,  # FASE 13: Version filter
         collection_name: str | None = None,  # FASE 15: multi-collection override
     ) -> list[dict]:
-        """Busca semântica com filtros opcionais por
-        file_type, product, doc_type, e version (FASE 13).
+        """Semantic search with optional filters by
+        file_type, product, doc_type, and version (FASE 13).
         """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
@@ -381,9 +381,9 @@ class VectorStore:
                 )
             ),
         )
-        log.info(f"Documento removido: {source_file}")
+        log.info(f"Document removed: {source_file}")
 
-    # ── Listagem ──────────────────────────────────────────────────────
+    # ── Listing ─────────────────────────────────────────────────────
 
     async def list_documents(
         self,
@@ -498,7 +498,7 @@ class VectorStore:
         source_file = target.get("source_file", "")
         target_index = int(target.get("chunk_index", 0))
 
-        # Busca chunks vizinhos no mesmo documento
+        # Search neighboring chunks in the same document
         min_idx = max(0, target_index - context_window)
         max_idx = target_index + context_window
 
@@ -550,7 +550,7 @@ class VectorStore:
         info = await self.client.get_collection(self.collection)
         count = info.points_count or 0
 
-        # Amostra para contar por tipo
+        # Sample to count by type
         sample, _ = await self.client.scroll(
             collection_name=self.collection,
             limit=1000,

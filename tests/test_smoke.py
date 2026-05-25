@@ -217,7 +217,7 @@ def test_search_kb_returns_no_results_message_when_store_empty(monkeypatch):
     results = _run(srv._search_kb({"query": "nothing", "hybrid": False}))
 
     assert len(results) == 1
-    assert "Nenhum resultado" in results[0].text
+    assert "No results found" in results[0].text
 
 
 def test_search_kb_passes_filters_to_store(monkeypatch):

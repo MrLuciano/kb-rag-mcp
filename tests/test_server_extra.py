@@ -143,7 +143,7 @@ async def test_list_tools_search_kb_required_fields():
 
 @pytest.mark.asyncio
 async def test_call_tool_unknown_name_returns_error_text(mock_store, mock_router):
-    """call_tool with unknown name returns 'Tool desconhecida' message."""
+    """call_tool with unknown name returns 'Unknown tool' message."""
     srv.store = mock_store
     srv.collection_router = mock_router
 
@@ -151,7 +151,7 @@ async def test_call_tool_unknown_name_returns_error_text(mock_store, mock_router
 
     assert len(out) == 1
     assert "nonexistent_tool" in out[0].text
-    assert "Tool desconhecida" in out[0].text
+    assert "Unknown tool" in out[0].text
 
 
 @pytest.mark.asyncio
@@ -166,7 +166,7 @@ async def test_call_tool_exception_returns_error_text(mock_store, mock_router):
         out = await srv.call_tool("search_kb", {"query": "test"})
 
     assert len(out) == 1
-    assert "Erro ao executar search_kb" in out[0].text
+    assert "Error executing search_kb" in out[0].text
     assert "boom" in out[0].text
 
 
@@ -247,7 +247,7 @@ async def test_search_kb_zero_results_logs_query(mock_store, mock_router):
     with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
         out = await srv._search_kb({"query": "empty query"})
 
-    assert "Nenhum resultado" in out[0].text
+    assert "No results found" in out[0].text
     mock_ql.log_query.assert_called_once()
     call_kwargs = mock_ql.log_query.call_args[1]
     assert call_kwargs["result_count"] == 0
@@ -267,7 +267,7 @@ async def test_search_kb_zero_results_logger_error_is_swallowed(mock_store, mock
     with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
         out = await srv._search_kb({"query": "empty query"})
 
-    assert "Nenhum resultado" in out[0].text  # still returns message
+    assert "No results found" in out[0].text  # still returns message
 
 
 # ---------------------------------------------------------------------------
@@ -415,7 +415,7 @@ async def test_list_collections_manager_none_returns_error():
 
 @pytest.mark.asyncio
 async def test_list_collections_empty_returns_none_found_message(mock_store):
-    """When no collections, returns 'Nenhuma coleção encontrada'."""
+    """When no collections, returns 'No collections found'."""
     mock_manager = AsyncMock()
     mock_manager.list_collections.return_value = []
     srv.collection_manager = mock_manager
@@ -424,7 +424,7 @@ async def test_list_collections_empty_returns_none_found_message(mock_store):
     out = await srv._list_collections()
 
     assert len(out) == 1
-    assert "Nenhuma" in out[0].text
+    assert "No collections found" in out[0].text
 
 
 @pytest.mark.asyncio
@@ -442,7 +442,7 @@ async def test_list_collections_returns_collection_names(mock_store):
     assert "col_a" in text
     assert "kb_docs" in text
     assert "col_b" in text
-    assert "padrão" in text  # default marker on kb_docs
+    assert "default" in text  # default marker on kb_docs
 
 
 # ---------------------------------------------------------------------------
@@ -560,5 +560,5 @@ async def test_search_kb_hybrid_and_rerank_mode_indicators(mock_store, mock_rout
                 out = await srv._search_kb({"query": "test", "hybrid": True, "rerank": True})
 
     text = out[0].text
-    assert "híbrida" in text
+    assert "hybrid" in text
     assert "reranked" in text

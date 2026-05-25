@@ -110,7 +110,7 @@ async def test_search_kb_zero_results_returns_no_results_message(mock_store, moc
         out = await srv._search_kb({"query": "missing"})
 
     assert len(out) == 1
-    assert "Nenhum resultado" in out[0].text
+    assert "No results found" in out[0].text
 
 
 @pytest.mark.asyncio
@@ -234,7 +234,7 @@ async def test_list_documents_empty_returns_empty_message(mock_store, mock_route
     out = await srv._list_documents({})
 
     assert len(out) == 1
-    assert "Nenhum documento" in out[0].text
+    assert "No documents indexed" in out[0].text
 
 
 # ---------------------------------------------------------------------------
@@ -270,7 +270,7 @@ async def test_get_chunk_not_found_returns_error_text(mock_store):
 
     assert len(out) == 1
     assert "nonexistent-chunk" in out[0].text
-    assert "não encontrado" in out[0].text
+    assert "not found" in out[0].text
 
 
 # ---------------------------------------------------------------------------
