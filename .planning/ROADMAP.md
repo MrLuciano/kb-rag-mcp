@@ -172,6 +172,20 @@ Plans:
 
 **Plans:** 3 plans
 
+Plans:
+- [ ] 10-01-PLAN.md — Helm chart validation in CI with `helm lint --strict` (DEBT-02)
+- [ ] 10-02-PLAN.md — Replace MagicMock-polluted qdrant_client stubs with real model imports (DEBT-03)
+- [ ] 10-03-PLAN.md — Logging audit `--fail-under` flag + CI enforcement gate (DEBT-05)
+
+### Wave Dependencies
+**Wave 1** *(both plans are independent — no blocking dependencies)*
+**Wave 2** *(blocked on Wave 1 — 10-03 modifies ci.yml alongside 10-01)*
+
+**Cross-cutting constraints:**
+- All 3 plans must ship together to satisfy DEBT-02, DEBT-03, DEBT-05
+- Full test suite (576+ tests) must pass at each plan completion
+- CI workflow file must remain valid YAML after each modification
+
 ### Phase 11: Auto-Classification
 
 **Goal:** Extend document classifier to extract Vendor, Product, Subsystem, and Version from filename patterns, directory hierarchy, and document metadata — no LLM dependency.
