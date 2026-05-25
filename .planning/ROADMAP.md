@@ -167,7 +167,7 @@ Plans:
 **Success criteria:**
 1. ✅ `helm lint` runs in CI and catches structural errors — no more manual-only chart review
 2. ✅ All `qdrant_client` enum comparisons in tests work without `getattr(x, 'value', x)` workaround
-3. [ ] Logging audit script has `--fail-under` flag; CI enforces threshold on PR-to-master
+3. ✅ Logging audit script has `--fail-under` flag; CI enforces threshold on PR-to-master
 4. ✅ Full test suite passes with zero pre-existing failures
 
 **Plans:** 3 plans
@@ -179,16 +179,17 @@ Plans:
 
 ### Wave Dependencies
 **Wave 1** *(2/2 plans complete)*
-**Wave 2** *(10-03 — blocked on 10-01 for ci.yml)*
+**Wave 2** *(10-03)*
 
 **Cross-cutting constraints:**
 - All 3 plans must ship together to satisfy DEBT-02, DEBT-03, DEBT-05
 - Full test suite (576+ tests) must pass at each plan completion
 - CI workflow file must remain valid YAML after each modification
 
-**Wave 1 delivered (2026-05-25):**
+**Delivered (2026-05-25):**
 - 10-01: `helm-lint` job added to CI (azure/setup-helm@v4, `helm lint --strict`, `helm template`)
 - 10-02: Real qdrant_client imports in 3 test files — no MagicMock stubs for model classes
+- 10-03: `--fail-under` flag in logging-audit.py; CI enforcement step on PR-to-master
 
 ### Phase 11: Auto-Classification
 
@@ -204,6 +205,10 @@ Plans:
 4. All tests pass; OTCS product detection still works as before
 
 **Plans:** 2 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — Vendor & subsystem inference + SC1 end-to-end classification
+- [ ] 11-02-PLAN.md — Document metadata extraction, gap-filling enrichment, ingest pipeline integration
 
 ---
 
@@ -277,5 +282,5 @@ Plans:
 | 7. Logging, Quality Gate & Coverage | v1.1 | 2/2 | Complete | 2026-05-23 |
 | 8. Ingest Improvements & Docs | v1.1 | 3/3 | Complete | 2026-05-23 |
 | 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
-| 10. CI & Test Infrastructure | v1.2 | 2/3 | In Progress | — |
+| 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 0/2 | Planning | — |
