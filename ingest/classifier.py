@@ -12,8 +12,11 @@ Nenhuma reorganização de pastas é necessária — tudo é inferido
 por padrões no nome do arquivo e estrutura de diretórios existente.
 """
 
+import logging
 import re
 from pathlib import Path
+
+log = logging.getLogger("kb-ingest")
 
 # ── Taxonomia de doc_type ──────────────
 # --------------------------------------
@@ -574,6 +577,83 @@ def infer_product(
                 return product
 
     return "geral"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DOCUMENT METADATA EXTRACTION
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def extract_document_metadata(file_path: Path) -> dict[str, str]:
+    """
+    Extract metadata fields from PDF/DOCX documents for gap-filling classification.
+
+    Uses PyMuPDF for PDFs and python-docx for DOCX files. Returns empty dict
+    for unsupported formats or on any error (always degrades gracefully).
+
+    Args:
+        file_path: Path to the document file.
+
+    Returns:
+        Dict with text metadata fields (may be empty).
+    """
+    ext = file_path.suffix.lower()
+
+    if ext == ".pdf":
+        try:
+            import fitz  # PyMuPDF
+
+            doc = fitz.open(str(file_path))
+            try:
+                md = doc.metadata
+                return {
+                    "title": md.get("title") or "",
+                    "author": md.get("author") or "",
+                    "subject": md.get("subject") or "",
+                    "keywords": md.get("keywords") or "",
+                }
+            finally:
+                doc.close()
+        except ImportError:
+            log.warning("fitz (PyMuPDF) not available for PDF metadata extraction")
+            return {}
+        except Exception:
+            log.warning(f"Failed to extract PDF metadata from {file_path}")
+            return {}
+
+    elif ext == ".docx":
+        try:
+            from docx import Document
+
+            doc = Document(str(file_path))
+            cp = doc.core_properties
+            return {
+                "title": cp.title or "",
+                "author": cp.author or "",
+                "subject": cp.subject or "",
+                "keywords": cp.keywords or "",
+            }
+        except ImportError:
+            log.warning("python-docx not available for DOCX metadata extraction")
+            return {}
+        except Exception:
+            log.warning(f"Failed to extract DOCX metadata from {file_path}")
+            return {}
+
+    return {}
+
+
+def _build_metadata_text(metadata: dict[str, str]) -> str:
+    """Build a searchable text string from metadata fields."""
+    parts = []
+    for key in ("title", "subject", "author", "keywords"):
+        val = metadata.get(key, "")
+        if val:
+            parts.append(val)
+    text = " ".join(parts)
+    # Normalize separators (same as infer_product does for filenames)
+    text = re.sub(r"[_\-/\\]", " ", text)
+    return text
 
 
 def classify(

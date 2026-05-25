@@ -8,8 +8,10 @@ from ingest.classifier import (
     DOC_TYPE_RULES,
     PRODUCT_ALIASES,
     PRODUCT_FROM_NAME,
+    _build_metadata_text,
     classify,
     classify_document,
+    extract_document_metadata,
     infer_doc_type,
     infer_product,
     infer_vendor,
@@ -405,3 +407,85 @@ class TestInferSubsystem:
     def test_subsystem_admin_from_filename(self):
         """Filename with 'admin' → 'Admin' (lower priority but catches)."""
         assert infer_subsystem(Path("Platform Admin Guide.pdf"), Path("/")) == "Admin"
+
+
+class TestExtractDocumentMetadata:
+    """Phase 11-02: Document metadata extraction from PDF/DOCX."""
+
+    def test_extract_pdf_metadata_returns_dict(self, tmp_path):
+        """Create temp PDF, set metadata, verify extraction returns correct values."""
+        import fitz
+
+        doc = fitz.open()
+        doc.insert_page(0, text="Test content")
+        doc.set_metadata({
+            "title": "Test Title",
+            "author": "Test Author",
+            "subject": "OpenText WebReports",
+            "keywords": "admin, guide",
+        })
+        test_path = tmp_path / "test.pdf"
+        doc.save(str(test_path), incremental=False, deflate=True)
+        doc.close()
+
+        result = extract_document_metadata(test_path)
+        assert result["title"] == "Test Title"
+        assert result["author"] == "Test Author"
+        assert "OpenText" in result["subject"]
+        assert result["keywords"] == "admin, guide"
+
+    def test_extract_docx_metadata_returns_dict(self, tmp_path):
+        """Create temp DOCX, set core properties, verify extraction."""
+        from docx import Document
+        from docx.shared import Inches
+
+        doc = Document()
+        doc.add_paragraph("Test content")
+        cp = doc.core_properties
+        cp.title = "DOCX Title"
+        cp.author = "DOCX Author"
+        cp.subject = "OpenText Subject"
+        cp.keywords = "docx, test"
+
+        test_path = tmp_path / "test.docx"
+        doc.save(str(test_path))
+
+        result = extract_document_metadata(test_path)
+        assert result["title"] == "DOCX Title"
+        assert result["author"] == "DOCX Author"
+        assert "OpenText" in result["subject"]
+        assert result["keywords"] == "docx, test"
+
+    def test_extract_unsupported_format(self):
+        """.txt file returns empty dict."""
+        result = extract_document_metadata(Path("file.txt"))
+        assert result == {}
+
+    def test_extract_nonexistent_file(self):
+        """Nonexistent file returns empty dict (graceful degradation)."""
+        result = extract_document_metadata(Path("/nonexistent/file.pdf"))
+        assert result == {}
+
+    def test_build_metadata_text_concatenates_fields(self):
+        """All 4 fields concatenated into space-separated string."""
+        metadata = {
+            "title": "Admin Guide",
+            "subject": "OpenText WebReports",
+            "author": "Jane Doe",
+            "keywords": "admin, guide",
+        }
+        text = _build_metadata_text(metadata)
+        assert "Admin Guide" in text
+        assert "OpenText WebReports" in text
+        assert "Jane Doe" in text
+        assert "admin, guide" in text
+
+    def test_build_metadata_text_with_gaps(self):
+        """Only title set returns just the title."""
+        metadata = {"title": "Only Title", "subject": "", "author": "", "keywords": ""}
+        text = _build_metadata_text(metadata)
+        assert text == "Only Title"
+
+    def test_build_metadata_text_empty(self):
+        """Empty dict returns empty string."""
+        assert _build_metadata_text({}) == ""
