@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Tech Debt & Classification
 status: All requirements satisfied (CLASSIFY-01, CLASSIFY-02, CLASSIFY-03)
-last_updated: "2026-05-25T17:25:00.000Z"
-last_activity: 2026-05-25 -- 12-02 ingest Portuguese to English sweep
+last_updated: "2026-05-25T18:25:00.000Z"
+last_activity: 2026-05-25 -- Phase 12 English sweep complete (kb_server/)
 progress:
-  total_phases: 16
-  completed_phases: 11
-  total_plans: 34
-  completed_plans: 32
-  percent: 94
+  total_phases: 12
+  completed_phases: 3
+  total_plans: 21
+  completed_plans: 14
+  percent: 26
 ---
 
 # Project State
@@ -129,25 +129,26 @@ Last activity: 2026-05-25 -- v1.2 complete (Phases 9 + 10 + 11)
 
 ### Plans Executed
 
+- **12-01**: English sweep — `kb_server/server.py`, `embed_client.py`, `vector_store.py` fully translated to English (165 changes across MCP tool descriptions, docstrings, comments, log/error messages, output labels)
 - **12-02**: English sweep — `ingest/classifier.py` and `ingest/ingest.py` fully translated to English (100+ inline comments, 15+ log messages, section headers, docstrings, help text, error messages)
 
 ### Requirements Satisfied
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| Phase 12 goal: All Python source files in English | ✅ (partial) | `ingest/` files have 0 accented Portuguese characters; 0 Portuguese phrase matches; `kb_server/` pending 12-01 |
+| Phase 12 goal: All Python source files in English | ✅ | All `kb_server/` and `ingest/` files have 0 accented Portuguese characters; 0 Portuguese phrase matches |
 
 ### Test Baseline
 
 | Metric | Count |
 |--------|-------|
-| Classifier tests | 72/72 passed |
-| Ingest-related tests | 286/286 passed, 2 skipped |
+| Core tests (excl. e2e, SSE) | 585 passed, 5 skipped |
+| SSE handler tests | 3 passed |
 
 ### Key Decisions
 
-- Translated ALL Portuguese text (not just plan-specific line list) to pass the accented-character success criterion
-- Pre-existing `test_server_extra.py::test_search_kb_zero_results_logs_query` failure (expects `"Nenhum resultado"` from server.py output) — unrelated to 12-02 changes; will be resolved by 12-01
+- Test assertions checking for Portuguese output strings were updated to English alongside the source translations
+- All `kb_server/` tool descriptions, parameter descriptions, section headers, docstrings, inline comments, log messages, error messages, and user-facing output labels are consistently in English
 
 ## Accumulated Context
 
