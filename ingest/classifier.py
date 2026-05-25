@@ -656,6 +656,104 @@ def _build_metadata_text(metadata: dict[str, str]) -> str:
     return text
 
 
+def _classify_from_metadata_text(
+    metadata_text: str,
+    docs_root: Path,
+    product_override: str | None = None,
+) -> dict[str, str]:
+    """Run classification heuristics on a metadata text string.
+
+    Creates a synthetic Path so we can reuse existing inference functions
+    without modifying their signatures (CLASSIFY-03).
+
+    Args:
+        metadata_text: Concatenated metadata text to classify.
+        docs_root: Root documents directory.
+        product_override: Optional product name for vendor inference.
+
+    Returns:
+        Dict with 'vendor', 'product', 'doc_type' keys (may be empty).
+    """
+    if not metadata_text.strip():
+        return {}
+
+    synthetic = Path(metadata_text)
+
+    return {
+        "vendor": infer_vendor(synthetic, product_override or ""),
+        "product": infer_product(synthetic, docs_root, product_override),
+        "doc_type": infer_doc_type(synthetic),
+    }
+
+
+def enrich_classification(
+    file_path: Path,
+    docs_root: Path,
+    current: dict[str, str],
+) -> dict[str, str]:
+    """Fill classification gaps using document metadata.
+
+    When filename-based classification produces default/empty values
+    for vendor, product, or doc_type, this function extracts PDF/DOCX
+    metadata (title, subject, author, keywords) and reruns the
+    classification heuristics on the metadata text. Only replaces fields
+    that have default/empty values — never overrides explicit classification.
+
+    Precedence (highest to lowest):
+    1. _meta.json overrides (already applied before this function)
+    2. Filename/directory heuristics (current classification)
+    3. Document metadata heuristics (this function — gap-fill only)
+
+    Args:
+        file_path: Path to the document file.
+        docs_root: Root documents directory.
+        current: Current classification dict from classify().
+
+    Returns:
+        Updated classification dict (new copy, original unchanged).
+    """
+    result = dict(current)
+
+    # Determine which fields need gap-filling
+    defaults = {"", "geral", "document"}
+    gaps = {
+        k for k in ("vendor", "product", "doc_type")
+        if result.get(k) in defaults or not result.get(k)
+    }
+
+    if not gaps:
+        return result
+
+    metadata = extract_document_metadata(file_path)
+    if not metadata or not any(metadata.values()):
+        return result
+
+    metadata_text = _build_metadata_text(metadata)
+    if not metadata_text.strip():
+        return result
+
+    # Only pass product_override if it's a concrete value (not a default/gap)
+    # to avoid short-circuiting infer_product() in the metadata classification.
+    product_for_override = (
+        result.get("product")
+        if result.get("product") not in {"", "geral"}
+        else None
+    )
+    meta_classification = _classify_from_metadata_text(
+        metadata_text, docs_root, product_for_override
+    )
+
+    # Only fill gaps — never override non-default values
+    if "vendor" in gaps and meta_classification.get("vendor"):
+        result["vendor"] = meta_classification["vendor"]
+    if "product" in gaps and meta_classification.get("product"):
+        result["product"] = meta_classification["product"]
+    if "doc_type" in gaps and meta_classification.get("doc_type"):
+        result["doc_type"] = meta_classification["doc_type"]
+
+    return result
+
+
 def classify(
     file_path: Path,
     docs_root: Path,
@@ -721,6 +819,14 @@ def classify(
         "vendor": vendor,
         "subsystem": subsystem,
     }
+
+    # FASE 11-02: Apply enrichment from document metadata (gap-fill only,
+    # lowest precedence — never overrides _meta.json or auto-classification)
+    defaults = {"", "geral", "document"}
+    enriched = enrich_classification(file_path, docs_root, result)
+    for key in ("vendor", "product", "doc_type"):
+        if result[key] in defaults and enriched[key] not in defaults:
+            result[key] = enriched[key]
 
     # FASE 13: Extract version from filename/path
     try:

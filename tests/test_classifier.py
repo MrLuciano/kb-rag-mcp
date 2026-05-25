@@ -11,6 +11,7 @@ from ingest.classifier import (
     _build_metadata_text,
     classify,
     classify_document,
+    enrich_classification,
     extract_document_metadata,
     infer_doc_type,
     infer_product,
@@ -489,3 +490,161 @@ class TestExtractDocumentMetadata:
     def test_build_metadata_text_empty(self):
         """Empty dict returns empty string."""
         assert _build_metadata_text({}) == ""
+
+
+class TestEnrichClassification:
+    """Phase 11-02: Gap-filling enrichment from document metadata."""
+
+    def test_enrich_vendor_from_pdf_metadata(self, tmp_path):
+        """PDF with subject='OpenText', ambiguous filename → vendor filled to OpenText."""
+        import fitz
+
+        doc = fitz.open()
+        doc.insert_page(0, text="test")
+        doc.set_metadata({
+            "title": "General Guide",
+            "author": "",
+            "subject": "OpenText WebReports",
+            "keywords": "",
+        })
+        pdf_path = tmp_path / "general-guide.pdf"
+        doc.save(str(pdf_path), incremental=False, deflate=True)
+        doc.close()
+
+        # Initial classification has no vendor (ambiguous filename)
+        current = {
+            "vendor": "",
+            "product": "geral",
+            "doc_type": "document",
+            "subsystem": "",
+        }
+        enriched = enrich_classification(pdf_path, tmp_path, current)
+        assert enriched["vendor"] == "OpenText"
+
+    def test_enrich_product_from_docx_metadata(self, tmp_path):
+        """DOCX with title='WebReport Administrator Guide', generic dir → product filled."""
+        from docx import Document
+
+        doc = Document()
+        doc.add_paragraph("test")
+        cp = doc.core_properties
+        cp.title = "WebReport Administrator Guide"
+        cp.subject = ""
+        cp.author = ""
+        cp.keywords = ""
+
+        docx_path = tmp_path / "generic-file.docx"
+        doc.save(str(docx_path))
+
+        current = {
+            "vendor": "",
+            "product": "geral",
+            "doc_type": "document",
+            "subsystem": "",
+        }
+        enriched = enrich_classification(docx_path, tmp_path, current)
+        assert enriched["product"] == "WebReports"
+
+    def test_enrich_no_override_explicit_classification(self, tmp_path):
+        """File in 'WebReports/' dir with clear product → NOT overridden by metadata."""
+        import fitz
+
+        doc = fitz.open()
+        doc.insert_page(0, text="test")
+        doc.set_metadata({
+            "title": "Adobe Reader Guide",
+            "author": "Adobe Inc",
+            "subject": "Adobe",
+            "keywords": "",
+        })
+        webreports_dir = tmp_path / "WebReports"
+        webreports_dir.mkdir()
+        pdf_path = webreports_dir / "admin-guide.pdf"
+        doc.save(str(pdf_path), incremental=False, deflate=True)
+        doc.close()
+
+        # Pre-classify to get auto-detected product (WebReports from directory)
+        result = classify(pdf_path, tmp_path)
+        # Product should remain WebReports, not overridden by Adobe metadata
+        assert result["product"] == "WebReports"
+
+    def test_enrich_no_metadata(self, tmp_path):
+        """File with no metadata → classification unchanged."""
+        current = {
+            "vendor": "",
+            "product": "geral",
+            "doc_type": "document",
+            "subsystem": "",
+        }
+        # Pass a .txt file which has no metadata extraction
+        txt_path = tmp_path / "readme.txt"
+        txt_path.write_text("hello")
+        enriched = enrich_classification(txt_path, tmp_path, current)
+        assert enriched == current
+
+    def test_enrich_unsupported_format(self, tmp_path):
+        """Unsupported format → no enrichment, unchanged."""
+        current = {
+            "vendor": "",
+            "product": "geral",
+            "doc_type": "document",
+            "subsystem": "",
+        }
+        txt_path = tmp_path / "notes.txt"
+        txt_path.write_text("notes")
+        enriched = enrich_classification(txt_path, tmp_path, current)
+        assert enriched == current
+
+    def test_enrich_doc_type_from_metadata(self, tmp_path):
+        """PDF subject='Admin Guide', no admin in filename → doc_type enriched."""
+        import fitz
+
+        doc = fitz.open()
+        doc.insert_page(0, text="test")
+        doc.set_metadata({
+            "title": "System Reference",
+            "author": "",
+            "subject": "Admin Guide",
+            "keywords": "",
+        })
+        pdf_path = tmp_path / "reference-doc.pdf"
+        doc.save(str(pdf_path), incremental=False, deflate=True)
+        doc.close()
+
+        current = {
+            "vendor": "",
+            "product": "geral",
+            "doc_type": "document",
+            "subsystem": "",
+        }
+        enriched = enrich_classification(pdf_path, tmp_path, current)
+        assert enriched["doc_type"] == "admin_guide"
+
+    def test_enrich_fills_gaps_when_filename_ambiguous(self, tmp_path):
+        """SC2: Ambiguous filename, rich PDF metadata → all gaps filled."""
+        import fitz
+
+        doc = fitz.open()
+        doc.insert_page(0, text="test")
+        doc.set_metadata({
+            "title": "WebReport Administrator Guide",
+            "author": "",
+            "subject": "OpenText Content Server",
+            "keywords": "administration, config",
+        })
+        pdf_path = tmp_path / "doc-12345.pdf"
+        doc.save(str(pdf_path), incremental=False, deflate=True)
+        doc.close()
+
+        current = {
+            "vendor": "",
+            "product": "geral",
+            "doc_type": "document",
+            "subsystem": "",
+        }
+        enriched = enrich_classification(pdf_path, tmp_path, current)
+        assert enriched["vendor"] == "OpenText"
+        # Product could be WebReports or ContentServer depending on which
+        # metadata field wins — both are valid improvements over "geral"
+        assert enriched["product"] != "geral"
+        assert enriched["doc_type"] == "admin_guide"
