@@ -5,6 +5,7 @@
 - ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](.planning/milestones/v1.0-ROADMAP.md)
 - ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23)
 - ✅ **v1.2 Tech Debt & Classification** — Phases 9–11 (shipped 2026-05-25)
+- 🔄 **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–16 (planning)
 
 ## Phases
 
@@ -39,6 +40,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Requirements:** SSE-01, SSE-02, COMPAT-01, COMPAT-02
 
 **Success criteria:**
+
 1. `GET /sse` followed by client disconnect produces no `TypeError: NoneType` crash in server logs
 2. `POST /messages/` (with trailing slash) returns `202 Accepted` with no redirect chain
 3. Full test suite passes on Python 3.11 and Python 3.13 in CI matrix
@@ -47,6 +49,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Plans:** 2 plans
 
 Plans:
+
 - [ ] 05-01-PLAN.md — SSE regression tests (unit + integration), starlette version pin
 - [ ] 05-02-PLAN.md — CI matrix (3.11, 3.12, 3.13), dependency compatibility audit
 
@@ -60,6 +63,7 @@ Plans:
 **Requirements:** TEST-01, TEST-02, TEST-03
 
 **Success criteria:**
+
 1. `pytest -m "not integration"` completes successfully with no Qdrant, LM Studio, or Redis running
 2. Every module under `kb_server/` and `ingest/` has at least one `tests/unit/test_<module>.py`
 3. Integration tests are tagged `@pytest.mark.integration` and excluded from unit run
@@ -68,14 +72,17 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
+
 - [ ] 06-01-PLAN.md — Mock infrastructure: conftest fixtures + registered pytest markers
 - [ ] 06-02-PLAN.md — kb_server test classifier + integration tagging audit
 - [ ] 06-03-PLAN.md — ingest integration tagging + full isolation verification
 
 ### Wave Dependencies
+
 **Wave 2** *(blocked on Wave 1 completion)*
 
 **Cross-cutting constraints:**
+
 - Every Python module has a dedicated unit test file (TEST-01)
 - `pytest -m "not integration"` requires no Qdrant, LM Studio, or Redis (TEST-02)
 - All integration tests are tagged `@pytest.mark.integration` (TEST-03)
@@ -90,6 +97,7 @@ Plans:
 **Requirements:** LOG-01, LOG-02, QUAL-01, QUAL-02
 
 **Success criteria:**
+
 1. `pytest --cov=kb_server --cov=ingest --cov-fail-under=90` exits 0 on CI
 2. `pyproject.toml` `fail_under = 90` is set and a deliberate coverage regression causes CI to fail
 3. Every public method in `kb_server/` has at least one log entry (verified by audit script)
@@ -98,13 +106,16 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
+
 - [ ] 07-01-PLAN.md — Quality gate: set `fail_under = 90` in `pyproject.toml`, update CI workflow with coverage enforcement on PR-to-master
 - [ ] 07-02-PLAN.md — Logging coverage audit + gap fill: audit all public methods, add missing log calls to kb_server/ and ingest/, commit audit report
 
 ### Wave Dependencies
+
 **Wave 1** *(both plans are independent — no blocking dependencies)*
 
 **Cross-cutting constraints:**
+
 - Quality gate must cover both `kb_server/` and `ingest/` (D-01, D-02)
 - Coverage exclusions are inline `# pragma: no cover` only — no centralized excludes (D-05)
 - Both `pyproject.toml` `fail_under` and CI `--cov-fail-under` must be set (D-06)
@@ -121,6 +132,7 @@ Plans:
 **Requirements:** INGEST-01, INGEST-02, DOC-01, DOC-02
 
 **Success criteria — all met:**
+
 1. ✅ `3-0117 Content Server WebReport Design.pdf` auto-assigns `product=WebReports`
 2. ✅ `kb-ingest status` prints per-source file/chunk/error counts with `--source` filter
 3. ✅ All public functions/classes have English Google-style docstrings (0 gaps, 0 Portuguese)
@@ -129,6 +141,7 @@ Plans:
 **Plans:** 3 plans — all executed 2026-05-23
 
 **Delivered:**
+
 - 10 OTCS product areas auto-detectable (WebReports, xECM, Workflow, CSIDE, ContentServer, Brava, OT2, DocumentViewer, APIGateway, ArchiveCenter)
 - `kb-ingest status` with Rich table (Source/Files/Chunks/Errors/Last Ingest)
 - `scripts/docstring-audit.py` — AST-based docstring coverage scanner
@@ -145,6 +158,7 @@ Plans:
 **Requirements:** DEBT-01, DEBT-04, DEBT-06
 
 **Success criteria — all met:**
+
 1. ✅ Server starts without loading the cross-encoder model — first inference loads it lazily (~500MB saved, ~10s faster startup)
 2. ✅ Server logs a warning at startup if Qdrant or LM Studio are unreachable
 3. ✅ Operators can run `kb-ingest check` (or equivalent) to validate external dependency health
@@ -153,6 +167,7 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
+
 - [x] 09-01-PLAN.md — Cross-encoder lazy loading verification & hardening (DEBT-01)
 - [x] 09-02-PLAN.md — Pre-flight health checks + `kb-ingest check health` CLI (DEBT-04)
 - [x] 09-03-PLAN.md — LM Studio embedding dependency documentation (DEBT-06)
@@ -165,6 +180,7 @@ Plans:
 **Requirements:** DEBT-02, DEBT-03, DEBT-05
 
 **Success criteria:**
+
 1. ✅ `helm lint` runs in CI and catches structural errors — no more manual-only chart review
 2. ✅ All `qdrant_client` enum comparisons in tests work without `getattr(x, 'value', x)` workaround
 3. ✅ Logging audit script has `--fail-under` flag; CI enforces threshold on PR-to-master
@@ -173,20 +189,24 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
+
 - [x] 10-01-PLAN.md — Helm chart validation in CI with `helm lint --strict` (DEBT-02)
 - [x] 10-02-PLAN.md — Replace MagicMock-polluted qdrant_client stubs with real model imports (DEBT-03)
 - [x] 10-03-PLAN.md — Logging audit `--fail-under` flag + CI enforcement gate (DEBT-05)
 
 ### Wave Dependencies
+
 **Wave 1** *(2/2 plans complete)*
 **Wave 2** *(10-03)*
 
 **Cross-cutting constraints:**
+
 - All 3 plans must ship together to satisfy DEBT-02, DEBT-03, DEBT-05
 - Full test suite (576+ tests) must pass at each plan completion
 - CI workflow file must remain valid YAML after each modification
 
 **Delivered (2026-05-25):**
+
 - 10-01: `helm-lint` job added to CI (azure/setup-helm@v4, `helm lint --strict`, `helm template`)
 - 10-02: Real qdrant_client imports in 3 test files — no MagicMock stubs for model classes
 - 10-03: `--fail-under` flag in logging-audit.py; CI enforcement step on PR-to-master
@@ -199,6 +219,7 @@ Plans:
 **Requirements:** CLASSIFY-01, CLASSIFY-02, CLASSIFY-03
 
 **Success criteria — all met:**
+
 1. ✅ A file named `OpenText WebReport Administrator Guide 23.4.pdf` is classified with `vendor=OpenText`, `product=WebReports`, `version=23.4`, `doc_type=admin_guide`
 2. ✅ Classification fills gaps from PDF/DOCX metadata (title, subject, author, keywords) when filename is ambiguous
 3. ✅ Existing `infer_product()`, `infer_doc_type()`, `classify()` signatures unchanged — backward compatible
@@ -207,6 +228,7 @@ Plans:
 **Plans:** 2 plans — both executed 2026-05-25
 
 **Delivered:**
+
 - `infer_vendor()`: Detects OpenText from filename patterns, directory names, and product-to-vendor mapping (15 products mapped)
 - `infer_subsystem()`: Detects subsystem from directory hierarchy (8 functional categories via filename patterns)
 - `extract_document_metadata()`: Extract title/author/subject/keywords from PDF (PyMuPDF) and DOCX (python-docx)
@@ -216,65 +238,84 @@ Plans:
 - 72 classifier tests (58 existing + 7 metadata + 7 enrichment), all passing
 
 Plans:
+
 - [x] 11-01-PLAN.md — Vendor & subsystem inference + SC1 end-to-end classification
 - [x] 11-02-PLAN.md — Document metadata extraction, gap-filling enrichment, ingest pipeline integration
 
 ---
 
-## Backlog
-
-### Phase 999.1: Source code comments and documentation all in English (BACKLOG)
+### Phase 12: English comments & docstrings sweep
 
 **Goal:** Ensure all inline comments, docstrings, log messages, and internal documentation across Python source files are written in English for consistency and open-source readiness.
+
+**Milestone:** v1.3
 **Requirements:** TBD
+**Depends on:** — (independent)
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+- [ ] TBD (run `gsd-plan-phase 12` to break down)
 
 ---
 
-### Phase 999.2: Update docs folder, README all languages, add Spanish README (BACKLOG)
+### Phase 13: Docs sync, README all languages, Spanish README
 
 **Goal:** Sync the `docs/` folder with all changes shipped since v1.0, update README.md and README.pt-BR.md to reflect current state, and add a new README.es.md in Spanish.
+
+**Milestone:** v1.3
 **Requirements:** TBD
+**Depends on:** — (independent)
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+- [ ] TBD (run `gsd-plan-phase 13` to break down)
 
 ---
 
-### Phase 999.3: System health dashboard — single page served via httpd pod (BACKLOG)
+### Phase 14: System health dashboard — single page served via httpd pod
 
 **Goal:** Consolidate health/status access to all subsystems (Qdrant health, kb-rag-mcp server, ingestion status) into a single beautiful dashboard page served in a httpd pod.
+
+**Milestone:** v1.3
 **Requirements:** TBD
+**Depends on:** — (independent)
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+- [ ] TBD (run `gsd-plan-phase 14` to break down)
 
 ---
 
-### Phase 999.4: PowerShell script opens ports for all subsystems (BACKLOG)
+### Phase 15: PowerShell script opens ports for all subsystems
 
 **Goal:** Ensure `scripts/start-kb-rag.ps1` opens the required ports for all subsystems (Qdrant, MCP server, health server) automatically during local/dev setup.
+
+**Milestone:** v1.3
 **Requirements:** TBD
+**Depends on:** — (independent)
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+- [ ] TBD (run `gsd-plan-phase 15` to break down)
 
 ---
 
-### Phase 999.6: Reclassification capability for document database (BACKLOG)
+### Phase 16: Reclassification capability for document database
 
-**Goal:** When automatic classification (999.5) is ready, provide a mechanism to reclassify already-ingested documents — either reclassify in-place in the database, or re-ingest with updated metadata.
+**Goal:** When automatic classification (Phase 11) is ready, provide a mechanism to reclassify already-ingested documents — either reclassify in-place in the database, or re-ingest with updated metadata.
+
+**Milestone:** v1.3
 **Requirements:** TBD
+**Depends on:** Phase 11 (auto-classification)
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+- [ ] TBD (run `gsd-plan-phase 16` to break down)
 
 ---
 
@@ -293,3 +334,8 @@ Plans:
 | 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
+| 12. English Comments & Docstrings | v1.3 | 0/0 | Planning | — |
+| 13. Docs Sync & Readme Languages | v1.3 | 0/0 | Planning | — |
+| 14. Health Dashboard | v1.3 | 0/0 | Planning | — |
+| 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
+| 16. Reclassification | v1.3 | 0/0 | Planning | — |
