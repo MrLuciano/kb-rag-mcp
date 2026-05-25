@@ -667,6 +667,28 @@ async def main():
     global collection_manager, collection_router
     log.info(f"KB RAG MCP Server iniciando (transport={TRANSPORT})")
     await store.connect()
+
+    # Pre-flight health checks
+    from kb_server.health import check_embedding_service, check_vector_store
+
+    embedding_status = await check_embedding_service()
+    if not embedding_status.healthy:
+        log.warning(
+            f"Embedding backend unreachable: {embedding_status.message} — "
+            f"queries will fail. Configure EMBED_BACKEND or start LM Studio."
+        )
+    else:
+        log.info(f"Embedding backend healthy: {embedding_status.message}")
+
+    vector_status = await check_vector_store()
+    if not vector_status.healthy:
+        log.warning(
+            f"Qdrant unreachable: {vector_status.message} — "
+            f"queries will fail. Verify Qdrant is running."
+        )
+    else:
+        log.info(f"Qdrant healthy: {vector_status.message}")
+
     collection_manager = CollectionManager(store.client, vector_size=store.dim)
     collection_router = CollectionRouter(collection_manager, default_collection=store.collection)
     log.info(f"CollectionRouter initialized (default='{store.collection}')")
