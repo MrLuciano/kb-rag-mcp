@@ -175,7 +175,7 @@ Plans:
 Plans:
 - [x] 10-01-PLAN.md — Helm chart validation in CI with `helm lint --strict` (DEBT-02)
 - [x] 10-02-PLAN.md — Replace MagicMock-polluted qdrant_client stubs with real model imports (DEBT-03)
-- [ ] 10-03-PLAN.md — Logging audit `--fail-under` flag + CI enforcement gate (DEBT-05)
+- [x] 10-03-PLAN.md — Logging audit `--fail-under` flag + CI enforcement gate (DEBT-05)
 
 ### Wave Dependencies
 **Wave 1** *(2/2 plans complete)*
