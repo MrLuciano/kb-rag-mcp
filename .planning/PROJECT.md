@@ -8,25 +8,24 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-## Current Milestone: v1.1 Quality & Operational Excellence
+## Current Milestone: v1.2 Tech Debt & Classification
 
-**Goal:** Harden the server for real-world remote deployment, expand test coverage with proper isolation mocking, and enforce a quality gate.
+**Goal:** Resolve accumulated technical debt from v1.0/v1.1 while adding automated document classification with Vendor/Product/Subsystem/Version extraction.
 
 **Target features:**
-- SSE stability fix + regression tests (handle_sse NoneType crash on starlette 1.0.0)
-- Python 3.13 compatibility — CI matrix + any 3.11-only constructs fixed
-- OTCS-specific doc tagging — auto-tag ingested docs by product area
-- Ingest status / health CLI — `kb-ingest status` with last run, doc count, errors
-- Unit tests for all Python source with mocks for Qdrant, LM Studio, all external deps
-- Logging coverage — all methods logged; structured log coverage audit
-- Quality gate — coverage threshold enforced in CI; target ≥90% branch on `kb_server/`
-- Documentation improvements — inline docstrings, architecture, operational runbook
+- Startup dependency pre-flight check + LM Studio fallback handling
+- Lazy-load cross-encoder model to save 500MB memory at startup
+- Helm chart validation in CI
+- Fix MagicMock pollution from qdrant_client stubs in test suite
+- Enforce logging coverage gate in CI
+- Auto-classification: Vendor/Product/Subsystem/Version from filename + content
+- Ingest OTCS docs on acemagic deployment
 
-## Current State (v1.0)
+## Current State (v1.1)
 
-- **Shipped:** 2026-05-19
-- **Tests:** 491 passing, 5 skipped, 0 failures
-- **Coverage:** 88% branch on `kb_server/`
+- **Shipped:** 2026-05-23
+- **Tests:** 585 passing, 5 skipped, 0 failures
+- **Coverage:** 90% branch target enforced (kb_server/ + ingest/)
 - **Codebase:** ~251k LOC Python; single canonical module `kb_server/`
 - **Deployment:** Docker Compose + bare metal systemd + Kubernetes/Helm
 - **CI:** GitHub Actions on every push/PR to `master`
@@ -63,24 +62,31 @@ AI assistants stop hallucinating about closed-source products — every answer i
 - ✓ Multi-stage Dockerfile (builder + slim runtime) — v1.0
 - ✓ `scripts/quickstart.sh` one-command setup — v1.0
 - ✓ README end-to-end getting-started guide — v1.0
+- ✓ SSE handler returns `Response()` on disconnect; 3 regression tests — v1.1
+- ✓ No `307 Temporary Redirect` on POST to `/messages/` — v1.1
+- ✓ CI matrix tests Python 3.11, 3.12, 3.13 — v1.1
+- ✓ OTCS auto-tagging (10 product areas) via directory name or filename — v1.1
+- ✓ `kb-ingest status` CLI with Rich table + `--source` filter — v1.1
+- ✓ Every Python module has a dedicated unit test file — v1.1
+- ✓ All unit tests run without Qdrant, LM Studio, or Redis (full mocking) — v1.1
+- ✓ Integration tests marked with `@pytest.mark.integration` — v1.1
+- ✓ Every public method in `kb_server/` emits structured log entries — v1.1
+- ✓ Logging coverage audit produced via `scripts/logging-audit.py` — v1.1
+- ✓ CI enforces ≥90% branch coverage on kb_server/ + ingest/ (PR-to-master) — v1.1
+- ✓ `pyproject.toml` `fail_under = 90` set and verified — v1.1
+- ✓ All public functions/classes in kb_server/ + ingest/ have English Google-style docstrings — v1.1
+- ✓ `docs/` updated: ARCHITECTURE.md (Mermaid), OPERATIONS.md (remote deploy), INDEX.md, REFERENCE.md — v1.1
 
 ### Active
 
-- [ ] **SSE-01**: SSE `handle_sse` returns `Response()` on disconnect; regression test covers starlette 1.0.0 + Python 3.13
-- [ ] **SSE-02**: No `307 Temporary Redirect` loop on POST to `/messages/`; trailing-slash consistency verified
-- [ ] **COMPAT-01**: All CI jobs run on Python 3.11 and Python 3.13 without failures
-- [ ] **COMPAT-02**: No Python 3.11-only syntax constructs remain that break on 3.13
-- [ ] **INGEST-01**: Ingested OTCS docs are auto-tagged by product area (WebReports, xECM, Workflow, etc.) without manual `--product` flag
-- [ ] **INGEST-02**: `kb-ingest status` command shows last ingest time, total docs, total chunks, error count per source
-- [ ] **TEST-01**: Every Python module in `kb_server/` and `ingest/` has a corresponding unit test file
-- [ ] **TEST-02**: All unit tests run without requiring Qdrant, LM Studio, or Redis — external deps fully mocked
-- [ ] **TEST-03**: Integration tests remain separate and clearly marked; can be skipped with `pytest -m "not integration"`
-- [ ] **LOG-01**: Every public method in `kb_server/` emits at least one structured log entry at appropriate level
-- [ ] **LOG-02**: Log coverage audit report produced; gaps resolved
-- [ ] **QUAL-01**: CI enforces ≥90% branch coverage on `kb_server/`; build fails on regression
-- [ ] **QUAL-02**: `pyproject.toml` `[tool.coverage.report]` `fail_under = 90` set and tested
-- [ ] **DOC-01**: All public functions and classes in `kb_server/` and `ingest/` have English docstrings
-- [ ] **DOC-02**: `docs/` folder updated to reflect v1.1 changes (architecture, ingest workflow, remote deploy)
+- [ ] **DEBT-01**: Lazy-load cross-encoder model to save 500MB+ memory and 10s startup latency
+- [ ] **DEBT-02**: Helm chart validated with `helm lint` in CI
+- [ ] **DEBT-03**: MagicMock pollution from qdrant_client stubs resolved in test suite
+- [ ] **DEBT-04**: Startup dependency pre-flight check warns on unreachable Qdrant/LM Studio
+- [ ] **DEBT-05**: Logging coverage audited and enforced via CI gate (--fail-under)
+- [ ] **DEBT-06**: LM Studio dependency documented with graceful fallback options
+- [ ] **CLASSIFY-01**: Documents auto-classified with Vendor, Product, Subsystem, Version from filename patterns and content heuristics
+- [ ] **CLASSIFY-02**: Classification extends existing OTCS tagging with multi-dimensional attributes
 
 ### Out of Scope
 
@@ -137,4 +143,4 @@ AI assistants stop hallucinating about closed-source products — every answer i
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-21 — v1.1 milestone started*
+*Last updated: 2026-05-25 — v1.2 milestone started*
