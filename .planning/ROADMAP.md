@@ -3,7 +3,8 @@
 ## Milestones
 
 - ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](.planning/milestones/v1.0-ROADMAP.md)
-- 🔄 **v1.1 Quality & Operational Excellence** — Phases 5–8 (in progress)
+- ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23)
+- 🔄 **v1.2 Tech Debt & Classification** — Phases 9–11 (planning)
 
 ## Phases
 
@@ -112,40 +113,76 @@ Plans:
 
 ---
 
-### Phase 8: Ingest Improvements & Documentation
+### Phase 8: Ingest Improvements & Documentation (COMPLETED)
 
 **Goal:** OTCS documents are auto-tagged by product area; operators have a CLI status command; key documentation is updated for v1.1.
 
 **Milestone:** v1.1
 **Requirements:** INGEST-01, INGEST-02, DOC-01, DOC-02
 
+**Success criteria — all met:**
+1. ✅ `3-0117 Content Server WebReport Design.pdf` auto-assigns `product=WebReports`
+2. ✅ `kb-ingest status` prints per-source file/chunk/error counts with `--source` filter
+3. ✅ All public functions/classes have English Google-style docstrings (0 gaps, 0 Portuguese)
+4. ✅ `docs/` updated: ARCHITECTURE.md (Mermaid), OPERATIONS.md (remote deploy), INDEX.md, REFERENCE.md
+
+**Plans:** 3 plans — all executed 2026-05-23
+
+**Delivered:**
+- 10 OTCS product areas auto-detectable (WebReports, xECM, Workflow, CSIDE, ContentServer, Brava, OT2, DocumentViewer, APIGateway, ArchiveCenter)
+- `kb-ingest status` with Rich table (Source/Files/Chunks/Errors/Last Ingest)
+- `scripts/docstring-audit.py` — AST-based docstring coverage scanner
+- 105 docstring gaps fixed (32 MISSING + 73 PORTUGUESE → 0)
+- All 4 main docs refreshed for v1.1 accuracy
+
+---
+
+### Phase 9: Startup Reliability
+
+**Goal:** Reduce server startup latency, add pre-flight health checks, and document embedding dependencies so operators know when the system is healthy before accepting queries.
+
+**Milestone:** v1.2
+**Requirements:** DEBT-01, DEBT-04, DEBT-06
+
 **Success criteria:**
-1. Ingesting a file named `3-0117 Content Server WebReport Design.pdf` auto-assigns `product=WebReports` without `--product` flag
-2. `kb-ingest status` prints last run time, total docs, total chunks, error count
-3. All public functions and classes in `kb_server/` and `ingest/` have English docstrings
-4. `docs/` contains updated architecture, ingest workflow, and remote deployment guide
+1. Server starts without loading the cross-encoder model — first inference loads it lazily (~500MB saved, ~10s faster startup)
+2. Server logs a warning at startup if Qdrant or LM Studio are unreachable
+3. Operators can run `kb-ingest check` (or equivalent) to validate external dependency health
+4. LM Studio dependency and startup options documented in OPERATIONS.md
 
 **Plans:** 3 plans
 
-Plans:
-- [ ] 08-01-PLAN.md — OTCS auto-tagging: extend PRODUCT_ALIASES and PRODUCT_FROM_NAME in classifier.py for 10 OTCS product areas
-- [ ] 08-02-PLAN.md — `kb-ingest status` CLI: Rich table querying IngestRegistry per-source summary
-- [ ] 08-03-PLAN.md — Documentation pass: docstring audit script, English Google-style docstring sweep, docs/ refresh with Mermaid diagrams
+### Phase 10: CI & Test Infrastructure
 
-### Wave Dependencies
-**Wave 1** (independent — no blocking dependencies):
-- 08-01 (OTCS aliases), 08-02 (status CLI)
+**Goal:** Fix MagicMock pollution in the test suite, validate Helm charts in CI, and enforce logging coverage to prevent quality regression.
 
-**Wave 2** *(depends on Wave 1 completion for docstring coverage of new code)*:
-- 08-03 (docstrings + docs refresh)
+**Milestone:** v1.2
+**Requirements:** DEBT-02, DEBT-03, DEBT-05
 
-**Cross-cutting constraints:**
-- OTCS detection: directory name takes priority over filename patterns (D-02)
-- OTCS aliases go inline in classifier.py, not separate file (D-03)
-- Docstrings: translate Portuguese + fill gaps + full Google-style (D-04, D-05)
-- Docstring gaps identified via automated script, fixed in bulk (D-06)
-- Full docs refresh of all 22 docs, not just 3 required (D-07)
-- Architecture diagrams in Mermaid only (D-08)
+**Success criteria:**
+1. `helm lint` runs in CI and catches structural errors — no more manual-only chart review
+2. All `qdrant_client` enum comparisons in tests work without `getattr(x, 'value', x)` workaround
+3. Logging audit script has `--fail-under` flag; CI enforces threshold on PR-to-master
+4. Full test suite passes with zero pre-existing failures
+
+**Plans:** 3 plans
+
+### Phase 11: Auto-Classification
+
+**Goal:** Extend document classifier to extract Vendor, Product, Subsystem, and Version from filename patterns, directory hierarchy, and document metadata — no LLM dependency.
+
+**Milestone:** v1.2
+**Requirements:** CLASSIFY-01, CLASSIFY-02, CLASSIFY-03
+
+**Success criteria:**
+1. A file in `WebReports/` directory or named `OpenText WebReport Administrator Guide 23.4.pdf` is classified with `vendor=OpenText`, `product=WebReports`, `version=23.4`, `doc_type=admin_guide`
+2. Classification fills gaps from PDF/DOCX metadata (title, subject, author, keywords) when filename is ambiguous
+3. Existing `infer_product()`, `infer_doc_type()`, `classify()` signatures unchanged — backward compatible
+4. All tests pass; OTCS product detection still works as before
+
+**Plans:** 2 plans
+
+---
 
 ## Backlog
 
@@ -193,17 +230,6 @@ Plans:
 
 ---
 
-### Phase 999.5: Automatic document classification — Vendor/Product/Subsystem/Version (BACKLOG)
-
-**Goal:** During ingestion, auto-classify documents with attributes: Vendor, Product, Subsystem, Module, Document Type, Version. Classification inferred from filename, folder path, and first-page content (title, header, footer). Pattern: `OpenText Documentum Webtop Administrator Guide 23.4.pdf`.
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
-
----
-
 ### Phase 999.6: Reclassification capability for document database (BACKLOG)
 
 **Goal:** When automatic classification (999.5) is ready, provide a mechanism to reclassify already-ingested documents — either reclassify in-place in the database, or re-ingest with updated metadata.
@@ -223,7 +249,10 @@ Plans:
 | 2. Data Integrity & Security | v1.0 | 3/3 | Complete | 2026-05-17 |
 | 3. Test Coverage & CI | v1.0 | 3/3 | Complete | 2026-05-19 |
 | 4. Deployment & Release | v1.0 | 3/3 | Complete | 2026-05-19 |
-| 5. SSE Stability & Python 3.13 | v1.1 | 2/2 | Ready | — |
-| 6. Test Coverage & Isolation | v1.1 | 0/3 | Planned | — |
-| 7. Logging, Quality Gate & Coverage | v1.1 | 0/2 | Pending | — |
-| 8. Ingest Improvements & Docs | v1.1 | 0/3 | Pending | — |
+| 5. SSE Stability & Python 3.13 | v1.1 | 2/2 | Complete | 2026-05-21 |
+| 6. Test Coverage & Isolation | v1.1 | 3/3 | Complete | 2026-05-22 |
+| 7. Logging, Quality Gate & Coverage | v1.1 | 2/2 | Complete | 2026-05-23 |
+| 8. Ingest Improvements & Docs | v1.1 | 3/3 | Complete | 2026-05-23 |
+| 9. Startup Reliability | v1.2 | 0/3 | Planning | — |
+| 10. CI & Test Infrastructure | v1.2 | 0/3 | Planning | — |
+| 11. Auto-Classification | v1.2 | 0/2 | Planning | — |
