@@ -665,6 +665,8 @@ GET /alive
 | **database** | SQLite accessible, queries work | Yes | Jobs, files counts |
 | **filesystem** | Read/write access, disk space | No | Free space (warning < 10%) |
 
+**Note:** Cross-encoder reranking model is lazy-loaded (not checked at health probe) — loads on first reranking query (~10s faster startup).
+
 #### Health Check Scripts
 
 ```bash
@@ -685,7 +687,10 @@ For development without systemd:
 
 ```bash
 # Start health server
-python3 -m server.health_server
+python -m kb_server.health_server
+
+# Or use the CLI
+kb-rag check health
 
 # In another terminal, check health
 curl http://localhost:8000/health/detailed | jq
@@ -724,7 +729,11 @@ sudo systemctl restart kb-rag-server
 sudo systemctl status kb-rag-health
 sudo systemctl restart kb-rag-health
 
-# Job Scheduler (when implemented)
+# File Watcher (auto-ingestion)
+sudo systemctl status kb-rag-watcher
+sudo systemctl restart kb-rag-watcher
+
+# Job Scheduler
 sudo systemctl status kb-rag-scheduler
 sudo systemctl restart kb-rag-scheduler
 ```
@@ -796,12 +805,14 @@ Semantic search over knowledge base.
 - `query` (required): Search query
 - `top_k` (optional): Number of results (1-20, default: 5)
 - `product` (optional): Filter by product
+- `vendor` (optional): Filter by vendor (auto-classified from filenames)
+- `subsystem` (optional): Filter by subsystem (auto-classified from filenames)
 - `doc_type` (optional): Filter by document type
 - `filter_type` (optional): Filter by file format (pdf, docx, xlsx, pptx, txt, code)
 - `version` (optional): Filter by document version
 
 **Returns:** List of chunks with `chunk_id`, `score`, `text`, `source_file`,
-`product`, `doc_type`, `file_type`, `page`, `version`.
+`product`, `vendor`, `subsystem`, `doc_type`, `file_type`, `page`, `version`.
 
 #### `list_documents`
 
@@ -809,6 +820,8 @@ List indexed documents with optional filters.
 
 **Parameters:**
 - `product` (optional): Filter by product
+- `vendor` (optional): Filter by vendor
+- `subsystem` (optional): Filter by subsystem
 - `doc_type` (optional): Filter by document type
 - `filter_type` (optional): Filter by file format
 
