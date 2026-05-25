@@ -175,5 +175,8 @@ def get_reranker() -> CrossEncoderReranker:
     global _reranker
     if _reranker is None:
         log.info("Creating global CrossEncoderReranker instance")
+        log.info(
+            "Cross-encoder model: lazy-loaded (first predict() loads ~500MB on rerank)"
+        )
         _reranker = CrossEncoderReranker()
     return _reranker
