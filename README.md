@@ -854,19 +854,21 @@ Text Extraction → Chunking → Embedding (LM Studio / Ollama)
     ↓
 Qdrant (vector store)
     ↓
-server/server.py ←→ MCP (stdio or SSE)
+kb_server/server.py ←→ MCP (stdio or SSE)
     ↓
 Claude Code / OpenCode
 ```
 
 **Components:**
 
-- **Job Management** (FASE 2): SQLite-backed job queue with priority scheduling
-- **Worker Pool** (FASE 3): Async worker pool with rate limiting
-- **Observability** (FASE 4): Prometheus metrics, structured logging, progress tracking
-- **Cache System** (FASE 5): LRU cache with RAM auto-tuning or Redis backend
+- **Job Management**: SQLite-backed job queue with priority scheduling
+- **Worker Pool**: Async worker pool with rate limiting
+- **Observability**: Prometheus metrics, structured logging, progress tracking
+- **Cache System**: LRU cache with RAM auto-tuning or Redis backend
 - **Document Extractors**: Multi-format support (PDF via PyMuPDF/docling)
 - **Classifier**: Automatic product and doc_type detection via regex
+- **Auto-classification**: Vendor, subsystem, version inference from filenames and paths
+- **Cross-encoder reranker**: Lazy-loaded on first reranking query (~10s faster startup)
 
 ---
 
@@ -882,24 +884,35 @@ See `requirements.in` for human-readable dependencies.
 pytest tests/ -v
 
 # With coverage
-pytest tests/ --cov=ingest --cov=server --cov=observability
+pytest tests/ --cov=kb_server --cov=ingest --cov=observability --cov-branch --cov-report=term-missing
+
+# Coverage with threshold enforcement (90% branch coverage required)
+pytest tests/ --cov=kb_server --cov=ingest --cov-branch --cov-fail-under=90
 
 # Specific test file
 pytest tests/test_job_system.py -v
 ```
 
+**Test baseline:** 585 core tests (excluding SSE handler and e2e tests)
+
 #### Code Quality
 
 ```bash
 # Format code
-black ingest/ server/ scripts/ tests/
-isort ingest/ server/ scripts/ tests/
+black kb_server/ ingest/ scripts/ tests/
+isort kb_server/ ingest/ scripts/ tests/
 
 # Lint
-flake8 ingest/ server/ scripts/ tests/
+flake8 kb_server/ ingest/ scripts/ tests/
 
 # Type check
-mypy ingest/ server/ scripts/
+mypy kb_server/ ingest/ scripts/
+
+# Logging audit (ensure all public methods have log calls)
+python scripts/logging-audit.py
+
+# English audit (enforce zero Portuguese in source files)
+python scripts/docstring-audit.py --check-inline
 ```
 
 #### Adding Dependencies
@@ -921,23 +934,16 @@ pip-sync requirements.txt
 - [AUTO_INGESTION.md](docs/AUTO_INGESTION.md) - Automatic file watching and ingestion
 - [METADATA_OVERRIDES.md](docs/METADATA_OVERRIDES.md) - Override classification with _meta.json
 - [VERSION_FILTERING.md](docs/VERSION_FILTERING.md) - Search by document version
-- [SEARCH_QUALITY.md](docs/SEARCH_QUALITY.md) - Hybrid search and reranking (FASE 12)
+- [SEARCH_QUALITY.md](docs/SEARCH_QUALITY.md) - Hybrid search and reranking
 - [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues and solutions
 
 **Technical Documentation:**
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture and design
+- [OPERATIONS.md](docs/OPERATIONS.md) - Production deployment and operations
 - [TESTING.md](docs/TESTING.md) - Testing strategy
-- [INSTRUCTIONS.md](docs/INSTRUCTIONS.md) - Detailed technical instructions
-- [PLAN.md](docs/PLAN.md) - Implementation roadmap
-
-**Phase Completion Reports:**
-- [FASE1_COMPLETION.md](docs/FASE1_COMPLETION.md) - Foundation & testing infrastructure
-- [FASE2_COMPLETION.md](docs/FASE2_COMPLETION.md) - Job management system
-- [FASE3_COMPLETION.md](docs/FASE3_COMPLETION.md) - Worker pool & rate limiter
-- [FASE4_COMPLETION.md](docs/FASE4_COMPLETION.md) - Observability & metrics
-- [FASE5_COMPLETION.md](docs/FASE5_COMPLETION.md) - Cache system
-- [FASE9_COMPLETION.md](docs/FASE9_COMPLETION.md) - Production hardening
-- [FASE10_COMPLETION.md](docs/FASE10_COMPLETION.md) - Documentation & final QA
-- [FASE12_COMPLETION.md](docs/FASE12_COMPLETION.md) - Search quality enhancement
+- [INDEX.md](docs/INDEX.md) - Documentation index
+- [REFERENCE.md](docs/REFERENCE.md) - API reference
+- [KUBERNETES.md](docs/KUBERNETES.md) - Kubernetes deployment guide
 
 ---
 
@@ -949,39 +955,48 @@ KB-RAG provides comprehensive monitoring through Prometheus metrics, health chec
 
 Metrics are exposed at `http://localhost:8000/metrics` (health server).
 
-**Available Metrics (23 total):**
+**Available Metrics (28 total):**
 
 ```bash
-# Job Management (5 metrics)
+# Job Management (4 metrics)
 kb_rag_jobs_created_total          # Jobs created counter
 kb_rag_jobs_completed_total        # Jobs completed counter
-kb_rag_jobs_failed_total           # Jobs failed counter
-kb_rag_jobs_running                # Currently running jobs gauge
+kb_rag_jobs_active                 # Currently active jobs gauge
 kb_rag_job_duration_seconds        # Job duration histogram
 
 # File Processing (3 metrics)
 kb_rag_files_processed_total      # Files processed counter
-kb_rag_files_failed_total         # Files failed counter
-kb_rag_file_duration_seconds      # File processing histogram
+kb_rag_files_processing_time_seconds  # File processing histogram
+kb_rag_chunks_generated_total     # Chunks generated counter
 
-# Cache Performance (4 metrics)
+# Worker Pool (6 metrics)
+kb_rag_worker_pool_size            # Worker pool size gauge
+kb_rag_worker_pool_queue_size     # Queue size gauge
+kb_rag_worker_pool_utilization    # Pool utilization gauge
+kb_rag_rate_limiter_tokens        # Available tokens gauge
+kb_rag_rate_limiter_waits_total   # Rate limit waits counter
+kb_rag_rate_limiter_wait_time_seconds  # Wait time histogram
+
+# API Requests (2 metrics)
+kb_rag_api_requests_total         # API requests counter
+kb_rag_api_latency_seconds        # API latency histogram
+
+# Cache Performance (5 metrics)
 kb_rag_cache_hits_total           # Cache hit counter
 kb_rag_cache_misses_total         # Cache miss counter
+kb_rag_cache_evictions_total      # Cache eviction counter
 kb_rag_cache_size_bytes           # Cache size gauge
 kb_rag_cache_entries              # Cache entry count gauge
 
 # Batch Processing (8 metrics)
-kb_rag_batch_embed_total          # Batch embedding operations
-kb_rag_batch_embed_chunks_total   # Chunks embedded in batches
-kb_rag_batch_embed_duration_seconds  # Batch embedding duration
-kb_rag_batch_upsert_total         # Batch upsert operations
-kb_rag_batch_upsert_points_total  # Points upserted in batches
-kb_rag_batch_upsert_duration_seconds # Batch upsert duration
-
-# System Health (3 metrics)
-kb_rag_health_status              # Component health (1=healthy, 0=unhealthy)
-kb_rag_filesystem_free_bytes      # Available disk space
-kb_rag_filesystem_total_bytes     # Total disk space
+kb_rag_batch_embeddings_total          # Batch embedding operations
+kb_rag_batch_embedding_texts_total     # Texts embedded in batches
+kb_rag_batch_embedding_duration_seconds  # Batch embedding duration
+kb_rag_batch_upserts_total            # Batch upsert operations
+kb_rag_batch_upsert_points_total      # Points upserted in batches
+kb_rag_batch_upsert_duration_seconds  # Batch upsert duration
+kb_rag_http_pool_connections          # HTTP connection pool size
+kb_rag_batch_processing_throughput    # Processing throughput gauge
 ```
 
 #### Prometheus Configuration
@@ -1293,7 +1308,7 @@ curl http://localhost:6333/healthz
 
 **No search results:**
 - Check `SCORE_THRESHOLD` (lower if too strict)
-- Verify documents are indexed: `python ingest/ingest.py --status`
+- Verify documents are indexed: `kb-rag status` or `python ingest/ingest.py --status`
 - Check query is in correct language
 
 **Slow ingestion:**
@@ -1305,7 +1320,27 @@ curl http://localhost:6333/healthz
 
 ### 📝 License
 
-[Your License Here]
+MIT License
+
+Copyright (c) 2026 KB-RAG MCP Server Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ---
 
