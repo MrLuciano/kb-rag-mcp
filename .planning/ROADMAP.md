@@ -251,11 +251,19 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** TBD
 **Depends on:** — (independent)
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
 
-- [ ] TBD (run `gsd-plan-phase 12` to break down)
+- [ ] 12-01-PLAN.md — Translate kb_server/ Portuguese to English (server.py, embed_client.py, vector_store.py)
+- [ ] 12-02-PLAN.md — Translate ingest/ Portuguese to English (classifier.py, ingest.py)
+- [ ] 12-03-PLAN.md — Verification audit script + CI gate
+
+### Wave Dependencies
+
+**Wave 1** *(both plans are independent — no blocking dependencies)*
+
+**Wave 2** *(blocked on Wave 1 completion)*
 
 ---
 
@@ -334,7 +342,7 @@ Plans:
 | 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
-| 12. English Comments & Docstrings | v1.3 | 0/0 | Planning | — |
+| 12. English Comments & Docstrings | v1.3 | 0/3 | Planning | — |
 | 13. Docs Sync & Readme Languages | v1.3 | 0/0 | Planning | — |
 | 14. Health Dashboard | v1.3 | 0/0 | Planning | — |
 | 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
