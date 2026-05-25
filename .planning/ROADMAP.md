@@ -273,13 +273,16 @@ Plans:
 **Goal:** Sync the `docs/` folder with all changes shipped since v1.0, update README.md and README.pt-BR.md to reflect current state, and add a new README.es.md in Spanish.
 
 **Milestone:** v1.3
-**Requirements:** TBD
+**Requirements:** DOCS-01, DOCS-02, DOCS-03
 **Depends on:** — (independent)
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
 
-- [ ] TBD (run `gsd-plan-phase 13` to break down)
+- [ ] 13-01-PLAN.md — README.md core sections refresh (header through Usage)
+- [ ] 13-02-PLAN.md — README.md advanced sections refresh (Health Checks through Contributing)
+- [ ] 13-03-PLAN.md — README.pt-BR.md sync + README.es.md creation
+- [ ] 13-04-PLAN.md — Stale docs updates (AUTO_INGESTION, TROUBLESHOOTING, TESTING, KUBERNETES)
 
 ---
 
@@ -344,7 +347,7 @@ Plans:
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
 | 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
-| 13. Docs Sync & Readme Languages | v1.3 | 0/0 | Planning | — |
+| 13. Docs Sync & Readme Languages | v1.3 | 0/4 | Planning | — |
 | 14. Health Dashboard | v1.3 | 0/0 | Planning | — |
 | 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
 | 16. Reclassification | v1.3 | 0/0 | Planning | — |
