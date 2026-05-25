@@ -139,7 +139,7 @@ class TestRerankerIntegration:
                 })
 
                 assert len(result) == 1
-                assert "Resultados" in result[0].text
+                assert "Results for:" in result[0].text
 
 
 pytestmark = pytest.mark.fase12

@@ -2,7 +2,7 @@
 Vector Store — Qdrant abstraction.
 Manages collections, semantic search, filters, and metadata.
 
-FASE 8: Enhanced with connection pooling and batch optimizations.
+PHASE 8: Enhanced with connection pooling and batch optimizations.
 """
 
 import logging
@@ -32,11 +32,11 @@ log = logging.getLogger("kb-mcp.store")
 # ── Config
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
-QDRANT_PATH = os.getenv("QDRANT_PATH", "")  # se definido, usa modo embedded
+QDRANT_PATH = os.getenv("QDRANT_PATH", "")  # if set, uses embedded mode
 COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "kb_docs")
 SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.35"))
 
-# FASE 8: Connection pool and batch config
+# PHASE 8: Connection pool and batch config
 QDRANT_GRPC = os.getenv("QDRANT_GRPC", "false").lower() == "true"
 QDRANT_GRPC_PORT = int(os.getenv("QDRANT_GRPC_PORT", "6334"))
 QDRANT_TIMEOUT = float(os.getenv("QDRANT_TIMEOUT", "60.0"))
@@ -123,15 +123,15 @@ class VectorStore:
             )
             log.info(f"Collection '{self.collection}' created (dim={self.dim})")
             
-            # FASE 12: Create payload indexes for fast filtered queries
+            # PHASE 12: Create payload indexes for fast filtered queries
             await self._create_payload_indexes()
 
     async def _create_payload_indexes(self) -> None:
         """
         Create payload indexes on product, doc_type, and version fields.
         
-        FASE 12: Accelerates filtered queries from O(n) to O(log n).
-        FASE 13: Added version field index.
+        PHASE 12: Accelerates filtered queries from O(n) to O(log n).
+        PHASE 13: Added version field index.
         """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
@@ -161,11 +161,11 @@ class VectorStore:
         filter_type: str | None = None,
         product: str | None = None,
         doc_type: str | None = None,
-        version: str | None = None,  # FASE 13: Version filter
-        collection_name: str | None = None,  # FASE 15: multi-collection override
+        version: str | None = None,  # PHASE 13: Version filter
+        collection_name: str | None = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
         """Semantic search with optional filters by
-        file_type, product, doc_type, and version (FASE 13).
+        file_type, product, doc_type, and version (PHASE 13).
         """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
@@ -186,7 +186,7 @@ class VectorStore:
                     key="doc_type", match=MatchValue(value=doc_type)
                 )
             )
-        if version:  # FASE 13: Version filtering
+        if version:  # PHASE 13: Version filtering
             conditions.append(
                 FieldCondition(
                     key="version", match=MatchValue(value=version)
@@ -391,7 +391,7 @@ class VectorStore:
         product: str | None = None,
         doc_type: str | None = None,
         limit: int = 50,
-        collection_name: str | None = None,  # FASE 15: multi-collection override
+        collection_name: str | None = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
         """List indexed documents with optional filtering.
 
@@ -402,7 +402,7 @@ class VectorStore:
             product: Optional product name filter.
             doc_type: Optional document type filter.
             limit: Maximum number of documents to return (default 50).
-            collection_name: Override target collection (FASE 15).
+            collection_name: Override target collection (PHASE 15).
 
         Returns:
             List of dicts with source_file, file_type, product, doc_type,
@@ -462,7 +462,7 @@ class VectorStore:
 
         return list(docs.values())[:limit]
 
-    # ── Chunk por ID ─────────────────────────────────────────────────────────
+    # ── Chunk by ID ──────────────────────────────────────────────────────────
 
     async def get_chunk_with_context(
         self, chunk_id: str, context_window: int = 1
@@ -581,13 +581,13 @@ class VectorStore:
             "by_doc_type": {k: len(v) for k, v in by_doc_type.items()},
         }
 
-    # ── FASE 8: Parallel batch operations ────────────────────────────
+    # ── PHASE 8: Parallel batch operations ───────────────────────────
 
     async def upsert_chunks_parallel(
         self, chunks: list[dict], max_parallel: int = 3
     ) -> None:
         """
-        FASE 8: Parallel batch upsert for maximum throughput.
+        PHASE 8: Parallel batch upsert for maximum throughput.
         
         Splits chunks into batches and uploads multiple batches in parallel.
         Use this for large ingestion jobs (>1000 chunks).
@@ -655,7 +655,7 @@ class VectorStore:
 
     async def close(self) -> None:
         """
-        FASE 8: Cleanup Qdrant client connections.
+        PHASE 8: Cleanup Qdrant client connections.
         
         Call on server shutdown for graceful cleanup.
         """

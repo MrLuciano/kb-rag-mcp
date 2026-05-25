@@ -1,7 +1,7 @@
 """
 Cross-Encoder Reranking for improved search precision.
 
-FASE 12: Search Quality Enhancement
+PHASE 12: Search Quality Enhancement
 
 Uses a cross-encoder model to rerank top-k results from vector search,
 improving precision and NDCG@5 by scoring query-document pairs directly.

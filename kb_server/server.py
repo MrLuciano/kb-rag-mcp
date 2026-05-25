@@ -47,7 +47,7 @@ SSE_HOST = os.getenv("SSE_HOST", "127.0.0.1")
 SSE_PORT = int(os.getenv("SSE_PORT", "8765"))
 TOP_K = int(os.getenv("DEFAULT_TOP_K", "5"))
 
-# FASE 14: Query logging configuration
+# PHASE 14: Query logging configuration
 QUERY_LOG_ENABLED = os.getenv("QUERY_LOG_ENABLED", "true").lower() in (
     "true", "1", "yes"
 )
@@ -65,7 +65,7 @@ store = VectorStore()
 collection_manager: CollectionManager | None = None
 collection_router: CollectionRouter | None = None
 
-# FASE 14: Initialize query logger if enabled
+# PHASE 14: Initialize query logger if enabled
 query_logger = None
 if QUERY_LOG_ENABLED:
     try:
@@ -165,7 +165,7 @@ async def list_tools() -> list[types.Tool]:
                     "version": {
                         "type": "string",
                         "description": (
-                            "FASE 13: Filter by product version. "
+                            "PHASE 13: Filter by product version. "
                             "Examples: 22.3, CE 24.4, v2.5. "
                             "Use to search documentation for a specific version."
                         ),
@@ -179,7 +179,7 @@ async def list_tools() -> list[types.Tool]:
                     "hybrid": {
                         "type": "boolean",
                         "description": (
-                            "FASE 12: Use hybrid search (dense + BM25 sparse). "
+                            "PHASE 12: Use hybrid search (dense + BM25 sparse). "
                             "Improves recall for specific technical terms "
                             "(versions, codes, exact names)"
                         ),
@@ -188,7 +188,7 @@ async def list_tools() -> list[types.Tool]:
                     "rerank": {
                         "type": "boolean",
                         "description": (
-                            "FASE 12: Apply cross-encoder reranking. "
+                            "PHASE 12: Apply cross-encoder reranking. "
                             "Improves top result precision "
                             "(adds ~200ms latency)"
                         ),
@@ -197,7 +197,7 @@ async def list_tools() -> list[types.Tool]:
                     "collection": {
                         "type": "string",
                         "description": (
-                            "FASE 15: Name of the Qdrant collection to query. "
+                            "PHASE 15: Name of the Qdrant collection to query. "
                             "Omit to use the default collection (QDRANT_COLLECTION)."
                         ),
                     },
@@ -241,7 +241,7 @@ async def list_tools() -> list[types.Tool]:
                     "collection": {
                         "type": "string",
                         "description": (
-                            "FASE 15: Name of the Qdrant collection to query. "
+                            "PHASE 15: Name of the Qdrant collection to query. "
                             "Omit to use the default collection."
                         ),
                     },
@@ -286,7 +286,7 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="list_collections",
             description=(
-                "FASE 15: List all available Qdrant collections. "
+                "PHASE 15: List all available Qdrant collections. "
                 "Use to discover collections before calling search_kb "
                 "or list_documents with the collection parameter."
             ),
@@ -351,12 +351,12 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     filter_type = args.get("filter_type")
     product = args.get("product")
     doc_type = args.get("doc_type")
-    version = args.get("version")  # FASE 13: Version filter
+    version = args.get("version")  # PHASE 13: Version filter
     hybrid = args.get("hybrid", False)
     rerank = args.get("rerank", False)
     collection_param = args.get("collection")
 
-    # FASE 15: resolve target collection (raises CollectionNotFoundError if missing)
+    # PHASE 15: resolve target collection (raises CollectionNotFoundError if missing)
     target_collection = getattr(store, "collection", None)
     if collection_router is not None:
         try:
@@ -372,14 +372,14 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
 
     vector = await get_embedding(query)
     
-    # FASE 12: Determine retrieve_k for reranking
+    # PHASE 12: Determine retrieve_k for reranking
     # If reranking, retrieve more results (up to 4x) for better reranking pool
     retrieve_k = top_k
     if rerank:
         retrieve_k = min(top_k * 4, 20)
         log.info(f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}")
     
-    # FASE 12: Route to hybrid search if enabled
+    # PHASE 12: Route to hybrid search if enabled
     if hybrid:
         from kb_server.retrieval.hybrid_search import get_hybrid_searcher
         
@@ -393,7 +393,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             filter_type=filter_type,
             product=product,
             doc_type=doc_type,
-            version=version,  # FASE 13: Pass version to hybrid search
+            version=version,  # PHASE 13: Pass version to hybrid search
         )
     else:
         # Standard dense vector search
@@ -403,13 +403,13 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             filter_type=filter_type,
             product=product,
             doc_type=doc_type,
-            version=version,  # FASE 13
+            version=version,  # PHASE 13
         )
         if target_collection is not None:
-            _search_kwargs["collection_name"] = target_collection  # FASE 15
+            _search_kwargs["collection_name"] = target_collection  # PHASE 15
         results = await store.search(**_search_kwargs)
     
-    # FASE 12: Apply reranking if enabled
+    # PHASE 12: Apply reranking if enabled
     if rerank and results:
         from kb_server.retrieval.reranker import get_reranker
         
@@ -429,7 +429,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             results = results[:top_k]
 
     if not results:
-        # FASE 14: Log query with zero results
+        # PHASE 14: Log query with zero results
         latency_ms = (time.time() - start_time) * 1000
         if query_logger:
             try:
@@ -462,7 +462,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             )
         ]
 
-    lines = [f'## Resultados para: "{query}"\n']
+    lines = [f'## Results for: "{query}"\n']
     
     # Add search mode indicator
     mode_indicators = []
@@ -492,7 +492,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
 
     lines.append("\n*Use `get_chunk` with the ID to get expanded context.*")
     
-    # FASE 14: Log query if enabled
+    # PHASE 14: Log query if enabled
     latency_ms = (time.time() - start_time) * 1000
     if query_logger:
         try:
@@ -540,7 +540,7 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
         limit=args.get("limit", 50),
     )
     if target_collection is not None:
-        _list_kwargs["collection_name"] = target_collection  # FASE 15
+        _list_kwargs["collection_name"] = target_collection  # PHASE 15
     docs = await store.list_documents(**_list_kwargs)
 
     if not docs:
@@ -580,10 +580,10 @@ async def _get_chunk(args: dict) -> list[types.TextContent]:
             )
         ]
 
-    lines = [f"## Chunk `{chunk_id}` com contexto\n"]
+    lines = [f"## Chunk `{chunk_id}` with context\n"]
     for c in chunks:
         marker = (
-            "→ **[chunk solicitado]**" if c["chunk_id"] == chunk_id else ""
+            "→ **[requested chunk]**" if c["chunk_id"] == chunk_id else ""
         )
         lines.append(
             f"### {c['source_file']} — chunk {c['chunk_index']} {marker}"
@@ -622,7 +622,7 @@ async def _kb_stats() -> list[types.TextContent]:
 # ──────────────────────────────────────────────────────────────────
 
 async def _list_collections() -> list[types.TextContent]:
-    """FASE 15: List all Qdrant collections."""
+    """PHASE 15: List all Qdrant collections."""
     if collection_manager is None:
         return [types.TextContent(type="text", text="CollectionManager not initialized.")]
     names = await collection_manager.list_collections()

@@ -11,7 +11,7 @@ class QueryAnalyzer:
     """
     Analyzes query logs to identify patterns and optimization opportunities.
     
-    Loads queries from FASE 14 query_log table and provides methods to:
+    Loads queries from PHASE 14 query_log table and provides methods to:
     - Identify most common queries
     - Find low-score queries (quality issues)
     - Detect zero-result queries (content gaps)

@@ -65,7 +65,7 @@ KNOWN_DIMS = {
     "nomic-embed-code": 768,
 }
 
-# ── Connection pool config (FASE 8)
+# ── Connection pool config (PHASE 8)
 HTTP_POOL_CONNECTIONS = int(os.getenv("HTTP_POOL_CONNECTIONS", "20"))
 HTTP_POOL_MAXSIZE = int(os.getenv("HTTP_POOL_MAXSIZE", "50"))
 HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "60.0"))
@@ -109,7 +109,7 @@ async def _http() -> httpx.AsyncClient:
     """
     Get or create HTTP client with connection pooling.
     
-    FASE 8: Enhanced with connection pooling for better throughput.
+    PHASE 8: Enhanced with connection pooling for better throughput.
     Limits configured via HTTP_POOL_* environment variables.
     """
     global _http_client
@@ -207,7 +207,7 @@ async def _embed_openai_compat_batch(
     texts: list[str],
 ) -> list[list[float]]:
     """
-    FASE 8: Native batch embedding via OpenAI-compatible API.
+    PHASE 8: Native batch embedding via OpenAI-compatible API.
     
     Sends multiple texts in a single API call for better throughput.
     
@@ -252,7 +252,7 @@ async def _embed_ollama(text: str) -> list[float]:
 
 async def _embed_ollama_batch(texts: list[str]) -> list[list[float]]:
     """
-    FASE 8: Batch embedding for Ollama.
+    PHASE 8: Batch embedding for Ollama.
     
     Ollama doesn't have native batch API, so we use parallel requests.
     
@@ -330,7 +330,7 @@ async def get_embeddings_batch(
     texts: list[str], batch_size: int | None = None, use_cache: bool = True
 ) -> list[list[float]]:
     """
-    FASE 8: Optimized batch embedding with native API support and caching.
+    PHASE 8: Optimized batch embedding with native API support and caching.
     
     Uses native batch APIs when available (openai-compat) for 3-5x speedup.
     Falls back to parallel requests for backends without batch support.
@@ -483,7 +483,7 @@ def get_cache_stats() -> dict:
 
 async def close() -> None:
     """
-    FASE 8: Cleanup resources (HTTP client, connections).
+    PHASE 8: Cleanup resources (HTTP client, connections).
     
     Call this on server shutdown to gracefully close connections.
     """

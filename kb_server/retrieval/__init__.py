@@ -1,5 +1,5 @@
 """
-Retrieval module for search quality enhancements (FASE 12).
+Retrieval module for search quality enhancements (PHASE 12).
 
 Modules:
 - hybrid_search: Combine dense + BM25 sparse with RRF fusion
