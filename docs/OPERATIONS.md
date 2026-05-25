@@ -46,7 +46,85 @@ curl http://localhost:8000/health/detailed | jq '.components.embedding'
 
 # Health check script
 ./deployment/scripts/health-check.sh all
+
+# Via CLI (requires kb-ingest on PATH)
+kb-ingest check health
 ```
+
+### Embedding Backend (LM Studio)
+
+KB-RAG requires an embedding service to convert text into vector
+representations for semantic search. The server does not perform
+embedding natively — it delegates to one of these backends:
+
+| Backend | Env Value | Description |
+|---------|-----------|-------------|
+| LM Studio (SDK) | `lmstudio-sdk` | **Default.** Uses LM Studio's local inference server via SDK (port 1234) |
+| LM Studio (REST) | `lmstudio-rest` | REST API to LM Studio (port 1234) |
+| Ollama | `ollama` | Local Ollama instance |
+| OpenAI-compatible | `openai-compat` | Any OpenAI-compatible API |
+
+#### Configuration
+
+Set the backend via the `EMBED_BACKEND` environment variable:
+
+```bash
+# Default (LM Studio SDK)
+export EMBED_BACKEND=lmstudio-sdk
+
+# Ollama
+export EMBED_BACKEND=ollama
+export EMBED_BASE_URL=http://127.0.0.1:11434
+export EMBED_MODEL=nomic-embed-text
+
+# OpenAI-compatible (any OpenAI API proxy)
+export EMBED_BACKEND=openai-compat
+export EMBED_BASE_URL=https://api.openai.com/v1
+export EMBED_API_KEY=sk-...
+export EMBED_MODEL=text-embedding-3-small
+```
+
+#### Startup Requirements
+
+Before starting the KB-RAG server, ensure the embedding backend is
+running and reachable on the expected host:port.
+
+**Checking backend health:**
+```bash
+# Via health check endpoint
+curl http://localhost:8000/health/detailed | jq '.components.embedding'
+
+# Via CLI (requires kb-ingest on PATH)
+kb-ingest check health
+```
+
+The server logs a warning at startup if the embedding backend is
+unreachable. The server will still start — queries will fail at
+runtime with embedding errors until the backend is available.
+
+#### Troubleshooting
+
+**"Embedding backend unreachable" at startup:**
+1. Verify LM Studio is running: `curl http://127.0.0.1:1234/v1/models`
+2. Check which port LM Studio is serving on (Settings → Server)
+3. Verify `EMBED_BASE_URL` matches LM Studio's listening address
+4. If using LM Studio, ensure the model is loaded (not just downloaded)
+5. Try a different backend type (e.g., `ollama`) as a fallback
+
+#### Fallback Options
+
+If LM Studio is not available (e.g., on resource-constrained servers),
+use one of these alternatives:
+
+1. **Ollama** — Lightweight local inference. Install via:
+   ```bash
+   curl -fsSL https://ollama.com/install.sh | sh
+   ollama pull nomic-embed-text
+   ```
+   Then set `EMBED_BACKEND=ollama`.
+
+2. **OpenAI API** — No local hardware required. Requires an API key.
+   Set `EMBED_BACKEND=openai-compat` with your API endpoint and key.
 
 ### Viewing Logs
 
