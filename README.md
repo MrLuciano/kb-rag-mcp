@@ -16,6 +16,14 @@ MCP client.
 
 - 🔍 **Semantic search** over technical documentation
 - 📚 **Multi-format support**: PDF, DOCX, XLSX, PPTX, TXT, code
+- ✅ **585 tests** — Full mock isolation, no external deps needed for unit tests
+- ✅ **CI/CD pipeline** — Coverage gate (90% branch), logging audit, Helm lint, English audit
+- ✅ **SSE transport** — Starlette 1.0.0 with stable disconnect handling
+- ✅ **Python 3.13** — CI matrix tests on 3.11, 3.12, 3.13
+- ✅ **Auto-classification** — Vendor, product, subsystem, and version inference from filenames and metadata
+- ✅ **Lazy cross-encoder** — ~10s faster server startup, model loads on first reranking query
+- ✅ **Kubernetes/Helm** — Helm chart for multi-replica deployment
+- ✅ **English sweep** — Zero Portuguese across all source files, enforced by CI
 - 🎯 **Smart classification**: automatic product and doc type detection
 - 🚀 **Production-ready**: systemd services, health checks, auto-restart
 - 💾 **Incremental ingestion**: only processes new/modified files
@@ -24,9 +32,9 @@ MCP client.
 - 🔧 **Multi-backend**: LM Studio, Ollama, or OpenAI-compatible APIs
 - ⚡ **Batch processing**: 3-5x faster ingestion with connection pooling
 - 🛠️ **Operations**: Automated install, backup/restore, updates
-- 👁️ **Auto-ingestion**: File watcher for automatic document updates (NEW)
-- 🏷️ **Version filtering**: Search by document version (22.3, CE 24.4) (NEW)
-- 📝 **Metadata overrides**: Per-directory/file classification control (NEW)
+- 👁️ **Auto-ingestion**: File watcher for automatic document updates
+- 🏷️ **Version filtering**: Search by document version (22.3, CE 24.4)
+- 📝 **Metadata overrides**: Per-directory/file classification control
 
 ---
 
@@ -51,7 +59,7 @@ MCP client.
 
 ### 🚀 Quick Start
 
-> **Prerequisites:** Python 3.11+, Docker (for Qdrant), and an embedding backend
+> **Prerequisites:** Python 3.11+, 3.12, 3.13 supported, Docker (for Qdrant), and an embedding backend
 > (LM Studio, Ollama, or any OpenAI-compatible server).
 
 #### Option 1: One-command setup (recommended)
@@ -137,6 +145,9 @@ curl http://localhost:6333/healthz
 # MCP server health
 curl http://localhost:8080/health
 
+# Or use the CLI health check
+kb-rag check health
+
 # Ask your AI assistant:
 # "Search the knowledge base for <topic in your docs>"
 ```
@@ -179,13 +190,11 @@ The automated installer (`deployment/scripts/install.sh`) performs:
 - ✅ systemd services installation:
   - `kb-rag-server.service` - MCP server (stdio/SSE)
   - `kb-rag-health.service` - Health check HTTP server (port 8000)
-  - `kb-rag-scheduler.service` - Job scheduler (placeholder)
-**systemd Services (4):**
-  - `kb-rag-server.service` - MCP server (port 5001)
-  - `kb-rag-health.service` - Health check server (port 8000)
   - `kb-rag-scheduler.service` - Job scheduler
-  - `kb-rag-watcher.service` - File watcher (NEW in FASE 13)
+  - `kb-rag-watcher.service` - File watcher
   - `kb-rag.target` - Unified service management
+- ✅ Coverage gate (90% branch) enforced in CI
+- ✅ English audit — zero Portuguese enforced in CI
 - ✅ Log rotation (14-day retention, 100MB max size)
 - ✅ Security hardening (user isolation, filesystem protection)
 - ✅ Automatic service startup and health verification
@@ -208,7 +217,7 @@ sudo systemctl status kb-rag.target
 # View logs
 sudo journalctl -u kb-rag-server -f
 sudo journalctl -u kb-rag-health -f
-sudo journalctl -u kb-rag-watcher -f  # NEW: File watcher logs
+sudo journalctl -u kb-rag-watcher -f  # File watcher logs
 
 # Enable auto-start on boot
 sudo systemctl enable kb-rag.target
@@ -257,7 +266,7 @@ sudo ./deployment/scripts/restore.sh /path/to/backup.tar.gz
 sudo ./deployment/scripts/update.sh
 
 # Update to specific version
-sudo ./deployment/scripts/update.sh v0.9.0
+sudo ./deployment/scripts/update.sh v1.3
 
 # Rollback on failure (automatic)
 # If services fail to start, update script automatically restores from backup
@@ -277,11 +286,12 @@ sudo ./deployment/scripts/uninstall.sh --keep-data
 
 | Component | Memory | CPU | Disk | Notes |
 |-----------|--------|-----|------|-------|
-| MCP Server | 200-500MB | 50-100% | - | Baseline usage |
+| MCP Server | 200-500MB | 50-100% | - | Baseline usage (v1.3) |
 | Health Server | 30-50MB | 5-10% | - | Lightweight monitoring |
 | Scheduler | 50-100MB | 10-20% | - | Job management |
+| File Watcher | 50-100MB | 5-15% | - | Auto-ingestion daemon |
 | Qdrant | 500MB-2GB | 50-100% | Varies | Vector storage |
-| **Total** | **~1-3GB** | **120-230%** | **10GB+** | Recommended: 4GB RAM, 4 vCPU |
+| **Total** | **~1-3.5GB** | **150-250%** | **10GB+** | Recommended: 4GB RAM, 4 vCPU |
 
 #### Security Features
 
@@ -303,9 +313,9 @@ sudo ./deployment/scripts/uninstall.sh --keep-data
 - [ ] Alert rules deployed (optional)
 - [ ] Backup scheduled (cron)
 - [ ] Firewall configured (if external access needed)
-- [ ] SSL/TLS via reverse proxy (if using SSE transport)
+- [ ] SSL/TLS via reverse proxy (if external access needed)
 
-See [docs/FASE9_COMPLETION.md](docs/FASE9_COMPLETION.md) for complete deployment documentation.
+See [docs/OPERATIONS.md](docs/OPERATIONS.md) for complete deployment documentation.
 
 ---
 
@@ -317,7 +327,7 @@ This section covers manual development installation.
 
 #### Prerequisites
 
-- Python 3.11+
+- Python 3.11, 3.12, 3.13 supported
 - Docker (for Qdrant) or Qdrant embedded
 - LM Studio / Ollama / OpenAI-compatible embedding API
 - 8+ GB RAM (16+ GB recommended)
@@ -367,16 +377,18 @@ docker run -p 6333:6333 -p 6334:6334 \
   -v $(pwd)/data/qdrant:/qdrant/storage \
   qdrant/qdrant
 
-# Or with docker-compose
-docker-compose up -d
+# Or with Docker Compose
+docker compose up -d
 ```
 
 **6. Verify installation**
 
 ```bash
-# Check health (requires services running)
-python3 -m server.health_server &
-sleep 2
+# Start the MCP server
+python -m kb_server.server
+
+# In another terminal, check health
+kb-rag check health
 curl http://localhost:8000/health/detailed
 ```
 
@@ -398,7 +410,7 @@ OLLAMA_HOST=http://localhost:11434
 # Vector Store
 QDRANT_HOST=localhost
 QDRANT_PORT=6333
-QDRANT_PATH=  # Leave empty for Docker, set path for embedded
+QDRANT_PATH=  # Leave empty for Docker, set path for embedded mode
 QDRANT_COLLECTION=kb_docs
 
 # Search Settings
@@ -414,6 +426,29 @@ SSE_PORT=8765
 CACHE_BACKEND=lru     # lru or redis
 CACHE_MAX_SIZE_MB=512 # LRU cache size (auto if not set)
 CACHE_TTL=3600        # Cache TTL in seconds
+
+# Batch Processing
+EMBED_BATCH_SIZE=32        # Embedding batch size (25-64)
+FILE_BATCH_SIZE=50         # File processing batch (50-100)
+QDRANT_BATCH_SIZE=100      # Qdrant batch upsert (80-200)
+HTTP_POOL_CONNECTIONS=20   # HTTP connection pool size
+MAX_CONCURRENT_UPLOADS=3   # Concurrent uploads (1-5)
+
+# Worker Pool
+WORKER_POOL_SIZE=4         # Worker count (default: 4)
+WORKER_RATE_LIMIT=10       # Requests/sec per worker (default: 10)
+
+# Auto-Ingestion (File Watcher)
+WATCH_PATH=                # Directory to watch for changes
+WATCH_DEBOUNCE_SECONDS=30  # Debounce interval in seconds
+WATCH_RECURSIVE=true       # Watch subdirectories
+WATCH_IGNORE_PATTERNS=     # Comma-separated glob patterns to ignore
+
+# Health Server
+HEALTH_PORT=8000           # Health check HTTP server port
+
+# General
+LOG_LEVEL=INFO             # Logging level (DEBUG, INFO, WARNING, ERROR)
 ```
 
 #### MCP Client Configuration
@@ -431,7 +466,7 @@ CACHE_TTL=3600        # Cache TTL in seconds
         "-d", "Ubuntu-24.04",
         "--",
         "/home/YOUR_USER/kb-rag-mcp/.venv/bin/python",
-        "/home/YOUR_USER/kb-rag-mcp/server/server.py"
+        "-m", "kb_server.server"
       ]
     }
   }
@@ -461,7 +496,7 @@ CACHE_TTL=3600        # Cache TTL in seconds
       "type": "local",
       "command": [
         "/path/to/kb-rag-mcp/.venv/bin/python",
-        "/path/to/kb-rag-mcp/server/server.py"
+        "-m", "kb_server.server"
       ]
     }
   }
@@ -475,13 +510,15 @@ CACHE_TTL=3600        # Cache TTL in seconds
 #### Ingesting Documents
 
 ```bash
-source .venv/bin/activate
+# Using the kb-rag CLI (recommended)
+kb-rag ingest --docs /path/to/docs
 
-# Ingest entire directory (incremental)
+# Or directly with Python
+source .venv/bin/activate
 python ingest/ingest.py --docs /path/to/docs
 
-# With explicit product
-python ingest/ingest.py --docs /path/to/docs --product MyProduct
+# With explicit product and vendor
+python ingest/ingest.py --docs /path/to/docs --product MyProduct --vendor Acme
 
 # Single file
 python ingest/ingest.py --file /path/to/document.pdf
@@ -492,7 +529,11 @@ python ingest/ingest.py --docs /path/to/docs --clean
 # More workers (use with GPU)
 python ingest/ingest.py --docs /path/to/docs --workers 4
 
-# Check ingestion status
+# Check ingestion status via CLI
+kb-rag status
+kb-rag status --source /path/to/docs
+
+# Or the legacy status commands
 python ingest/ingest.py --status
 python ingest/ingest.py --status --list    # List all files
 python ingest/ingest.py --status --errors  # Only errors
@@ -514,9 +555,11 @@ docs/
     └── architecture.pptx
 ```
 
-Product is automatically inferred from directory name.
+Product is automatically inferred from directory name. Documents are also
+auto-classified with **vendor**, **subsystem**, and **version** metadata
+extracted from filenames and directory structure (see Phase 11 features).
 
-#### Auto-Ingestion (FASE 13)
+#### Auto-Ingestion
 
 Monitor directories for changes and automatically trigger ingestion:
 
@@ -534,7 +577,7 @@ WATCH_DEBOUNCE_SECONDS=30
 
 **See [AUTO_INGESTION.md](docs/AUTO_INGESTION.md) for full guide.**
 
-#### Version Filtering (FASE 13)
+#### Version Filtering
 
 Search documents by version (automatically extracted from filenames/paths):
 
@@ -555,7 +598,7 @@ search_kb(
 
 **See [VERSION_FILTERING.md](docs/VERSION_FILTERING.md) for full guide.**
 
-#### Metadata Overrides (FASE 13)
+#### Metadata Overrides
 
 Override automatic classification with `_meta.json` files:
 
@@ -755,7 +798,7 @@ Semantic search over knowledge base.
 - `product` (optional): Filter by product
 - `doc_type` (optional): Filter by document type
 - `filter_type` (optional): Filter by file format (pdf, docx, xlsx, pptx, txt, code)
-- `version` (optional): Filter by document version (NEW in FASE 13)
+- `version` (optional): Filter by document version
 
 **Returns:** List of chunks with `chunk_id`, `score`, `text`, `source_file`,
 `product`, `doc_type`, `file_type`, `page`, `version`.
