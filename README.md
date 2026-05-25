@@ -1158,7 +1158,7 @@ Update process:
 **Update to Specific Version:**
 
 ```bash
-sudo ./deployment/scripts/update.sh v0.9.0
+sudo ./deployment/scripts/update.sh v1.3
 ```
 
 #### Maintenance Tasks
@@ -1192,7 +1192,7 @@ curl http://localhost:8000/health/detailed | jq '.components.cache'
 
 #### Performance Tuning
 
-**Batch Processing (FASE 8):**
+**Batch Processing:**
 
 Tune via environment variables in `/opt/kb-rag/config/kb-rag.env`:
 
