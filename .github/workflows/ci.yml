@@ -41,6 +41,11 @@ jobs:
         run: |
           python -m pytest tests/ --ignore=tests/e2e --ignore=tests/test_sse_handler.py --cov=kb_server --cov=ingest --cov-branch --cov-fail-under=90 --tb=no -q
 
+      - name: Logging coverage audit
+        if: github.event_name == 'pull_request' && github.base_ref == 'master'
+        run: |
+          python3 scripts/logging-audit.py --fail-under 40
+
       - name: SSE handler tests (separate process)
         run: |
           python -m pytest tests/test_sse_handler.py -q --tb=short

@@ -2,6 +2,7 @@
 """Logging coverage audit — scans kb_server/ and ingest/ for public functions
 without log calls. One-time static analysis, no project imports required."""
 
+import argparse
 import ast
 import os
 import sys
@@ -42,6 +43,13 @@ def audit_file(filepath: Path) -> dict:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Logging coverage audit")
+    parser.add_argument(
+        "--fail-under", type=float, default=None,
+        help="Exit non-zero if coverage percentage is below this threshold",
+    )
+    args = parser.parse_args()
+
     project_root = Path(os.environ.get("PROJECT_ROOT", Path.cwd()))
     source_dirs = [project_root / "kb_server", project_root / "ingest"]
 
@@ -96,6 +104,13 @@ def main():
     total_pct = total_with_logs / total_functions * 100 if total_functions else 0
     print(f"  Coverage: {total_pct:.1f}%")
     print(f"  Functions without logs: {total_functions - total_with_logs}")
+
+    if args.fail_under is not None:
+        if total_pct < args.fail_under:
+            print(f"FAIL: Logging coverage {total_pct:.1f}% is below threshold {args.fail_under:.1f}%")
+            sys.exit(1)
+        else:
+            print(f"PASS: Logging coverage {total_pct:.1f}% >= {args.fail_under:.1f}%")
 
 
 if __name__ == "__main__":
