@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Tech Debt & Classification
-status: complete
-last_updated: "2026-05-25T16:00:00.000Z"
-last_activity: 2026-05-25 -- v1.2 complete (Phase 9 + 10 + 11)
+status: All requirements satisfied (CLASSIFY-01, CLASSIFY-02, CLASSIFY-03)
+last_updated: "2026-05-25T17:25:00.000Z"
+last_activity: 2026-05-25 -- 12-02 ingest Portuguese to English sweep
 progress:
-  total_phases: 12
-  completed_phases: 4
-  total_plans: 16
-  completed_plans: 15
-  percent: 33
+  total_phases: 16
+  completed_phases: 11
+  total_plans: 34
+  completed_plans: 32
+  percent: 94
 ---
 
 # Project State
@@ -124,6 +124,32 @@ Last activity: 2026-05-25 -- v1.2 complete (Phases 9 + 10 + 11)
 |--------|-------|
 | Total (core) | 551 |
 | Unit pass rate | 100% |
+
+## Phase 12 Outcomes
+
+### Plans Executed
+
+- **12-02**: English sweep — `ingest/classifier.py` and `ingest/ingest.py` fully translated to English (100+ inline comments, 15+ log messages, section headers, docstrings, help text, error messages)
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| Phase 12 goal: All Python source files in English | ✅ (partial) | `ingest/` files have 0 accented Portuguese characters; 0 Portuguese phrase matches; `kb_server/` pending 12-01 |
+
+### Test Baseline
+
+| Metric | Count |
+|--------|-------|
+| Classifier tests | 72/72 passed |
+| Ingest-related tests | 286/286 passed, 2 skipped |
+
+### Key Decisions
+
+- Translated ALL Portuguese text (not just plan-specific line list) to pass the accented-character success criterion
+- Pre-existing `test_server_extra.py::test_search_kb_zero_results_logs_query` failure (expects `"Nenhum resultado"` from server.py output) — unrelated to 12-02 changes; will be resolved by 12-01
+
+## Accumulated Context
 
 ### Key Decisions (v1.0)
 

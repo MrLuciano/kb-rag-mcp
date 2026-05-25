@@ -256,7 +256,7 @@ Plans:
 Plans:
 
 - [ ] 12-01-PLAN.md — Translate kb_server/ Portuguese to English (server.py, embed_client.py, vector_store.py)
-- [ ] 12-02-PLAN.md — Translate ingest/ Portuguese to English (classifier.py, ingest.py)
+- [x] 12-02-PLAN.md — Translate ingest/ Portuguese to English (classifier.py, ingest.py)
 - [ ] 12-03-PLAN.md — Verification audit script + CI gate
 
 ### Wave Dependencies
@@ -342,7 +342,7 @@ Plans:
 | 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
-| 12. English Comments & Docstrings | v1.3 | 0/3 | Planning | — |
+| 12. English Comments & Docstrings | v1.3 | 1/3 | In Progress | — |
 | 13. Docs Sync & Readme Languages | v1.3 | 0/0 | Planning | — |
 | 14. Health Dashboard | v1.3 | 0/0 | Planning | — |
 | 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
