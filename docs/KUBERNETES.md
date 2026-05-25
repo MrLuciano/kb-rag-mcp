@@ -75,9 +75,9 @@ helm install kb-rag-mcp ./deployment/helm/kb-rag-mcp \
 
 ## Multi-Collection Setup
 
-FASE 15 adds multi-collection support. Each collection is an independent Qdrant
-index — useful for separating knowledge domains (e.g., one per product, per
-tenant, or per language).
+Multi-collection support allows independent Qdrant indexes — useful for
+separating knowledge domains (e.g., one per product, per tenant, or per
+language).
 
 ### Creating a new collection
 
@@ -157,7 +157,7 @@ monitoring:
   serviceMonitor:
     enabled: true
     namespace: monitoring
-    interval: 15s
+    interval: 30s
 ```
 
 ### Grafana
@@ -235,3 +235,10 @@ helm lint ./deployment/helm/kb-rag-mcp
 ```
 
 Expected output: `1 chart(s) linted, 0 chart(s) failed`
+
+> **CI Note:** `helm lint --strict` runs automatically on every push and PR
+> via the project's CI pipeline, ensuring chart validity before merge.
+
+---
+
+*Last updated: 2026-05-25 for v1.3*

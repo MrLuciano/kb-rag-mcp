@@ -1,7 +1,5 @@
 # Automatic Ingestion with File Watcher
 
-**FASE 13 Feature**
-
 Automatically detect file changes and trigger ingestion without manual intervention.
 
 ---
@@ -653,4 +651,4 @@ A: Check logs: `sudo journalctl -u kb-rag-watcher -f` and verify jobs are create
 
 ---
 
-**FASE 13 Feature** | Last Updated: 2026-05-16 | [Report Issues](https://github.com/MrLuciano/kb-rag-mcp/issues)
+*Last updated: 2026-05-25 for v1.3*

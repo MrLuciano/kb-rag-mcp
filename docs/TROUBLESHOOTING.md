@@ -205,7 +205,10 @@ sudo systemctl stop kb-rag.target
 
 # Run manually to see full error
 cd /opt/kb-rag
-sudo -u kb-rag venv/bin/python -m server.mcp_server
+sudo -u kb-rag venv/bin/python -m kb_server.server
+
+# Or use the health check CLI (if server is running)
+kb-rag check health
 
 # Fix issue, then restart services
 sudo systemctl start kb-rag.target
@@ -243,17 +246,20 @@ sudo systemctl daemon-reexec
 **Diagnosis:**
 
 ```bash
-# 1. Check if health service is running
+# 1. Run health check CLI (comprehensive)
+kb-rag check health
+
+# 2. Check if health service is running
 sudo systemctl status kb-rag-health
 
-# 2. Check if port is listening
+# 3. Check if port is listening
 sudo netstat -tlnp | grep 8000
 
-# 3. Check firewall
+# 4. Check firewall
 sudo ufw status
 sudo iptables -L -n | grep 8000
 
-# 4. Test with full curl output
+# 5. Test with full curl output
 curl -v http://localhost:8000/health
 ```
 
@@ -621,6 +627,9 @@ curl -X POST http://localhost:6333/collections/kb_docs/points/delete \
 **Diagnosis:**
 
 ```bash
+# 0. Run health check CLI to verify overall system status
+kb-rag check health
+
 # 1. Check documents are indexed
 curl http://localhost:6333/collections/kb_docs | \
   jq '.result.points_count'
@@ -767,7 +776,7 @@ echo '0 3 * * * systemctl restart kb-rag-server' | \
 
 # Report issue with memory profile
 pip install memory_profiler
-python -m memory_profiler server/mcp_server.py
+python -m memory_profiler kb_server/server.py
 ```
 
 ---
@@ -908,6 +917,19 @@ sudo journalctl -u kb-rag-server -o json | \
   jq -r 'select(.PRIORITY=="3") | .MESSAGE'
 ```
 
+### Running Audit Scripts
+
+```bash
+# English audit (checks for Portuguese in source files)
+python scripts/docstring-audit.py --check-inline
+
+# Logging coverage audit
+python scripts/logging-audit.py
+
+# Coverage report
+pytest --cov=kb_server --cov=ingest --cov-branch --cov-report=term-missing
+```
+
 ### Save Logs for Support
 
 ```bash
@@ -942,7 +964,7 @@ tar czf kb-rag-support-$(date +%Y%m%d-%H%M%S).tar.gz \
 3. ✅ Gather diagnostic information:
    - Service status: `systemctl status kb-rag.target`
    - Recent logs: `journalctl -u kb-rag-server -n 100`
-   - Health status: `curl localhost:8000/health/detailed`
+   - Health status: `kb-rag check health` or `curl localhost:8000/health/detailed`
    - System info: `uname -a`, `free -h`, `df -h`
 
 ### Reporting Issues
@@ -993,4 +1015,4 @@ sudo ./deployment/scripts/install.sh
 
 ---
 
-*Last updated: v0.9.0 - 2026-05-15*
+*Last updated: v1.3 - 2026-05-25*
