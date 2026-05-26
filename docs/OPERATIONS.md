@@ -304,6 +304,12 @@ The health dashboard provides 6 tab sections:
 
 All metrics update in near real-time with selectable refresh intervals (5s, 15s, 30s, 1m).
 
+<!-- TODO: Add dashboard screenshots showing:
+     - Server Metrics tab (component health badges)
+     - Ingestion Metrics tab (file processing rates)
+     - Cache Performance tab (hit rate gauge)
+     See GitHub issue for screenshot capture task -->
+
 ### Accessing the Dashboard
 
 #### Docker Compose Deployments
