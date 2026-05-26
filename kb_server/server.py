@@ -728,9 +728,14 @@ async def main():
                 )
             return Response()
 
+        async def handle_health(request):
+            """Simple health check endpoint for Docker healthchecks."""
+            return Response(content='{"status":"ok","service":"kb-rag"}', media_type="application/json")
+
         starlette_app = Starlette(
             routes=[
                 Route("/sse", endpoint=handle_sse),
+                Route("/health", endpoint=handle_health),
                 Mount("/messages/", app=sse.handle_post_message),
             ]
         )
