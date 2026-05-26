@@ -9,7 +9,7 @@
 
 Servidor MCP (Model Context Protocol) listo para producción para búsqueda
 semántica en bases de conocimiento locales. Soporta PDF, DOCX, XLSX, PPTX,
-TXT, Markdown y código fuente (~7 GB+). Compatible con **Claude Code**,
+TXT, Markdown y código fuente. Compatible con **Claude Code**,
 **OpenCode** y cualquier cliente MCP.
 
 ### ✨ Características
@@ -17,13 +17,12 @@ TXT, Markdown y código fuente (~7 GB+). Compatible con **Claude Code**,
 - 🔍 **Búsqueda semántica** en documentación técnica
 - 📚 **Soporte multi-formato**: PDF, DOCX, XLSX, PPTX, TXT, código
 - ✅ **585 pruebas** — Aislamiento total con mocks, sin dependencias externas para pruebas unitarias
-- ✅ **Pipeline CI/CD** — Cobertura mínima (90% branch), auditoría de logging, lint Helm, auditoría de inglés
+- ✅ **Pipeline CI/CD** — Cobertura mínima (90% branch), auditoría de logging, Helm lint
 - ✅ **Transporte SSE** — Starlette 1.0.0 con manejo estable de desconexión
 - ✅ **Python 3.13** — Matriz CI prueba 3.11, 3.12, 3.13
 - ✅ **Auto-clasificación** — Inferencia de vendor, producto, subsistema y versión desde nombres de archivo y metadatos
 - ✅ **Cross-encoder lazy** — ~10s más rápido en inicio del servidor, modelo carga en primera consulta con reranking
 - ✅ **Kubernetes/Helm** — Helm chart para despliegue multi-réplica
-- ✅ **English sweep** — Cero portugués en todos los archivos fuente, validado por CI
 - 🎯 **Clasificación inteligente**: detección automática de producto y tipo de documento
 - 🚀 **Listo para producción**: servicios systemd, health checks, auto-restart
 - 💾 **Ingesta incremental**: procesa solo archivos nuevos/modificados
@@ -65,7 +64,7 @@ TXT, Markdown y código fuente (~7 GB+). Compatible con **Claude Code**,
 #### Opción 1: Configuración con un comando (recomendado)
 
 ```bash
-git clone https://github.com/your-org/kb-rag-mcp
+git clone https://github.com/MrLuciano/kb-rag-mcp
 cd kb-rag-mcp
 
 # Inicia Qdrant, instala dependencias, lanza el servidor MCP
@@ -193,8 +192,6 @@ El instalador automatizado (`deployment/scripts/install.sh`) realiza:
   - `kb-rag-scheduler.service` - Agendador de jobs
   - `kb-rag-watcher.service` - File watcher
   - `kb-rag.target` - Gestión unificada de servicios
-- ✅ Cobertura mínima (90% branch) validada en CI
-- ✅ Auditoría de inglés — cero portugués validado en CI
 - ✅ Rotación de logs (retención de 14 días, tamaño máximo 100MB)
 - ✅ Hardening de seguridad (aislamiento de usuario, protección de filesystem)
 - ✅ Inicio automático de servicios y verificación de salud
@@ -463,7 +460,7 @@ LOG_LEVEL=INFO             # Nivel de logging (DEBUG, INFO, WARNING, ERROR)
     "kb-rag": {
       "command": "wsl.exe",
       "args": [
-        "-d", "Ubuntu-24.04",
+        "-d", "Debian",
         "--",
         "/home/SU_USUARIO/kb-rag-mcp/.venv/bin/python",
         "-m", "kb_server.server"

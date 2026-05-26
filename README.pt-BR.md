@@ -9,7 +9,7 @@
 
 Servidor MCP (Model Context Protocol) pronto para produção para busca
 semântica em bases de conhecimento locais. Suporta PDF, DOCX, XLSX, PPTX,
-TXT, Markdown e código-fonte (~7 GB+). Compatível com **Claude Code**,
+TXT, Markdown e código-fonte. Compatível com **Claude Code**,
 **OpenCode** e qualquer cliente MCP.
 
 ### ✨ Funcionalidades
@@ -17,13 +17,12 @@ TXT, Markdown e código-fonte (~7 GB+). Compatível com **Claude Code**,
 - 🔍 **Busca semântica** em documentação técnica
 - 📚 **Suporte multi-formato**: PDF, DOCX, XLSX, PPTX, TXT, código
 - ✅ **585 testes** — Isolamento total via mocks, sem dependências externas para testes unitários
-- ✅ **Pipeline CI/CD** — Cobertura mínima (90% branch), auditoria de logging, lint Helm, auditoria de inglês
+- ✅ **Pipeline CI/CD** — Cobertura mínima (90% branch), auditoria de logging, Helm lint
 - ✅ **Transporte SSE** — Starlette 1.0.0 com tratamento estável de desconexão
 - ✅ **Python 3.13** — Matriz CI testa 3.11, 3.12, 3.13
-- ✅ **Auto-classificação** — Inferência de vendor, produto, subsistema e versão a partir de nomes de arquivo e metadados
+- ✅ **Auto-classificação** — Inferência de fabricante, produto, subsistema e versão a partir de nomes de arquivo e metadados
 - ✅ **Cross-encoder lazy** — ~10s mais rápido na inicialização do servidor, modelo carrega na primeira consulta com reranking
 - ✅ **Kubernetes/Helm** — Helm chart para deployment multi-réplica
-- ✅ **English sweep** — Zero português em todos os arquivos-fonte, validado por CI
 - 🎯 **Classificação inteligente**: detecção automática de produto e tipo de documento
 - 🚀 **Pronto para produção**: serviços systemd, health checks, auto-restart
 - 💾 **Ingestão incremental**: processa apenas arquivos novos/modificados
@@ -32,7 +31,7 @@ TXT, Markdown e código-fonte (~7 GB+). Compatível com **Claude Code**,
 - 🔧 **Multi-backend**: LM Studio, Ollama ou APIs compatíveis com OpenAI
 - ⚡ **Processamento em lote**: ingestão 3-5x mais rápida com connection pooling
 - 🛠️ **Operações**: instalação automatizada, backup/restore, atualizações
-- 👁️ **Auto-ingestão**: file watcher para atualizações automáticas de documentos
+- 👁️ **Auto-ingestão**: monitor de arquivos para atualizações automáticas de documentos
 - 🏷️ **Filtragem por versão**: busca por versão de documento (22.3, CE 24.4)
 - 📝 **Sobrescrita de metadados**: controle de classificação por diretório/arquivo
 
@@ -65,7 +64,7 @@ TXT, Markdown e código-fonte (~7 GB+). Compatível com **Claude Code**,
 #### Opção 1: Configuração com um comando (recomendado)
 
 ```bash
-git clone https://github.com/your-org/kb-rag-mcp
+git clone https://github.com/MrLuciano/kb-rag-mcp
 cd kb-rag-mcp
 
 # Inicia Qdrant, instala dependências, lança o servidor MCP
@@ -193,8 +192,6 @@ O instalador automatizado (`deployment/scripts/install.sh`) realiza:
   - `kb-rag-scheduler.service` - Agendador de jobs
   - `kb-rag-watcher.service` - File watcher
   - `kb-rag.target` - Gerenciamento unificado de serviços
-- ✅ Cobertura mínima (90% branch) validada no CI
-- ✅ Auditoria de inglês — zero português validado no CI
 - ✅ Rotação de logs (retenção de 14 dias, tamanho máximo 100MB)
 - ✅ Hardening de segurança (isolamento de usuário, proteção de filesystem)
 - ✅ Inicialização automática de serviços e verificação de saúde
@@ -463,7 +460,7 @@ LOG_LEVEL=INFO             # Nível de logging (DEBUG, INFO, WARNING, ERROR)
     "kb-rag": {
       "command": "wsl.exe",
       "args": [
-        "-d", "Ubuntu-24.04",
+        "-d", "Debian",
         "--",
         "/home/SEU_USUARIO/kb-rag-mcp/.venv/bin/python",
         "-m", "kb_server.server"
