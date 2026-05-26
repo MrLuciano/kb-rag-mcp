@@ -26,7 +26,7 @@ MCP client.
 - 🎯 **Smart classification**: automatic product and doc type detection
 - 🚀 **Production-ready**: systemd services, health checks, auto-restart
 - 💾 **Incremental ingestion**: only processes new/modified files
-- 📊 **Monitoring**: Prometheus metrics, alerting rules, health endpoints
+- 📊 **Real-time monitoring dashboard**: Grafana + Prometheus with 6-tab health dashboard
 - 🔄 **Cache system**: LRU with RAM auto-tuning or Redis (80%+ hit rate)
 - 🔧 **Multi-backend**: LM Studio, Ollama, or OpenAI-compatible APIs
 - ⚡ **Batch processing**: 3-5x faster ingestion with connection pooling
@@ -936,7 +936,7 @@ pip-sync requirements.txt
 
 **Technical Documentation:**
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture and design
-- [OPERATIONS.md](docs/OPERATIONS.md) - Production deployment and operations
+- [OPERATIONS.md](docs/OPERATIONS.md) - Production deployment, operations, and **[health dashboard](docs/OPERATIONS.md#health-dashboard)**
 - [TESTING.md](docs/TESTING.md) - Testing strategy
 - [INDEX.md](docs/INDEX.md) - Documentation index
 - [REFERENCE.md](docs/REFERENCE.md) - API reference
