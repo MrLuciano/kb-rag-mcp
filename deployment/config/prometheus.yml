@@ -11,6 +11,14 @@
 #            - 'kb-rag-targets.yml'
 #
 # Or add directly to prometheus.yml scrape_configs section.
+#
+# Docker Compose note:
+#   - Prometheus must scrape the service over the internal Compose network using
+#     the service name, e.g. http://kb-rag-mcp:8080/metrics
+#   - External clients outside the Compose network should use the published host
+#     port, e.g. http://localhost:8080/metrics or http://<docker-host>:8080/metrics
+#   - Do not rewrite the scrape target into a ?target=... query parameter unless
+#     you are intentionally configuring a blackbox exporter
 
 # Global settings
 global:
