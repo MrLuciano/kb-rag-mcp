@@ -314,25 +314,41 @@ All metrics update in near real-time with selectable refresh intervals (5s, 15s,
 
 #### Docker Compose Deployments
 
-1. Start the full stack:
+1. Configure environment variables (optional):
+   ```bash
+   # Edit .env to customize ports and paths
+   SSE_PORT=8765              # MCP SSE endpoint port
+   DATA_DIR=./data            # Application data directory
+   LOGS_DIR=./logs            # Log files directory
+   QDRANT_DATA_PATH=./data/qdrant  # Qdrant storage path
+   ```
+
+2. Start the full stack:
    ```bash
    docker-compose up -d
    ```
 
-2. Verify Grafana is running:
+3. Verify all services are healthy:
    ```bash
-   docker-compose ps grafana
-   # Expected: State = Up
+   docker-compose ps
+   # Expected: All services show "healthy" status
+   # Startup time: ~60-90 seconds for full health
    ```
 
-3. Open Grafana UI:
+4. Verify Grafana is running:
+   ```bash
+   docker-compose ps grafana
+   # Expected: State = Up (healthy)
+   ```
+
+5. Open Grafana UI:
    ```
    http://localhost:3000
    ```
 
-4. Default credentials: `admin` / `admin` (change on first login)
+6. Default credentials: `admin` / `admin` (change on first login)
 
-5. Navigate to: **Dashboards → KB-RAG Dashboards → KB-RAG MCP Monitoring**
+7. Navigate to: **Dashboards → KB-RAG Dashboards → KB-RAG MCP Monitoring**
 
 #### Kubernetes Deployments
 
@@ -365,7 +381,7 @@ helm install kb-rag ./deployment/helm/kb-rag-mcp \
 
 ### Prometheus Metrics
 
-All metrics are exposed at `/metrics` endpoint on the health server (port 8000).
+All metrics are exposed at `/metrics` endpoint on the health server (port 8080, NOT SSE_PORT).
 
 #### Job Metrics
 - `kb_ingest_jobs_created_total{priority}` - Total jobs created by priority
