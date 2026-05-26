@@ -1,5 +1,5 @@
 ---
-status: testing
+status: diagnosed
 phase: 14-health-dashboard
 source:
   - 14-01-SUMMARY.md
@@ -8,16 +8,12 @@ source:
   - 14-04-SUMMARY.md
   - 14-05-SUMMARY.md
 started: 2026-05-26T03:30:00Z
-updated: 2026-05-26T10:30:00Z
+updated: 2026-05-26T10:35:00Z
 ---
 
 ## Current Test
 
-number: 2
-name: Metrics Endpoint Accessibility
-expected: |
-  Visit `http://localhost:8000/metrics` in browser or curl. Page loads successfully with HTTP 200. Content-Type header shows `text/plain; version=X.X.X; charset=utf-8`. Response body contains plain text with metric names starting with `kb_` (e.g., `kb_ingest_jobs_created_total`, `kb_rag_cache_hits_total`).
-awaiting: user response
+[testing paused - 1 blocker issue found, 10 tests blocked pending fix]
 
 ## Tests
 
@@ -119,7 +115,17 @@ blocked: 10
   reason: "User reported: docker compose up -d fails with 'Error dependency qdrant failed to start'. Qdrant container healthcheck fails with 'curl: executable file not found in $PATH'. Also need configurable volume paths for Qdrant database files."
   severity: blocker
   test: 1
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "docker-compose.yml qdrant healthcheck uses CMD curl, but qdrant/qdrant:latest image (Alpine-based) does not include curl or wget. Healthcheck fails immediately, marking container unhealthy. kb-rag-mcp service has `depends_on: qdrant: condition: service_healthy`, so it never starts. Volume path `./data/qdrant` is hardcoded with no environment variable override."
+  artifacts:
+    - path: "docker-compose.yml"
+      line: 11
+      issue: "healthcheck uses 'curl' command not available in qdrant container"
+    - path: "docker-compose.yml"
+      line: 9
+      issue: "volume path './data/qdrant' is hardcoded, not configurable via env var"
+  missing:
+    - "Replace curl-based healthcheck with wget (available in qdrant image) or HTTP endpoint test using sh + nc"
+    - "Add QDRANT_DATA_PATH environment variable with default './data/qdrant'"
+    - "Update volume binding to use ${QDRANT_DATA_PATH:-./data/qdrant}:/qdrant/storage"
+    - "Document QDRANT_DATA_PATH in .env.example and OPERATIONS.md"
   debug_session: ""
