@@ -294,11 +294,11 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** DASH-01, DASH-02, DASH-03, DASH-04, DASH-05
 **Depends on:** — (independent)
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 
-- [ ] 14-01-PLAN.md — Add /metrics endpoint to health_server.py (Prometheus scraping)
+- [x] 14-01-PLAN.md — Add /metrics endpoint to health_server.py (Prometheus scraping)
 - [ ] 14-02-PLAN.md — Extend Grafana dashboard with 6-tab structure (28+ panels)
 - [ ] 14-03-PLAN.md — Docker Compose integration (Prometheus + Grafana services)
 - [ ] 14-04-PLAN.md — Kubernetes/Helm integration (StatefulSet + Deployment)
@@ -353,6 +353,6 @@ Plans:
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
 | 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
 | 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete    | 2026-05-26 |
-| 14. Health Dashboard | v1.3 | 0/0 | Planning | — |
+| 14. Health Dashboard | v1.3 | 1/5 | In Progress|  |
 | 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
 | 16. Reclassification | v1.3 | 0/0 | Planning | — |
