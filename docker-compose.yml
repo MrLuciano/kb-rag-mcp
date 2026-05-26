@@ -30,6 +30,7 @@ services:
       - .env
     environment:
       - QDRANT_URL=http://qdrant:6333
+      - LOG_PATH=/app/logs/kb-mcp.log
     volumes:
       - ${DATA_DIR:-./data}:/app/data
       - ${LOGS_DIR:-./logs}:/app/logs
