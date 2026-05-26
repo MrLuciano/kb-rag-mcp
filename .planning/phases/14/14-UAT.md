@@ -103,7 +103,7 @@ result: pending
 
 total: 15
 passed: 0
-issues: 1
+issues: 2
 pending: 3
 skipped: 0
 blocked: 10
@@ -115,17 +115,36 @@ blocked: 10
   reason: "User reported: docker compose up -d fails with 'Error dependency qdrant failed to start'. Qdrant container healthcheck fails with 'curl: executable file not found in $PATH'. Also need configurable volume paths for Qdrant database files."
   severity: blocker
   test: 1
-  root_cause: "docker-compose.yml qdrant healthcheck uses CMD curl, but qdrant/qdrant:latest image (Alpine-based) does not include curl or wget. Healthcheck fails immediately, marking container unhealthy. kb-rag-mcp service has `depends_on: qdrant: condition: service_healthy`, so it never starts. Volume path `./data/qdrant` is hardcoded with no environment variable override."
+  root_cause: "docker-compose.yml qdrant healthcheck uses CMD curl, but qdrant/qdrant:latest image (Alpine-based) does not include curl. Healthcheck fails immediately, marking container unhealthy. kb-rag-mcp service has `depends_on: qdrant: condition: service_healthy`, so it never starts."
   artifacts:
     - path: "docker-compose.yml"
       line: 11
       issue: "healthcheck uses 'curl' command not available in qdrant container"
+  missing:
+    - "Replace curl-based healthcheck with wget (available in qdrant Alpine image)"
+  debug_session: ""
+
+- truth: "Docker Compose respects existing SSE_PORT and data directory structure"
+  status: failed
+  reason: "User reported: docker-compose.yml uses port 8000 for MCP SSE endpoint, but .env specifies SSE_PORT=8765. Also, data/ contains both SQLite DBs (kb_metadata.db, registry.db) and qdrant/ subfolder - this structure should be preserved and configurable."
+  severity: major
+  test: 1
+  root_cause: "docker-compose.yml hardcodes port mapping '8000:8000' instead of reading ${SSE_PORT:-8765} from .env. Volume mount './data:/app/data' is correct for SQLite DBs, but qdrant volume './data/qdrant' should be separately configurable. User's actual structure is data/kb_metadata.db, data/registry.db, data/qdrant/ - requires DATA_DIR=./data for SQLite and QDRANT_DATA_PATH=./data/qdrant (nested)."
+  artifacts:
+    - path: "docker-compose.yml"
+      line: 12
+      issue: "hardcoded port '8000:8000' instead of '${SSE_PORT:-8765}:${SSE_PORT:-8765}'"
     - path: "docker-compose.yml"
       line: 9
-      issue: "volume path './data/qdrant' is hardcoded, not configurable via env var"
+      issue: "qdrant volume path './data/qdrant' not parameterized with env var"
+    - path: "docker-compose.yml"
+      line: 18
+      issue: "kb-rag-mcp data volume './data' not parameterized"
   missing:
-    - "Replace curl-based healthcheck with wget (available in qdrant image) or HTTP endpoint test using sh + nc"
-    - "Add QDRANT_DATA_PATH environment variable with default './data/qdrant'"
-    - "Update volume binding to use ${QDRANT_DATA_PATH:-./data/qdrant}:/qdrant/storage"
-    - "Document QDRANT_DATA_PATH in .env.example and OPERATIONS.md"
+    - "Use ${SSE_PORT:-8765} for MCP SSE endpoint port mapping (both host and container)"
+    - "Use ${DATA_DIR:-./data} for SQLite database directory mount"
+    - "Use ${LOGS_DIR:-./logs} for logs directory mount"
+    - "Use ${QDRANT_DATA_PATH:-./data/qdrant} for Qdrant storage (nested under DATA_DIR by default)"
+    - "Document SSE_PORT, DATA_DIR, LOGS_DIR, QDRANT_DATA_PATH in .env.example"
+    - "Update OPERATIONS.md with configuration guide"
   debug_session: ""
