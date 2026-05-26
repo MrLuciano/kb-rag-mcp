@@ -7,7 +7,7 @@ services:
       - "6333:6333"   # REST API
       - "6334:6334"   # gRPC
     volumes:
-      - ./data/qdrant:/qdrant/storage
+      - ${QDRANT_DATA_PATH:-./data/qdrant}:/qdrant/storage
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
     healthcheck:
@@ -31,8 +31,8 @@ services:
     environment:
       - QDRANT_URL=http://qdrant:6333
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - ${DATA_DIR:-./data}:/app/data
+      - ${LOGS_DIR:-./logs}:/app/logs
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
       interval: 30s
