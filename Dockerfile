@@ -33,6 +33,7 @@ COPY config/      ./config/
 COPY kb_server/   ./kb_server/
 COPY ingest/      ./ingest/
 COPY observability/ ./observability/
+COPY scripts/docker-entrypoint.sh /app/
 COPY setup.py     .
 
 # Install the package itself (no deps — already installed)
@@ -41,12 +42,17 @@ RUN pip install --no-cache-dir --no-deps -e .
 # Create data directories
 RUN mkdir -p /app/data/qdrant /app/logs
 
+# Make entrypoint executable
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Healthcheck via the built-in HTTP health server (port 8080 by default)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+
     CMD wget --spider -q http://localhost:${HEALTH_PORT:-8080}/health || exit 1
 
-# Default: run the MCP server in SSE mode
+# Expose ports: MCP SSE (8765), health/metrics HTTP (8080)
 ENV PYTHONUNBUFFERED=1
-EXPOSE 8000 8080
+EXPOSE 8765 8080
 
-CMD ["python", "-m", "kb_server.server"]
+# Use entrypoint script to start both health server and MCP server
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

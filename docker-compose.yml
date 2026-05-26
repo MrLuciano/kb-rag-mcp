@@ -25,7 +25,7 @@ services:
         condition: service_healthy
     ports:
       - "${SSE_PORT:-8765}:${SSE_PORT:-8765}"   # MCP SSE endpoint
-      - "8080:8080"   # Health check HTTP
+      - "${HEALTH_PORT:-8080}:${HEALTH_PORT:-8080}"   # Health/metrics HTTP
     env_file:
       - .env
     environment:
@@ -34,15 +34,17 @@ services:
       - LOG_PATH=/app/logs/kb-mcp.log
       - SSE_HOST=0.0.0.0
       - SSE_PORT=${SSE_PORT:-8765}
+      - HEALTH_HOST=0.0.0.0
+      - HEALTH_PORT=${HEALTH_PORT:-8080}
     volumes:
       - ${DATA_DIR:-./data}:/app/data
       - ${LOGS_DIR:-./logs}:/app/logs
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:${SSE_PORT:-8765}/health"]
+      test: ["CMD", "wget", "-O", "-", "-q", "http://localhost:${HEALTH_PORT:-8080}/health"]
       interval: 30s
       timeout: 10s
-      start_period: 60s
-      retries: 3
+      start_period: 120s
+      retries: 5
 
   prometheus:
     image: prom/prometheus:latest

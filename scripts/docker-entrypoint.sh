@@ -1,0 +1,26 @@
+#!/bin/bash
+# Docker entrypoint script for kb-rag-mcp container
+# Starts both the health/metrics HTTP server and the MCP SSE server
+
+set -e
+
+# Default ports
+HEALTH_PORT="${HEALTH_PORT:-8080}"
+SSE_PORT="${SSE_PORT:-8765}"
+
+echo "[entrypoint] Starting kb-rag-mcp services..."
+echo "[entrypoint] Health server will listen on port ${HEALTH_PORT}"
+echo "[entrypoint] MCP SSE server will listen on port ${SSE_PORT}"
+
+# Start health/metrics HTTP server in background
+echo "[entrypoint] Starting health server..."
+python -m kb_server.health_server &
+HEALTH_PID=$!
+echo "[entrypoint] Health server started (PID: ${HEALTH_PID})"
+
+# Give health server a moment to bind to port
+sleep 2
+
+# Start MCP server in foreground (this process becomes PID 1's child)
+echo "[entrypoint] Starting MCP SSE server..."
+exec python -m kb_server.server
