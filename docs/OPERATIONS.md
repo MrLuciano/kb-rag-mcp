@@ -287,64 +287,237 @@ sqlite3 /opt/kb-rag/data/kb_metadata.db \
 
 ---
 
-## Performance Monitoring
+## Health Dashboard
 
-### Key Metrics
+KB-RAG includes an integrated Grafana dashboard for real-time monitoring of all subsystems.
 
+### Overview
+
+The health dashboard provides 6 tab sections:
+
+1. **Server Metrics** - Overall system health, component status, HTTP request rates
+2. **Ingestion Metrics** - Files processed, chunks generated, processing throughput
+3. **Jobs** - Active jobs, completion rates, duration histograms
+4. **Embedding Health** - API latency, batch processing, throughput
+5. **Cache Performance** - Hit rates, evictions, memory usage
+6. **Qdrant Health** - Collection stats, vector counts, query latency
+
+All metrics update in near real-time with selectable refresh intervals (5s, 15s, 30s, 1m).
+
+### Accessing the Dashboard
+
+#### Docker Compose Deployments
+
+1. Start the full stack:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. Verify Grafana is running:
+   ```bash
+   docker-compose ps grafana
+   # Expected: State = Up
+   ```
+
+3. Open Grafana UI:
+   ```
+   http://localhost:3000
+   ```
+
+4. Default credentials: `admin` / `admin` (change on first login)
+
+5. Navigate to: **Dashboards → KB-RAG Dashboards → KB-RAG MCP Monitoring**
+
+#### Kubernetes Deployments
+
+1. Verify monitoring components are deployed:
+   ```bash
+   kubectl get pods -l app.kubernetes.io/component=grafana
+   kubectl get pods -l app.kubernetes.io/component=prometheus
+   ```
+
+2. Port-forward to Grafana:
+   ```bash
+   kubectl port-forward svc/<release-name>-grafana 3000:3000
+   ```
+
+3. Open Grafana UI:
+   ```
+   http://localhost:3000
+   ```
+
+4. Credentials: Set via Helm values (`monitoring.grafana.adminPassword`)
+
+5. Dashboard auto-loads from ConfigMap provisioning
+
+**Production Ingress:** Enable external access via Helm values:
 ```bash
-# Cache hit rate (target: >80%)
-curl http://localhost:8000/health/detailed | \
-  jq '.components.cache.details.hit_rate'
-
-# Component latency (target: <100ms)
-curl http://localhost:8000/health/detailed | \
-  jq '.components | to_entries[] | {name: .key, latency: .value.latency_ms}'
-
-# Memory usage
-systemctl show kb-rag-server -p MemoryCurrent
-
-# CPU usage
-systemd-cgtop -1 | grep kb-rag
+helm install kb-rag ./deployment/helm/kb-rag-mcp \
+  --set monitoring.grafana.ingress.enabled=true \
+  --set monitoring.grafana.ingress.hosts[0].host=grafana.example.com
 ```
 
 ### Prometheus Metrics
 
-```bash
-# Scrape metrics
-curl http://localhost:8000/metrics
+All metrics are exposed at `/metrics` endpoint on the health server (port 8000).
 
-# Key metrics to monitor:
-# - kb_rag_health_status
-# - kb_rag_cache_hits_total / kb_rag_cache_misses_total
-# - kb_rag_jobs_failed_total
-# - kb_rag_filesystem_free_bytes
+#### Job Metrics
+- `kb_ingest_jobs_created_total{priority}` - Total jobs created by priority
+- `kb_ingest_jobs_completed_total{status}` - Completed jobs (completed/failed/cancelled)
+- `kb_ingest_jobs_active{status}` - Active jobs (pending/running/paused)
+- `kb_ingest_job_duration_seconds` - Job execution duration histogram
+
+#### Ingestion Metrics
+- `kb_ingest_files_processed_total{status}` - Files processed by status
+- `kb_ingest_chunks_generated_total` - Total chunks indexed
+- `kb_ingest_file_processing_seconds` - File processing duration histogram
+
+#### Cache Metrics
+- `kb_rag_cache_hits_total` - Cache hits
+- `kb_rag_cache_misses_total` - Cache misses
+- `kb_rag_cache_size_bytes` - Cache size in bytes
+- `kb_rag_cache_entries` - Number of cached entries
+
+### Common Queries
+
+#### Cache Hit Rate (%)
+```promql
+(rate(kb_rag_cache_hits_total[5m]) / (rate(kb_rag_cache_hits_total[5m]) + rate(kb_rag_cache_misses_total[5m]))) * 100
 ```
 
-### Grafana Dashboard
-
-**Import manually:**
-1. Open Grafana UI → Dashboards → Import
-2. Upload `deployment/config/grafana-dashboard.json`
-3. Select your Prometheus datasource
-4. Click Import
-
-**Provision automatically (Grafana 7+):**
-```bash
-# Copy provisioning configs to Grafana
-sudo cp deployment/config/grafana-provisioning/datasources/prometheus.yaml \
-  /etc/grafana/provisioning/datasources/
-sudo cp deployment/config/grafana-provisioning/dashboards/kb-rag.yaml \
-  /etc/grafana/provisioning/dashboards/
-sudo cp deployment/config/grafana-dashboard.json \
-  /etc/grafana/provisioning/dashboards/
-sudo systemctl restart grafana-server
+#### Files Processed per Minute
+```promql
+rate(kb_ingest_files_processed_total[1m]) * 60
 ```
 
-**Dashboard panels (18 total, 4 sections):**
-- **Ingestion Overview:** jobs created, active jobs, files processed, chunks generated, job duration p50/p95/p99, files/s rate
-- **Workers & Rate Limiter:** pool utilization gauge, pool size/queue, token bucket tokens/waits
-- **Embedding API & Batch:** latency p50/p95, throughput chunks/s, embedding batches/s
-- **Cache:** hit rate gauge, hits/misses/evictions, cache size bytes/entries
+#### Job Duration p95 (seconds)
+```promql
+histogram_quantile(0.95, rate(kb_ingest_job_duration_seconds_bucket[5m]))
+```
+
+#### Active Jobs by Status
+```promql
+sum by (status) (kb_ingest_jobs_active)
+```
+
+#### Embedding API Latency p99 (seconds)
+```promql
+histogram_quantile(0.99, rate(kb_ingest_api_latency_seconds_bucket[5m]))
+```
+
+### Customizing the Dashboard
+
+The dashboard JSON is version-controlled at:
+- **Docker Compose:** `deployment/config/grafana-dashboard.json`
+- **Kubernetes:** Embedded in ConfigMap via Helm chart
+
+To customize:
+
+1. Edit dashboard in Grafana UI
+2. Export JSON: **Dashboard Settings → JSON Model → Copy to clipboard**
+3. Save to `deployment/config/grafana-dashboard.json`
+4. Commit changes
+5. Restart Grafana to reload:
+   - Docker Compose: `docker-compose restart grafana`
+   - Kubernetes: `kubectl rollout restart deployment/<release-name>-grafana`
+
+### Disabling Monitoring
+
+#### Docker Compose
+Comment out `prometheus` and `grafana` services in `docker-compose.yml`:
+```bash
+docker-compose up -d qdrant kb-rag-mcp
+```
+
+#### Kubernetes
+Disable via Helm values:
+```bash
+helm install kb-rag ./deployment/helm/kb-rag-mcp \
+  --set monitoring.enabled=false
+```
+
+Or disable individual components:
+```bash
+--set monitoring.prometheus.enabled=false
+--set monitoring.grafana.enabled=false
+```
+
+### Storage Configuration
+
+#### Prometheus Data Retention
+
+**Docker Compose:** Edit `docker-compose.yml` command args:
+```yaml
+- '--storage.tsdb.retention.time=30d'  # Default: 15d
+```
+
+**Kubernetes:** Set via Helm values:
+```bash
+--set monitoring.prometheus.retention=30d
+--set monitoring.prometheus.storage.size=50Gi  # Default: 10Gi
+```
+
+#### Persistent Storage Location
+
+- **Docker Compose:** Named volume `prometheus-data` (managed by Docker)
+- **Kubernetes:** PersistentVolumeClaim (uses cluster default StorageClass)
+
+To use a specific StorageClass in Kubernetes:
+```bash
+--set monitoring.prometheus.storage.storageClass=fast-ssd
+```
+
+### Troubleshooting
+
+#### Grafana Shows "No Data"
+
+1. Verify Prometheus is scraping successfully:
+   ```bash
+   curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[0].health'
+   # Expected: "up"
+   ```
+
+2. Check kb-rag-mcp `/metrics` endpoint:
+   ```bash
+   curl http://localhost:8000/metrics | grep kb_ingest
+   # Should return multiple metrics
+   ```
+
+3. Verify Grafana datasource:
+   - Grafana UI → Configuration → Data Sources → Prometheus
+   - Click "Test" button → Should show "Data source is working"
+
+#### Prometheus Not Scraping Targets
+
+**Docker Compose:**
+```bash
+# Verify service networking
+docker-compose exec prometheus wget -O- http://kb-rag-mcp:8000/metrics
+```
+
+**Kubernetes:**
+```bash
+# Verify service discovery
+kubectl exec -it <prometheus-pod> -- wget -O- http://<kb-rag-service>:8000/metrics
+```
+
+Check Prometheus logs:
+```bash
+docker-compose logs prometheus | grep ERROR  # Docker Compose
+kubectl logs <prometheus-pod> | grep ERROR   # Kubernetes
+```
+
+#### High Memory Usage
+
+Prometheus memory usage scales with:
+- Number of time series (metrics × label combinations)
+- Data retention period
+- Scrape interval
+
+To reduce:
+1. Increase scrape interval: `--set monitoring.prometheus.scrapeInterval=30s`
+2. Reduce retention: `--set monitoring.prometheus.retention=7d`
+3. Increase memory limits: `--set monitoring.prometheus.resources.limits.memory=2Gi`
 
 ---
 
