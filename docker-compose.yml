@@ -24,7 +24,7 @@ services:
       qdrant:
         condition: service_healthy
     ports:
-      - "8000:8000"   # MCP SSE endpoint
+      - "${SSE_PORT:-8765}:${SSE_PORT:-8765}"   # MCP SSE endpoint
       - "8080:8080"   # Health check HTTP
     env_file:
       - .env
