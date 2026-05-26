@@ -257,6 +257,36 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 <!-- GSD:profile-start -->
 ## Developer Profile
 
-> Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
+**Developer:** Luciano Marinho (luciano.marinho@gmail.com)  
+**Role:** Lead Developer / System Architect  
+**Experience Level:** Senior
+
+**Full profile:** `.planning/developer-profile.json` (221 lines, comprehensive)
+
+### Quick Reference
+
+**Technical Expertise:**
+- **Expert:** Python 3.11+, FastAPI, asyncio, pytest, Docker, Qdrant, MCP protocol
+- **Proficient:** Prometheus/Grafana, Kubernetes/Helm, RAG systems, Vector embeddings
+- **Familiar:** PowerShell, Starlette, LM Studio/Ollama
+
+**Code Style:**
+- **Formatting:** Black (line-length 79), flake8, isort (black profile), mypy (lenient)
+- **Conventions:** snake_case modules/functions, PascalCase classes, _private methods
+- **Documentation:** English only (zero Portuguese - Phase 12 enforcement), Google-style docstrings
+- **Logging:** `log = logging.getLogger('kb-mcp.{module}')`, INFO for operations
+
+**Development Practices:**
+- **Testing:** TDD for behavior changes, 90% branch coverage baseline, 585 passing tests
+- **Git:** Conventional commits with phase tracking (fix/feat/docs/test/chore/plan)
+- **Planning:** GSD framework, phase-based execution, wave parallelization, UAT validation
+- **Execution:** Worktree isolation when safe, quality gates enforced, dev+prod testing
+
+**AI Agent Guidance:**
+- Follow PEP8/Black strictly, add Google-style docstrings, emit structured logs
+- Write English-only comments, commit atomically per task, run pytest after changes
+- Reference completed phases 9-14 for patterns, maintain 90%+ branch coverage
+- Test on both dev (WSL) and production (acemagic) for deployment changes
+
+> This section is auto-generated from `.planning/developer-profile.json` -- do not edit manually.
 <!-- GSD:profile-end -->
