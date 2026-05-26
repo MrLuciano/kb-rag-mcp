@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.3
-milestone_name: Quality & Operational Excellence
+milestone_name: Post-Ship Polish & Infrastructure
 status: executing
-last_updated: "2026-05-26T02:50:28.653Z"
+last_updated: "2026-05-26T14:30:00Z"
 last_activity: 2026-05-26
 progress:
-  total_phases: 13
-  completed_phases: 5
-  total_plans: 30
-  completed_plans: 21
-  percent: 38
+  total_phases: 16
+  completed_phases: 14
+  total_plans: 38
+  completed_plans: 30
+  percent: 87
 ---
 
 # Project State
@@ -20,13 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 13 — Docs sync, README languages, Spanish README
+**Current focus:** Phase 15 — PowerShell script opens ports for all subsystems (planning complete, ready for execution)
 
 ## Current Position
 
-Phase: 14
-Plan: 2 of 5
-Status: Ready to execute
+Phase: 15
+Plan: 0 of 2
+Status: Planning Complete (ready for execution)
 Last activity: 2026-05-26
 
 ## Phase 6 Outcomes
@@ -144,11 +144,51 @@ Last activity: 2026-05-26
 |--------|-------|
 | Core tests (excl. e2e, SSE) | 585 passed, 5 skipped |
 | SSE handler tests | 3 passed |
+| **Grand total** | **585** |
 
 ### Key Decisions
 
 - Test assertions checking for Portuguese output strings were updated to English alongside the source translations
 - All `kb_server/` tool descriptions, parameter descriptions, section headers, docstrings, inline comments, log messages, error messages, and user-facing output labels are consistently in English
+
+## Phase 14 Outcomes
+
+### Plans Executed
+
+- **14-01**: Metrics endpoint — added `/metrics` route to `kb_server/health_server.py` exposing 28 Prometheus metrics at port 8080
+- **14-02**: Grafana dashboard — extended `deployment/config/grafana-dashboard.json` with 6-row structure (Server, Ingestion, Jobs, Embedding, Cache, Qdrant) and 28 panels
+- **14-03**: Docker Compose integration — added `prometheus` and `grafana` services, created provisioning configs
+- **14-04**: Kubernetes/Helm integration — created Prometheus StatefulSet and Grafana Deployment with monitoring toggle
+- **14-05**: Documentation — added Health Dashboard section to OPERATIONS.md (~178 lines), updated README.md with monitoring links
+- **14-06**: Docker Compose fixes — created entrypoint script for dual-server startup, fixed healthchecks (GET method, 120s start_period), removed duplicate datasource
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| DASH-01: /metrics endpoint | ✅ | `kb_server/health_server.py` line 55-61; 6 tests pass |
+| DASH-02: Grafana dashboard 6 tabs | ✅ | `deployment/config/grafana-dashboard.json` 6 rows, 28 panels; 5 tests pass |
+| DASH-03: Docker Compose integration | ✅ | 4 services healthy (Qdrant, kb-rag-mcp, Prometheus, Grafana); UAT verified |
+| DASH-04: Kubernetes/Helm integration | ✅ | Prometheus StatefulSet + Grafana Deployment; 12 tests pass, helm lint passes |
+| DASH-05: Documentation | ✅ | OPERATIONS.md Health Dashboard section, README.md monitoring links |
+
+### Test Baseline
+
+| Metric | Count |
+|--------|-------|
+| Core tests | 585 passed, 5 skipped |
+| New tests added | 29 (6+6+5+12 across 4 plans) |
+| Expected total | ~614 |
+
+### Key Decisions
+
+- **Grafana-centric approach:** Extend existing Grafana dashboard instead of building custom HTML/FastAPI dashboard
+- **Dual-server architecture:** Health server (port 8080) + MCP server (port 8765) run in same container via entrypoint script
+- **Healthcheck method:** Changed from HEAD to GET (`wget -O -`) — FastAPI /health only accepts GET
+- **Start period:** Increased to 120s for large Qdrant database initialization
+- **Port separation:** Health/metrics on 8080, MCP SSE on 8765 (configurable via env vars)
+- **Blocker resolution:** Entrypoint script starts health server in background (PID 7), then MCP server in foreground (via `exec`)
+- **Production validation:** Verified on both dev (WSL Ubuntu) and production (acemagic) machines
 
 ## Accumulated Context
 
