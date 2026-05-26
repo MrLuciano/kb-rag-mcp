@@ -90,6 +90,58 @@ monitoring:
     namespace: monitoring
     interval: 30s
 
+  prometheus:
+    enabled: true
+    image:
+      repository: prom/prometheus
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 9090
+    storage:
+      size: 10Gi
+      storageClass: ""  # Use cluster default
+    retention: 15d
+    scrapeInterval: 15s
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+
+  grafana:
+    enabled: true
+    image:
+      repository: grafana/grafana
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 3000
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts:
+        - host: grafana.local
+          paths:
+            - path: /
+              pathType: Prefix
+      tls: []
+    adminUser: admin
+    adminPassword: admin  # Change in production via --set
+    anonymousAccess: true
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+
 # ── Ingress ───────────────────────────────────────────────────────────────────
 ingress:
   enabled: false
