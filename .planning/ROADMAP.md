@@ -254,6 +254,7 @@ Plans:
 **Plans:** 3 plans — all executed 2026-05-25
 
 **Delivered:**
+
 - All Portuguese content translated to English across ~35 files in `kb_server/` and `ingest/`
 - `scripts/docstring-audit.py` extended with `--check-inline`, `--fail-under`, expanded Portuguese word list
 - `.github/workflows/ci.yml` has `english-audit` job (`--check-inline --fail-under 0`) on every push/PR
@@ -347,7 +348,7 @@ Plans:
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
 | 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
-| 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete   | 2026-05-26 |
+| 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete    | 2026-05-26 |
 | 14. Health Dashboard | v1.3 | 0/0 | Planning | — |
 | 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
 | 16. Reclassification | v1.3 | 0/0 | Planning | — |
