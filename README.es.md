@@ -151,6 +151,53 @@ kb-rag check health
 # "Busque en la base de conocimiento por <tema en sus docs>"
 ```
 
+#### Habilitando Acceso por LAN (Windows)
+
+Por defecto, los servicios de kb-rag-mcp son accesibles solo desde `localhost` (127.0.0.1) en el host Windows. Para habilitar el acceso desde otras máquinas en la red:
+
+**1. Ejecute el script de inicio con la opción `-ConfigureFirewall`:**
+
+```powershell
+.\scripts\start-kb-rag.ps1 -ConfigureFirewall
+```
+
+**Nota:** Requiere privilegios de Administrador. Si no está ejecutando como admin, el script le pedirá permiso para reiniciar elevado.
+
+**2. Se crearán reglas de firewall para:**
+
+| Puerto | Servicio | Propósito |
+|--------|----------|-----------|
+| 6333 | Qdrant REST API | Consultas a la base de datos vectorial |
+| 6334 | Qdrant gRPC | Base de datos vectorial (protocolo gRPC) |
+| 8765 | MCP SSE | Endpoint del Model Context Protocol |
+| 8080 | Health/Metrics | Health checks y métricas Prometheus |
+| 9090 | Prometheus | Recopilación de métricas y PromQL |
+| 3000 | Grafana | Panel de monitoreo |
+
+**3. Acceda a los servicios mediante la dirección IP de Windows:**
+
+```bash
+# Encuentre su IP de Windows
+ipconfig  # Busque la dirección IPv4 del adaptador Ethernet/Wi-Fi (ej: 192.168.1.100)
+
+# Desde otra máquina en la red:
+curl http://192.168.1.100:8080/health          # Health check
+curl http://192.168.1.100:3000                 # Interfaz Grafana
+curl http://192.168.1.100:6333/collections     # API Qdrant
+```
+
+**Idempotencia:** Ejecutar con `-ConfigureFirewall` múltiples veces es seguro — las reglas existentes son detectadas y omitidas.
+
+**Eliminando Reglas de Firewall:**
+
+Si ya no necesita acceso por LAN:
+
+```powershell
+Get-NetFirewallRule -Group "KB-RAG-MCP" | Remove-NetFirewallRule
+```
+
+O deshabilite manualmente las reglas en **Firewall de Windows Defender con Seguridad Avanzada** (busque el grupo "KB-RAG-MCP").
+
 ---
 
 ### 🏭 Despliegue en Producción

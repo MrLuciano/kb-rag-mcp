@@ -684,6 +684,163 @@ kb-ingest status
 kb-ingest ingest --docs /path/to/docs
 ```
 
+## Windows Firewall Management
+
+### Overview
+
+When running kb-rag-mcp on Windows (WSL2 + Docker), services are accessible from `localhost` by default. To enable access from other machines on your network (e.g., for remote monitoring, LAN-based MCP clients), Windows Firewall rules must be configured.
+
+### Automatic Configuration
+
+The `start-kb-rag.ps1` script includes built-in firewall configuration:
+
+```powershell
+# Requires Administrator privileges
+.\scripts\start-kb-rag.ps1 -ConfigureFirewall
+```
+
+This creates inbound TCP rules for:
+- **Qdrant:** 6333 (REST), 6334 (gRPC)
+- **MCP SSE:** 8765
+- **Health/Metrics:** 8080
+- **Prometheus:** 9090
+- **Grafana:** 3000
+
+**Profiles enabled:** Domain, Private (not Public for security)
+
+**Idempotency:** Safe to run multiple times — existing rules are skipped.
+
+### Manual Configuration
+
+If you prefer manual control or need custom profiles:
+
+```powershell
+# Create a single rule (example: MCP SSE)
+New-NetFirewallRule `
+    -DisplayName "KB-RAG-MCP-SSE" `
+    -Direction Inbound `
+    -Protocol TCP `
+    -LocalPort 8765 `
+    -Action Allow `
+    -Profile Domain,Private `
+    -Description "Model Context Protocol (MCP) SSE endpoint" `
+    -Group "KB-RAG-MCP" `
+    -Enabled True
+
+# List all KB-RAG rules
+Get-NetFirewallRule -Group "KB-RAG-MCP" | Select-Object DisplayName, Enabled, Profile
+
+# Disable a rule (without deleting)
+Set-NetFirewallRule -DisplayName "KB-RAG-MCP-SSE" -Enabled False
+
+# Remove all KB-RAG rules
+Get-NetFirewallRule -Group "KB-RAG-MCP" | Remove-NetFirewallRule
+```
+
+### Enabling Public Profile (Internet-Facing)
+
+**⚠️ Security Warning:** Only enable Public profile if you understand the security implications. Consider using VPN or SSH tunneling instead.
+
+```powershell
+# Enable Public profile for a specific rule
+Set-NetFirewallRule -DisplayName "KB-RAG-MCP-SSE" -Profile Domain,Private,Public
+```
+
+### Troubleshooting
+
+#### Problem: Cannot access services from LAN despite firewall rules
+
+**Diagnostic Steps:**
+
+1. **Verify firewall rule is active:**
+   ```powershell
+   Get-NetFirewallRule -DisplayName "KB-RAG-*" | Select-Object DisplayName, Enabled, Profile
+   ```
+   - Ensure `Enabled: True`
+   - Ensure `Profile` includes `Private` or `Domain`
+
+2. **Check Windows network profile:**
+   ```powershell
+   Get-NetConnectionProfile
+   ```
+   - If `NetworkCategory: Public`, firewall rules with `Domain,Private` profiles won't apply
+   - Change to Private: `Set-NetConnectionProfile -Name "Network" -NetworkCategory Private`
+
+3. **Verify WSL IP forwarding:**
+   ```powershell
+   netsh interface portproxy show v4tov4
+   ```
+   - Windows 11 22H2+ does automatic port forwarding from `0.0.0.0` to WSL IP
+   - Older versions may require manual portproxy rules (not needed if using `0.0.0.0` bind in Docker)
+
+4. **Confirm Docker port binding:**
+   ```bash
+   docker ps --format "table {{.Names}}\t{{.Ports}}"
+   ```
+   - Verify ports show `0.0.0.0:xxxx->xxxx/tcp` (not `127.0.0.1:xxxx`)
+
+5. **Find Windows IP and test from remote machine:**
+   ```powershell
+   # On Windows host
+   ipconfig | Select-String "IPv4"
+   
+   # From remote machine
+   curl http://<WINDOWS_IP>:8080/health
+   ```
+
+#### Problem: Elevation prompt doesn't appear
+
+**Cause:** Script run from non-elevated PowerShell, UAC settings may block prompt.
+
+**Solution:**
+1. Right-click PowerShell → "Run as Administrator"
+2. Run script again: `.\scripts\start-kb-rag.ps1 -ConfigureFirewall`
+
+#### Problem: Corporate firewall/VPN blocks access
+
+**Solution:**
+- Contact IT to whitelist ports 6333, 6334, 8765, 8080, 9090, 3000
+- Alternative: Use SSH tunneling or WireGuard VPN to access services
+
+### Group Policy Deployment (Enterprise)
+
+For deploying to multiple Windows machines via GPO:
+
+1. **Export rules after configuration:**
+   ```powershell
+   Get-NetFirewallRule -Group "KB-RAG-MCP" | Export-Csv -Path kb-rag-firewall-rules.csv
+   ```
+
+2. **Import via GPO:**
+   - Computer Configuration → Policies → Windows Settings → Security Settings → Windows Defender Firewall with Advanced Security → Inbound Rules
+   - Right-click → Import Policy → Select exported rules
+
+3. **Deploy via GPO:**
+   - Link GPO to target OU
+   - Run `gpupdate /force` on target machines
+
+### Security Best Practices
+
+1. **Use Domain/Private profiles only** (default in script)
+2. **Restrict source IPs if possible:**
+   ```powershell
+   Set-NetFirewallRule -DisplayName "KB-RAG-MCP-SSE" -RemoteAddress 192.168.1.0/24
+   ```
+3. **Audit firewall rules quarterly:**
+   ```powershell
+   Get-NetFirewallRule -Group "KB-RAG-MCP" | Format-Table DisplayName, Enabled, Profile, Action
+   ```
+4. **Disable rules when not needed:**
+   ```powershell
+   Get-NetFirewallRule -Group "KB-RAG-MCP" | Set-NetFirewallRule -Enabled False
+   ```
+
+### References
+
+- [New-NetFirewallRule (Microsoft Docs)](https://learn.microsoft.com/en-us/powershell/module/netsecurity/new-netfirewallrule)
+- [WSL Networking (Microsoft Docs)](https://learn.microsoft.com/en-us/windows/wsl/networking)
+- [Windows Firewall with Advanced Security](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/)
+
 ### Check Service Resource Limits
 
 ```bash
