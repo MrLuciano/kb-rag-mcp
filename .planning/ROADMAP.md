@@ -325,21 +325,23 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** WIN-01, WIN-02, WIN-03, DOCS-04, DOCS-05
 **Depends on:** Phase 14 (defines port 8080 for health/metrics)
-**Plans:** 2/2 plans ready for execution
-**Status:** Planning Complete
+**Plans:** 2/2 plans complete
+**Status:** ✅ Complete
+**Completed:** 2026-05-26
 
-**Approach:**
+**Delivered:**
 
-- Opt-in `-ConfigureFirewall` switch added to `start-kb-rag.ps1`
-- Elevation detection with auto-elevation prompt for non-admin users
-- Idempotent firewall rule creation for 6 ports (Qdrant, MCP SSE, Health, Prometheus, Grafana)
-- Comprehensive documentation (README.md all languages + OPERATIONS.md)
-- Backward compatible: default behavior unchanged (local-only access)
+- `-ConfigureFirewall` switch added to `scripts/start-kb-rag.ps1`
+- Elevation detection with auto-elevation prompt
+- Idempotent firewall rule creation for 6 ports (Qdrant, MCP, Health, Prometheus, Grafana)
+- Comprehensive documentation (README.md, README.pt-BR.md, README.es.md, OPERATIONS.md)
+- Manual and group policy deployment guidance
+- All Portuguese comments translated to English
 
 Plans:
 
-- [x] 15-01-PLAN.md — Enhance start-kb-rag.ps1 with firewall configuration (2.5h estimated) — completed 2026-05-26
-- [ ] 15-02-PLAN.md — Documentation updates (READMEs + OPERATIONS.md, 3.5h estimated)
+- [x] 15-01-PLAN.md — Enhance start-kb-rag.ps1 with firewall configuration — completed 2026-05-26
+- [x] 15-02-PLAN.md — Documentation updates (READMEs + OPERATIONS.md) — completed 2026-05-26
 
 ---
 
