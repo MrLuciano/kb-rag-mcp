@@ -8,7 +8,7 @@ source:
   - 14-04-SUMMARY.md
   - 14-05-SUMMARY.md
 started: 2026-05-26T03:30:00Z
-updated: 2026-05-26T03:32:00Z
+updated: 2026-05-26T10:30:00Z
 ---
 
 ## Current Test
@@ -23,47 +23,69 @@ awaiting: user response
 
 ### 1. Cold Start - Docker Compose Stack
 expected: Start the full monitoring stack from scratch. `docker-compose up -d` completes without errors. All 4 services start: qdrant, kb-rag-mcp, prometheus, grafana. `docker-compose ps` shows all services as "Up (healthy)". No error logs in any service.
-result: pass
+result: issue
+reported: "docker compose up -d fails with 'Error dependency qdrant failed to start'. Qdrant container healthcheck fails with 'curl: executable file not found in $PATH'. Also need configurable volume paths for Qdrant database files."
+severity: blocker
 
 ### 2. Metrics Endpoint Accessibility
 expected: Visit `http://localhost:8000/metrics` in browser or curl. Page loads successfully with HTTP 200. Content-Type header shows `text/plain; version=X.X.X; charset=utf-8`. Response body contains plain text with metric names starting with `kb_` (e.g., `kb_ingest_jobs_created_total`, `kb_rag_cache_hits_total`).
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - kb-rag-mcp container depends on qdrant health, which is failing due to Test 1 issues"
 
 ### 3. Prometheus Scraping kb-rag-mcp
 expected: Open Prometheus UI at `http://localhost:9090`. Navigate to Status → Targets. See `kb-rag` target listed with health status "UP". Scrape endpoint shows `http://kb-rag-mcp:8000/metrics`. Last scrape shows recent timestamp (within last 15 seconds).
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - prometheus depends on kb-rag-mcp health"
 
 ### 4. Prometheus Metrics Query
 expected: In Prometheus UI at `http://localhost:9090`, go to Graph tab. Type query: `kb_ingest_jobs_created_total`. Click Execute. See metric data or "No data" message (valid if no jobs have run yet). Metric is recognized (no "Unknown metric" error).
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - prometheus depends on kb-rag-mcp health"
 
 ### 5. Grafana UI Access
 expected: Open Grafana at `http://localhost:3000`. Login page appears with username/password fields. Enter `admin` / `admin`. Login succeeds. Grafana home page loads showing dashboards and navigation menu.
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - grafana depends on prometheus health"
 
 ### 6. Grafana Dashboard Discovery
 expected: In Grafana UI, click "Dashboards" menu (left sidebar). See "KB-RAG Dashboards" folder or "KB-RAG MCP Monitoring" dashboard listed. Click to open dashboard. Dashboard loads without errors.
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - grafana depends on prometheus health"
 
 ### 7. Dashboard Structure - 6 Row Sections
 expected: Grafana dashboard shows 6 collapsible row sections at the top level: "Server Metrics", "Ingestion Metrics", "Jobs", "Embedding Health", "Cache Performance", "Qdrant Health". Clicking a row expands to show panels underneath. All rows expand without errors.
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - grafana depends on prometheus health"
 
 ### 8. Dashboard Panels - Server Metrics
 expected: Expand "Server Metrics" row. See panels for: Component Health Status, HTTP Requests Rate, API Latency. Panels load (may show "No data" if no activity yet, which is valid). No "Panel plugin not found" or other errors.
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - grafana depends on prometheus health"
 
 ### 9. Dashboard Panels - Cache Performance
 expected: Expand "Cache Performance" row. See panels for: Cache Hit Rate %, Cache Size (MB), Cache Evictions Rate. Panels use gauge or timeseries visualization. Panels load without errors.
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - grafana depends on prometheus health"
 
 ### 10. Dashboard Refresh Intervals
 expected: In Grafana dashboard, click the refresh interval dropdown (top right, next to time range). Dropdown shows options: 5s, 15s, 30s, 1m, 5m, 15m. Current selection is 15s. Selecting a different interval changes the refresh rate (visible in UI or by watching panels update).
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - grafana depends on prometheus health"
 
 ### 11. Prometheus Datasource in Grafana
 expected: In Grafana, go to Configuration → Data Sources (gear icon in left sidebar). See "Prometheus" datasource listed. Click it. Datasource settings show URL: `http://prometheus:9090`. Click "Test" button at bottom. Message shows "Data source is working" with green checkmark.
-result: pending
+result: blocked
+blocked_by: server
+reason: "Cannot test - grafana depends on prometheus health"
 
 ### 12. Documentation - OPERATIONS.md Health Dashboard Section
 expected: Open `docs/OPERATIONS.md` in text editor or markdown viewer. Search for "## Health Dashboard" section (around line 290). Section exists with subsections: Overview, Accessing the Dashboard, Prometheus Metrics, Common Queries, Troubleshooting. Content is comprehensive (~250 lines) with specific commands and URLs.
@@ -84,12 +106,20 @@ result: pending
 ## Summary
 
 total: 15
-passed: 1
-issues: 0
-pending: 14
+passed: 0
+issues: 1
+pending: 3
 skipped: 0
-blocked: 0
+blocked: 10
 
 ## Gaps
 
-[none yet]
+- truth: "Docker Compose stack starts all 4 services successfully with healthy status"
+  status: failed
+  reason: "User reported: docker compose up -d fails with 'Error dependency qdrant failed to start'. Qdrant container healthcheck fails with 'curl: executable file not found in $PATH'. Also need configurable volume paths for Qdrant database files."
+  severity: blocker
+  test: 1
+  root_cause: ""
+  artifacts: []
+  missing: []
+  debug_session: ""
