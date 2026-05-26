@@ -294,7 +294,18 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** DASH-01, DASH-02, DASH-03, DASH-04, DASH-05
 **Depends on:** — (independent)
-**Plans:** 5/5 plans complete
+**Plans:** 6/6 plans complete
+**Completed:** 2026-05-26
+
+**Delivered:**
+
+- `/metrics` endpoint at port 8080 exposing 28 Prometheus metrics
+- Grafana dashboard extended with 6-row structure (Server, Ingestion, Jobs, Embedding, Cache, Qdrant)
+- Docker Compose stack with 4 services (Qdrant, kb-rag-mcp, Prometheus, Grafana)
+- Kubernetes Helm chart with monitoring toggle (StatefulSet + Deployment)
+- Docker entrypoint script for dual-server startup (health + MCP)
+- Healthcheck fixes (GET method, 120s start_period, wget)
+- Comprehensive documentation (OPERATIONS.md Health Dashboard section)
 
 Plans:
 
@@ -303,21 +314,32 @@ Plans:
 - [x] 14-03-PLAN.md — Docker Compose integration (Prometheus + Grafana services)
 - [x] 14-04-PLAN.md — Kubernetes/Helm integration (StatefulSet + Deployment)
 - [x] 14-05-PLAN.md — Documentation update (OPERATIONS.md, screenshots)
+- [x] 14-06-PLAN.md — Docker Compose fixes (healthchecks, entrypoint, ports)
 
 ---
 
 ### Phase 15: PowerShell script opens ports for all subsystems
 
-**Goal:** Ensure `scripts/start-kb-rag.ps1` opens the required ports for all subsystems (Qdrant, MCP server, health server) automatically during local/dev setup.
+**Goal:** Ensure `scripts/start-kb-rag.ps1` opens the required ports for all subsystems (Qdrant, MCP server, health server, Prometheus, Grafana) automatically during local/dev setup.
 
 **Milestone:** v1.3
-**Requirements:** TBD
-**Depends on:** — (independent)
-**Plans:** 0 plans
+**Requirements:** WIN-01, WIN-02, WIN-03, DOCS-04, DOCS-05
+**Depends on:** Phase 14 (defines port 8080 for health/metrics)
+**Plans:** 2/2 plans ready for execution
+**Status:** Planning Complete
+
+**Approach:**
+
+- Opt-in `-ConfigureFirewall` switch added to `start-kb-rag.ps1`
+- Elevation detection with auto-elevation prompt for non-admin users
+- Idempotent firewall rule creation for 6 ports (Qdrant, MCP SSE, Health, Prometheus, Grafana)
+- Comprehensive documentation (README.md all languages + OPERATIONS.md)
+- Backward compatible: default behavior unchanged (local-only access)
 
 Plans:
 
-- [ ] TBD (run `gsd-plan-phase 15` to break down)
+- [ ] 15-01-PLAN.md — Enhance start-kb-rag.ps1 with firewall configuration (2.5h estimated)
+- [ ] 15-02-PLAN.md — Documentation updates (READMEs + OPERATIONS.md, 3.5h estimated)
 
 ---
 
@@ -353,6 +375,6 @@ Plans:
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
 | 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
 | 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete    | 2026-05-26 |
-| 14. Health Dashboard | v1.3 | 5/5 | Complete   | 2026-05-26 |
-| 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
+| 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
+| 15. PowerShell Ports Script | v1.3 | 2/2 | Ready | — |
 | 16. Reclassification | v1.3 | 0/0 | Planning | — |
