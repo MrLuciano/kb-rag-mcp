@@ -24,16 +24,17 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 15 (powershell-ports-script) — EXECUTING
+Phase: 15 (powershell-ports-script) — ✅ COMPLETE
 Plan: 2 of 2
-Status: Executing Phase 15
-Last activity: 2026-05-26 -- Phase 15 Plan 01 completed
+Status: Phase 15 Complete
+Last activity: 2026-05-26 -- Phase 15 completed (all plans executed)
 
 ## Phase 15 Outcomes
 
 ### Plans Executed
 
 - **15-01**: Windows Firewall configuration added to `start-kb-rag.ps1` — opt-in `-ConfigureFirewall` switch, elevation detection, idempotent rules for 6 ports, English translation
+- **15-02**: Documentation updates — comprehensive Windows Firewall sections added to README.md (EN/PT/ES) and OPERATIONS.md with troubleshooting, enterprise deployment, and security guidance
 
 ### Key Decisions
 
@@ -41,6 +42,18 @@ Last activity: 2026-05-26 -- Phase 15 Plan 01 completed
 - **Auto-elevation with user prompt**: Non-admin users prompted to re-launch as Administrator
 - **Idempotent rule management**: Safe to run multiple times, checks for existing rules
 - **Non-fatal failures**: Script continues with service startup even if firewall config fails
+- **Three-language parity**: Firewall documentation added to all three README variants with accurate translations
+- **Comprehensive OPERATIONS.md**: 180-line section covering automatic/manual config, troubleshooting (5+ scenarios), GPO deployment, security best practices
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| WIN-01: Auto firewall config | ✅ | `start-kb-rag.ps1` `-ConfigureFirewall` switch creates 6 rules |
+| WIN-02: Idempotency | ✅ | Existing rules detected and skipped |
+| WIN-03: Elevation detection | ✅ | `Test-IsAdministrator` + auto-elevation prompt |
+| DOCS-04: Windows firewall docs | ✅ | README.md/pt-BR/es + OPERATIONS.md sections added |
+| DOCS-05: Troubleshooting guidance | ✅ | 5+ troubleshooting scenarios in OPERATIONS.md |
 
 ## Phase 6 Outcomes
 
