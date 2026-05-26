@@ -275,13 +275,13 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** DOCS-01, DOCS-02, DOCS-03
 **Depends on:** — (independent)
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 
 - [x] 13-01-PLAN.md — README.md core sections refresh (header through Usage)
 - [x] 13-02-PLAN.md — README.md advanced sections refresh (Health Checks through Contributing)
-- [ ] 13-03-PLAN.md — README.pt-BR.md sync + README.es.md creation
+- [x] 13-03-PLAN.md — README.pt-BR.md sync + README.es.md creation
 - [x] 13-04-PLAN.md — Stale docs updates (AUTO_INGESTION, TROUBLESHOOTING, TESTING, KUBERNETES)
 
 ---
@@ -347,7 +347,7 @@ Plans:
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
 | 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
-| 13. Docs Sync & Readme Languages | v1.3 | 3/4 | In Progress|  |
+| 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete   | 2026-05-26 |
 | 14. Health Dashboard | v1.3 | 0/0 | Planning | — |
 | 15. PowerShell Ports Script | v1.3 | 0/0 | Planning | — |
 | 16. Reclassification | v1.3 | 0/0 | Planning | — |
