@@ -287,18 +287,22 @@ Plans:
 
 ---
 
-### Phase 14: System health dashboard — single page served via httpd pod
+### Phase 14: Health Dashboard
 
-**Goal:** Consolidate health/status access to all subsystems (Qdrant health, kb-rag-mcp server, ingestion status) into a single beautiful dashboard page served in a httpd pod.
+**Goal:** Consolidate health/status access to all subsystems (Qdrant health, kb-rag-mcp server, ingestion status) into a unified Grafana dashboard with Prometheus metrics.
 
 **Milestone:** v1.3
-**Requirements:** TBD
+**Requirements:** DASH-01, DASH-02, DASH-03, DASH-04, DASH-05
 **Depends on:** — (independent)
-**Plans:** 0 plans
+**Plans:** 5 plans
 
 Plans:
 
-- [ ] TBD (run `gsd-plan-phase 14` to break down)
+- [ ] 14-01-PLAN.md — Add /metrics endpoint to health_server.py (Prometheus scraping)
+- [ ] 14-02-PLAN.md — Extend Grafana dashboard with 6-tab structure (28+ panels)
+- [ ] 14-03-PLAN.md — Docker Compose integration (Prometheus + Grafana services)
+- [ ] 14-04-PLAN.md — Kubernetes/Helm integration (StatefulSet + Deployment)
+- [ ] 14-05-PLAN.md — Documentation update (OPERATIONS.md, screenshots)
 
 ---
 
