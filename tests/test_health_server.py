@@ -26,8 +26,10 @@ def test_metrics_endpoint_returns_200(client):
 def test_metrics_endpoint_content_type(client):
     """Test that /metrics returns correct Prometheus Content-Type."""
     response = client.get("/metrics")
-    # Prometheus text format content type
-    assert response.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
+    # Prometheus text format content type (accept both 0.0.4 and 1.0.0)
+    content_type = response.headers["content-type"]
+    assert content_type.startswith("text/plain; version=")
+    assert "charset=utf-8" in content_type
 
 
 def test_metrics_contains_ingest_job_metric(client):
@@ -59,7 +61,7 @@ def test_metrics_response_is_valid_prometheus_format(client):
     # Should have multiple metric families
     assert len(metrics) > 0
     
-    # Check for expected metric families
-    metric_names = [m.name for m in metrics]
-    assert "kb_ingest_jobs_created_total" in metric_names
-    assert "kb_rag_cache_hits_total" in metric_names
+    # Check for expected metric declarations in raw text
+    # (Counter metrics with labels won't have data points until used)
+    assert "# TYPE kb_ingest_jobs_created_total counter" in response.text
+    assert "# TYPE kb_rag_cache_hits_total counter" in response.text

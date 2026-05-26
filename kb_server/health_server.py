@@ -20,6 +20,10 @@ bootstrap_env()
 
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+# Import metrics module to register all metrics with prometheus_client
+import observability.metrics  # noqa: F401
 
 from kb_server.health import (
     check_all_components,
@@ -107,6 +111,17 @@ async def liveness_check():
     Always returns 200 (if we can respond, we're alive).
     """
     return {"alive": True}
+
+
+@app.get("/metrics")
+async def metrics_endpoint():
+    """
+    Prometheus metrics endpoint.
+    
+    Returns all metrics in Prometheus text format.
+    Used by: Prometheus scraper
+    """
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 if __name__ == "__main__":
