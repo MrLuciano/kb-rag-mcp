@@ -378,5 +378,5 @@ Plans:
 | 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
 | 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete    | 2026-05-26 |
 | 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
-| 15. PowerShell Ports Script | v1.3 | 1/2 | In Progress | — |
+| 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
 | 16. Reclassification | v1.3 | 0/0 | Planning | — |
