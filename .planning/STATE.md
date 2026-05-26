@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Post-Ship Polish & Infrastructure
 status: executing
-last_updated: "2026-05-26T14:30:00Z"
-last_activity: 2026-05-26
+last_updated: "2026-05-26T22:41:48Z"
+last_activity: 2026-05-26 -- Phase 15 Plan 01 completed
 progress:
-  total_phases: 16
-  completed_phases: 14
-  total_plans: 38
-  completed_plans: 30
-  percent: 87
+  total_phases: 13
+  completed_phases: 6
+  total_plans: 33
+  completed_plans: 26
+  percent: 48
 ---
 
 # Project State
@@ -20,14 +20,27 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 15 — PowerShell script opens ports for all subsystems (planning complete, ready for execution)
+**Current focus:** Phase 15 — powershell-ports-script
 
 ## Current Position
 
-Phase: 15
-Plan: 0 of 2
-Status: Planning Complete (ready for execution)
-Last activity: 2026-05-26
+Phase: 15 (powershell-ports-script) — EXECUTING
+Plan: 2 of 2
+Status: Executing Phase 15
+Last activity: 2026-05-26 -- Phase 15 Plan 01 completed
+
+## Phase 15 Outcomes
+
+### Plans Executed
+
+- **15-01**: Windows Firewall configuration added to `start-kb-rag.ps1` — opt-in `-ConfigureFirewall` switch, elevation detection, idempotent rules for 6 ports, English translation
+
+### Key Decisions
+
+- **Hybrid opt-in approach**: Default behavior unchanged (backward compatible); `-ConfigureFirewall` switch enables LAN access
+- **Auto-elevation with user prompt**: Non-admin users prompted to re-launch as Administrator
+- **Idempotent rule management**: Safe to run multiple times, checks for existing rules
+- **Non-fatal failures**: Script continues with service startup even if firewall config fails
 
 ## Phase 6 Outcomes
 
