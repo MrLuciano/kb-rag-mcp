@@ -1,6 +1,6 @@
 # KB RAG MCP Server
 
-**[English](#english) | [Português (Brasil)](#português-brasil)**
+**[English](#english) | [Português (Brasil)](#português-brasil) | [Español](#español)**
 
 ---
 
@@ -9,7 +9,7 @@
 
 Production-grade MCP (Model Context Protocol) server for semantic search over
 local knowledge bases. Supports PDF, DOCX, XLSX, PPTX, TXT, Markdown, and
-source code (~7 GB+). Compatible with **Claude Code**, **OpenCode**, and any
+source code. Compatible with **Claude Code**, **OpenCode**, and any
 MCP client.
 
 ### ✨ Features
@@ -23,7 +23,6 @@ MCP client.
 - ✅ **Auto-classification** — Vendor, product, subsystem, and version inference from filenames and metadata
 - ✅ **Lazy cross-encoder** — ~10s faster server startup, model loads on first reranking query
 - ✅ **Kubernetes/Helm** — Helm chart for multi-replica deployment
-- ✅ **English sweep** — Zero Portuguese across all source files, enforced by CI
 - 🎯 **Smart classification**: automatic product and doc type detection
 - 🚀 **Production-ready**: systemd services, health checks, auto-restart
 - 💾 **Incremental ingestion**: only processes new/modified files
@@ -65,7 +64,7 @@ MCP client.
 #### Option 1: One-command setup (recommended)
 
 ```bash
-git clone https://github.com/your-org/kb-rag-mcp
+git clone https://github.com/MrLuciano/kb-rag-mcp
 cd kb-rag-mcp
 
 # Starts Qdrant, installs deps, launches the MCP server
@@ -193,8 +192,6 @@ The automated installer (`deployment/scripts/install.sh`) performs:
   - `kb-rag-scheduler.service` - Job scheduler
   - `kb-rag-watcher.service` - File watcher
   - `kb-rag.target` - Unified service management
-- ✅ Coverage gate (90% branch) enforced in CI
-- ✅ English audit — zero Portuguese enforced in CI
 - ✅ Log rotation (14-day retention, 100MB max size)
 - ✅ Security hardening (user isolation, filesystem protection)
 - ✅ Automatic service startup and health verification
@@ -463,7 +460,7 @@ LOG_LEVEL=INFO             # Logging level (DEBUG, INFO, WARNING, ERROR)
     "kb-rag": {
       "command": "wsl.exe",
       "args": [
-        "-d", "Ubuntu-24.04",
+        "-d", "Debian",
         "--",
         "/home/YOUR_USER/kb-rag-mcp/.venv/bin/python",
         "-m", "kb_server.server"
