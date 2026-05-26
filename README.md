@@ -151,6 +151,53 @@ kb-rag check health
 # "Search the knowledge base for <topic in your docs>"
 ```
 
+#### Enabling LAN Access (Windows)
+
+By default, kb-rag-mcp services are accessible only from `localhost` (127.0.0.1) on the Windows host. To enable access from other machines on your network:
+
+**1. Run the startup script with the `-ConfigureFirewall` switch:**
+
+```powershell
+.\scripts\start-kb-rag.ps1 -ConfigureFirewall
+```
+
+**Note:** This requires Administrator privileges. If you're not running as admin, the script will prompt you to re-launch elevated.
+
+**2. Firewall rules will be created for:**
+
+| Port | Service | Purpose |
+|------|---------|---------|
+| 6333 | Qdrant REST API | Vector database queries |
+| 6334 | Qdrant gRPC | Vector database (gRPC protocol) |
+| 8765 | MCP SSE | Model Context Protocol endpoint |
+| 8080 | Health/Metrics | Health checks and Prometheus metrics |
+| 9090 | Prometheus | Metrics scraping and PromQL |
+| 3000 | Grafana | Monitoring dashboard |
+
+**3. Access services via your Windows IP address:**
+
+```bash
+# Find your Windows IP
+ipconfig  # Look for Ethernet/Wi-Fi adapter IPv4 address (e.g., 192.168.1.100)
+
+# From another machine on your network:
+curl http://192.168.1.100:8080/health          # Health check
+curl http://192.168.1.100:3000                 # Grafana UI
+curl http://192.168.1.100:6333/collections     # Qdrant API
+```
+
+**Idempotency:** Running with `-ConfigureFirewall` multiple times is safe — existing rules are detected and skipped.
+
+**Removing Firewall Rules:**
+
+If you no longer need LAN access:
+
+```powershell
+Get-NetFirewallRule -Group "KB-RAG-MCP" | Remove-NetFirewallRule
+```
+
+Or manually disable rules in **Windows Defender Firewall with Advanced Security** (search for group "KB-RAG-MCP").
+
 ---
 
 ### 🏭 Production Deployment
