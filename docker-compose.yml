@@ -32,6 +32,8 @@ services:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - LOG_PATH=/app/logs/kb-mcp.log
+      - SSE_HOST=0.0.0.0
+      - SSE_PORT=${SSE_PORT:-8765}
     volumes:
       - ${DATA_DIR:-./data}:/app/data
       - ${LOGS_DIR:-./logs}:/app/logs
