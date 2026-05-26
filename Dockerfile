@@ -19,9 +19,9 @@ FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
-# Runtime system deps (curl for healthcheck, libgomp for fastembed ONNX)
+# Runtime system deps (wget for healthcheck, libgomp for fastembed ONNX)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl \
+        wget \
         libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /install /usr/local
 
 # Copy application source
+COPY config/      ./config/
 COPY kb_server/   ./kb_server/
 COPY ingest/      ./ingest/
 COPY observability/ ./observability/
@@ -42,7 +43,7 @@ RUN mkdir -p /app/data/qdrant /app/logs
 
 # Healthcheck via the built-in HTTP health server (port 8080 by default)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:${HEALTH_PORT:-8080}/health || exit 1
+    CMD wget --spider -q http://localhost:${HEALTH_PORT:-8080}/health || exit 1
 
 # Default: run the MCP server in SSE mode
 ENV PYTHONUNBUFFERED=1
