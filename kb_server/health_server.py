@@ -128,6 +128,7 @@ if __name__ == "__main__":
     import uvicorn
 
     log.info(f"Starting health check server on {HEALTH_HOST}:{HEALTH_PORT}")
+    log.info("Metrics endpoint available at /metrics (Prometheus scrape target)")
     uvicorn.run(
         app,
         host=HEALTH_HOST,
