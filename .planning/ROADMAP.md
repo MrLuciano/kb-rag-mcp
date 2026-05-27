@@ -2,8 +2,8 @@
 
 ## Milestones
 
-- ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](.planning/milestones/v1.0-ROADMAP.md)
-- ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23)
+- ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](milestones/v1.0-ROADMAP.md)
+- ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v1.1-ROADMAP.md)
 - ✅ **v1.2 Tech Debt & Classification** — Phases 9–11 (shipped 2026-05-25)
 - 🔄 **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–16 (planning)
 
@@ -23,130 +23,17 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
-### v1.1 Quality & Operational Excellence
+<details>
+<summary>✅ v1.1 Quality & Operational Excellence (Phases 5-8) — SHIPPED 2026-05-23</summary>
 
-- [ ] Phase 5: SSE Stability & Python 3.13 Compatibility (2/2 plans)
-- [ ] Phase 6: Test Coverage & Isolation (0/3 plans)
-- [ ] Phase 7: Logging, Quality Gate & Coverage Enforcement (0/2 plans)
-- [ ] Phase 8: Ingest Improvements & Documentation (0/3 plans)
+- [x] Phase 5: SSE Stability & Python 3.13 Compatibility (2/2 plans) — completed 2026-05-21
+- [x] Phase 6: Test Coverage & Isolation (3/3 plans) — completed 2026-05-22
+- [x] Phase 7: Logging, Quality Gate & Coverage Enforcement (2/2 plans) — completed 2026-05-23
+- [x] Phase 8: Ingest Improvements & Documentation (3/3 plans) — completed 2026-05-23
 
----
+**Delivered:** SSE stability with Python 3.13 support, full test isolation (518 unit tests pass without Qdrant/LM Studio/Redis), 90% branch coverage enforcement on PR-to-master, OTCS auto-tagging for 10 OpenText products, `kb-ingest status` CLI command, English-only codebase with 105 docstring gaps fixed (32 missing + 73 Portuguese → 0), comprehensive documentation refresh.
 
-### Phase 5: SSE Stability & Python 3.13 Compatibility
-
-**Goal:** Ensure the MCP SSE server works correctly on starlette 1.0.0 and Python 3.13, with regression tests that prevent the NoneType crash from recurring.
-
-**Milestone:** v1.1
-**Requirements:** SSE-01, SSE-02, COMPAT-01, COMPAT-02
-
-**Success criteria:**
-
-1. `GET /sse` followed by client disconnect produces no `TypeError: NoneType` crash in server logs
-2. `POST /messages/` (with trailing slash) returns `202 Accepted` with no redirect chain
-3. Full test suite passes on Python 3.11 and Python 3.13 in CI matrix
-4. No `DeprecationWarning` from Python 3.13 in the test run
-
-**Plans:** 2 plans
-
-Plans:
-
-- [ ] 05-01-PLAN.md — SSE regression tests (unit + integration), starlette version pin
-- [ ] 05-02-PLAN.md — CI matrix (3.11, 3.12, 3.13), dependency compatibility audit
-
----
-
-### Phase 6: Test Coverage & Isolation
-
-**Goal:** Every Python module has a unit test file; all external dependencies (Qdrant, LM Studio, Redis) are mocked so tests run in any environment without infrastructure.
-
-**Milestone:** v1.1
-**Requirements:** TEST-01, TEST-02, TEST-03
-
-**Success criteria:**
-
-1. `pytest -m "not integration"` completes successfully with no Qdrant, LM Studio, or Redis running
-2. Every module under `kb_server/` and `ingest/` has at least one `tests/unit/test_<module>.py`
-3. Integration tests are tagged `@pytest.mark.integration` and excluded from unit run
-4. Test count increases by ≥50 new unit tests vs v1.0 baseline (491)
-
-**Plans:** 3 plans
-
-Plans:
-
-- [ ] 06-01-PLAN.md — Mock infrastructure: conftest fixtures + registered pytest markers
-- [ ] 06-02-PLAN.md — kb_server test classifier + integration tagging audit
-- [ ] 06-03-PLAN.md — ingest integration tagging + full isolation verification
-
-### Wave Dependencies
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-**Cross-cutting constraints:**
-
-- Every Python module has a dedicated unit test file (TEST-01)
-- `pytest -m "not integration"` requires no Qdrant, LM Studio, or Redis (TEST-02)
-- All integration tests are tagged `@pytest.mark.integration` (TEST-03)
-
----
-
-### Phase 7: Logging, Quality Gate & Coverage Enforcement
-
-**Goal:** All public methods emit structured logs; CI enforces ≥90% branch coverage on `kb_server/` and `ingest/` and fails the build on regression.
-
-**Milestone:** v1.1
-**Requirements:** LOG-01, LOG-02, QUAL-01, QUAL-02
-
-**Success criteria:**
-
-1. `pytest --cov=kb_server --cov=ingest --cov-fail-under=90` exits 0 on CI
-2. `pyproject.toml` `fail_under = 90` is set and a deliberate coverage regression causes CI to fail
-3. Every public method in `kb_server/` has at least one log entry (verified by audit script)
-4. Logging audit report committed to `docs/logging-audit.md`
-
-**Plans:** 2 plans
-
-Plans:
-
-- [ ] 07-01-PLAN.md — Quality gate: set `fail_under = 90` in `pyproject.toml`, update CI workflow with coverage enforcement on PR-to-master
-- [ ] 07-02-PLAN.md — Logging coverage audit + gap fill: audit all public methods, add missing log calls to kb_server/ and ingest/, commit audit report
-
-### Wave Dependencies
-
-**Wave 1** *(both plans are independent — no blocking dependencies)*
-
-**Cross-cutting constraints:**
-
-- Quality gate must cover both `kb_server/` and `ingest/` (D-01, D-02)
-- Coverage exclusions are inline `# pragma: no cover` only — no centralized excludes (D-05)
-- Both `pyproject.toml` `fail_under` and CI `--cov-fail-under` must be set (D-06)
-- Coverage enforcement runs on PR to master only (D-07)
-- CI coverage step covers both `--cov=kb_server --cov=ingest` (D-08)
-
----
-
-### Phase 8: Ingest Improvements & Documentation (COMPLETED)
-
-**Goal:** OTCS documents are auto-tagged by product area; operators have a CLI status command; key documentation is updated for v1.1.
-
-**Milestone:** v1.1
-**Requirements:** INGEST-01, INGEST-02, DOC-01, DOC-02
-
-**Success criteria — all met:**
-
-1. ✅ `3-0117 Content Server WebReport Design.pdf` auto-assigns `product=WebReports`
-2. ✅ `kb-ingest status` prints per-source file/chunk/error counts with `--source` filter
-3. ✅ All public functions/classes have English Google-style docstrings (0 gaps, 0 Portuguese)
-4. ✅ `docs/` updated: ARCHITECTURE.md (Mermaid), OPERATIONS.md (remote deploy), INDEX.md, REFERENCE.md
-
-**Plans:** 3 plans — all executed 2026-05-23
-
-**Delivered:**
-
-- 10 OTCS product areas auto-detectable (WebReports, xECM, Workflow, CSIDE, ContentServer, Brava, OT2, DocumentViewer, APIGateway, ArchiveCenter)
-- `kb-ingest status` with Rich table (Source/Files/Chunks/Errors/Last Ingest)
-- `scripts/docstring-audit.py` — AST-based docstring coverage scanner
-- 105 docstring gaps fixed (32 MISSING + 73 PORTUGUESE → 0)
-- All 4 main docs refreshed for v1.1 accuracy
+</details>
 
 ---
 
@@ -352,7 +239,7 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** RECLASSIFY-01 through RECLASSIFY-07
 **Depends on:** Phase 11 (auto-classification)
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 **Estimated effort:** 18 hours (6h + 8h + 4h)
 
 Plans:
