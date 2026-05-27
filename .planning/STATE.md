@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Post-Ship Polish & Infrastructure
 status: executing
-last_updated: "2026-05-27T22:00:00Z"
-last_activity: 2026-05-27 -- Phase 19 executed
+last_updated: "2026-05-27T22:05:00Z"
+last_activity: 2026-05-27 -- Phase 20 executed
 progress:
   total_phases: 11
-  completed_phases: 8
-  total_plans: 23
-  completed_plans: 23
-  percent: 73
+  completed_phases: 9
+  total_plans: 24
+  completed_plans: 24
+  percent: 82
 ---
 
 # Project State
@@ -24,10 +24,35 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 20 (upcoming — to be determined)
+Phase: 21 (upcoming — to be determined)
 Plan: 0 of 0 (not yet planned)
 Status: Awaiting next phase planning
-Last activity: 2026-05-27 -- Phase 19 executed (1 plan, 2 commits, 13 VERIFICATION.md files)
+Last activity: 2026-05-27 -- Phase 20 executed (1 plan, 2 commits)
+
+## Phase 20 Outcomes
+
+### Status
+
+- **Phase:** 20 (Test Environment Fixes)
+- **Status:** Complete — 1 plan, 3 tasks
+- **Completed:** 2026-05-27
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 20-01 | Fix LOG_PATH PermissionError, fixture isolation, clean env | 3 | Complete |
+
+### Key Changes
+
+1. `kb_server/server.py` — Added `os.makedirs(os.path.dirname(log_path), exist_ok=True)` before FileHandler init (TESTFIX-02)
+2. `tests/test_reranker_lazy.py` — Moved module-level MagicMock objects into fixture scope (TESTFIX-01)
+3. Stale `.pyc`/`__pycache__` artifacts cleaned
+
+### Commits (2)
+
+1. `b381556` fix(20): ensure log directory exists before FileHandler init (TESTFIX-02)
+2. `14a0ae2` fix(20): move module-level mocks to fixture scope in test_reranker_lazy (TESTFIX-01)
 
 ## Phase 19 Outcomes
 
