@@ -336,6 +336,34 @@ async def list_tools() -> list[types.Tool]:
             ),
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
+        types.Tool(
+            name="list_filter_options",
+            description=(
+                "PHASE 17: List available filter values for knowledge base "
+                "attributes. Use to discover valid values for product, vendor, "
+                "subsystem, module, version, doc_type, and file_type filters "
+                "before searching. Omit field to see all attributes."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "field": {
+                        "type": "string",
+                        "description": "Attribute to list values for "
+                        "(e.g. product, vendor, subsystem, module, version, "
+                        "doc_type, filter_type). Omit to list all attributes.",
+                    },
+                    "collection": {
+                        "type": "string",
+                        "description": (
+                            "PHASE 15: Qdrant collection name. "
+                            "Omit to use the default collection."
+                        ),
+                    },
+                },
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -367,6 +395,8 @@ async def call_tool(
             return await _kb_stats()
         elif name == "list_collections":
             return await _list_collections()
+        elif name == "list_filter_options":
+            return await _list_filter_options(arguments)
         else:
             return [
                 types.TextContent(
@@ -694,6 +724,71 @@ async def _list_collections() -> list[types.TextContent]:
         lines.append(f"- `{name}`{marker}")
     return [types.TextContent(type="text", text="\n".join(lines))]
 
+
+async def _list_filter_options(args: dict) -> list[types.TextContent]:
+    """PHASE 17: List available filter values for KB attributes.
+
+    Returns distinct values with counts for each advertised attribute
+    field. Can be filtered to a single field or collection.
+    """
+    field = args.get("field")
+    collection_param = args.get("collection")
+
+    target_collection = getattr(store, "collection", None)
+    if collection_router is not None and collection_param:
+        try:
+            target_collection = await collection_router.resolve(collection_param)
+        except CollectionNotFoundError as exc:
+            return [types.TextContent(type="text", text=str(exc))]
+
+    if filter_terms_cache is not None:
+        await filter_terms_cache.refresh_if_needed()
+        terms = filter_terms_cache.terms
+    else:
+        terms = {}
+
+    if field:
+        values = terms.get(field, [])
+        if not values:
+            return [
+                types.TextContent(
+                    type="text",
+                    text=f"No values found for field '{field}'.",
+                )
+            ]
+        lines = [f"## Filter Options: {field}\n"]
+        if target_collection:
+            lines.append(f"Collection: `{target_collection}`  \n")
+        lines.append(f"**{len(values)}** distinct values:\n")
+        for item in values:
+            lines.append(f"- `{item['value']}` - {item['count']} document(s)")
+        return [types.TextContent(type="text", text="\n".join(lines))]
+
+    lines = ["## Filter Options\n"]
+    if target_collection:
+        lines.append(f"Collection: `{target_collection}`  \n")
+
+    for f, values in sorted(terms.items()):
+        if values:
+            lines.append(
+                f"**{f.replace('_', ' ').title()}** "
+                f"({len(values)} values):\n"
+            )
+            for item in values[:10]:
+                lines.append(f"- `{item['value']}` - {item['count']} document(s)")
+            if len(values) > 10:
+                lines.append(
+                    f"  *(+{len(values) - 10} more - "
+                    f"use `field=\"{f}\"` for full list)*\n"
+                )
+        else:
+            lines.append(
+                f"**{f.replace('_', ' ').title()}**: "
+                f"(no values ingested)\n"
+            )
+        lines.append("")
+
+    return [types.TextContent(type="text", text="\n".join(lines))]
 
 
 async def _schedule_log_cleanup() -> None:
