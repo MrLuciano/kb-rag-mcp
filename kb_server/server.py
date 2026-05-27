@@ -170,6 +170,19 @@ async def list_tools() -> list[types.Tool]:
                             "Use to search documentation for a specific version."
                         ),
                     },
+                    "vendor": {
+                        "type": "string",
+                        "description": (
+                            "PHASE 11.1: Filter by vendor. "
+                            "Examples: OpenText, Adobe, SAP, ISO, general"
+                        ),
+                    },
+                    "subsystem": {
+                        "type": "string",
+                        "description": (
+                            "PHASE 11.1: Filter by subsystem/module within a product"
+                        ),
+                    },
                     "filter_type": {
                         "type": "string",
                         "description": "Filter by file format: pdf, "
@@ -231,6 +244,19 @@ async def list_tools() -> list[types.Tool]:
                         "description": "Filter by format: "
                         "pdf, docx, xlsx, pptx, txt, code",
                         "enum": ["pdf", "docx", "xlsx", "pptx", "txt", "code"],
+                    },
+                    "vendor": {
+                        "type": "string",
+                        "description": (
+                            "PHASE 11.1: Filter by vendor "
+                            "(e.g. OpenText, Adobe, SAP)"
+                        ),
+                    },
+                    "subsystem": {
+                        "type": "string",
+                        "description": (
+                            "PHASE 11.1: Filter by subsystem/module"
+                        ),
                     },
                     "limit": {
                         "type": "integer",
@@ -352,6 +378,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     product = args.get("product")
     doc_type = args.get("doc_type")
     version = args.get("version")  # PHASE 13: Version filter
+    vendor = args.get("vendor")  # PHASE 11.1: Vendor filter
+    subsystem = args.get("subsystem")  # PHASE 11.1: Subsystem filter
     hybrid = args.get("hybrid", False)
     rerank = args.get("rerank", False)
     collection_param = args.get("collection")
@@ -366,7 +394,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
 
     log.info(
         f"search_kb: '{query}' top_k={top_k} product={product} "
-        f"doc_type={doc_type} version={version} file_type={filter_type} "
+        f"doc_type={doc_type} version={version} vendor={vendor} "
+        f"subsystem={subsystem} file_type={filter_type} "
         f"hybrid={hybrid} rerank={rerank}"
     )
 
@@ -404,6 +433,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             product=product,
             doc_type=doc_type,
             version=version,  # PHASE 13
+            vendor=vendor,  # PHASE 11.1
+            subsystem=subsystem,  # PHASE 11.1
         )
         if target_collection is not None:
             _search_kwargs["collection_name"] = target_collection  # PHASE 15
@@ -537,6 +568,8 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
         filter_type=args.get("filter_type"),
         product=args.get("product"),
         doc_type=args.get("doc_type"),
+        vendor=args.get("vendor"),  # PHASE 11.1
+        subsystem=args.get("subsystem"),  # PHASE 11.1
         limit=args.get("limit", 50),
     )
     if target_collection is not None:
@@ -558,9 +591,13 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
     for dt, items in sorted(by_dt.items()):
         lines.append(f"### {dt}  ({len(items)} documents)")
         for d in items:
+            vendor_info = f" | vendor: {d.get('vendor','n/a')}" if d.get('vendor') else ""
+            subsystem_info = f" | subsystem: {d.get('subsystem','n/a')}" if d.get('subsystem') else ""
             lines.append(
             f"- `{d['source_file']}` — {d['chunk_count']} chunks"
             f" | product: {d.get('product','n/a')}"
+            f"{vendor_info}"
+            f"{subsystem_info}"
             f" | format: {d['file_type']}"
             )
         lines.append("")
