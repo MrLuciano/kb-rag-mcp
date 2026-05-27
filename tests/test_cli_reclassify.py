@@ -159,3 +159,44 @@ async def test_verify_command_shows_mismatches_table():
             
             # Should not crash, prints mismatch table
             await _verify_impl(pattern="docs/*.pdf", collection=None, filter_expr=None)
+
+
+# Step 4 tests
+
+def test_sessions_command_shows_no_sessions_message():
+    """RECLASSIFY-06: sessions shows message when no backups exist."""
+    from ingest.cli.reclassify import _sessions_impl
+    
+    with patch("ingest.cli.reclassify.MetadataStore") as mock_store_class:
+        # Mock store with empty results
+        mock_store = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = []
+        mock_store.conn.execute.return_value = mock_cursor
+        mock_store.__enter__.return_value = mock_store
+        mock_store.__exit__.return_value = None
+        mock_store_class.return_value = mock_store
+        
+        # Should not crash, prints empty message
+        _sessions_impl()
+
+
+def test_sessions_command_shows_sessions_table():
+    """RECLASSIFY-06: sessions shows table with backup sessions."""
+    from ingest.cli.reclassify import _sessions_impl
+    
+    with patch("ingest.cli.reclassify.MetadataStore") as mock_store_class:
+        # Mock store with session data
+        mock_store = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = [
+            ("2026-05-27T15-30-00", 10, 25),  # session_timestamp, doc_count, field_count
+            ("2026-05-27T14-00-00", 5, 12),
+        ]
+        mock_store.conn.execute.return_value = mock_cursor
+        mock_store.__enter__.return_value = mock_store
+        mock_store.__exit__.return_value = None
+        mock_store_class.return_value = mock_store
+        
+        # Should not crash, prints session table
+        _sessions_impl()

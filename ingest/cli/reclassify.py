@@ -228,8 +228,47 @@ def sessions_command() -> None:
 
 def _sessions_impl() -> None:
     """Implementation of sessions command."""
-    # Implementation in Step 4
-    pass
+    with MetadataStore() as store:
+        # Query distinct sessions with stats
+        cursor = store.conn.execute(
+            """
+            SELECT 
+                session_timestamp,
+                COUNT(DISTINCT source_file) as doc_count,
+                COUNT(*) as field_count
+            FROM reclassify_backups
+            GROUP BY session_timestamp
+            ORDER BY session_timestamp DESC
+            """
+        )
+        sessions = cursor.fetchall()
+    
+    if not sessions:
+        console.print("[yellow]No backup sessions found.[/yellow]")
+        return
+    
+    # Build Rich table
+    table = Table(title="Reclassification Backup Sessions")
+    table.add_column("Session", style="cyan")
+    table.add_column("Documents", justify="right", style="magenta")
+    table.add_column("Fields Changed", justify="right", style="yellow")
+    table.add_column("Date", style="dim")
+    
+    for row in sessions:
+        session = row[0]
+        doc_count = row[1]
+        field_count = row[2]
+        
+        # Parse timestamp for human-readable date
+        dt = datetime.strptime(session, "%Y-%m-%dT%H-%M-%S")
+        date_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+        
+        table.add_row(session, str(doc_count), str(field_count), date_str)
+    
+    console.print(table)
+    console.print(
+        f"\n[dim]Tip: Rollback a session with 'kb-ingest reclassify rollback --session <timestamp>'[/dim]"
+    )
 
 
 @reclassify_group.command(name="rollback")
