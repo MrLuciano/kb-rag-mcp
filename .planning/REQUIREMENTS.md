@@ -46,10 +46,10 @@ Deliver capability negotiation, fix Grafana datasource, backfill process debt (V
 
 ### Phase 22: Integration Checker CI Gate
 
-- [ ] **CICHECK-01**: Integration checker script runs in CI after test execution
-- [ ] **CICHECK-02**: Validates no integration gaps exist (docs ↔ code, plans ↔ implementation)
-- [ ] **CICHECK-03**: CI fails if checker finds unresolved gaps
-- [ ] **CICHECK-04**: Checker results reported in CI output for debugging
+- [x] **CICHECK-01**: Integration checker script runs in CI after test execution
+- [x] **CICHECK-02**: Validates no integration gaps exist (docs ↔ code, plans ↔ implementation)
+- [x] **CICHECK-03**: CI fails if checker finds unresolved gaps
+- [x] **CICHECK-04**: Checker results reported in CI output for debugging
 
 ---
 
@@ -92,7 +92,7 @@ Deliver capability negotiation, fix Grafana datasource, backfill process debt (V
 | HYGIENE-03  | 21    | 🔄 Planned    |
 | HYGIENE-04  | 21    | 🔄 Planned    |
 | HYGIENE-05  | 21    | 🔄 Planned    |
-| CICHECK-01  | 22    | 🔄 Planned    |
-| CICHECK-02  | 22    | 🔄 Planned    |
-| CICHECK-03  | 22    | 🔄 Planned    |
-| CICHECK-04  | 22    | 🔄 Planned    |
+| CICHECK-01  | 22    | ✅ Complete |
+| CICHECK-02  | 22    | ✅ Complete |
+| CICHECK-03  | 22    | ✅ Complete |
+| CICHECK-04  | 22    | ✅ Complete |

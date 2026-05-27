@@ -67,3 +67,4 @@ QA_REPORT*.md
 !.env.example
 config/.env.*
 !config/.env.template
+scripts/check-integration-gaps-results.json
