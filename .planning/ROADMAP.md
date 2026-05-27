@@ -105,3 +105,13 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.2: Implement RAGAS evaluation (BACKLOG)
+
+**Goal:** Implement RAGAS evaluation at `kb_server/evaluation/ragas_pipeline.py:47` (TODO placeholder). Captured for future planning.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
