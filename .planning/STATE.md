@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Post-Ship Polish & Infrastructure
-status: complete
-last_updated: 2026-05-27T23:15:00.000Z
-last_activity: 2026-05-27 -- v1.3 milestone complete, VERIFICATION.md files generated for phases 19/20/22
+milestone: v1.4
+milestone_name: Evaluations & Docs
+status: planning
+last_updated: "2026-05-27T23:56:00.540Z"
+last_activity: 2026-05-27
 progress:
-  total_phases: 11
-  completed_phases: 11
-  total_plans: 27
-  completed_plans: 27
-  percent: 100
-stopped_at: v1.3 milestone complete — all 11 phases shipped, archived to milestones/v1.3-ROADMAP.md
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,11 +24,10 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Milestone: v1.3 — COMPLETE (shipped 2026-05-27)
-Phases: 11/11 complete (12-22)
-Plans: 26/26 complete
-Status: Final planned milestone — no active phases
-Last activity: 2026-05-27 — archived to milestones/v1.3-ROADMAP.md
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-27 — Milestone v1.4 started
 
 ## Phase 22 Outcomes
 

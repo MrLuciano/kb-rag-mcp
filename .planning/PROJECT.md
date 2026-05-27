@@ -8,28 +8,18 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-## Milestone: v1.3 Post-Ship Polish & Infrastructure — ✅ COMPLETE
+## Current Milestone: v1.4 Evaluations & Docs
 
-**Shipped:** 2026-05-27
+**Goal:** Deliver documentation reorganization, RAGAS evaluation pipeline, and optimization experiments — pulling all 3 backlog items into active development.
 
-**Goal:** Complete the v1.3 cycle: English-only codebase, multilingual README, Grafana health dashboard, PowerShell Windows LAN access, document reclassification, capability negotiation, Grafana datasource fix, VERIFICATION.md backfill, test environment fixes, codebase hygiene sweep, and integration checker CI gate.
+**Target features:**
+- Organize README, INSTRUCTIONS, OPERATIONS, TROUBLESHOOTING by deployment mode
+- Update CHANGELOG, REFERENCE.md with recent changes
+- Implement RAGAS evaluation pipeline in `kb_server/evaluation/`
+- Implement chunking and scoring optimization experiments in `kb_server/optimization/`
 
-**All 11 phases delivered:**
-- ✅ Phase 12: English comments & docstrings — zero Portuguese comments; CI gate
-- ✅ Phase 13: Docs sync & README languages — EN/PT-BR/ES refresh
-- ✅ Phase 14: Health Dashboard — Grafana + Prometheus monitoring stack
-- ✅ Phase 15: PowerShell Ports Script — Windows firewall configuration
-- ✅ Phase 16: Reclassification — in-place metadata updates + CLI
-- ✅ Phase 17: Capability Negotiation — FilterTermsCache + list_filter_options tool
-- ✅ Phase 18: Grafana Datasource Fix — stable UID + hardcoded refs
-- ✅ Phase 19: VERIFICATION.md Backfill — 13 files + gap detection
-- ✅ Phase 20: Test Environment Fixes — LOG_PATH guard + fixture isolation
-- ✅ Phase 21: Codebase Hygiene Sweep — unused imports, TODOs, log fmt, dead code
-- ✅ Phase 22: Integration Checker CI Gate — 3 checks wired into CI
+## Current State (v1.4 — active)
 
-## Current State (v1.3 — FINAL)
-
-- **Shipped:** 2026-05-27 (v1.3 — **final planned milestone**)
 - **Tests:** 656 passing, 9 pre-existing failures unchanged
 - **Coverage:** 90% branch target enforced (kb_server/ + ingest/)
 - **Codebase:** ~251k LOC Python; single canonical module `kb_server/`
@@ -86,7 +76,13 @@ AI assistants stop hallucinating about closed-source products — every answer i
 
 ### Active
 
-- (none — v1.3 is the final planned milestone; maintenance only)
+- [ ] **DOCS**: Documentation reorganized by deployment mode (Docker Compose, Helm, systemd, manual)
+- [ ] **DOCS**: README, INSTRUCTIONS, OPERATIONS, TROUBLESHOOTING refreshed and grouped
+- [ ] **DOCS**: CHANGELOG and REFERENCE.md updated with v1.3/v1.4 changes
+- [ ] **EVAL**: RAGAS evaluation pipeline implemented with metrics (hit rate, MRR, faithfulness)
+- [ ] **EVAL**: Evaluation results exposed via CLI or MCP tool
+- [ ] **OPT**: Chunking optimization experiments executable with configurable parameters
+- [ ] **OPT**: Scoring/reranking optimization experiments executable
 
 ### Out of Scope
 
@@ -97,8 +93,9 @@ AI assistants stop hallucinating about closed-source products — every answer i
 
 ## Context
 
-- v1.3 in progress: phases 12-16 complete, phases 17-22 planned
-- v1.2 shipped 2026-05-27: 9/9 requirements met across 4 phases
+- v1.4 in planning: documentation overhaul, RAGAS evaluation, optimization experiments
+- v1.3 shipped 2026-05-27: 11 phases delivered across all backlog items
+- All 3 backlog items (999.1, 999.2, 999.3) promoted to v1.4 active scope
 - `kb_server/` is the single canonical package; `server/` deleted; `ingest/core/metadata.py` is the registry
 - Committed `.env` files resolved: removed from tracking; `CONTRIBUTING.md` documents git history cleanup
 - Embedding model: local LM Studio (`http://<LM_STUDIO_HOST>:1234`); configurable via `EMBED_BACKEND`
@@ -144,4 +141,4 @@ AI assistants stop hallucinating about closed-source products — every answer i
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-27 — v1.3 milestone in progress*
+*Last updated: 2026-05-27 — v1.4 milestone started*
