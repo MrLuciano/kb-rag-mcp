@@ -357,6 +357,30 @@ SUBSYSTEM_PATTERNS: list[tuple[str, list[str]]] = [
 # Skip-list directories for subsystem inference
 SKIP_SUBSYSTEM_DIRS = {"varios", "templates", "archive"}
 
+# ── Module Patterns (Phase 17) ───────────────────────────────────────────────
+# Module/sub-application inference keyed by product directory name.
+# Each entry: (directory_regex, module_name)
+
+MODULE_PATTERNS: dict[str, list[tuple[str, str]]] = {
+    "AppServer": [
+        (r"/(?:admin|administration)/", "Administration"),
+        (r"/(?:config|configuration)/", "Configuration"),
+        (r"/(?:api|integration)/", "API"),
+        (r"/security/", "Security"),
+    ],
+    "DataSync": [
+        (r"/(?:connector|connectors)/", "Connectors"),
+        (r"/(?:sync|synchronization)/", "Synchronization"),
+        (r"/(?:monitor|monitoring)/", "Monitoring"),
+    ],
+    "AdminPortal": [
+        (r"/(?:user|users)/", "User Management"),
+        (r"/(?:role|roles|permission)/", "Roles & Permissions"),
+        (r"/(?:report|reporting)/", "Reporting"),
+        (r"/(?:dashboard)/", "Dashboard"),
+    ],
+}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PUBLIC FUNCTIONS
@@ -521,6 +545,34 @@ def infer_subsystem(file_path: Path, docs_root: Path) -> str:
         for pattern in patterns:
             if re.search(pattern, name_lower, re.IGNORECASE):
                 return subsystem
+
+    return ""
+
+
+def infer_module(file_path: Path, docs_root: Path) -> str:
+    """
+    Infer the module/sub-application a document belongs to.
+
+    Checks the directory hierarchy against MODULE_PATTERNS for the
+    document's product. Returns empty string if no module is detected.
+
+    Args:
+        file_path: Path to the file being classified.
+        docs_root: Root documentation directory.
+
+    Returns:
+        Module name string, or empty string if no module detected.
+    """
+    try:
+        rel = str(file_path.relative_to(docs_root))
+    except ValueError:
+        return ""
+
+    product = infer_product(file_path, docs_root)
+    patterns = MODULE_PATTERNS.get(product, [])
+    for pattern_str, module_name in patterns:
+        if re.search(pattern_str, rel, re.IGNORECASE):
+            return module_name
 
     return ""
 
