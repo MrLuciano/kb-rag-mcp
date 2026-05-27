@@ -660,6 +660,164 @@ Sobrescreva a classificação automática com arquivos `_meta.json`:
 
 **Veja [METADATA_OVERRIDES.md](docs/METADATA_OVERRIDES.md) para guia completo.**
 
+#### Reclassificação de Documentos
+
+Quando as regras de classificação melhoram (ex.: melhores padrões de detecção de fornecedor), você pode atualizar metadados de documentos já ingeridos sem reprocessar ou re-embeber:
+
+##### Uso Básico
+
+```bash
+# Reclassificar arquivos específicos
+kb-ingest reclassify "docs/OpenText/*.pdf"
+
+# Reclassificar por filtro de metadados
+kb-ingest reclassify "**/*.pdf" --filter 'vendor=""'
+
+# Combinar padrão e filtro
+kb-ingest reclassify "docs/OT*.pdf" --filter 'subsystem=""'
+
+# Pular confirmação (automação)
+kb-ingest reclassify "docs/**/*" --yes
+```
+
+##### Fluxo de Verificação
+
+Antes de reclassificar, verifique o que mudaria:
+
+```bash
+# Verificar incompatibilidades
+kb-ingest reclassify verify "docs/**/*.pdf"
+
+# Mostra:
+# - Documentos com incompatibilidades de metadados
+# - Valores atuais vs. esperados
+# - Detalhes por documento
+```
+
+Após reclassificar, verifique se as mudanças foram aplicadas:
+
+```bash
+kb-ingest reclassify verify "docs/**/*.pdf"
+# Deve mostrar: "Todos os documentos correspondem às classificações esperadas"
+```
+
+##### Reversão
+
+Se a reclassificação produzir resultados inesperados, reverta para os metadados anteriores:
+
+```bash
+# Listar sessões de backup
+kb-ingest reclassify sessions
+
+# Reverter sessão inteira
+kb-ingest reclassify rollback --session 2026-05-26T15-30-00
+
+# Reversão seletiva (padrão + timestamp)
+kb-ingest reclassify rollback "docs/OT*.pdf" --before 2026-05-26T16-00-00
+```
+
+Backups são mantidos por 30 dias por padrão (configurável via `RECLASSIFY_BACKUP_RETENTION_DAYS`).
+
+##### Como Funciona
+
+1. **Detectar Mudanças:** Executa `classify()` nos documentos correspondentes, compara com metadados atuais do Qdrant
+2. **Visualização:** Mostra resumo agregado por campo (ex.: "vendor: 47 docs ('' → 'OpenText')")
+3. **Backup:** Grava metadados antigos no SQLite (`data/registry.db`) para reversão
+4. **Atualizar:** Atualiza campos de payload do Qdrant in-place (preserva vetores)
+5. **Auditoria:** Registra mudanças na tabela `reclassify_history` para rastreamento
+
+##### Opções
+
+| Flag | Descrição |
+|------|-----------|
+| `--collection <nome>` | Direcionar coleção Qdrant específica |
+| `--filter <expr>` | Filtro de metadados (ex.: `vendor=""`) |
+| `--yes` / `-y` | Pular prompt de confirmação |
+| `--allow-missing` | Processar documentos mesmo se arquivo fonte ausente |
+| `--include-custom` | Atualizar campos personalizados além dos campos de classificação |
+| `--no-progress` | Desabilitar barra de progresso (para scripts) |
+
+##### Recursos de Segurança
+
+- **Confirmação interativa:** Mostra visualização antes de fazer mudanças (use `--yes` para pular)
+- **Backup automático:** Metadados antigos salvos no SQLite antes das atualizações
+- **Rastreamento de sessão:** Todos os backups vinculados ao timestamp da sessão para reversão completa
+- **Log de auditoria:** Todas as mudanças registradas na tabela `reclassify_history`
+- **Retenção de 30 dias:** Backups limpos automaticamente após 30 dias (configurável)
+
+##### Fluxos de Trabalho Comuns
+
+**Cenário 1: Detecção de fornecedor melhorada**
+
+A Fase 11 foi lançada com inferência básica de fornecedor, deixando muitos documentos com o campo `vendor` vazio. Após melhorar os padrões do `VENDOR_MAP`:
+
+```bash
+# Verificar o que mudaria
+kb-ingest reclassify verify "**/*" --filter 'vendor=""'
+
+# Mostra 47 documentos que mudariam vendor → "OpenText"
+
+# Aplicar mudanças
+kb-ingest reclassify "**/*" --filter 'vendor=""' --yes
+```
+
+**Cenário 2: Corrigir documentos classificados incorretamente**
+
+Alguns PDFs foram incorretamente classificados como `doc_type="overview"` quando deveriam ser `"admin_guide"`:
+
+```bash
+# Verificar estado atual
+kb-ingest reclassify verify "docs/admin/*.pdf"
+
+# Reclassificar (após atualizar regras de doc_type em classifier.py)
+kb-ingest reclassify "docs/admin/*.pdf"
+
+# Verificar correção
+kb-ingest reclassify verify "docs/admin/*.pdf"
+```
+
+**Cenário 3: Reversão após regressão de classificação**
+
+Mudança de regra de classificação introduziu valores incorretos de subsystem:
+
+```bash
+# Verificar sessões recentes
+kb-ingest reclassify sessions
+
+# Mostra sessão 2026-05-26T15-30-00 com 50 docs alterados
+
+# Reverter sessão inteira
+kb-ingest reclassify rollback --session 2026-05-26T15-30-00
+```
+
+##### Solução de Problemas
+
+**"Nenhuma mudança de classificação detectada"**
+
+Possíveis causas:
+- Regras de classificação não mudaram desde a última ingestão
+- Padrão não corresponde a nenhum documento no Qdrant
+- Filtro de metadados muito restritivo
+
+Solução: Execute `verify` para ver valores atuais vs. esperados
+
+**"Arquivo fonte não encontrado no disco"**
+
+Por padrão, reclassify pula documentos onde o arquivo fonte está ausente (arquivo fonte necessário para executar `classify()`). Se arquivos foram movidos ou você quer reclassificar usando apenas metadados do Qdrant:
+
+```bash
+kb-ingest reclassify "**/*" --allow-missing
+```
+
+**Sessão de reversão não encontrada**
+
+Sessões com mais de 30 dias são limpas automaticamente. Ajuste a retenção:
+
+```bash
+export RECLASSIFY_BACKUP_RETENTION_DAYS=90
+kb-ingest reclassify "**/*"
+```
+
 ---
 
 ### 🏥 Verificações de Saúde
