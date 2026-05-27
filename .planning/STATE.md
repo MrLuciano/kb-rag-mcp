@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Post-Ship Polish & Infrastructure
 status: ready_to_plan
-last_updated: 2026-05-27T21:42:30.309Z
-last_activity: 2026-05-27 -- Phase 21 execution started
+last_updated: 2026-05-27T22:15:00.000Z
+last_activity: 2026-05-27 -- Phase 22 context gathered
 progress:
-  total_phases: 11
-  completed_phases: 8
-  total_plans: 25
-  completed_plans: 38
-  percent: 73
-stopped_at: Phase 21 complete (1/1) — ready to discuss Phase 22
+  total_phases: 12
+  completed_phases: 9
+  total_plans: 26
+  completed_plans: 39
+  percent: 75
+stopped_at: Phase 22 context gathered — ready to plan
 ---
 
 # Project State
@@ -25,10 +25,56 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 21 (codebase-hygiene-sweep) — EXECUTING
+Phase: 22 (integration-checker-ci-gate) — CONTEXT GATHERED
 Plan: Not started
-Status: Executing Phase 21
+Status: Ready to plan
 Last activity: 2026-05-27
+
+## Phase 21 Outcomes
+
+### Status
+
+- **Phase:** 21 (codebase-hygiene-sweep)
+- **Status:** Complete — 1 plan, 6 commits
+- **Completed:** 2026-05-27
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 21-01 | Codebase hygiene sweep: unused imports, TODOs, log fmt, dead code, types | 5 | Complete (1 cancelled) |
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| HYGIENE-01: Remove unused imports | ✅ | 13 unused imports removed across 7 files |
+| HYGIENE-02: Resolve stale TODOs | ✅ | 3 TODOs resolved (1 deleted, 2 converted to checkboxes) |
+| HYGIENE-03: Standardize type annotations | ❌ Cancelled | `Any` legitimately used in generic cache/collections layers |
+| HYGIENE-04: Convert f-string logs | ✅ | 6 f-string log messages standardized in embed_client.py |
+| HYGIENE-05: Remove dead code | ✅ | 2 dead code instances removed (orphan imports and constants) |
+
+### Key Changes
+
+1. **13 unused imports** removed from `embed_client.py`, `query_logger.py`, `router.py`, `reranker.py`, `test_embed_client_unit.py`, `test_hybrid_search.py`, `test_reranker_lazy.py`
+2. **3 TODOs resolved:** `filter_by_module()` added (CAPNEG-03 complete annotation), `CollectionRouter.__init__` cache_bust parameter cleanup, SSE handler redirect TODO verified complete
+3. **6 f-string logs** standardized in `embed_client.py` (HYGIENE-04, scoped to this file only)
+4. **2 dead code** instances removed: orphan `Mapping` import in `query_logger.py`, orphan `DEFAULT_TERMS_CACHE_TTL` constant in `router.py`
+
+### Commits (6)
+
+1. `1b7ec48` fix(hygiene): remove 6 unused imports from test files (HYGIENE-01)
+2. `8dca365` fix(hygiene): remove 7 unused imports from production modules (HYGIENE-01)
+3. `f78cb20` chore(hygiene): resolve 3 stale TODOs (HYGIENE-02)
+4. `35a68e1` fix(hygiene): standardize 6 f-string log messages in embed_client.py (HYGIENE-04)
+5. `33732fd` fix(hygiene): remove 2 dead code instances (HYGIENE-05)
+6. `0e58e96` chore(hygiene): document HYGIENE-03 (type annotations) cancellation rationale
+
+### Verification
+
+- Flake8: zero F401/F841 warnings
+- Zero leftover TODOs from hygiene scope
+- 656 tests pass (9 pre-existing failures unchanged)
 
 ## Phase 20 Outcomes
 
