@@ -162,10 +162,12 @@ class VectorStore:
         product: str | None = None,
         doc_type: str | None = None,
         version: str | None = None,  # PHASE 13: Version filter
+        vendor: str | None = None,  # PHASE 11.1: Vendor filter
+        subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
         collection_name: str | None = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
         """Semantic search with optional filters by
-        file_type, product, doc_type, and version (PHASE 13).
+        file_type, product, doc_type, version, vendor, and subsystem.
         """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
@@ -192,6 +194,18 @@ class VectorStore:
                     key="version", match=MatchValue(value=version)
                 )
             )
+        if vendor:  # PHASE 11.1: Vendor filtering
+            conditions.append(
+                FieldCondition(
+                    key="vendor", match=MatchValue(value=vendor)
+                )
+            )
+        if subsystem:  # PHASE 11.1: Subsystem filtering
+            conditions.append(
+                FieldCondition(
+                    key="subsystem", match=MatchValue(value=subsystem)
+                )
+            )
 
         query_filter = Filter(must=conditions) if conditions else None
 
@@ -211,8 +225,11 @@ class VectorStore:
                 "text": r.payload.get("text", ""),
                 "source_file": r.payload.get("source_file", ""),
                 "file_type": r.payload.get("file_type", ""),
+                "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
                 "product": r.payload.get("product", ""),
+                "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
                 "doc_type": r.payload.get("doc_type", "document"),
+                "version": r.payload.get("version", ""),  # PHASE 13
                 "page": r.payload.get("page"),
                 "chunk_index": r.payload.get("chunk_index", 0),
             }
@@ -227,6 +244,8 @@ class VectorStore:
         product: str | None = None,
         doc_type: str | None = None,
         version: str | None = None,
+        vendor: str | None = None,  # PHASE 11.1: Vendor filter
+        subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
         collection_name: str | None = None,
     ) -> list[dict]:
         """
@@ -267,6 +286,18 @@ class VectorStore:
                     key="version", match=MatchValue(value=version)
                 )
             )
+        if vendor:  # PHASE 11.1: Vendor filtering
+            conditions.append(
+                FieldCondition(
+                    key="vendor", match=MatchValue(value=vendor)
+                )
+            )
+        if subsystem:  # PHASE 11.1: Subsystem filtering
+            conditions.append(
+                FieldCondition(
+                    key="subsystem", match=MatchValue(value=subsystem)
+                )
+            )
 
         query_filter = Filter(must=conditions) if conditions else None
         indices = list(sparse_vector.keys())
@@ -291,8 +322,11 @@ class VectorStore:
                     "text": r.payload.get("text", ""),
                     "source_file": r.payload.get("source_file", ""),
                     "file_type": r.payload.get("file_type", ""),
+                    "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
                     "product": r.payload.get("product", ""),
+                    "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
                     "doc_type": r.payload.get("doc_type", "document"),
+                    "version": r.payload.get("version", ""),  # PHASE 13
                     "page": r.payload.get("page"),
                     "chunk_index": r.payload.get("chunk_index"),
                 }
@@ -390,6 +424,8 @@ class VectorStore:
         filter_type: str | None = None,
         product: str | None = None,
         doc_type: str | None = None,
+        vendor: str | None = None,  # PHASE 11.1: Vendor filter
+        subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
         limit: int = 50,
         collection_name: str | None = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
@@ -401,12 +437,14 @@ class VectorStore:
             filter_type: Optional file type filter (pdf, docx, etc.).
             product: Optional product name filter.
             doc_type: Optional document type filter.
+            vendor: Optional vendor name filter (PHASE 11.1).
+            subsystem: Optional subsystem name filter (PHASE 11.1).
             limit: Maximum number of documents to return (default 50).
             collection_name: Override target collection (PHASE 15).
 
         Returns:
-            List of dicts with source_file, file_type, product, doc_type,
-            and chunk_count.
+            List of dicts with source_file, file_type, vendor, product, 
+            subsystem, doc_type, and chunk_count.
 
         Raises:
             RuntimeError: If the VectorStore client is not connected.
@@ -430,6 +468,18 @@ class VectorStore:
                     key="doc_type", match=MatchValue(value=doc_type)
                 )
             )
+        if vendor:  # PHASE 11.1: Vendor filtering
+            conditions.append(
+                FieldCondition(
+                    key="vendor", match=MatchValue(value=vendor)
+                )
+            )
+        if subsystem:  # PHASE 11.1: Subsystem filtering
+            conditions.append(
+                FieldCondition(
+                    key="subsystem", match=MatchValue(value=subsystem)
+                )
+            )
 
         query_filter = Filter(must=conditions) if conditions else None
 
@@ -451,8 +501,11 @@ class VectorStore:
                     docs[sf] = {
                         "source_file": sf,
                         "file_type": r.payload.get("file_type", ""),
+                        "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
                         "product": r.payload.get("product", ""),
+                        "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
                         "doc_type": r.payload.get("doc_type", "document"),
+                        "version": r.payload.get("version", ""),  # PHASE 13
                         "chunk_count": 0,
                     }
                 docs[sf]["chunk_count"] += 1
