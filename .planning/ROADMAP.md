@@ -187,3 +187,14 @@ Plans:
 | 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
 | 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
 | 16. Reclassification | v1.3 | 3/3 | Complete   | 2026-05-27 |
+
+## Backlog
+
+### Phase 999.1: Improve capability negotiation on the MCP server to advertise classified attributes (BACKLOG)
+
+**Goal:** Advertise OTCS auto-tagging attributes (vendor, product, module, subsystem, version) during MCP tool negotiation so clients can discover available filter values. Maintain a compact terms table indexed from the knowledge base — token-size controlled to avoid excessive context consumption.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with `/gsd-review-backlog` when ready)
