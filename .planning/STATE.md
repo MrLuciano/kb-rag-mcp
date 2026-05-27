@@ -24,16 +24,18 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 16 (reclassification-ingested-docs) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 16
-Last activity: 2026-05-27 -- Phase 16 execution started
+Phase: 16 (reclassification-ingested-docs) — EXECUTING (PARTIAL)
+Plan: 1 of 3 (20% complete - Step 1 of 5 done)
+Status: Plan 16-01 in progress - SQLite schema complete, VectorStore/engine pending
+Last activity: 2026-05-27 -- Plan 16-01 Step 1 completed
 
 ## Phase 16 Outcomes
 
 ### Status
 
-**Planning complete** — 3 plans created (16-01, 16-02, 16-03), estimated 18 hours total
+**Planning complete, execution started** — 3 plans created (16-01, 16-02, 16-03), estimated 18 hours total
+
+**Plan 16-01 partial**: Step 1 (SQLite schema migration) complete with 5 passing tests. Steps 2-5 (VectorStore update, classification detection, backup/audit functions, integration) pending.
 
 ### Plans Defined
 
@@ -74,11 +76,30 @@ Last activity: 2026-05-27 -- Phase 16 execution started
 ### Expected Test Growth
 
 - Baseline: 585 tests
-- Plan 16-01: +25 tests (610 total)
+- Plan 16-01 Step 1: +5 tests (590 total) — schema validation tests passing
+- Plan 16-01 remaining: +20 tests expected (Steps 2-5 incomplete)
 - Plan 16-02: +30 tests (640 total)
 - Plan 16-03: N/A (documentation only, validated via example script)
 
+**Current: 590 tests (585 baseline + 5 new)**
 **Expected final: ~640 tests**
+
+### Plan 16-01 Progress (Partial Completion)
+
+**Step 1 COMPLETE** (2026-05-27, 11min):
+- SQLite schema migration: `reclassify_backups` and `reclassify_history` tables added to `ingest/core/metadata.py`
+- 5 passing tests in `tests/test_registry_reclassify.py` (table existence, schema validation, index checks)
+- Composite PK (session_timestamp, source_file, field_name, chunk_index) for backup uniqueness
+- Indexes on session_timestamp and timestamp for rollback/audit query performance
+- Commits: `240d593` (test/RED), `58cfc24` (feat/GREEN), `936d146` (docs/partial-summary)
+
+**Steps 2-5 INCOMPLETE**:
+- Step 2: VectorStore.update_chunk_metadata() method
+- Step 3: Classification detection engine (detect_changed_classifications)
+- Step 4: Backup and audit logging functions
+- Step 5: Integration and error handling
+
+**Blocker**: Execution interrupted at 20% completion (Step 1 of 5).
 
 ### Canonical References Identified
 
