@@ -225,11 +225,12 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** HYGIENE-01 through HYGIENE-05
 **Depends on:** — (independent)
+**Status:** ✅ Complete (2026-05-27)
 **Plans:** 1/1 plans complete
 
 Plans:
 
-- [ ] TBD
+- [x] 21-01 — Codebase hygiene sweep: unused imports, TODOs, log fmt, dead code, types
 
 ### Phase 22: Integration Checker CI Gate
 
@@ -238,11 +239,12 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** CICHECK-01 through CICHECK-04
 **Depends on:** — (independent)
-**Plans:** 0 plans
+**Status:** ✅ Complete (2026-05-27)
+**Plans:** 1/1 plans complete
 
 Plans:
 
-- [ ] TBD
+- [x] 22-01 — Integration checker CI gate: script + CI job + reqs update
 
 ---
 
