@@ -7,12 +7,12 @@
     "role": "Lead Developer / System Architect",
     "experience_level": "senior",
     "timezone": "Brazil/São Paulo (UTC-3)",
-    "languages_spoken": ["Portuguese (native)", "English (fluent)"]
+    "languages_spoken": ["Portuguese (native)", "English (fluent)", "Spanish"]
   },
   "technical_expertise": {
     "expert": {
       "languages": ["Python 3.11+", "SQL", "Bash/Shell", "Java", "C", "C++"],
-      "frameworks": ["FastAPI", "asyncio", "pytest", "MCP protocol"],
+      "frameworks": ["FastAPI", "asyncio", "pytest", "MCP protocol", "ECM", "EIM", "Records Management"],
       "tools": ["Docker", "Docker Compose", "git", "pip-tools"],
       "databases": ["SQLite", "Qdrant (vector)"],
       "platforms": ["Linux (WSL)", "systemd", "bare metal deployment"]
