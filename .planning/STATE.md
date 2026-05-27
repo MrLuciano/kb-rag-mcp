@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Post-Ship Polish & Infrastructure
 status: executing
-last_updated: "2026-05-27T00:28:05.471Z"
-last_activity: 2026-05-27 -- Phase 16 execution started
+last_updated: "2026-05-27T13:57:39Z"
+last_activity: 2026-05-27 -- Phase 16 completed (reclassification system)
 progress:
   total_phases: 13
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 36
-  completed_plans: 27
-  percent: 54
+  completed_plans: 30
+  percent: 62
 ---
 
 # Project State
@@ -24,20 +24,22 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 16 (reclassification-ingested-docs) — EXECUTING
-Plan: 2 of 3 (67% complete - Plans 16-01 and 16-02 done)
-Status: Plan 16-02 complete - 4 CLI subcommands with 18 tests passing
-Last activity: 2026-05-27 -- Plan 16-02 completed (reclassify CLI commands)
+Phase: 16 (reclassification-ingested-docs) — COMPLETE
+Plan: 3 of 3 (100% complete - All plans done)
+Status: Plan 16-03 complete - Documentation added to README.md (3 languages) and OPERATIONS.md
+Last activity: 2026-05-27 -- Phase 16 completed (reclassification system with full documentation)
 
 ## Phase 16 Outcomes
 
 ### Status
 
-**Plans 16-01 and 16-02 complete** — Core engine (Wave 1) and CLI commands (Wave 2) implemented with 33 passing tests. Plan 16-03 (documentation) pending.
+**Phase 16 COMPLETE** — All 3 plans implemented: Core engine (Wave 1), CLI commands (Wave 2), and comprehensive documentation (Wave 3). 33 passing tests, 4 documentation files updated (~820 lines added).
 
 **Plan 16-01 complete**: 5 core engine functions implemented (detect_changed_classifications, backup_metadata, log_changes, cleanup_old_backups, VectorStore.update_chunk_metadata) + SQLite schema migration with 15 passing tests.
 
 **Plan 16-02 complete**: 4 CLI subcommands implemented (run, verify, sessions, rollback) with Rich UI, filter expressions, confirmation prompts, progress bars. 18 passing tests.
+
+**Plan 16-03 complete**: Documentation added to README.md (EN/PT/ES) with "Reclassifying Documents" section (~170 lines each) and OPERATIONS.md "Reclassification Management" section (~315 lines). All bash examples validated against CLI implementation.
 
 ### Plans Defined
 
@@ -120,6 +122,24 @@ Last activity: 2026-05-27 -- Plan 16-02 completed (reclassify CLI commands)
 - 18 passing tests
 
 **Commits**: 5 atomic commits (d7e4a2a through 6fb69d5)
+
+### Plan 16-03 Progress (Complete)
+
+**All 5 steps COMPLETE** (2026-05-27, 1h 30min):
+- Step 1: README.md "Reclassifying Documents" section (~170 lines)
+- Step 2: README.pt-BR.md Portuguese translation (~160 lines)
+- Step 3: README.es.md Spanish translation (~160 lines)
+- Step 4: OPERATIONS.md "Reclassification Management" section (~315 lines)
+- Step 5: Review and validation (all examples validated, 33 tests passing)
+
+**Deliverables**:
+- `README.md`: "Reclassifying Documents" section with 13 subsections (usage, verification, rollback, how it works, options, safety, 3 scenarios, 3 troubleshooting)
+- `README.pt-BR.md`: Portuguese translation of all subsections
+- `README.es.md`: Spanish translation of all subsections
+- `docs/OPERATIONS.md`: "Reclassification Management" section (architecture, 4 procedures, monitoring, troubleshooting, 6 best practices, CI/CD integration)
+- Total: ~820 lines of documentation across 4 files
+
+**Commits**: 4 atomic commits (f5d2d9f, efea47f, a5ee367, 9b036e2)
 
 ### Canonical References Identified
 
