@@ -55,6 +55,7 @@ data:
     apiVersion: 1
     datasources:
       - name: Prometheus
+        uid: prometheus
         type: prometheus
         access: proxy
         url: http://{{ include "kb-rag-mcp.fullname" . }}-prometheus:9090
