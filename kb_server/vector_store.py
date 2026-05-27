@@ -653,6 +653,82 @@ class VectorStore:
         
         log.info(f"Parallel upsert complete: {len(points)} chunks")
 
+    # ── Phase 16: Reclassification metadata update ──────────────────────
+
+    async def update_chunk_metadata(
+        self,
+        collection_name: str,
+        source_file: str,
+        updates: dict[str, str],
+        chunk_index: int | None = None,
+    ) -> int:
+        """
+        Update metadata fields for chunks in-place without re-embedding.
+
+        Preserves existing vectors and chunk text while updating only
+        specified metadata fields in the Qdrant payload. Used for
+        reclassification when classification logic improves.
+
+        Args:
+            collection_name: Qdrant collection name.
+            source_file: Source file path to filter chunks.
+            updates: Dict of field_name -> new_value to update.
+            chunk_index: Optional specific chunk index (updates single chunk).
+
+        Returns:
+            Number of chunks updated.
+
+        Raises:
+            RuntimeError: If VectorStore client is not connected.
+            QdrantException: If Qdrant update fails.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+
+        log.info(
+            f"Updating metadata for {source_file} in {collection_name}"
+        )
+
+        # Build filter
+        must_conditions = [
+            FieldCondition(
+                key="source_file", match=MatchValue(value=source_file)
+            )
+        ]
+        if chunk_index is not None:
+            must_conditions.append(
+                FieldCondition(
+                    key="chunk_index", match=MatchValue(value=chunk_index)
+                )
+            )
+
+        filter_query = Filter(must=must_conditions)
+
+        # Scroll to get point IDs
+        points, _ = await self.client.scroll(
+            collection_name=collection_name,
+            scroll_filter=filter_query,
+            limit=10000,  # max chunks per document
+            with_payload=False,
+            with_vectors=False,
+        )
+
+        if not points:
+            log.warning(f"No chunks found for {source_file}")
+            return 0
+
+        point_ids = [p.id for p in points]
+
+        # Update payload
+        await self.client.set_payload(
+            collection_name=collection_name,
+            payload=updates,
+            points=point_ids,
+        )
+
+        log.info(f"Updated {len(point_ids)} chunks for {source_file}")
+        return len(point_ids)
+
     async def close(self) -> None:
         """
         PHASE 8: Cleanup Qdrant client connections.
