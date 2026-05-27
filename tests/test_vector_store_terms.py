@@ -23,6 +23,7 @@ _ensure_stubs()
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from kb_server.vector_store import VectorStore
+from kb_server.filter_terms_cache import FilterTermsCache
 
 
 def _run(coro):
@@ -75,3 +76,23 @@ class TestGetDistinctValues:
             collection_name="test_collection",
         ))
         assert isinstance(result, list)
+
+
+class TestFilterTermsCache:
+
+    def test_cache_initialization(self, store):
+        vs, mc = store
+        cache = FilterTermsCache(store=vs)
+        assert cache is not None
+        assert cache.terms == {}
+        assert cache.last_scan_mtime == 0
+
+    def test_cache_get_formatted_empty(self):
+        cache = FilterTermsCache(store=None)
+        result = cache.get_formatted(field="product", top_n=20)
+        assert result == ""
+
+    def test_cache_needs_refresh_no_marker(self, store):
+        vs, mc = store
+        cache = FilterTermsCache(store=vs)
+        assert cache._needs_refresh() is False
