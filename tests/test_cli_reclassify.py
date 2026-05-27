@@ -113,3 +113,49 @@ def test_show_aggregated_preview():
     ]
     # Should not crash
     _show_aggregated_preview(changes)
+
+
+# Step 3 tests
+
+@pytest.mark.asyncio
+async def test_verify_command_shows_no_mismatches_message():
+    """RECLASSIFY-05: verify shows success message when no mismatches."""
+    from ingest.cli.reclassify import _verify_impl
+    
+    with patch("ingest.cli.reclassify.detect_changed_classifications") as mock_detect:
+        with patch("kb_server.collections.router.CollectionRouter") as mock_router_class:
+            # Mock router instance
+            mock_router = AsyncMock()
+            mock_router.resolve = AsyncMock(return_value="kb-default")
+            mock_router_class.return_value = mock_router
+            
+            mock_detect.return_value = []
+            
+            # Should not crash, prints success message
+            await _verify_impl(pattern="docs/*.pdf", collection=None, filter_expr=None)
+
+
+@pytest.mark.asyncio
+async def test_verify_command_shows_mismatches_table():
+    """RECLASSIFY-05: verify shows per-document mismatches in table."""
+    from ingest.cli.reclassify import _verify_impl
+    
+    changes = [
+        {
+            "source_file": "docs/test.pdf",
+            "fields_changed": {"vendor": ("", "OpenText")},
+            "chunk_count": 5
+        }
+    ]
+    
+    with patch("ingest.cli.reclassify.detect_changed_classifications") as mock_detect:
+        with patch("kb_server.collections.router.CollectionRouter") as mock_router_class:
+            # Mock router instance
+            mock_router = AsyncMock()
+            mock_router.resolve = AsyncMock(return_value="kb-default")
+            mock_router_class.return_value = mock_router
+            
+            mock_detect.return_value = changes
+            
+            # Should not crash, prints mismatch table
+            await _verify_impl(pattern="docs/*.pdf", collection=None, filter_expr=None)

@@ -161,8 +161,56 @@ async def _verify_impl(
     filter_expr: Optional[str]
 ) -> None:
     """Async implementation of verify command."""
-    # Implementation in Step 3
-    pass
+    log.info(f"Verifying: pattern={pattern}, collection={collection}")
+    
+    # Resolve collection
+    from kb_server.collections.router import CollectionRouter
+    router = CollectionRouter()
+    resolved_collection = await router.resolve(collection)
+    
+    console.print(f"[bold cyan]Verifying documents matching: {pattern}[/bold cyan]")
+    
+    # Parse metadata filter
+    metadata_filter = _parse_filter_expr(filter_expr) if filter_expr else None
+    
+    # Detect mismatches
+    changes = await detect_changed_classifications(
+        collection_name=resolved_collection,
+        pattern=pattern,
+        metadata_filter=metadata_filter,
+        allow_missing=False  # verify requires files on disk
+    )
+    
+    if not changes:
+        console.print("[green]✓ All documents match expected classifications.[/green]")
+        return
+    
+    # Show mismatches
+    console.print(f"\n[bold yellow]Found {len(changes)} documents with mismatches:[/bold yellow]\n")
+    
+    # Detailed table (not aggregated — show per-document for verify)
+    table = Table(title="Metadata Mismatches")
+    table.add_column("Source File", style="cyan")
+    table.add_column("Field", style="magenta")
+    table.add_column("Current", style="red")
+    table.add_column("Expected", style="green")
+    
+    for change in changes:
+        source_file = change["source_file"]
+        for field_name, (current_val, expected_val) in change["fields_changed"].items():
+            table.add_row(
+                source_file,
+                field_name,
+                f"'{current_val}'" if current_val else "(empty)",
+                f"'{expected_val}'" if expected_val else "(empty)"
+            )
+    
+    console.print(table)
+    
+    # Hint
+    console.print(
+        f"\n[dim]Tip: Run 'kb-ingest reclassify run \"{pattern}\"' to apply these changes.[/dim]"
+    )
 
 
 @reclassify_group.command(name="sessions")
