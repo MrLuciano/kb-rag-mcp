@@ -182,6 +182,31 @@ class MetadataStore:
             CREATE INDEX idx_files_product ON files(product);
             CREATE INDEX idx_files_type ON files(file_type);
             CREATE INDEX idx_files_doc_type ON files(doc_type);
+
+            -- Reclassification backup for rollback
+            CREATE TABLE reclassify_backups (
+                session_timestamp TEXT NOT NULL,
+                source_file TEXT NOT NULL,
+                field_name TEXT NOT NULL,
+                old_value TEXT,
+                chunk_index INTEGER,
+                PRIMARY KEY (session_timestamp, source_file, field_name, chunk_index)
+            );
+
+            -- Reclassification audit history
+            CREATE TABLE reclassify_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                source_file TEXT NOT NULL,
+                field_name TEXT NOT NULL,
+                old_value TEXT,
+                new_value TEXT,
+                session_timestamp TEXT NOT NULL,
+                FOREIGN KEY (session_timestamp) REFERENCES reclassify_backups(session_timestamp)
+            );
+
+            CREATE INDEX idx_reclassify_history_session ON reclassify_history(session_timestamp);
+            CREATE INDEX idx_reclassify_history_timestamp ON reclassify_history(timestamp);
         """)
 
         self._set_schema_version(SCHEMA_VERSION)
