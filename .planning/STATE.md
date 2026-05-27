@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Post-Ship Polish & Infrastructure
 status: executing
-last_updated: "2026-05-27T21:15:00Z"
-last_activity: 2026-05-27 -- Phase 17 executed
+last_updated: "2026-05-27T21:30:00Z"
+last_activity: 2026-05-27 -- Phase 18 executed
 progress:
   total_phases: 11
-  completed_phases: 6
-  total_plans: 21
-  completed_plans: 21
-  percent: 55
+  completed_phases: 7
+  total_plans: 22
+  completed_plans: 22
+  percent: 64
 ---
 
 # Project State
@@ -24,10 +24,38 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 18 (upcoming — to be determined)
+Phase: 19 (upcoming — to be determined)
 Plan: 0 of 0 (not yet planned)
 Status: Awaiting next phase planning
-Last activity: 2026-05-27 -- Phase 17 executed (3 plans, 10 commits, 34 new tests)
+Last activity: 2026-05-27 -- Phase 18 executed (1 plan, 4 commits)
+
+## Phase 18 Outcomes
+
+### Status
+
+- **Phase:** 18 (fix-grafana-datasource-error)
+- **Status:** Complete — 1 plan, 4 tasks
+- **Completed:** 2026-05-27
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 18-01 | Fix Grafana datasource error across Docker Compose and Helm paths | 4 tasks | Complete |
+
+### Key Changes
+
+1. `deployment/config/grafana-provisioning/datasources/prometheus.yml` — Added `uid: prometheus`
+2. `deployment/config/grafana-dashboard.json` — Replaced 63 `${DS_PROMETHEUS}` → `"prometheus"`, removed `__inputs`
+3. `deployment/helm/kb-rag-mcp/templates/configmap-monitoring.yaml` — Added `uid: prometheus`
+4. `deployment/helm/kb-rag-mcp/dashboards/grafana-dashboard.json` — Replaced 63 `${DS_PROMETHEUS}` → `"prometheus"`, removed `__inputs`
+
+### Commits (4)
+
+1. `1a51555` fix(deployment): add uid prometheus to Docker Compose datasource provisioning
+2. `d1bf774` fix(deployment): replace DS_PROMETHEUS refs and remove __inputs in Docker Compose dashboard
+3. `4cfc0ed` fix(deployment): add uid prometheus to Helm datasource provisioning
+4. `9ca0be3` fix(deployment): replace DS_PROMETHEUS refs and remove __inputs in Helm dashboard
 
 ## Phase 17 Outcomes
 
