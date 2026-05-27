@@ -8,26 +8,34 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-## Current Milestone: v1.3 Post-Ship Polish & Infrastructure
+## Milestone: v1.3 Post-Ship Polish & Infrastructure — ✅ COMPLETE
 
-**Goal:** Complete the v1.3 cycle: deliver capability negotiation, fix Grafana datasource, backfill process debt (VERIFICATION.md), fix test environment issues, codebase hygiene sweep, and wire integration checker CI gate.
+**Shipped:** 2026-05-27
 
-**Target features:**
-- Capability negotiation — advertise classified attributes to MCP clients
-- Grafana datasource fix — resolve DS_PROMETHEUS variable resolution error
-- VERIFICATION.md backfill — create verification artifacts for 14 phases
-- Test environment fixes — resolve test_reranker_lazy.py conftest issues
-- Codebase hygiene sweep — logs, comments, types, unused imports
-- Integration checker CI gate — catch gaps automatically in CI
+**Goal:** Complete the v1.3 cycle: English-only codebase, multilingual README, Grafana health dashboard, PowerShell Windows LAN access, document reclassification, capability negotiation, Grafana datasource fix, VERIFICATION.md backfill, test environment fixes, codebase hygiene sweep, and integration checker CI gate.
 
-## Current State (v1.3)
+**All 11 phases delivered:**
+- ✅ Phase 12: English comments & docstrings — zero Portuguese comments; CI gate
+- ✅ Phase 13: Docs sync & README languages — EN/PT-BR/ES refresh
+- ✅ Phase 14: Health Dashboard — Grafana + Prometheus monitoring stack
+- ✅ Phase 15: PowerShell Ports Script — Windows firewall configuration
+- ✅ Phase 16: Reclassification — in-place metadata updates + CLI
+- ✅ Phase 17: Capability Negotiation — FilterTermsCache + list_filter_options tool
+- ✅ Phase 18: Grafana Datasource Fix — stable UID + hardcoded refs
+- ✅ Phase 19: VERIFICATION.md Backfill — 13 files + gap detection
+- ✅ Phase 20: Test Environment Fixes — LOG_PATH guard + fixture isolation
+- ✅ Phase 21: Codebase Hygiene Sweep — unused imports, TODOs, log fmt, dead code
+- ✅ Phase 22: Integration Checker CI Gate — 3 checks wired into CI
 
-- **Shipped:** 2026-05-27 (v1.2)
-- **Tests:** 585 passing, 5 skipped, 0 failures
+## Current State (v1.3 — FINAL)
+
+- **Shipped:** 2026-05-27 (v1.3 — **final planned milestone**)
+- **Tests:** 656 passing, 9 pre-existing failures unchanged
 - **Coverage:** 90% branch target enforced (kb_server/ + ingest/)
 - **Codebase:** ~251k LOC Python; single canonical module `kb_server/`
 - **Deployment:** Docker Compose + bare metal systemd + Kubernetes/Helm
-- **CI:** GitHub Actions on every push/PR to `master`
+- **CI:** GitHub Actions on every push/PR to `master` — English audit, Helm lint, integration checks
+- **Monitoring:** Grafana + Prometheus with 6-tab dashboard, 28 metrics
 
 ## Requirements
 
@@ -78,12 +86,7 @@ AI assistants stop hallucinating about closed-source products — every answer i
 
 ### Active
 
-- [ ] **PHASE-17**: Capability negotiation — advertise classified attributes to MCP clients
-- [ ] **PHASE-18**: Grafana datasource fix — resolve DS_PROMETHEUS error
-- [ ] **PHASE-19**: VERIFICATION.md backfill — 14 phases missing verification
-- [ ] **PHASE-20**: Test environment fixes — test_reranker_lazy.py conftest issues
-- [ ] **PHASE-21**: Codebase hygiene sweep — logs, comments, types, unused imports
-- [ ] **PHASE-22**: Integration checker CI gate — automate gap detection
+- (none — v1.3 is the final planned milestone; maintenance only)
 
 ### Out of Scope
 

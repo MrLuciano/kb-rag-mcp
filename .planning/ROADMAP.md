@@ -5,7 +5,7 @@
 - ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](milestones/v1.0-ROADMAP.md)
 - ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v1.1-ROADMAP.md)
 - ✅ **v1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v1.2-ROADMAP.md)
-- 🔄 **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (planning)
+- ✅ **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v1.3-ROADMAP.md)
 
 ## Phases
 
@@ -47,206 +47,24 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
-### Phase 12: English comments & docstrings sweep (COMPLETED)
-
-**Goal:** Ensure all inline comments, docstrings, log messages, and internal documentation across Python source files are written in English for consistency and open-source readiness.
-
-**Milestone:** v1.3
-**Requirements:** TBD
-**Depends on:** — (independent)
-**Plans:** 3 plans — all executed 2026-05-25
-
-**Delivered:**
-
-- All Portuguese content translated to English across ~35 files in `kb_server/` and `ingest/`
-- `scripts/docstring-audit.py` extended with `--check-inline`, `--fail-under`, expanded Portuguese word list
-- `.github/workflows/ci.yml` has `english-audit` job (`--check-inline --fail-under 0`) on every push/PR
-- False positives fixed: English technical terms (cache, chunk, hash, log, pipeline, query, etc.) removed from Portuguese detection set
-- **0 Portuguese docstrings, 0 Portuguese inline comments** — verified by audit script
-
-Plans:
-
-- [x] 12-01-PLAN.md — kb_server/ English sweep (server.py, embed_client.py, vector_store.py)
-- [x] 12-02-PLAN.md — ingest/ English sweep (classifier.py, ingest.py)
-- [x] 12-03-PLAN.md — Verification audit script + CI gate
-
----
-
-### Phase 13: Docs sync, README all languages, Spanish README
-
-**Goal:** Sync the `docs/` folder with all changes shipped since v1.0, update README.md and README.pt-BR.md to reflect current state, and add a new README.es.md in Spanish.
-
-**Milestone:** v1.3
-**Requirements:** DOCS-01, DOCS-02, DOCS-03
-**Depends on:** — (independent)
-**Plans:** 4/4 plans complete
-
-Plans:
-
-- [x] 13-01-PLAN.md — README.md core sections refresh (header through Usage)
-- [x] 13-02-PLAN.md — README.md advanced sections refresh (Health Checks through Contributing)
-- [x] 13-03-PLAN.md — README.pt-BR.md sync + README.es.md creation
-- [x] 13-04-PLAN.md — Stale docs updates (AUTO_INGESTION, TROUBLESHOOTING, TESTING, KUBERNETES)
-
----
-
-### Phase 14: Health Dashboard
-
-**Goal:** Consolidate health/status access to all subsystems (Qdrant health, kb-rag-mcp server, ingestion status) into a unified Grafana dashboard with Prometheus metrics.
-
-**Milestone:** v1.3
-**Requirements:** DASH-01, DASH-02, DASH-03, DASH-04, DASH-05
-**Depends on:** — (independent)
-**Plans:** 6/6 plans complete
-**Completed:** 2026-05-26
-
-**Delivered:**
-
-- `/metrics` endpoint at port 8080 exposing 28 Prometheus metrics
-- Grafana dashboard extended with 6-row structure (Server, Ingestion, Jobs, Embedding, Cache, Qdrant)
-- Docker Compose stack with 4 services (Qdrant, kb-rag-mcp, Prometheus, Grafana)
-- Kubernetes Helm chart with monitoring toggle (StatefulSet + Deployment)
-- Docker entrypoint script for dual-server startup (health + MCP)
-- Healthcheck fixes (GET method, 120s start_period, wget)
-- Comprehensive documentation (OPERATIONS.md Health Dashboard section)
-
-Plans:
-
-- [x] 14-01-PLAN.md — Add /metrics endpoint to health_server.py (Prometheus scraping)
-- [x] 14-02-PLAN.md — Extend Grafana dashboard with 6-tab structure (28+ panels)
-- [x] 14-03-PLAN.md — Docker Compose integration (Prometheus + Grafana services)
-- [x] 14-04-PLAN.md — Kubernetes/Helm integration (StatefulSet + Deployment)
-- [x] 14-05-PLAN.md — Documentation update (OPERATIONS.md, screenshots)
-- [x] 14-06-PLAN.md — Docker Compose fixes (healthchecks, entrypoint, ports)
-
----
-
-### Phase 15: PowerShell script opens ports for all subsystems
-
-**Goal:** Ensure `scripts/start-kb-rag.ps1` opens the required ports for all subsystems (Qdrant, MCP server, health server, Prometheus, Grafana) automatically during local/dev setup.
-
-**Milestone:** v1.3
-**Requirements:** WIN-01, WIN-02, WIN-03, DOCS-04, DOCS-05
-**Depends on:** Phase 14 (defines port 8080 for health/metrics)
-**Plans:** 2/2 plans complete
-**Status:** ✅ Complete
-**Completed:** 2026-05-26
-
-**Delivered:**
-
-- `-ConfigureFirewall` switch added to `scripts/start-kb-rag.ps1`
-- Elevation detection with auto-elevation prompt
-- Idempotent firewall rule creation for 6 ports (Qdrant, MCP, Health, Prometheus, Grafana)
-- Comprehensive documentation (README.md, README.pt-BR.md, README.es.md, OPERATIONS.md)
-- Manual and group policy deployment guidance
-- All Portuguese comments translated to English
-
-Plans:
-
-- [x] 15-01-PLAN.md — Enhance start-kb-rag.ps1 with firewall configuration — completed 2026-05-26
-- [x] 15-02-PLAN.md — Documentation updates (READMEs + OPERATIONS.md) — completed 2026-05-26
-
----
-
-### Phase 16: Reclassification capability for document database
-
-**Goal:** Provide a mechanism to reclassify already-ingested documents when classification logic improves. Updates metadata (vendor/product/subsystem/doc_type/version) in Qdrant without re-processing or re-embedding.
-
-**Milestone:** v1.3
-**Requirements:** RECLASSIFY-01 through RECLASSIFY-07
-**Depends on:** Phase 11 (auto-classification)
-**Plans:** 3/3 plans complete
-**Estimated effort:** 18 hours (6h + 8h + 4h)
-
-Plans:
-
-- [x] **16-01:** Core Reclassification Engine (6h) — VectorStore updates, SQLite backup/audit tables, classification detection, backup/log functions
-- [x] **16-02:** CLI Commands (8h) — reclassify, verify, rollback, sessions subcommands with Rich progress/preview
-- [x] **16-03:** Documentation (4h) — README.md/pt-BR/es sections, OPERATIONS.md procedures
-
-### Phase 17: Improve capability negotiation on the MCP server to advertise classified attributes
-
-**Goal:** Advertise OTCS auto-tagging attributes (vendor, product, module, subsystem, version) during MCP tool negotiation so clients can discover available filter values. Maintain a compact terms table indexed from the knowledge base — token-size controlled to avoid excessive context consumption.
-
-**Milestone:** v1.3
-**Requirements:** TBD
-**Depends on:** Phase 11 (auto-classification stores vendor/product/subsystem/version in Qdrant)
-**Plans:** 3 plans
-
-Plans:
-
-- [ ] **17-01-PLAN.md** — Module Classification Axis (4h): Add `infer_module()`, MODULE_PATTERNS, module field in classify/payload/filters
-- [ ] **17-02-PLAN.md** — Terms Table & Dynamic Descriptions (5h): FilterTermsCache, get_distinct_values(), cache-bust marker, dynamic list_tools()
-- [ ] **17-03-PLAN.md** — list_filter_options Tool (3h): New MCP tool registration and handler
-
-### Phase 18: Fix Grafana "Datasource ${DS_PROMETHEUS} was not found" error
-
-**Goal:** Fix the Prometheus datasource variable resolution error in the "KB-RAG MCP Health Dashboard" Grafana dashboard when loaded via `docker compose up -d`. Ensure the datasource name or variable reference matches what's provisioned in the Grafana datasource configuration.
-
-**Milestone:** v1.3
-**Requirements:** TBD
-**Depends on:** Phase 14 (Health Dashboard created the dashboard/datasource config)
-**Plans:** 0 plans
-
-Plans:
-
-- [ ] TBD
-
-### Phase 19: VERIFICATION.md Backfill
-
-**Goal:** Create VERIFICATION.md files for all 14 shipped phases that are missing them (phases 1-11.1, 12-13, 16-18). Each file documents verification criteria, commands, and results.
-
-**Milestone:** v1.3
-**Requirements:** VERBACK-01 through VERBACK-04
-**Depends on:** — (independent)
-**Plans:** 0 plans
-
-Plans:
-
-- [ ] TBD
-
-### Phase 20: Test Environment Fixes
-
-**Goal:** Fix test_reranker_lazy.py conftest fixture isolation issues and ensure all test files pass in a clean environment with no stale artifacts or external dependencies.
-
-**Milestone:** v1.3
-**Requirements:** TESTFIX-01 through TESTFIX-03
-**Depends on:** — (independent)
-**Plans:** 0 plans
-
-Plans:
-
-- [ ] TBD
-
-### Phase 21: Codebase Hygiene Sweep
-
-**Goal:** Remove unused imports, resolve TODO/FIXME/HACK comments, fix type annotations, standardize log messages, and remove dead code across the codebase.
-
-**Milestone:** v1.3
-**Requirements:** HYGIENE-01 through HYGIENE-05
-**Depends on:** — (independent)
-**Status:** ✅ Complete (2026-05-27)
-**Plans:** 1/1 plans complete
-
-Plans:
-
-- [x] 21-01 — Codebase hygiene sweep: unused imports, TODOs, log fmt, dead code, types
-
-### Phase 22: Integration Checker CI Gate
-
-**Goal:** Wire the integration checker script into CI so it runs after tests and fails the pipeline if integration gaps are found.
-
-**Milestone:** v1.3
-**Requirements:** CICHECK-01 through CICHECK-04
-**Depends on:** — (independent)
-**Status:** ✅ Complete (2026-05-27)
-**Plans:** 1/1 plans complete
-
-Plans:
-
-- [x] 22-01 — Integration checker CI gate: script + CI job + reqs update
-
----
+<details>
+<summary>✅ v1.3 Post-Ship Polish & Infrastructure (Phases 12–22) — SHIPPED 2026-05-27</summary>
+
+- [x] Phase 12: English Comments & Docstrings (3/3 plans) — completed 2026-05-25
+- [x] Phase 13: Docs Sync & Readme Languages (4/4 plans) — completed 2026-05-26
+- [x] Phase 14: Health Dashboard (6/6 plans) — completed 2026-05-26
+- [x] Phase 15: PowerShell Ports Script (2/2 plans) — completed 2026-05-26
+- [x] Phase 16: Reclassification (3/3 plans) — completed 2026-05-27
+- [x] Phase 17: Capability Negotiation (3/3 plans) — completed 2026-05-27
+- [x] Phase 18: Grafana Datasource Fix (1/1 plan) — completed 2026-05-27
+- [x] Phase 19: VERIFICATION.md Backfill (1/1 plan) — completed 2026-05-27
+- [x] Phase 20: Test Environment Fixes (1/1 plan) — completed 2026-05-27
+- [x] Phase 21: Codebase Hygiene Sweep (1/1 plan) — completed 2026-05-27
+- [x] Phase 22: Integration Checker CI Gate (1/1 plan) — completed 2026-05-27
+
+**Delivered:** English-only codebase (0 Portuguese comments; CI gate), multilingual README (EN/PT-BR/ES), Grafana + Prometheus monitoring stack (6 tabs, 28 panels, 4 services), PowerShell Windows firewall config, document reclassification engine with rollback, capability negotiation with FilterTermsCache, Grafana datasource fix (stable UID), 13 VERIFICATION.md backfill files + gap detection, LOG_PATH PermissionError fix, codebase hygiene sweep (13 unused imports, 3 TODOs, 2 dead code instances), integration checker CI gate (3 checks, needs: test).
+
+</details>
 
 ## Progress
 
@@ -269,9 +87,9 @@ Plans:
 | 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
 | 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
 | 16. Reclassification | v1.3 | 3/3 | Complete   | 2026-05-27 |
-| 17. Capability Negotiation | v1.3 | 0/3 | Planned    | —
-| 18. Grafana Datasource Fix | v1.3 | 0/0 | Planned    | —
-| 19. VERIFICATION.md Backfill | v1.3 | 0/0 | Planned    | —
-| 20. Test Environment Fixes | v1.3 | 0/0 | Planned    | —
-| 21. Codebase Hygiene Sweep | 1/1 | Complete    | 2026-05-27 |
-| 22. Integration Checker CI Gate | v1.3 | 0/0 | Planned    | —
+| 17. Capability Negotiation | v1.3 | 3/3 | Complete | 2026-05-27 |
+| 18. Grafana Datasource Fix | v1.3 | 1/1 | Complete | 2026-05-27 |
+| 19. VERIFICATION.md Backfill | v1.3 | 1/1 | Complete | 2026-05-27 |
+| 20. Test Environment Fixes | v1.3 | 1/1 | Complete | 2026-05-27 |
+| 21. Codebase Hygiene Sweep | v1.3 | 1/1 | Complete | 2026-05-27 |
+| 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
