@@ -660,6 +660,164 @@ Override automatic classification with `_meta.json` files:
 
 **See [METADATA_OVERRIDES.md](docs/METADATA_OVERRIDES.md) for full guide.**
 
+#### Reclassifying Documents
+
+When classification rules improve (e.g., better vendor detection patterns), you can update metadata for already-ingested documents without re-processing or re-embedding:
+
+##### Basic Usage
+
+```bash
+# Reclassify specific files
+kb-ingest reclassify "docs/OpenText/*.pdf"
+
+# Reclassify by metadata filter
+kb-ingest reclassify "**/*.pdf" --filter 'vendor=""'
+
+# Combine pattern and filter
+kb-ingest reclassify "docs/OT*.pdf" --filter 'subsystem=""'
+
+# Skip confirmation (automation)
+kb-ingest reclassify "docs/**/*" --yes
+```
+
+##### Verification Workflow
+
+Before reclassifying, verify what would change:
+
+```bash
+# Check for mismatches
+kb-ingest reclassify verify "docs/**/*.pdf"
+
+# Shows:
+# - Documents with metadata mismatches
+# - Current vs. expected values
+# - Per-document detail
+```
+
+After reclassification, verify the changes were applied:
+
+```bash
+kb-ingest reclassify verify "docs/**/*.pdf"
+# Should show: "All documents match expected classifications"
+```
+
+##### Rollback
+
+If reclassification produces unexpected results, rollback to previous metadata:
+
+```bash
+# List backup sessions
+kb-ingest reclassify sessions
+
+# Rollback entire session
+kb-ingest reclassify rollback --session 2026-05-26T15-30-00
+
+# Selective rollback (pattern + timestamp)
+kb-ingest reclassify rollback "docs/OT*.pdf" --before 2026-05-26T16-00-00
+```
+
+Backups are kept for 30 days by default (configurable via `RECLASSIFY_BACKUP_RETENTION_DAYS`).
+
+##### How It Works
+
+1. **Detect Changes:** Runs `classify()` on matched documents, compares to current Qdrant metadata
+2. **Preview:** Shows aggregated summary by field (e.g., "vendor: 47 docs ('' → 'OpenText')")
+3. **Backup:** Writes old metadata to SQLite (`data/registry.db`) for rollback
+4. **Update:** Updates Qdrant payload fields in-place (preserves vectors)
+5. **Audit:** Logs changes to `reclassify_history` table for tracking
+
+##### Options
+
+| Flag | Description |
+|------|-------------|
+| `--collection <name>` | Target specific Qdrant collection |
+| `--filter <expr>` | Metadata filter (e.g., `vendor=""`) |
+| `--yes` / `-y` | Skip confirmation prompt |
+| `--allow-missing` | Process documents even if source file missing |
+| `--include-custom` | Update custom fields beyond classification fields |
+| `--no-progress` | Disable progress bar (for scripting) |
+
+##### Safety Features
+
+- **Interactive confirmation:** Shows preview before making changes (use `--yes` to skip)
+- **Automatic backup:** Old metadata saved to SQLite before updates
+- **Session tracking:** All backups linked to session timestamp for full rollback
+- **Audit log:** All changes logged to `reclassify_history` table
+- **30-day retention:** Backups auto-cleaned after 30 days (configurable)
+
+##### Common Workflows
+
+**Scenario 1: Improved vendor detection**
+
+Phase 11 shipped with basic vendor inference, leaving many documents with empty `vendor` field. After improving `VENDOR_MAP` patterns:
+
+```bash
+# Verify what would change
+kb-ingest reclassify verify "**/*" --filter 'vendor=""'
+
+# Shows 47 documents would change vendor → "OpenText"
+
+# Apply changes
+kb-ingest reclassify "**/*" --filter 'vendor=""' --yes
+```
+
+**Scenario 2: Fixing misclassified documents**
+
+Some PDFs were incorrectly classified as `doc_type="overview"` when they should be `"admin_guide"`:
+
+```bash
+# Verify current state
+kb-ingest reclassify verify "docs/admin/*.pdf"
+
+# Reclassify (after updating doc_type rules in classifier.py)
+kb-ingest reclassify "docs/admin/*.pdf"
+
+# Verify fixed
+kb-ingest reclassify verify "docs/admin/*.pdf"
+```
+
+**Scenario 3: Rollback after classification regression**
+
+Classification rule change introduced incorrect subsystem values:
+
+```bash
+# Check recent sessions
+kb-ingest reclassify sessions
+
+# Shows session 2026-05-26T15-30-00 with 50 docs changed
+
+# Rollback entire session
+kb-ingest reclassify rollback --session 2026-05-26T15-30-00
+```
+
+##### Troubleshooting
+
+**"No classification changes detected"**
+
+Possible causes:
+- Classification rules haven't changed since last ingest
+- Pattern doesn't match any documents in Qdrant
+- Metadata filter too restrictive
+
+Solution: Run `verify` to see current vs. expected values
+
+**"Source file not found on disk"**
+
+By default, reclassify skips documents where source file is missing (source file needed to run `classify()`). If files moved or you want to reclassify using Qdrant metadata only:
+
+```bash
+kb-ingest reclassify "**/*" --allow-missing
+```
+
+**Rollback session not found**
+
+Sessions older than 30 days are auto-cleaned. Adjust retention:
+
+```bash
+export RECLASSIFY_BACKUP_RETENTION_DAYS=90
+kb-ingest reclassify "**/*"
+```
+
 ---
 
 ### 🏥 Health Checks
