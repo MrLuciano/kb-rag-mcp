@@ -23,6 +23,7 @@ from ingest.cli.job import job_group  # noqa: E402
 from ingest.cli.progress import progress_group  # noqa: E402
 from ingest.cli.status import status_group  # noqa: E402
 from ingest.cli.check import check_group  # noqa: E402
+from ingest.cli.reclassify import reclassify_group  # noqa: E402
 
 
 @click.group()
@@ -76,6 +77,7 @@ cli.add_command(job_group)
 cli.add_command(progress_group)
 cli.add_command(status_group)
 cli.add_command(check_group)
+cli.add_command(reclassify_group, name="reclassify")
 
 
 if __name__ == "__main__":
