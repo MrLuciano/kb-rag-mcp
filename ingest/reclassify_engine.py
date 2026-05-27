@@ -148,7 +148,7 @@ async def detect_changed_classifications(
 
         # Compare classification fields
         fields_changed = {}
-        for field in ["vendor", "product", "subsystem", "doc_type", "version"]:
+        for field in ["vendor", "product", "subsystem", "module", "doc_type", "version"]:
             old_value = current_meta.get(field, "")
             new_value = expected_meta.get(field, "")
             if old_value != new_value:
