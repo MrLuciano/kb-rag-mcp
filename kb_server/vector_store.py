@@ -606,6 +606,77 @@ class VectorStore:
         chunks.sort(key=lambda c: c["chunk_index"])
         return chunks
 
+    # ── Terms Table (Phase 17) ─────────────────────────────────────────
+
+    async def get_distinct_values(
+        self,
+        field: str,
+        top_n: int = 0,
+        with_counts: bool = False,
+        collection_name: str | None = None,
+    ) -> list[str] | list[dict]:
+        """Get distinct values for a payload field across a collection.
+
+        PHASE 17: Used by FilterTermsCache to build the terms table.
+
+        Args:
+            field: Qdrant payload field name.
+            top_n: If > 0, return only the top N most frequent values.
+            with_counts: If True, return list of {value, count} dicts.
+            collection_name: Target collection (default: self.collection).
+
+        Returns:
+            List of distinct values (strings) or list of {value, count} dicts.
+        """
+        col = collection_name or self.collection
+        if not col or not self.client:
+            return []
+
+        try:
+            from qdrant_client import models
+
+            all_values: dict[str, int] = {}
+            next_offset = None
+            limit = 100
+
+            while True:
+                records, next_offset = await self.client.scroll(
+                    collection_name=col,
+                    limit=limit,
+                    offset=next_offset,
+                    with_payload=[field],
+                    with_vectors=False,
+                )
+                for record in records:
+                    val = record.payload.get(field)
+                    if val and isinstance(val, str) and val.strip():
+                        all_values[val] = all_values.get(val, 0) + 1
+
+                if next_offset is None:
+                    break
+
+            if not all_values:
+                return []
+
+            sorted_vals = sorted(
+                all_values.items(),
+                key=lambda x: (-x[1], x[0]),
+            )
+
+            if top_n > 0:
+                sorted_vals = sorted_vals[:top_n]
+
+            if with_counts:
+                return [
+                    {"value": val, "count": count}
+                    for val, count in sorted_vals
+                ]
+            return [val for val, _ in sorted_vals]
+
+        except Exception as e:
+            log.error(f"Failed to get distinct values for '{field}': {e}")
+            return []
+
     # ── Stats ─────────────────────────────────────────────────────────
 
     async def get_stats(self) -> dict:
