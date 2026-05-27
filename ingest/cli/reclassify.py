@@ -303,8 +303,150 @@ async def _rollback_impl(
     yes: bool
 ) -> None:
     """Async implementation of rollback command."""
-    # Implementation in Step 5
-    pass
+    # Validate arguments
+    if session and (pattern or before):
+        console.print("[red]Error: --session cannot be combined with pattern or --before[/red]")
+        raise SystemExit(1)
+    
+    if not session and not (pattern and before):
+        console.print("[red]Error: Either --session or (pattern + --before) required[/red]")
+        raise SystemExit(1)
+    
+    with MetadataStore() as store:
+        # Mode 1: Session-based rollback
+        if session:
+            # Query backups for session
+            cursor = store.conn.execute(
+                "SELECT source_file, field_name, old_value, chunk_index FROM reclassify_backups WHERE session_timestamp=?",
+                (session,)
+            )
+            backups = cursor.fetchall()
+            
+            if not backups:
+                console.print(f"[red]Error: Session not found: {session}[/red]")
+                raise SystemExit(1)
+            
+            # Show preview
+            doc_count = len(set(b[0] for b in backups))
+            console.print(f"\n[bold]Session: {session}[/bold]")
+            console.print(f"Documents: {doc_count}")
+            console.print(f"Fields to restore: {len(backups)}")
+            
+            if not yes:
+                response = console.input("\n[bold yellow]Restore this session? [y/N]:[/bold yellow] ")
+                if response.lower() != "y":
+                    console.print("[red]Aborted.[/red]")
+                    return
+            
+            # Apply rollback
+            await _apply_rollback(backups)
+            
+            # Log rollback to audit
+            timestamp = datetime.now().isoformat()
+            for backup in backups:
+                store.conn.execute(
+                    """
+                    INSERT INTO reclassify_history 
+                    (timestamp, source_file, field_name, old_value, new_value, session_timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        timestamp,
+                        backup[0],  # source_file
+                        backup[1],  # field_name
+                        backup[2],  # old_value (now being restored as new_value)
+                        "(rollback)",  # marker
+                        f"rollback-{session}"
+                    )
+                )
+            store.conn.commit()
+            
+            console.print(f"[bold green]✓ Rolled back {doc_count} documents[/bold green]")
+        
+        # Mode 2: Selective rollback (pattern + --before)
+        else:
+            # Query backups matching pattern before timestamp
+            # For now, simplified version using session_timestamp filter
+            cursor = store.conn.execute(
+                "SELECT source_file, field_name, old_value, chunk_index FROM reclassify_backups WHERE session_timestamp < ?",
+                (before,)
+            )
+            all_backups = cursor.fetchall()
+            
+            if not all_backups:
+                console.print(f"[yellow]No backups found before {before}[/yellow]")
+                return
+            
+            # Filter by pattern (simple glob match)
+            import fnmatch
+            backups = [b for b in all_backups if fnmatch.fnmatch(b[0], pattern)]
+            
+            if not backups:
+                console.print(f"[yellow]No backups found matching pattern '{pattern}' before {before}[/yellow]")
+                return
+            
+            # Show preview
+            doc_count = len(set(b[0] for b in backups))
+            console.print(f"\n[bold]Selective Rollback[/bold]")
+            console.print(f"Pattern: {pattern}")
+            console.print(f"Before: {before}")
+            console.print(f"Documents: {doc_count}")
+            console.print(f"Fields to restore: {len(backups)}")
+            
+            if not yes:
+                response = console.input("\n[bold yellow]Restore these documents? [y/N]:[/bold yellow] ")
+                if response.lower() != "y":
+                    console.print("[red]Aborted.[/red]")
+                    return
+            
+            # Apply rollback
+            await _apply_rollback(backups)
+            
+            # Log rollback to audit
+            timestamp = datetime.now().isoformat()
+            for backup in backups:
+                store.conn.execute(
+                    """
+                    INSERT INTO reclassify_history 
+                    (timestamp, source_file, field_name, old_value, new_value, session_timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        timestamp,
+                        backup[0],  # source_file
+                        backup[1],  # field_name
+                        backup[2],  # old_value
+                        "(selective-rollback)",  # marker
+                        f"selective-{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}"
+                    )
+                )
+            store.conn.commit()
+            
+            console.print(f"[bold green]✓ Rolled back {doc_count} documents[/bold green]")
+
+
+async def _apply_rollback(backups: list[tuple]) -> None:
+    """Apply rollback by restoring old metadata to Qdrant."""
+    store = VectorStore()
+    await store.connect()
+    
+    # Group by source_file
+    by_file = {}
+    for source_file, field_name, old_value, chunk_index in backups:
+        if source_file not in by_file:
+            by_file[source_file] = {}
+        by_file[source_file][field_name] = old_value
+    
+    # Update each file
+    from os import getenv
+    default_collection = getenv("QDRANT_COLLECTION", "kb-default")
+    
+    for source_file, updates in by_file.items():
+        await store.update_chunk_metadata(
+            collection_name=default_collection,
+            source_file=source_file,
+            metadata_updates=updates
+        )
 
 
 def _parse_filter_expr(filter_expr: str) -> dict[str, str]:

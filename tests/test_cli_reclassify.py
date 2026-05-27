@@ -200,3 +200,82 @@ def test_sessions_command_shows_sessions_table():
         
         # Should not crash, prints session table
         _sessions_impl()
+
+
+# Step 5 tests
+
+@pytest.mark.asyncio
+async def test_rollback_session_validation():
+    """RECLASSIFY-06: rollback validates arguments."""
+    from ingest.cli.reclassify import _rollback_impl
+    
+    # Test: --session and pattern cannot be combined
+    with pytest.raises(SystemExit):
+        await _rollback_impl(
+            pattern="docs/*.pdf",
+            session="2026-05-27T15-30-00",
+            before=None,
+            yes=True
+        )
+    
+    # Test: either --session or (pattern + --before) required
+    with pytest.raises(SystemExit):
+        await _rollback_impl(
+            pattern=None,
+            session=None,
+            before=None,
+            yes=True
+        )
+
+
+@pytest.mark.asyncio
+async def test_rollback_session_not_found():
+    """RECLASSIFY-06: rollback shows error for non-existent session."""
+    from ingest.cli.reclassify import _rollback_impl
+    
+    with patch("ingest.cli.reclassify.MetadataStore") as mock_store_class:
+        # Mock store with empty results
+        mock_store = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = []
+        mock_store.conn.execute.return_value = mock_cursor
+        mock_store.__enter__.return_value = mock_store
+        mock_store.__exit__.return_value = None
+        mock_store_class.return_value = mock_store
+        
+        with pytest.raises(SystemExit):
+            await _rollback_impl(
+                pattern=None,
+                session="2026-05-27T15-30-00",
+                before=None,
+                yes=True
+            )
+
+
+@pytest.mark.asyncio
+async def test_rollback_session_restores_metadata():
+    """RECLASSIFY-06: rollback --session restores full session."""
+    from ingest.cli.reclassify import _rollback_impl
+    
+    with patch("ingest.cli.reclassify.MetadataStore") as mock_store_class:
+        with patch("ingest.cli.reclassify._apply_rollback") as mock_apply:
+            # Mock store with backup data
+            mock_store = MagicMock()
+            mock_cursor = MagicMock()
+            mock_cursor.fetchall.return_value = [
+                ("docs/test.pdf", "vendor", "", 0),
+            ]
+            mock_store.conn.execute.return_value = mock_cursor
+            mock_store.__enter__.return_value = mock_store
+            mock_store.__exit__.return_value = None
+            mock_store_class.return_value = mock_store
+            
+            await _rollback_impl(
+                pattern=None,
+                session="2026-05-27T15-30-00",
+                before=None,
+                yes=True
+            )
+            
+            # Verify _apply_rollback was called
+            mock_apply.assert_called_once()
