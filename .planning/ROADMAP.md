@@ -166,19 +166,6 @@ Plans:
 
 ### Phase 17: Improve capability negotiation on the MCP server to advertise classified attributes
 
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 16
-**Plans:** 0 plans
-
-Plans:
-
-- [ ] TBD (run /gsd:plan-phase 17 to break down)
-
----
-
-### Phase 17: Improve capability negotiation on the MCP server to advertise classified attributes
-
 **Goal:** Advertise OTCS auto-tagging attributes (vendor, product, module, subsystem, version) during MCP tool negotiation so clients can discover available filter values. Maintain a compact terms table indexed from the knowledge base — token-size controlled to avoid excessive context consumption.
 
 **Milestone:** v1.3
@@ -187,6 +174,20 @@ Plans:
 **Plans:** 0 plans
 
 Plans:
+
+- [ ] TBD
+
+### Phase 18: Fix Grafana "Datasource ${DS_PROMETHEUS} was not found" error
+
+**Goal:** Fix the Prometheus datasource variable resolution error in the "KB-RAG MCP Health Dashboard" Grafana dashboard when loaded via `docker compose up -d`. Ensure the datasource name or variable reference matches what's provisioned in the Grafana datasource configuration.
+
+**Milestone:** v1.3
+**Requirements:** TBD
+**Depends on:** Phase 14 (Health Dashboard created the dashboard/datasource config)
+**Plans:** 0 plans
+
+Plans:
+
 - [ ] TBD
 
 ---
@@ -213,14 +214,4 @@ Plans:
 | 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
 | 16. Reclassification | v1.3 | 3/3 | Complete   | 2026-05-27 |
 | 17. Capability Negotiation | v1.3 | 0/0 | Planned    | —
-
-## Backlog
-
-### Phase 999.1: Fix Grafana "Datasource ${DS_PROMETHEUS} was not found" error (BACKLOG)
-
-**Goal:** Fix the Prometheus datasource variable resolution error in the "KB-RAG MCP Health Dashboard" Grafana dashboard when loaded via `docker compose up -d`. Ensure the datasource name or variable reference matches what's provisioned in the Grafana datasource configuration.
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with `/gsd-review-backlog` when ready)
+| 18. Grafana Datasource Fix | v1.3 | 0/0 | Planned    | —
