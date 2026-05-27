@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Post-Ship Polish & Infrastructure
-status: planning
-last_updated: "2026-05-27T19:45:00Z"
-last_activity: 2026-05-27 -- Milestone v1.3 formalized (requirements/roadmap phase)
+status: executing
+last_updated: "2026-05-27T20:15:00Z"
+last_activity: 2026-05-27 -- Phase 17 context gathered
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 11
+  completed_phases: 5
+  total_plans: 18
+  completed_plans: 18
+  percent: 45
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 16 — reclassification-ingested-docs
+**Current focus:** Phase 17 — improve-capability-negotiation
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-27 -- Milestone v1.3 formalized
+Phase: 17 (improve-capability-negotiation) — CONTEXT GATHERED
+Plan: 0 of 0 (not yet planned)
+Status: Context gathered — ready for planning
+Last activity: 2026-05-27 -- Phase 17 context gathered
 
 ## Phase 16 Outcomes
 
@@ -154,6 +154,34 @@ Last activity: 2026-05-27 -- Milestone v1.3 formalized
 - `ingest/registry.py` — Add `reclassify_backups` and `reclassify_history` tables
 - `ingest/cli/main.py` — Register `reclassify` subcommand
 - `ingest/ingest.py:410-459` — Reference for how metadata is stored in chunk payloads
+
+## Phase 17 Outcomes
+
+### Status
+
+**Phase 17 CONTEXT GATHERED** — 13 implementation decisions captured covering injection strategy (three-layer hybrid), truncation strategy (top-N = 20), new `list_filter_options` tool design, refresh strategy (startup + cache-bust marker file), and the new "module" classification axis.
+
+### Key Decisions (from 17-CONTEXT.md)
+
+- **Three-layer injection (D-01 to D-03)**: Dynamic descriptions (top-20 values) + no enum constraints (unbounded strings) + new `list_filter_options` tool for full enumeration
+- **New tool (D-04 to D-06)**: `list_filter_options(field?, collection?)` — follows existing `list_` pattern
+- **Event-driven refresh (D-09 to D-11)**: Startup scan + cache-bust marker file written by ingest pipeline
+- **Module attribute (D-12)**: New classification axis — extends classifier.py, Qdrant payload, MCP tools
+- **Attributes in scope (D-13)**: vendor, product, doc_type, subsystem, module, version, filter_type
+
+### Context Files Created
+
+- `.planning/phases/17-improve-capability-negotiation-on-the-mcp-server-to-advertis/17-CONTEXT.md` — 13 design decisions (D-01 through D-13)
+- `.planning/phases/17-improve-capability-negotiation-on-the-mcp-server-to-advertis/17-DISCUSSION-LOG.md` — Audit trail with 8 discussion areas
+
+### Requirements
+
+| Requirement | Description |
+|-------------|-------------|
+| CAPNEG-01 | Advertise classified attributes during tool negotiation |
+| CAPNEG-02 | Token-compact terms table |
+| CAPNEG-03 | Extend existing tool descriptions/annotations |
+| CAPNEG-04 | Backend indexes KB for unique attribute values |
 
 ## Phase 15 Outcomes
 
