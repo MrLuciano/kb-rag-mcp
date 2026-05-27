@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-05-27T22:26:52Z",
+  "exit_code": 1,
+  "summary": {
+    "total": 3,
+    "passed": 2,
+    "failed": 1
+  },
+  "checks": [
+    {
+      "name": "VERIFICATION.md presence",
+      "passed": false,
+      "gap_count": 4,
+      "gaps": [
+        "14-health-dashboard-httpd \u2014 missing VERIFICATION.md",
+        "19-verification-md-backfill \u2014 missing VERIFICATION.md",
+        "20-test-environment-fixes \u2014 missing VERIFICATION.md",
+        "22-integration-checker-ci-gate \u2014 missing VERIFICATION.md"
+      ]
+    },
+    {
+      "name": "REQUIREMENTS.md traceability",
+      "passed": true,
+      "gap_count": 0,
+      "gaps": []
+    },
+    {
+      "name": "SUMMARY.md file references",
+      "passed": true,
+      "gap_count": 0,
+      "gaps": []
+    }
+  ]
+}
