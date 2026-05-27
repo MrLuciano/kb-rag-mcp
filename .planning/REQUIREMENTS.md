@@ -2,45 +2,60 @@
 
 ## Milestone Goal
 
-Post-v1.2 enhancements: English-only enforcement, multilingual README, Prometheus observability, Windows LAN access, and reclassification capability for document metadata updates.
+Deliver capability negotiation, fix Grafana datasource, backfill process debt (VERIFICATION.md), resolve test environment issues, codebase hygiene sweep, and wire integration checker CI gate.
 
 ---
 
 ## Active Requirements
 
-### Operational Debt
+### Phase 17: Capability Negotiation
 
-- [ ] **DEBT-01**: Cross-encoder model loads lazily on first `predict()` call, not at import time — saves ~500MB memory and ~10s startup latency
-- [x] **DEBT-02**: Helm chart is validated with `helm lint` in CI pipeline — catches structural errors before deployment
-- [x] **DEBT-03**: MagicMock pollution from `qdrant_client` sys.modules stubs is resolved across the test suite — enum values compare correctly without `getattr(x, 'value', x)` workaround
-- [ ] **DEBT-04**: Server startup performs pre-flight health check — warns if Qdrant or LM Studio are unreachable before accepting queries
-- [ ] **DEBT-05**: Logging coverage is enforced via CI gate (`--fail-under` threshold) — prevents regression below current baseline
-- [ ] **DEBT-06**: LM Studio embedding dependency is documented with recommended fallback/startup options in operations guide
+- [ ] **CAPNEG-01**: MCP server advertises classified attributes (vendor, product, subsystem, version) during tool negotiation — clients discover available filter values
+- [ ] **CAPNEG-02**: Tokens compact — terms table size-controlled to avoid excessive context consumption
+- [ ] **CAPNEG-03**: Extends existing `search_kb`/`list_documents` tool descriptions or result annotations
+- [ ] **CAPNEG-04**: Backend indexes the knowledge base for unique attribute values
 
-### Auto-Classification (Phase 11 - COMPLETE)
+### Phase 18: Grafana Datasource Fix
 
-- [x] **CLASSIFY-01**: Documents are auto-classified with Vendor, Product, Subsystem, and Version attributes — inferred from directory hierarchy and filename patterns, extending existing OTCS product detection
-- [x] **CLASSIFY-02**: Classification gaps are filled by extracting metadata (title, subject, author) and first-page content from PDF/DOCX files — no LLM dependency
-- [x] **CLASSIFY-03**: Extended classification is backward-compatible with existing OTCS auto-tagging — existing `infer_product()` and `infer_doc_type()` signatures unchanged
+- [ ] **DSFIX-01**: Grafana dashboard loads without "Datasource ${DS_PROMETHEUS} was not found" errors when using `docker compose up -d`
+- [ ] **DSFIX-02**: Stable UID (`uid: "prometheus"`) added to datasource provisioning config
+- [ ] **DSFIX-03**: Hardcoded `"prometheus"` references replace `${DS_PROMETHEUS}` variables in both deployment dashboard JSONs (config + helm)
+- [ ] **DSFIX-04**: `__inputs` sections removed from dashboard JSONs
+- [ ] **DSFIX-05**: Helm chart updates produce same fix when monitoring is enabled
 
-### Reclassification (Phase 16 - PLANNING)
+### Phase 19: VERIFICATION.md Backfill
 
-- [ ] **RECLASSIFY-01**: In-place metadata updates in Qdrant preserve embeddings and vectors — VectorStore provides `update_chunk_metadata()` for fast payload-only updates
-- [ ] **RECLASSIFY-02**: SQLite backup/audit tables (`reclassify_backups`, `reclassify_history`) enable full rollback and change tracking — integrated with IngestRegistry in `data/registry.db`
-- [ ] **RECLASSIFY-03**: Classification detection compares current Qdrant metadata against `classify()` output — only updates documents where metadata differs
-- [ ] **RECLASSIFY-04**: CLI subcommand `kb-ingest reclassify <pattern>` provides interactive preview and confirmation — shows aggregated summary by field before applying changes
-- [ ] **RECLASSIFY-05**: Dedicated verify subcommand shows mismatches between current and expected metadata — useful before and after reclassification
-- [ ] **RECLASSIFY-06**: Session-based and selective rollback restore old metadata from backup — supports full session undo or pattern+timestamp selective restore
-- [ ] **RECLASSIFY-07**: Documentation covers reclassification workflows, safety mechanisms, and operational procedures — integrated into README (user guide) and OPERATIONS.md (ops guide)
+- [ ] **VERBACK-01**: Every shipped phase without a VERIFICATION.md gets one (14 phases: 1-11.1, 12-13, 16-18)
+- [ ] **VERBACK-02**: Each VERIFICATION.md documents verification criteria, commands, and results
+- [ ] **VERBACK-03**: Backfill uses git log + test history to determine what was verified at ship time
+- [ ] **VERBACK-04**: Backfill script for gap detection (list phases missing VERIFICATION.md)
+
+### Phase 20: Test Environment Fixes
+
+- [ ] **TESTFIX-01**: test_reranker_lazy.py conftest fixture isolation fixed — no cross-test pollution
+- [ ] **TESTFIX-02**: All test files pass in clean environment (no stale .pyc, no cache artifacts)
+- [ ] **TESTFIX-03**: Test suite self-contained — no external dependencies required for unit tests
+
+### Phase 21: Codebase Hygiene Sweep
+
+- [ ] **HYGIENE-01**: All unused imports removed across codebase
+- [ ] **HYGIENE-02**: All TODO/FIXME/HACK comments resolved or tracked with issues
+- [ ] **HYGIENE-03**: Type annotations consistent and mypy-clean
+- [ ] **HYGIENE-04**: Log messages use consistent format and severity levels
+- [ ] **HYGIENE-05**: Dead code (unused functions, classes, variables) removed
+
+### Phase 22: Integration Checker CI Gate
+
+- [ ] **CICHECK-01**: Integration checker script runs in CI after test execution
+- [ ] **CICHECK-02**: Validates no integration gaps exist (docs ↔ code, plans ↔ implementation)
+- [ ] **CICHECK-03**: CI fails if checker finds unresolved gaps
+- [ ] **CICHECK-04**: Checker results reported in CI output for debugging
 
 ---
 
 ## Future Requirements
 
-- LLM-assisted classification for ambiguous documents (post-v1.2)
-- Reclassification of already-ingested documents (depends on CLASSIFY-01/02)
-- English inline comments sweep (Backlog 999.1)
-- README translations + Spanish README (Backlog 999.2)
+(none — scope complete for v1.3)
 
 ## Out of Scope
 
@@ -48,27 +63,36 @@ Post-v1.2 enhancements: English-only enforcement, multilingual README, Prometheu
 - Cloud-managed vector store — self-hosted Qdrant only
 - Real-time streaming ingest — file-based ingest only
 - GUI for doc management — CLI + MCP tools sufficient
-- LLM integration for classification — heuristics + metadata only in v1.2
+- LLM integration for classification — heuristics + metadata only
 
 ---
 
 ## Traceability
 
-| REQ-ID | Phase | Plan | Status |
-|--------|-------|------|--------|
-| DEBT-01 | Phase 9 | 09-01 | ✅ Complete |
-| DEBT-04 | Phase 9 | 09-02 | ✅ Complete |
-| DEBT-06 | Phase 9 | 09-03 | ✅ Complete |
-| DEBT-02 | Phase 10 | 10-01 | ✅ Complete |
-| DEBT-03 | Phase 10 | 10-02 | ✅ Complete |
-| DEBT-05 | Phase 10 | 10-03 | ✅ Complete |
-| CLASSIFY-01 | Phase 11 | 11-01 | ✅ Complete |
-| CLASSIFY-02 | Phase 11 | 11-02 | ✅ Complete |
-| CLASSIFY-03 | Phase 11 | 11-01+02 | ✅ Complete |
-| RECLASSIFY-01 | Phase 16 | 16-01 | 🔄 Planning |
-| RECLASSIFY-02 | Phase 16 | 16-01 | 🔄 Planning |
-| RECLASSIFY-03 | Phase 16 | 16-01 | 🔄 Planning |
-| RECLASSIFY-04 | Phase 16 | 16-02 | 🔄 Planning |
-| RECLASSIFY-05 | Phase 16 | 16-02 | 🔄 Planning |
-| RECLASSIFY-06 | Phase 16 | 16-02 | 🔄 Planning |
-| RECLASSIFY-07 | Phase 16 | 16-03 | 🔄 Planning |
+| REQ-ID      | Phase | Status        |
+|-------------|-------|---------------|
+| CAPNEG-01   | 17    | 🔄 Planned    |
+| CAPNEG-02   | 17    | 🔄 Planned    |
+| CAPNEG-03   | 17    | 🔄 Planned    |
+| CAPNEG-04   | 17    | 🔄 Planned    |
+| DSFIX-01    | 18    | 🔄 Planned    |
+| DSFIX-02    | 18    | 🔄 Planned    |
+| DSFIX-03    | 18    | 🔄 Planned    |
+| DSFIX-04    | 18    | 🔄 Planned    |
+| DSFIX-05    | 18    | 🔄 Planned    |
+| VERBACK-01  | 19    | 🔄 Planned    |
+| VERBACK-02  | 19    | 🔄 Planned    |
+| VERBACK-03  | 19    | 🔄 Planned    |
+| VERBACK-04  | 19    | 🔄 Planned    |
+| TESTFIX-01  | 20    | 🔄 Planned    |
+| TESTFIX-02  | 20    | 🔄 Planned    |
+| TESTFIX-03  | 20    | 🔄 Planned    |
+| HYGIENE-01  | 21    | 🔄 Planned    |
+| HYGIENE-02  | 21    | 🔄 Planned    |
+| HYGIENE-03  | 21    | 🔄 Planned    |
+| HYGIENE-04  | 21    | 🔄 Planned    |
+| HYGIENE-05  | 21    | 🔄 Planned    |
+| CICHECK-01  | 22    | 🔄 Planned    |
+| CICHECK-02  | 22    | 🔄 Planned    |
+| CICHECK-03  | 22    | 🔄 Planned    |
+| CICHECK-04  | 22    | 🔄 Planned    |

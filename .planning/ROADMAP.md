@@ -5,7 +5,7 @@
 - ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](milestones/v1.0-ROADMAP.md)
 - ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v1.1-ROADMAP.md)
 - ✅ **v1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v1.2-ROADMAP.md)
-- 🔄 **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–16 (planning)
+- 🔄 **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (planning)
 
 ## Phases
 
@@ -190,6 +190,58 @@ Plans:
 
 - [ ] TBD
 
+### Phase 19: VERIFICATION.md Backfill
+
+**Goal:** Create VERIFICATION.md files for all 14 shipped phases that are missing them (phases 1-11.1, 12-13, 16-18). Each file documents verification criteria, commands, and results.
+
+**Milestone:** v1.3
+**Requirements:** VERBACK-01 through VERBACK-04
+**Depends on:** — (independent)
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD
+
+### Phase 20: Test Environment Fixes
+
+**Goal:** Fix test_reranker_lazy.py conftest fixture isolation issues and ensure all test files pass in a clean environment with no stale artifacts or external dependencies.
+
+**Milestone:** v1.3
+**Requirements:** TESTFIX-01 through TESTFIX-03
+**Depends on:** — (independent)
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD
+
+### Phase 21: Codebase Hygiene Sweep
+
+**Goal:** Remove unused imports, resolve TODO/FIXME/HACK comments, fix type annotations, standardize log messages, and remove dead code across the codebase.
+
+**Milestone:** v1.3
+**Requirements:** HYGIENE-01 through HYGIENE-05
+**Depends on:** — (independent)
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD
+
+### Phase 22: Integration Checker CI Gate
+
+**Goal:** Wire the integration checker script into CI so it runs after tests and fails the pipeline if integration gaps are found.
+
+**Milestone:** v1.3
+**Requirements:** CICHECK-01 through CICHECK-04
+**Depends on:** — (independent)
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD
+
 ---
 
 ## Progress
@@ -215,3 +267,7 @@ Plans:
 | 16. Reclassification | v1.3 | 3/3 | Complete   | 2026-05-27 |
 | 17. Capability Negotiation | v1.3 | 0/0 | Planned    | —
 | 18. Grafana Datasource Fix | v1.3 | 0/0 | Planned    | —
+| 19. VERIFICATION.md Backfill | v1.3 | 0/0 | Planned    | —
+| 20. Test Environment Fixes | v1.3 | 0/0 | Planned    | —
+| 21. Codebase Hygiene Sweep | v1.3 | 0/0 | Planned    | —
+| 22. Integration Checker CI Gate | v1.3 | 0/0 | Planned    | —
