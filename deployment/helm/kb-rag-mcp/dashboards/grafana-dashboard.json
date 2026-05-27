@@ -1,14 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
   "__requires": [
     {
       "type": "grafana",
@@ -59,7 +49,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -80,14 +70,14 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "up{job=\"kb-rag\"}",
           "legendFormat": "health"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } }
       },
@@ -97,14 +87,14 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_ingest_api_requests_total[5m])",
           "legendFormat": "requests/s"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
       },
@@ -114,7 +104,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, rate(kb_ingest_api_latency_seconds_bucket[5m]))",
           "legendFormat": "{{endpoint}}"
         }
@@ -128,7 +118,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -139,14 +129,14 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_files_processed_total",
           "legendFormat": "files"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -157,14 +147,14 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_chunks_generated_total",
           "legendFormat": "chunks"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -174,14 +164,14 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_ingest_files_processed_total[5m])",
           "legendFormat": "files/s"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -191,14 +181,14 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_ingest_chunks_generated_total[5m])",
           "legendFormat": "chunks/s"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -220,14 +210,14 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, rate(kb_ingest_file_processing_seconds_bucket[5m]))",
           "legendFormat": "p95"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -237,19 +227,19 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_worker_pool_size",
           "legendFormat": "pool size"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_worker_pool_queue_size",
           "legendFormat": "queue size"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -271,7 +261,7 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_worker_pool_utilization",
           "legendFormat": "utilization"
         }
@@ -285,7 +275,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -305,14 +295,14 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_jobs_created_total",
           "legendFormat": "{{priority}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -334,14 +324,14 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_jobs_active",
           "legendFormat": "{{status}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -363,14 +353,14 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_jobs_active",
           "legendFormat": "{{status}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -380,14 +370,14 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_ingest_jobs_completed_total[5m])",
           "legendFormat": "{{status}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
       },
@@ -397,24 +387,24 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.50, rate(kb_ingest_job_duration_seconds_bucket[5m]))",
           "legendFormat": "p50"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, rate(kb_ingest_job_duration_seconds_bucket[5m]))",
           "legendFormat": "p95"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.99, rate(kb_ingest_job_duration_seconds_bucket[5m]))",
           "legendFormat": "p99"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -424,12 +414,12 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_rate_limiter_tokens",
           "legendFormat": "tokens {{limiter}}"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_ingest_rate_limiter_waits_total[5m])",
           "legendFormat": "waits/s {{limiter}}"
         }
@@ -443,7 +433,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -465,14 +455,14 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, rate(kb_ingest_api_latency_seconds_bucket[5m]))",
           "legendFormat": "{{endpoint}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
       },
@@ -482,14 +472,14 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_batch_embeddings_total[5m])",
           "legendFormat": "{{backend}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "cps",
@@ -510,14 +500,14 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_batch_processing_throughput_chunks_per_sec",
           "legendFormat": "chunks/sec"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -527,19 +517,19 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_batch_upserts_total[5m])",
           "legendFormat": "upserts/s {{parallel}}"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_batch_upsert_points_total[5m])",
           "legendFormat": "points/s"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
       },
@@ -549,12 +539,12 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, rate(kb_batch_embedding_duration_seconds_bucket[5m]))",
           "legendFormat": "embedding p95"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, rate(kb_batch_upsert_duration_seconds_bucket[5m]))",
           "legendFormat": "upsert p95"
         }
@@ -568,7 +558,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -590,14 +580,14 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "(rate(kb_rag_cache_hits_total[5m]) / (rate(kb_rag_cache_hits_total[5m]) + rate(kb_rag_cache_misses_total[5m]) + 0.001))",
           "legendFormat": "{{backend}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "decmbytes",
@@ -618,14 +608,14 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_rag_cache_size_bytes / 1024 / 1024",
           "legendFormat": "{{backend}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
       },
@@ -635,14 +625,14 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_rag_cache_evictions_total[5m])",
           "legendFormat": "{{backend}} - {{reason}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
       },
@@ -652,19 +642,19 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_rag_cache_hits_total[5m])",
           "legendFormat": "hits/s {{backend}}"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_rag_cache_misses_total[5m])",
           "legendFormat": "misses/s {{backend}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -674,7 +664,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_rag_cache_entries",
           "legendFormat": "entries {{backend}}"
         }
@@ -688,7 +678,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
@@ -698,14 +688,14 @@
       "type": "gauge",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_http_pool_connections",
           "legendFormat": "{{state}}"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } }
       },
@@ -716,7 +706,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_ingest_chunks_generated_total",
           "legendFormat": "total vectors (approx)"
         }
