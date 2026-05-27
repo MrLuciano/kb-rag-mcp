@@ -213,3 +213,14 @@ Plans:
 | 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
 | 16. Reclassification | v1.3 | 3/3 | Complete   | 2026-05-27 |
 | 17. Capability Negotiation | v1.3 | 0/0 | Planned    | —
+
+## Backlog
+
+### Phase 999.1: Fix Grafana "Datasource ${DS_PROMETHEUS} was not found" error (BACKLOG)
+
+**Goal:** Fix the Prometheus datasource variable resolution error in the "KB-RAG MCP Health Dashboard" Grafana dashboard when loaded via `docker compose up -d`. Ensure the datasource name or variable reference matches what's provisioned in the Grafana datasource configuration.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with `/gsd-review-backlog` when ready)
