@@ -167,7 +167,7 @@ async def _embed_lmstudio_sdk(text: str) -> list[float]:
         )
         return await _embed_openai_compat(text)
     except Exception as e:
-        log.warning(f"SDK failed ({e}) — using openai-compat as fallback")
+        log.warning("SDK failed (%s) — using openai-compat as fallback", e)
         return await _embed_openai_compat(text)
 
 
@@ -178,7 +178,7 @@ async def _embed_lmstudio_rest(text: str) -> list[float]:
     """
     client = await _http()
     url = f"{LMS_BASE_URL}/api/v0/embeddings"
-    log.debug(f"lmstudio-rest → POST {url}")
+    log.debug("lmstudio-rest → POST %s", url)
     resp = await client.post(url, json={"model": MODEL, "input": text})
     resp.raise_for_status()
     return resp.json()["data"][0]["embedding"]
@@ -193,7 +193,7 @@ async def _embed_openai_compat(text: str) -> list[float]:
     """
     client = await _http()
     url = f"{LMS_BASE_URL}/v1/embeddings"
-    log.debug(f"openai-compat → POST {url} model={MODEL}")
+    log.debug("openai-compat → POST %s model=%s", url, MODEL)
     resp = await client.post(
         url,
         headers={"Authorization": "Bearer lm-studio"},
@@ -223,7 +223,7 @@ async def _embed_openai_compat_batch(
     client = await _http()
     url = f"{LMS_BASE_URL}/v1/embeddings"
     log.debug(
-        f"openai-compat BATCH → POST {url} model={MODEL} texts={len(texts)}"
+        "openai-compat BATCH → POST %s model=%s texts=%d", url, MODEL, len(texts)
     )
     
     resp = await client.post(
@@ -311,7 +311,7 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
 
     try:
         vector = await fn(text)
-        log.debug(f"Embedding generated: {len(vector)} dims via {BACKEND}")
+        log.debug("Embedding generated: %d dims via %s", len(vector), BACKEND)
 
         # Cache the result
         if use_cache and _embed_cache is not None:
@@ -322,7 +322,7 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
 
         return vector
     except Exception as e:
-        log.error(f"Embedding error ({BACKEND}): {e}")
+        log.error("Embedding error (%s): %s", BACKEND, e)
         raise
 
 
