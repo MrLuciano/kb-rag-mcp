@@ -409,6 +409,7 @@ async def process_file(
     version = meta.get("version")  # PHASE 13: Optional version field
     vendor = meta.get("vendor", "")
     subsystem = meta.get("subsystem", "")
+    module = meta.get("module", "")  # PHASE 17
     source_file = str(file_path.relative_to(docs_root))
 
     # ── Verifica se precisa ingerir ─
@@ -458,6 +459,7 @@ async def process_file(
                     "doc_type": doc_type,
                     "vendor": vendor,
                     "subsystem": subsystem,
+                    "module": module,
                     "page": section.get("page"),
                     "chunk_index": chunk_index,
                 }

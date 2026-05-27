@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from ingest.classifier import MODULE_PATTERNS, infer_module
+from ingest.classifier import MODULE_PATTERNS, classify, infer_module
 
 
 class TestInferModule:
@@ -112,3 +112,10 @@ class TestInferModule:
     def test_infer_module_is_importable(self):
         from inspect import isfunction
         assert isfunction(infer_module)
+
+
+class TestClassifyModule:
+    def test_classify_returns_module(self):
+        result = classify(Path("/docs/AppServer/admin/guide.pdf"), Path("/docs"))
+        assert "module" in result
+        assert result["module"] == "Administration"

@@ -847,6 +847,7 @@ def classify(
             "doc_type": None,
             "vendor": None,
             "subsystem": None,
+            "module": None,
         }
 
     # Auto-classify (will be overridden if _meta.json specifies)
@@ -857,6 +858,8 @@ def classify(
         file_path, product_override or auto_product
     )
     auto_subsystem = infer_subsystem(file_path, docs_root)
+    # PHASE 17: Auto-infer module
+    auto_module = infer_module(file_path, docs_root)
 
     # Apply precedence: _meta.json > product_override > auto
     product = overrides.get("product") or auto_product
@@ -864,12 +867,15 @@ def classify(
     # PHASE 11: Apply same precedence to vendor/subsystem
     vendor = overrides.get("vendor") or auto_vendor
     subsystem = overrides.get("subsystem") or auto_subsystem
+    # PHASE 17: Apply same precedence to module
+    module = overrides.get("module") or auto_module
 
     result = {
         "product": product,
         "doc_type": doc_type,
         "vendor": vendor,
         "subsystem": subsystem,
+        "module": module,
     }
 
     # PHASE 11-02: Apply enrichment from document metadata (gap-fill only,
