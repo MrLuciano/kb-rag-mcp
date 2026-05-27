@@ -345,3 +345,160 @@ def cleanup_old_backups(retention_days: int | None = None) -> int:
 
     log.info(f"Cleaned up {count_before} old backup records")
     return count_before
+
+
+async def reclassify_documents(
+    collection_name: str,
+    pattern: str = "**/*",
+    metadata_filter: dict[str, Any] | None = None,
+    allow_missing: bool = False,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """
+    Orchestrate complete reclassification workflow.
+
+    Detects changes, backs up old metadata, updates Qdrant, logs changes,
+    and cleans up old backups. Safe by default with dry-run mode.
+
+    Args:
+        collection_name: Qdrant collection to reclassify.
+        pattern: Glob pattern for document filtering (e.g., "docs/**/*.pdf").
+        metadata_filter: Optional Qdrant filter (e.g., {"vendor": ""}).
+        allow_missing: Process documents even if source file missing.
+        dry_run: If True, detect changes but don't update anything.
+
+    Returns:
+        Dict with keys:
+            - session_timestamp: ISO timestamp for this session
+            - documents_changed: Number of documents with changes
+            - total_field_changes: Total number of field changes across all docs
+            - chunks_updated: Number of Qdrant chunks updated (0 if dry_run)
+            - backup_records: Number of backup records created (0 if dry_run)
+            - history_records: Number of history records created (0 if dry_run)
+            - old_backups_cleaned: Number of old backup records deleted
+            - changes: List of change dicts (for CLI display)
+
+    Raises:
+        Exception: If detection, backup, update, or logging fails.
+    """
+    session_timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H-%M-%S")
+
+    log.info(
+        f"Starting reclassification session {session_timestamp} "
+        f"(collection={collection_name}, pattern={pattern}, dry_run={dry_run})"
+    )
+
+    # Step 1: Detect changes
+    changes = await detect_changed_classifications(
+        collection_name=collection_name,
+        pattern=pattern,
+        metadata_filter=metadata_filter,
+        allow_missing=allow_missing,
+    )
+
+    if not changes:
+        log.info("No classification changes detected")
+        return {
+            "session_timestamp": session_timestamp,
+            "documents_changed": 0,
+            "total_field_changes": 0,
+            "chunks_updated": 0,
+            "backup_records": 0,
+            "history_records": 0,
+            "old_backups_cleaned": 0,
+            "changes": [],
+        }
+
+    # Count total field changes
+    total_field_changes = sum(
+        len(change["fields_changed"]) for change in changes
+    )
+
+    log.info(
+        f"Found {len(changes)} documents with {total_field_changes} "
+        f"total field changes"
+    )
+
+    if dry_run:
+        log.info("Dry-run mode: skipping backup, update, and logging")
+        return {
+            "session_timestamp": session_timestamp,
+            "documents_changed": len(changes),
+            "total_field_changes": total_field_changes,
+            "chunks_updated": 0,
+            "backup_records": 0,
+            "history_records": 0,
+            "old_backups_cleaned": 0,
+            "changes": changes,
+        }
+
+    # Step 2: Backup old metadata
+    try:
+        backup_metadata(session_timestamp, changes)
+        backup_records = total_field_changes
+    except Exception as e:
+        log.error(f"Backup failed: {e}")
+        raise
+
+    # Step 3: Update Qdrant metadata
+    try:
+        store = VectorStore()
+        await store.connect()
+
+        chunks_updated = 0
+        for change in changes:
+            source_file = change["source_file"]
+            fields_changed = change["fields_changed"]
+
+            # Build update dict (new values only)
+            update_fields = {
+                field: new_value
+                for field, (old_value, new_value) in fields_changed.items()
+            }
+
+            # Update all chunks for this document
+            updated_count = await store.update_chunk_metadata(
+                collection_name=collection_name,
+                source_file=source_file,
+                metadata_updates=update_fields,
+            )
+            chunks_updated += updated_count
+
+        log.info(f"Updated {chunks_updated} chunks in Qdrant")
+
+    except Exception as e:
+        log.error(f"Qdrant update failed: {e}")
+        raise
+
+    # Step 4: Log changes to audit trail
+    try:
+        log_changes(session_timestamp, changes)
+        history_records = total_field_changes
+    except Exception as e:
+        log.error(f"Audit logging failed: {e}")
+        raise
+
+    # Step 5: Cleanup old backups
+    try:
+        old_backups_cleaned = cleanup_old_backups()
+    except Exception as e:
+        log.warning(f"Backup cleanup failed (non-fatal): {e}")
+        old_backups_cleaned = 0
+
+    log.info(
+        f"Reclassification complete: {len(changes)} documents, "
+        f"{chunks_updated} chunks updated, {backup_records} backups, "
+        f"{history_records} history records, {old_backups_cleaned} old backups cleaned"
+    )
+
+    return {
+        "session_timestamp": session_timestamp,
+        "documents_changed": len(changes),
+        "total_field_changes": total_field_changes,
+        "chunks_updated": chunks_updated,
+        "backup_records": backup_records,
+        "history_records": history_records,
+        "old_backups_cleaned": old_backups_cleaned,
+        "changes": changes,
+    }
+
