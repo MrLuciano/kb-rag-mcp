@@ -29,6 +29,7 @@ from kb_server.vector_store import VectorStore
 from kb_server.telemetry.query_logger import QueryLogger
 from kb_server.collections.manager import CollectionManager
 from kb_server.collections.router import CollectionRouter, CollectionNotFoundError
+from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
 
 # ── Logging ───────────────────────────────────────────────────────
 logging.basicConfig(
@@ -64,6 +65,7 @@ app = Server("kb-rag")
 store = VectorStore()
 collection_manager: CollectionManager | None = None
 collection_router: CollectionRouter | None = None
+filter_terms_cache: FilterTermsCache | None = None  # PHASE 17
 
 # PHASE 14: Initialize query logger if enabled
 query_logger = None
@@ -91,6 +93,16 @@ async def list_tools() -> list[types.Tool]:
     Returns:
         List of Tool definitions with name, description, and inputSchema.
     """
+    # PHASE 17: Get dynamic filter descriptions for tool parameters
+    dyn_descs = {}
+    if filter_terms_cache:
+        await filter_terms_cache.refresh_if_needed()
+        dyn_descs = filter_terms_cache.get_all_formatted(top_n=20)
+
+    def _fmt(field: str, default: str) -> str:
+        """Return dynamic description if available, else default."""
+        return dyn_descs.get(field, default)
+
     doc_type_enum = [
         "admin_guide",
         "install_guide",
@@ -141,24 +153,14 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "Filter by product. "
-                            "Examples: AppServer, DataSync, AdminPortal, Adobe, SAP,"
-                            "ISO, general"
+                            f"{_fmt('product', 'Examples: AppServer, DataSync, AdminPortal, Adobe, SAP, ISO, general')}"
                         ),
                     },
                     "doc_type": {
                         "type": "string",
                         "description": (
                             "Filter by content type. "
-                            "admin_guide=administration, "
-                            "install_guide=installation, "
-                            "upgrade_guide=upgrade/migration, "
-                            "config_guide=configuration, "
-                            "release_notes=release notes, "
-                            "api_guide=API/SDK, "
-                            "howto=tutorials/case studies, "
-                            "training=training, overview=overview,"
-                            "standard=ISO standards/regulations, "
-                            "reference=technical reference"
+                            f"{_fmt('doc_type', 'admin_guide=administration, install_guide=installation, upgrade_guide=upgrade/migration, config_guide=configuration, release_notes=release notes, api_guide=API/SDK, howto=tutorials/case studies, training=training, overview=overview, standard=ISO standards/regulations, reference=technical reference')}"
                         ),
                         "enum": doc_type_enum,
                     },
@@ -174,21 +176,22 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "PHASE 11.1: Filter by vendor. "
-                            "Examples: OpenText, Adobe, SAP, ISO, general"
+                            f"{_fmt('vendor', 'Examples: OpenText, Adobe, SAP, ISO, general')}"
                         ),
                     },
                     "subsystem": {
                         "type": "string",
                         "description": (
-                            "PHASE 11.1: Filter by subsystem/module within a product"
+                            "PHASE 11.1: Filter by subsystem/module within a product. "
+                            f"{_fmt('subsystem', '')}"
                         ),
                     },
                     "module": {
                         "type": "string",
                         "description": (
                             "PHASE 17: Filter by module/sub-module within a "
-                            "product. Examples: Administration, Configuration, "
-                            "API, Security, Connectors, User Management"
+                            "product. "
+                            f"{_fmt('module', 'Examples: Administration, Configuration, API, Security, Connectors, User Management')}"
                         ),
                     },
                     "filter_type": {
@@ -749,6 +752,16 @@ async def main():
     collection_manager = CollectionManager(store.client, vector_size=store.dim)
     collection_router = CollectionRouter(collection_manager, default_collection=store.collection)
     log.info(f"CollectionRouter initialized (default='{store.collection}')")
+
+    # PHASE 17: Initialize filter terms cache
+    global filter_terms_cache
+    filter_terms_cache = FilterTermsCache(store=store)
+    await filter_terms_cache.reindex()
+    log.info(
+        f"Filter terms cache initialized: "
+        f"{sum(len(v) for v in filter_terms_cache.terms.values())} "
+        f"distinct values across {len(filter_terms_cache.terms)} fields"
+    )
 
     # CR-04: Schedule periodic query log cleanup
     if query_logger:
