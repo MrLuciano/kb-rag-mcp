@@ -115,3 +115,13 @@ Plans:
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.3: Implement optimization experiments (BACKLOG)
+
+**Goal:** Implement optimization experiments at `kb_server/optimization/chunking_experiments.py:8` and `kb_server/optimization/scoring_experiments.py:8` (TODO placeholders). Captured for future planning.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
