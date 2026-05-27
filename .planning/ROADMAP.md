@@ -171,11 +171,13 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** TBD
 **Depends on:** Phase 11 (auto-classification stores vendor/product/subsystem/version in Qdrant)
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
 
-- [ ] TBD
+- [ ] **17-01-PLAN.md** — Module Classification Axis (4h): Add `infer_module()`, MODULE_PATTERNS, module field in classify/payload/filters
+- [ ] **17-02-PLAN.md** — Terms Table & Dynamic Descriptions (5h): FilterTermsCache, get_distinct_values(), cache-bust marker, dynamic list_tools()
+- [ ] **17-03-PLAN.md** — list_filter_options Tool (3h): New MCP tool registration and handler
 
 ### Phase 18: Fix Grafana "Datasource ${DS_PROMETHEUS} was not found" error
 
@@ -265,7 +267,7 @@ Plans:
 | 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
 | 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
 | 16. Reclassification | v1.3 | 3/3 | Complete   | 2026-05-27 |
-| 17. Capability Negotiation | v1.3 | 0/0 | Planned    | —
+| 17. Capability Negotiation | v1.3 | 0/3 | Planned    | —
 | 18. Grafana Datasource Fix | v1.3 | 0/0 | Planned    | —
 | 19. VERIFICATION.md Backfill | v1.3 | 0/0 | Planned    | —
 | 20. Test Environment Fixes | v1.3 | 0/0 | Planned    | —
