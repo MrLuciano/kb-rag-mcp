@@ -77,8 +77,61 @@ async def _reclassify_impl(
     no_progress: bool
 ) -> None:
     """Async implementation of reclassify command."""
-    # Implementation in Step 2
-    pass
+    log.info(f"Reclassifying: pattern={pattern}, collection={collection}")
+    
+    # Resolve collection
+    from kb_server.collections.router import CollectionRouter
+    router = CollectionRouter()
+    resolved_collection = await router.resolve(collection)
+    
+    # Step 1: Detect changed classifications
+    console.print(f"[bold cyan]Scanning documents matching: {pattern}[/bold cyan]")
+    
+    # Parse metadata filter
+    metadata_filter = _parse_filter_expr(filter_expr) if filter_expr else None
+    
+    changes = await detect_changed_classifications(
+        collection_name=resolved_collection,
+        pattern=pattern,
+        metadata_filter=metadata_filter,
+        allow_missing=allow_missing
+    )
+    
+    if not changes:
+        console.print("[green]✓ No classification changes detected.[/green]")
+        return
+    
+    # Step 2: Show aggregated preview
+    console.print(f"\n[bold]Found {len(changes)} documents with classification changes:[/bold]\n")
+    _show_aggregated_preview(changes)
+    
+    # Step 3: Confirm (unless --yes)
+    if not yes:
+        response = console.input("\n[bold yellow]Apply these changes? [y/N]:[/bold yellow] ")
+        if response.lower() != "y":
+            console.print("[red]Aborted.[/red]")
+            return
+    
+    # Step 4: Backup old metadata
+    session_timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    console.print(f"\n[cyan]Backing up metadata (session: {session_timestamp})...[/cyan]")
+    backup_metadata(session_timestamp, changes)
+    
+    # Step 5: Update Qdrant with progress bar
+    await _apply_updates(
+        resolved_collection, changes, include_custom, no_progress
+    )
+    
+    # Step 6: Log changes to audit table
+    log_changes(session_timestamp, changes)
+    
+    # Step 7: Cleanup old backups
+    cleanup_old_backups()
+    
+    # Summary
+    total_chunks = sum(c["chunk_count"] for c in changes)
+    console.print(f"\n[bold green]✓ Updated {len(changes)} documents ({total_chunks} chunks)[/bold green]")
+    console.print(f"[dim]Session: {session_timestamp}[/dim]")
 
 
 @reclassify_group.command(name="verify")
@@ -165,3 +218,106 @@ async def _rollback_impl(
     """Async implementation of rollback command."""
     # Implementation in Step 5
     pass
+
+
+def _parse_filter_expr(filter_expr: str) -> dict[str, str]:
+    """
+    Parse filter expression like 'vendor=""' into dict.
+    
+    Supports simple syntax: field="value" or field=value or field='value'
+    """
+    import re
+    
+    # Match: field="value" or field='value' or field=value
+    match = re.match(r'(\w+)=(\"[^\"]*\"|\'[^\']*\'|[^\s]+)', filter_expr.strip())
+    if not match:
+        raise ValueError(f"Invalid filter expression: {filter_expr}")
+    
+    field = match.group(1)
+    value = match.group(2)
+    
+    # Remove quotes if present
+    if value.startswith('"') and value.endswith('"'):
+        value = value[1:-1]
+    elif value.startswith("'") and value.endswith("'"):
+        value = value[1:-1]
+    
+    return {field: value}
+
+
+def _show_aggregated_preview(changes: list[dict]) -> None:
+    """Show aggregated summary by field using Rich table."""
+    # Group changes by field
+    field_stats = {}  # field_name -> {(old, new): count}
+    
+    for change in changes:
+        for field_name, (old_val, new_val) in change["fields_changed"].items():
+            if field_name not in field_stats:
+                field_stats[field_name] = {}
+            key = (old_val, new_val)
+            field_stats[field_name][key] = field_stats[field_name].get(key, 0) + 1
+    
+    # Build Rich table
+    table = Table(title="Classification Changes")
+    table.add_column("Field", style="cyan")
+    table.add_column("Documents", justify="right", style="magenta")
+    table.add_column("Change", style="yellow")
+    
+    for field_name, transitions in field_stats.items():
+        for (old_val, new_val), count in transitions.items():
+            old_display = f"'{old_val}'" if old_val else "(empty)"
+            new_display = f"'{new_val}'" if new_val else "(empty)"
+            table.add_row(
+                field_name,
+                str(count),
+                f"{old_display} → {new_display}"
+            )
+    
+    console.print(table)
+
+
+async def _apply_updates(
+    collection: str,
+    changes: list[dict],
+    include_custom: bool,
+    no_progress: bool
+) -> None:
+    """Apply metadata updates to Qdrant with progress bar."""
+    store = VectorStore()
+    await store.connect()
+    
+    if no_progress:
+        # No progress bar — just iterate
+        for change in changes:
+            updates = change["fields_changed"]
+            # Convert (old, new) tuples to {field: new_value}
+            update_payload = {k: v[1] for k, v in updates.items()}
+            
+            await store.update_chunk_metadata(
+                collection_name=collection,
+                source_file=change["source_file"],
+                metadata_updates=update_payload
+            )
+    else:
+        # Rich progress bar
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console
+        ) as progress:
+            task = progress.add_task(
+                f"Updating {len(changes)} documents...",
+                total=len(changes)
+            )
+            
+            for change in changes:
+                updates = change["fields_changed"]
+                update_payload = {k: v[1] for k, v in updates.items()}
+                
+                await store.update_chunk_metadata(
+                    collection_name=collection,
+                    source_file=change["source_file"],
+                    metadata_updates=update_payload
+                )
+                
+                progress.advance(task)

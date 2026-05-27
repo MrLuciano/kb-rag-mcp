@@ -6,8 +6,10 @@ Phase 16: Reclassification capability.
 
 import pytest
 from click.testing import CliRunner
+from unittest.mock import patch, AsyncMock, MagicMock
 
 from ingest.cli.main import cli
+from ingest.cli.reclassify import _parse_filter_expr, _show_aggregated_preview
 
 
 def test_reclassify_command_exists():
@@ -64,3 +66,50 @@ def test_rollback_subcommand_exists():
     assert result.exit_code == 0
     assert "rollback" in result.output.lower()
     assert "restore" in result.output.lower()
+
+
+# Step 2 tests
+
+def test_parse_filter_expr_quoted_value():
+    """Filter parser handles quoted values."""
+    result = _parse_filter_expr('vendor=""')
+    assert result == {"vendor": ""}
+    
+    result = _parse_filter_expr('vendor="OpenText"')
+    assert result == {"vendor": "OpenText"}
+
+
+def test_parse_filter_expr_single_quotes():
+    """Filter parser handles single quotes."""
+    result = _parse_filter_expr("vendor='OpenText'")
+    assert result == {"vendor": "OpenText"}
+
+
+def test_parse_filter_expr_unquoted_value():
+    """Filter parser handles unquoted values."""
+    result = _parse_filter_expr("vendor=OpenText")
+    assert result == {"vendor": "OpenText"}
+
+
+def test_parse_filter_expr_invalid():
+    """Filter parser raises ValueError for invalid syntax."""
+    with pytest.raises(ValueError):
+        _parse_filter_expr("invalid syntax here")
+
+
+def test_show_aggregated_preview():
+    """Aggregated preview renders without crashing."""
+    changes = [
+        {
+            "source_file": "docs/test1.pdf",
+            "fields_changed": {"vendor": ("", "OpenText"), "subsystem": ("", "Admin")},
+            "chunk_count": 5
+        },
+        {
+            "source_file": "docs/test2.pdf",
+            "fields_changed": {"vendor": ("", "OpenText")},
+            "chunk_count": 3
+        }
+    ]
+    # Should not crash
+    _show_aggregated_preview(changes)

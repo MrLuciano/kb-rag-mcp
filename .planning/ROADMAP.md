@@ -352,12 +352,12 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** RECLASSIFY-01 through RECLASSIFY-07
 **Depends on:** Phase 11 (auto-classification)
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 **Estimated effort:** 18 hours (6h + 8h + 4h)
 
 Plans:
 
-- [ ] **16-01:** Core Reclassification Engine (6h) — VectorStore updates, SQLite backup/audit tables, classification detection, backup/log functions
+- [x] **16-01:** Core Reclassification Engine (6h) — VectorStore updates, SQLite backup/audit tables, classification detection, backup/log functions
 - [ ] **16-02:** CLI Commands (8h) — reclassify, verify, rollback, sessions subcommands with Rich progress/preview
 - [ ] **16-03:** Documentation (4h) — README.md/pt-BR/es sections, OPERATIONS.md procedures
 
@@ -382,4 +382,4 @@ Plans:
 | 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete    | 2026-05-26 |
 | 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
 | 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
-| 16. Reclassification | v1.3 | 0/0 | Planning | — |
+| 16. Reclassification | v1.3 | 1/3 | In Progress|  |
