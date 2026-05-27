@@ -32,12 +32,14 @@ from kb_server.collections.router import CollectionRouter, CollectionNotFoundErr
 from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
 
 # ── Logging ───────────────────────────────────────────────────────
+_log_path = os.getenv("LOG_PATH", "/tmp/kb-mcp.log")
+os.makedirs(os.path.dirname(_log_path), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
         logging.StreamHandler(sys.stderr),
-        logging.FileHandler(os.getenv("LOG_PATH", "/tmp/kb-mcp.log")),
+        logging.FileHandler(_log_path),
     ],
 )
 log = logging.getLogger("kb-mcp")
