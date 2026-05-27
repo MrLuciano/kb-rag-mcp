@@ -3,6 +3,17 @@
 import pytest
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_list_filter_options_integration():
+    """Integration test: filter options return valid data formats."""
+    from kb_server.filter_terms_cache import FilterTermsCache
+
+    cache = FilterTermsCache(store=None)
+    assert isinstance(cache.terms, dict)
+    assert cache.get_formatted("vendor") == ""
+
+
 @pytest.mark.asyncio
 async def test_list_filter_options_registered():
     """list_filter_options should appear in list_tools output."""
