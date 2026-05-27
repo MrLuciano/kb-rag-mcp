@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Post-Ship Polish & Infrastructure
-status: executing
-last_updated: "2026-05-27T22:05:00Z"
-last_activity: 2026-05-27 -- Phase 20 executed
+status: ready_to_plan
+last_updated: 2026-05-27T21:42:30.309Z
+last_activity: 2026-05-27 -- Phase 21 execution started
 progress:
   total_phases: 11
-  completed_phases: 9
-  total_plans: 24
-  completed_plans: 24
-  percent: 82
+  completed_phases: 8
+  total_plans: 25
+  completed_plans: 38
+  percent: 73
+stopped_at: Phase 21 complete (1/1) — ready to discuss Phase 22
 ---
 
 # Project State
@@ -20,21 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 17 — improve-capability-negotiation
+**Current focus:** Phase 22 — integration checker ci gate
 
 ## Current Position
 
-Phase: 21 (upcoming — to be determined)
-Plan: 0 of 0 (not yet planned)
-Status: Awaiting next phase planning
-Last activity: 2026-05-27 -- Phase 20 executed (1 plan, 2 commits)
+Phase: 21 (codebase-hygiene-sweep) — EXECUTING
+Plan: Not started
+Status: Executing Phase 21
+Last activity: 2026-05-27
 
 ## Phase 20 Outcomes
 
 ### Status
 
-- **Phase:** 20 (Test Environment Fixes)
-- **Status:** Complete — 1 plan, 3 tasks
+- **Phase:** 22
+- **Status:** Ready to plan
 - **Completed:** 2026-05-27
 
 ### Plans Executed

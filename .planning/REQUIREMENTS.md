@@ -38,11 +38,11 @@ Deliver capability negotiation, fix Grafana datasource, backfill process debt (V
 
 ### Phase 21: Codebase Hygiene Sweep
 
-- [ ] **HYGIENE-01**: All unused imports removed across codebase
+- [x] **HYGIENE-01**: All unused imports removed across codebase
 - [ ] **HYGIENE-02**: All TODO/FIXME/HACK comments resolved or tracked with issues
 - [ ] **HYGIENE-03**: Type annotations consistent and mypy-clean
 - [ ] **HYGIENE-04**: Log messages use consistent format and severity levels
-- [ ] **HYGIENE-05**: Dead code (unused functions, classes, variables) removed
+- [x] **HYGIENE-05**: Dead code (unused functions, classes, variables) removed
 
 ### Phase 22: Integration Checker CI Gate
 

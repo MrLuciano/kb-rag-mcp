@@ -225,7 +225,7 @@ Plans:
 **Milestone:** v1.3
 **Requirements:** HYGIENE-01 through HYGIENE-05
 **Depends on:** — (independent)
-**Plans:** 0 plans
+**Plans:** 1/1 plans complete
 
 Plans:
 
@@ -271,5 +271,5 @@ Plans:
 | 18. Grafana Datasource Fix | v1.3 | 0/0 | Planned    | —
 | 19. VERIFICATION.md Backfill | v1.3 | 0/0 | Planned    | —
 | 20. Test Environment Fixes | v1.3 | 0/0 | Planned    | —
-| 21. Codebase Hygiene Sweep | v1.3 | 0/0 | Planned    | —
+| 21. Codebase Hygiene Sweep | 1/1 | Complete    | 2026-05-27 |
 | 22. Integration Checker CI Gate | v1.3 | 0/0 | Planned    | —
