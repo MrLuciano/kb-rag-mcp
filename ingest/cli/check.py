@@ -64,7 +64,6 @@ def health(verbose: bool) -> None:
             table.add_row(name, "[yellow]SKIP[/yellow]", "Not checked", "\u2014")
             continue
 
-        icon = "[green]✓[/green]" if status.healthy else "[red]✗[/red]"
         status_text = (
             "[green]Healthy[/green]" if status.healthy else "[red]Unhealthy[/red]"
         )
