@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.3
-milestone_name: Quality & Operational Excellence
-status: completed
-last_updated: "2026-05-26T23:55:34.727Z"
-last_activity: 2026-05-26 -- Phase 15 marked complete
+milestone_name: Post-Ship Polish & Infrastructure
+status: in_progress
+last_updated: "2026-05-26T23:59:59.999Z"
+last_activity: 2026-05-26 -- Phase 16 planning complete
 progress:
-  total_phases: 13
-  completed_phases: 7
-  total_plans: 33
+  total_phases: 16
+  completed_phases: 15
+  total_plans: 36
   completed_plans: 27
-  percent: 54
+  percent: 93
 ---
 
 # Project State
@@ -20,14 +20,73 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 15 — powershell-ports-script
+**Current focus:** Phase 16 — reclassification capability for document database
 
 ## Current Position
 
-Phase: 15 — COMPLETE
-Plan: 2 of 2
-Status: Phase 15 complete
-Last activity: 2026-05-26 -- Phase 15 marked complete
+Phase: 16 — PLANNING COMPLETE
+Plan: 0 of 3
+Status: Phase 16 planning complete, ready for execution
+Last activity: 2026-05-26 -- Phase 16 planning artifacts created (16-01, 16-02, 16-03)
+
+## Phase 16 Outcomes
+
+### Status
+
+**Planning complete** — 3 plans created (16-01, 16-02, 16-03), estimated 18 hours total
+
+### Plans Defined
+
+- **16-01**: Core Reclassification Engine (6h) — VectorStore metadata update method, SQLite backup/audit tables, classification detection, backup/log functions
+- **16-02**: CLI Commands (8h) — `kb-ingest reclassify` subcommands (reclassify, verify, sessions, rollback) with Rich progress/preview
+- **16-03**: Documentation (4h) — README.md/pt-BR/es sections, OPERATIONS.md "Reclassification Management" procedures
+
+### Key Design Decisions (from 16-CONTEXT.md)
+
+- **In-place metadata update (D-01)**: Preserves embeddings and vectors, updates only Qdrant payload fields
+- **Classification detection (D-04)**: Compares current Qdrant metadata vs. `classify()` output, updates only changed documents
+- **Hybrid selection (D-05)**: Supports file glob patterns AND metadata filters (can combine)
+- **Interactive confirmation (D-06)**: Shows aggregated summary by field before applying changes
+- **SQLite backup (D-13)**: Writes old metadata to `reclassify_backups` table for rollback capability
+- **Session-based rollback (D-15)**: Full session undo OR selective pattern+timestamp restore
+- **30-day retention (D-16)**: Auto-cleanup of old backups (configurable via env var)
+
+### Requirements Defined
+
+| Requirement | Plan | Description |
+|-------------|------|-------------|
+| RECLASSIFY-01 | 16-01 | In-place metadata updates preserve embeddings |
+| RECLASSIFY-02 | 16-01 | SQLite backup/audit tables for rollback |
+| RECLASSIFY-03 | 16-01 | Classification detection compares current vs. expected |
+| RECLASSIFY-04 | 16-02 | CLI subcommand with interactive preview |
+| RECLASSIFY-05 | 16-02 | Verify subcommand shows mismatches |
+| RECLASSIFY-06 | 16-02 | Session-based and selective rollback |
+| RECLASSIFY-07 | 16-03 | Documentation in README and OPERATIONS.md |
+
+### Context Files Created
+
+- `.planning/phases/16-reclassification-ingested-docs/16-CONTEXT.md` — 16 design decisions (D-01 through D-16)
+- `.planning/phases/16-reclassification-ingested-docs/16-DISCUSSION-LOG.md` — Audit trail with alternatives considered
+- `.planning/phases/16-reclassification-ingested-docs/16-01-PLAN.md` — Core engine plan (6h, 5 implementation steps, +25 tests)
+- `.planning/phases/16-reclassification-ingested-docs/16-02-PLAN.md` — CLI commands plan (8h, 6 implementation steps, +30 tests)
+- `.planning/phases/16-reclassification-ingested-docs/16-03-PLAN.md` — Documentation plan (4h, 5 implementation steps, validation script)
+
+### Expected Test Growth
+
+- Baseline: 585 tests
+- Plan 16-01: +25 tests (610 total)
+- Plan 16-02: +30 tests (640 total)
+- Plan 16-03: N/A (documentation only, validated via example script)
+
+**Expected final: ~640 tests**
+
+### Canonical References Identified
+
+- `ingest/classifier.py` — Reuse `classify()` for reclassification detection
+- `kb_server/vector_store.py` — Add `update_chunk_metadata()` method
+- `ingest/registry.py` — Add `reclassify_backups` and `reclassify_history` tables
+- `ingest/cli/main.py` — Register `reclassify` subcommand
+- `ingest/ingest.py:410-459` — Reference for how metadata is stored in chunk payloads
 
 ## Phase 15 Outcomes
 

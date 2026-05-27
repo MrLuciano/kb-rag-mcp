@@ -347,16 +347,19 @@ Plans:
 
 ### Phase 16: Reclassification capability for document database
 
-**Goal:** When automatic classification (Phase 11) is ready, provide a mechanism to reclassify already-ingested documents — either reclassify in-place in the database, or re-ingest with updated metadata.
+**Goal:** Provide a mechanism to reclassify already-ingested documents when classification logic improves. Updates metadata (vendor/product/subsystem/doc_type/version) in Qdrant without re-processing or re-embedding.
 
 **Milestone:** v1.3
-**Requirements:** TBD
+**Requirements:** RECLASSIFY-01 through RECLASSIFY-07
 **Depends on:** Phase 11 (auto-classification)
-**Plans:** 0 plans
+**Plans:** 3 plans
+**Estimated effort:** 18 hours (6h + 8h + 4h)
 
 Plans:
 
-- [ ] TBD (run `gsd-plan-phase 16` to break down)
+- [ ] **16-01:** Core Reclassification Engine (6h) — VectorStore updates, SQLite backup/audit tables, classification detection, backup/log functions
+- [ ] **16-02:** CLI Commands (8h) — reclassify, verify, rollback, sessions subcommands with Rich progress/preview
+- [ ] **16-03:** Documentation (4h) — README.md/pt-BR/es sections, OPERATIONS.md procedures
 
 ---
 
