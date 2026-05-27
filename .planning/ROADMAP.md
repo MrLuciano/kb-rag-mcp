@@ -93,3 +93,15 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 20. Test Environment Fixes | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 21. Codebase Hygiene Sweep | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
+
+## Backlog
+
+### Phase 999.1: Update documentation in root and docs folder (BACKLOG)
+
+**Goal:** Organize README.md, INSTRUCTIONS.md, OPERATIONS.md, TROUBLESHOOTING.md to group the various modes of operation (Docker Compose, Helm, systemd, manual). Update CHANGELOG, REFERENCE.md and all documentation regarding the last changes to the project. Captured for future planning.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
