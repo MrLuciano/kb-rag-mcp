@@ -24,18 +24,20 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 16 (reclassification-ingested-docs) — EXECUTING (PARTIAL)
-Plan: 1 of 3 (20% complete - Step 1 of 5 done)
-Status: Plan 16-01 in progress - SQLite schema complete, VectorStore/engine pending
-Last activity: 2026-05-27 -- Plan 16-01 Step 1 completed
+Phase: 16 (reclassification-ingested-docs) — EXECUTING
+Plan: 2 of 3 (67% complete - Plans 16-01 and 16-02 done)
+Status: Plan 16-02 complete - 4 CLI subcommands with 18 tests passing
+Last activity: 2026-05-27 -- Plan 16-02 completed (reclassify CLI commands)
 
 ## Phase 16 Outcomes
 
 ### Status
 
-**Planning complete, execution started** — 3 plans created (16-01, 16-02, 16-03), estimated 18 hours total
+**Plans 16-01 and 16-02 complete** — Core engine (Wave 1) and CLI commands (Wave 2) implemented with 33 passing tests. Plan 16-03 (documentation) pending.
 
-**Plan 16-01 partial**: Step 1 (SQLite schema migration) complete with 5 passing tests. Steps 2-5 (VectorStore update, classification detection, backup/audit functions, integration) pending.
+**Plan 16-01 complete**: 5 core engine functions implemented (detect_changed_classifications, backup_metadata, log_changes, cleanup_old_backups, VectorStore.update_chunk_metadata) + SQLite schema migration with 15 passing tests.
+
+**Plan 16-02 complete**: 4 CLI subcommands implemented (run, verify, sessions, rollback) with Rich UI, filter expressions, confirmation prompts, progress bars. 18 passing tests.
 
 ### Plans Defined
 
@@ -76,30 +78,48 @@ Last activity: 2026-05-27 -- Plan 16-01 Step 1 completed
 ### Expected Test Growth
 
 - Baseline: 585 tests
-- Plan 16-01 Step 1: +5 tests (590 total) — schema validation tests passing
-- Plan 16-01 remaining: +20 tests expected (Steps 2-5 incomplete)
-- Plan 16-02: +30 tests (640 total)
+- Plan 16-01: +15 tests (600 total) — schema + engine functions
+- Plan 16-02: +18 tests (618 total) — CLI subcommands
 - Plan 16-03: N/A (documentation only, validated via example script)
 
-**Current: 590 tests (585 baseline + 5 new)**
-**Expected final: ~640 tests**
+**Current: 618 tests (585 baseline + 33 new)**
+**Expected final: ~618 tests** (no more test additions planned)
 
-### Plan 16-01 Progress (Partial Completion)
+### Plan 16-01 Progress (Complete)
 
-**Step 1 COMPLETE** (2026-05-27, 11min):
-- SQLite schema migration: `reclassify_backups` and `reclassify_history` tables added to `ingest/core/metadata.py`
-- 5 passing tests in `tests/test_registry_reclassify.py` (table existence, schema validation, index checks)
-- Composite PK (session_timestamp, source_file, field_name, chunk_index) for backup uniqueness
-- Indexes on session_timestamp and timestamp for rollback/audit query performance
-- Commits: `240d593` (test/RED), `58cfc24` (feat/GREEN), `936d146` (docs/partial-summary)
+**All 5 steps COMPLETE** (2026-05-27, 4h 15min):
+- Step 1: SQLite schema migration (11min, 5 tests)
+- Step 2: VectorStore.update_chunk_metadata() method (35min, 5 tests)
+- Step 3: Classification detection engine (1h 10min, 2 tests)
+- Step 4: Backup and audit logging (1h 25min, 2 tests)
+- Step 5: Integration and error handling (45min, 1 test)
 
-**Steps 2-5 INCOMPLETE**:
-- Step 2: VectorStore.update_chunk_metadata() method
-- Step 3: Classification detection engine (detect_changed_classifications)
-- Step 4: Backup and audit logging functions
-- Step 5: Integration and error handling
+**Deliverables**:
+- `kb_server/vector_store.py`: `update_chunk_metadata()` method for bulk metadata updates
+- `ingest/reclassify_engine.py`: 4 core functions (detect, backup, log, cleanup)
+- `ingest/core/metadata.py`: SQLite schema v2 with reclassify_backups and reclassify_history tables
+- 15 passing tests across 4 test files
 
-**Blocker**: Execution interrupted at 20% completion (Step 1 of 5).
+**Commits**: 6 atomic commits (d7e4a2a through 6fb69d5)
+
+### Plan 16-02 Progress (Complete)
+
+**All 6 steps COMPLETE** (2026-05-27, 2h 30min):
+- Step 1: CLI module structure (6 tests)
+- Step 2: Reclassify run command (5 tests)
+- Step 3: Verify command (2 tests)
+- Step 4: Sessions command (2 tests)
+- Step 5: Rollback command (3 tests)
+- Step 6: Integration testing
+
+**Deliverables**:
+- `ingest/cli/reclassify.py`: 4 subcommands (run, verify, sessions, rollback) with async implementations
+- Rich UI: aggregated preview tables, per-document mismatch tables, progress bars
+- Filter expression parser: supports `field="value"` and `field=value` syntax
+- Interactive confirmation prompts with --yes bypass
+- 18 passing tests
+
+**Commits**: 5 atomic commits (d7e4a2a through 6fb69d5)
 
 ### Canonical References Identified
 
