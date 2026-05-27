@@ -485,6 +485,13 @@ async def reclassify_documents(
         log.warning(f"Backup cleanup failed (non-fatal): {e}")
         old_backups_cleaned = 0
 
+    # PHASE 17: Signal MCP server to refresh filter terms
+    try:
+        from ingest.utils import write_filter_cache_bust
+        write_filter_cache_bust()
+    except Exception:
+        pass
+
     log.info(
         f"Reclassification complete: {len(changes)} documents, "
         f"{chunks_updated} chunks updated, {backup_records} backups, "

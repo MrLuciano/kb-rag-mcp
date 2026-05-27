@@ -604,6 +604,13 @@ async def run_ingest(
         f"{'='*50}"
     )
 
+    # PHASE 17: Signal MCP server to refresh filter terms
+    try:
+        from ingest.utils import write_filter_cache_bust
+        write_filter_cache_bust()
+    except Exception:
+        pass
+
     if total_errors > 0:
         log.info("Files with errors:")
         for e in registry.list_errors():
