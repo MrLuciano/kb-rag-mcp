@@ -27,3 +27,34 @@ Made kb-rag-mcp safe to release publicly: deleted legacy `server/` module, fixed
 ### Git Tag
 
 `v1.0`
+
+---
+
+## v1.1 — Quality & Operational Excellence
+
+**Shipped:** 2026-05-23
+**Phases:** 4 (5-8) | **Plans:** 10 | **Tests:** 576 passing
+
+### Delivered
+
+Established operational maturity and code quality foundations: SSE stability with Python 3.13 support, full test isolation from external services, 90% branch coverage enforcement on PR-to-master, OTCS product auto-tagging for 10 OpenText products, and English-only codebase with comprehensive Google-style docstrings.
+
+### Key Accomplishments
+
+1. **SSE stability & Python 3.13 support** — Fixed NoneType crash in SSE handler, pinned Starlette ≥1.0.0, added CI matrix testing across Python 3.11/3.12/3.13
+2. **Full test isolation** — Added 3 session-scoped mock fixtures (Qdrant, embed client, Redis) enabling `pytest -m "not integration"` to run without external services; 518 unit tests pass without infrastructure
+3. **90% coverage enforcement** — Set `fail_under = 90` in pyproject.toml and CI, enforcing branch coverage on PR-to-master for both kb_server/ and ingest/
+4. **OTCS product auto-tagging** — Added 18 directory aliases and 10 filename patterns enabling auto-detection of 10 OpenText product areas (ContentServer, WebReports, xECM, Workflow, CSIDE, Brava, OT2, DocumentViewer, APIGateway, ArchiveCenter)
+5. **CLI status command** — Added `kb-ingest status` with Rich table output showing per-source file/chunk/error counts, with optional `--source` filtering
+6. **English-only codebase** — Fixed 105 docstring gaps (32 missing + 73 Portuguese → English), verified with AST-based audit script; all public methods now have Google-style docstrings
+
+### Stats
+
+- Timeline: 2026-05-14 → 2026-05-23 (8 days)
+- Files changed: 75 | +4,980 insertions, -3,106 deletions | Python LOC: 13,457
+- Requirements: 15/15 v1.1 requirements met
+- Commits: 16 feature commits
+
+### Git Tag
+
+`v1.1`
