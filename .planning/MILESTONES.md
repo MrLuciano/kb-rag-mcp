@@ -30,7 +30,32 @@ Made kb-rag-mcp safe to release publicly: deleted legacy `server/` module, fixed
 
 ---
 
-## v1.1 — Quality & Operational Excellence
+## v1.2 — Tech Debt & Classification
+
+**Shipped:** 2026-05-27
+**Phases:** 4 (9, 10, 11, 11.1) | **Plans:** 9 | **Tests:** 585 passing
+
+### Delivered
+
+Established operational reliability and auto-classification maturity: lazy cross-encoder loading (~500MB saved, ~10s faster startup), pre-flight health checks with non-fatal warnings, Helm lint CI gate, MagicMock pollution resolved in test suite (3 files), logging coverage CI enforcement (40% threshold), auto-classification of documents with Vendor/Product/Subsystem/Version attributes, metadata gap-filling from PDF/DOCX, and vendor/subsystem fields made visible and filterable in search results.
+
+### Key Accomplishments
+
+1. **Startup reliability** — Cross-encoder loads lazily on first `rerank()` call (4 regression tests); pre-flight health checks warn on unreachable Qdrant/LM Studio without crashing; `kb-ingest check health` CLI with Rich table output; 4 embedding backends documented (lmstudio-sdk, lmstudio-rest, ollama, openai-compat)
+2. **CI quality gates** — `helm lint --strict` runs on every push; real qdrant_client imports replace 100+ lines of MagicMock stubs; logging audit enforced at 40% threshold on PR-to-master
+3. **Auto-classification** — Vendor inference (15 products mapped to OpenText), subsystem inference (8 functional categories), document metadata extraction (PDF/DOCX), gap-filling enrichment, all backward-compatible with existing OTCS tagging
+4. **Vendor/subsystem search integration** — Fields extracted in search results, filterable via MCP tools, visible in list_documents output — completed via Phase 11.1 after milestone audit discovered the gap
+
+### Stats
+
+- Timeline: 2026-05-14 → 2026-05-27 (13 days, including Phase 11.1 remediation)
+- Files changed: 30 | Commits: 19 feature commits
+- Requirements: 9/9 v1.2 requirements met
+- Phase 11.1 was a decimal-phase insertion to remediate critical integration gap found by milestone audit
+
+### Git Tag
+
+`v1.2`## v1.1 — Quality & Operational Excellence
 
 **Shipped:** 2026-05-23
 **Phases:** 4 (5-8) | **Plans:** 10 | **Tests:** 576 passing

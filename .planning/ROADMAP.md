@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](milestones/v1.0-ROADMAP.md)
 - ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v1.1-ROADMAP.md)
-- ✅ **v1.2 Tech Debt & Classification** — Phases 9–11 (shipped 2026-05-25)
+- ✅ **v1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v1.2-ROADMAP.md)
 - 🔄 **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–16 (planning)
 
 ## Phases
@@ -35,101 +35,17 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
----
+<details>
+<summary>✅ v1.2 Tech Debt & Classification (Phases 9–11.1) — SHIPPED 2026-05-27</summary>
 
-### Phase 9: Startup Reliability (COMPLETED)
+- [x] Phase 9: Startup Reliability (3/3 plans) — completed 2026-05-25
+- [x] Phase 10: CI & Test Infrastructure (3/3 plans) — completed 2026-05-25
+- [x] Phase 11: Auto-Classification (2/2 plans) — completed 2026-05-25
+- [x] Phase 11.1: Vendor/Subsystem Integration Completion (1/1 plan) — completed 2026-05-27
 
-**Goal:** Reduce server startup latency, add pre-flight health checks, and document embedding dependencies so operators know when the system is healthy before accepting queries.
+**Delivered:** Lazy cross-encoder loading (~500MB saved, ~10s faster startup), pre-flight health checks with non-fatal warnings, `kb-ingest check health` CLI, 4 embedding backends documented (OPERATIONS.md), Helm lint CI gate, MagicMock pollution resolved (3 test files), logging coverage CI gate (40% threshold), auto-classification (Vendor/Product/Subsystem/Version), metadata gap-filling from PDF/DOCX, vendor/subsystem fields visible in search results and filterable via MCP tools.
 
-**Milestone:** v1.2
-**Requirements:** DEBT-01, DEBT-04, DEBT-06
-
-**Success criteria — all met:**
-
-1. ✅ Server starts without loading the cross-encoder model — first inference loads it lazily (~500MB saved, ~10s faster startup)
-2. ✅ Server logs a warning at startup if Qdrant or LM Studio are unreachable
-3. ✅ Operators can run `kb-ingest check` (or equivalent) to validate external dependency health
-4. ✅ LM Studio embedding dependency and documented in OPERATIONS.md
-
-**Plans:** 3 plans
-
-Plans:
-
-- [x] 09-01-PLAN.md — Cross-encoder lazy loading verification & hardening (DEBT-01)
-- [x] 09-02-PLAN.md — Pre-flight health checks + `kb-ingest check health` CLI (DEBT-04)
-- [x] 09-03-PLAN.md — LM Studio embedding dependency documentation (DEBT-06)
-
-### Phase 10: CI & Test Infrastructure
-
-**Goal:** Fix MagicMock pollution in the test suite, validate Helm charts in CI, and enforce logging coverage to prevent quality regression.
-
-**Milestone:** v1.2
-**Requirements:** DEBT-02, DEBT-03, DEBT-05
-
-**Success criteria:**
-
-1. ✅ `helm lint` runs in CI and catches structural errors — no more manual-only chart review
-2. ✅ All `qdrant_client` enum comparisons in tests work without `getattr(x, 'value', x)` workaround
-3. ✅ Logging audit script has `--fail-under` flag; CI enforces threshold on PR-to-master
-4. ✅ Full test suite passes with zero pre-existing failures
-
-**Plans:** 3 plans
-
-Plans:
-
-- [x] 10-01-PLAN.md — Helm chart validation in CI with `helm lint --strict` (DEBT-02)
-- [x] 10-02-PLAN.md — Replace MagicMock-polluted qdrant_client stubs with real model imports (DEBT-03)
-- [x] 10-03-PLAN.md — Logging audit `--fail-under` flag + CI enforcement gate (DEBT-05)
-
-### Wave Dependencies
-
-**Wave 1** *(2/2 plans complete)*
-**Wave 2** *(10-03)*
-
-**Cross-cutting constraints:**
-
-- All 3 plans must ship together to satisfy DEBT-02, DEBT-03, DEBT-05
-- Full test suite (576+ tests) must pass at each plan completion
-- CI workflow file must remain valid YAML after each modification
-
-**Delivered (2026-05-25):**
-
-- 10-01: `helm-lint` job added to CI (azure/setup-helm@v4, `helm lint --strict`, `helm template`)
-- 10-02: Real qdrant_client imports in 3 test files — no MagicMock stubs for model classes
-- 10-03: `--fail-under` flag in logging-audit.py; CI enforcement step on PR-to-master
-
-### Phase 11: Auto-Classification (COMPLETED)
-
-**Goal:** Extend document classifier to extract Vendor, Product, Subsystem, and Version from filename patterns, directory hierarchy, and document metadata — no LLM dependency.
-
-**Milestone:** v1.2
-**Requirements:** CLASSIFY-01, CLASSIFY-02, CLASSIFY-03
-
-**Success criteria — all met:**
-
-1. ✅ A file named `OpenText WebReport Administrator Guide 23.4.pdf` is classified with `vendor=OpenText`, `product=WebReports`, `version=23.4`, `doc_type=admin_guide`
-2. ✅ Classification fills gaps from PDF/DOCX metadata (title, subject, author, keywords) when filename is ambiguous
-3. ✅ Existing `infer_product()`, `infer_doc_type()`, `classify()` signatures unchanged — backward compatible
-4. ✅ All 585 tests pass; OTCS product detection still works as before
-
-**Plans:** 2 plans — both executed 2026-05-25
-
-**Delivered:**
-
-- `infer_vendor()`: Detects OpenText from filename patterns, directory names, and product-to-vendor mapping (15 products mapped)
-- `infer_subsystem()`: Detects subsystem from directory hierarchy (8 functional categories via filename patterns)
-- `extract_document_metadata()`: Extract title/author/subject/keywords from PDF (PyMuPDF) and DOCX (python-docx)
-- `enrich_classification()`: Gap-fills vendor/product/doc_type from document metadata (lowest precedence, never overrides explicit classification)
-- Ingest pipeline stores vendor/subsystem in Qdrant chunk payload
-- Bug fix: `DOC_TYPE_RULES` standard patterns now use word boundaries — no longer false-positive matches on "nist" substring in "Administrator"
-- 72 classifier tests (58 existing + 7 metadata + 7 enrichment), all passing
-
-Plans:
-
-- [x] 11-01-PLAN.md — Vendor & subsystem inference + SC1 end-to-end classification
-- [x] 11-02-PLAN.md — Document metadata extraction, gap-filling enrichment, ingest pipeline integration
-
----
+</details>
 
 ### Phase 12: English comments & docstrings sweep (COMPLETED)
 
@@ -265,6 +181,7 @@ Plans:
 | 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
+| 11.1. Vendor/Subsystem Integration | v1.2 | 1/1 | Complete | 2026-05-27 |
 | 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
 | 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete    | 2026-05-26 |
 | 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
