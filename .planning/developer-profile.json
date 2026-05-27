@@ -11,7 +11,7 @@
   },
   "technical_expertise": {
     "expert": {
-      "languages": ["Python 3.11+", "SQL", "Bash/Shell"],
+      "languages": ["Python 3.11+", "SQL", "Bash/Shell", "Java", "C", "C++"],
       "frameworks": ["FastAPI", "asyncio", "pytest", "MCP protocol"],
       "tools": ["Docker", "Docker Compose", "git", "pip-tools"],
       "databases": ["SQLite", "Qdrant (vector)"],
