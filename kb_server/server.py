@@ -183,6 +183,14 @@ async def list_tools() -> list[types.Tool]:
                             "PHASE 11.1: Filter by subsystem/module within a product"
                         ),
                     },
+                    "module": {
+                        "type": "string",
+                        "description": (
+                            "PHASE 17: Filter by module/sub-module within a "
+                            "product. Examples: Administration, Configuration, "
+                            "API, Security, Connectors, User Management"
+                        ),
+                    },
                     "filter_type": {
                         "type": "string",
                         "description": "Filter by file format: pdf, "
@@ -256,6 +264,13 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "PHASE 11.1: Filter by subsystem/module"
+                        ),
+                    },
+                    "module": {
+                        "type": "string",
+                        "description": (
+                            "PHASE 17: Filter by module/sub-module "
+                            "within a product"
                         ),
                     },
                     "limit": {
@@ -380,6 +395,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     version = args.get("version")  # PHASE 13: Version filter
     vendor = args.get("vendor")  # PHASE 11.1: Vendor filter
     subsystem = args.get("subsystem")  # PHASE 11.1: Subsystem filter
+    module = args.get("module")  # PHASE 17: Module filter
     hybrid = args.get("hybrid", False)
     rerank = args.get("rerank", False)
     collection_param = args.get("collection")
@@ -395,7 +411,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     log.info(
         f"search_kb: '{query}' top_k={top_k} product={product} "
         f"doc_type={doc_type} version={version} vendor={vendor} "
-        f"subsystem={subsystem} file_type={filter_type} "
+        f"subsystem={subsystem} module={module} file_type={filter_type} "
         f"hybrid={hybrid} rerank={rerank}"
     )
 
@@ -435,6 +451,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             version=version,  # PHASE 13
             vendor=vendor,  # PHASE 11.1
             subsystem=subsystem,  # PHASE 11.1
+            module=module,  # PHASE 17
         )
         if target_collection is not None:
             _search_kwargs["collection_name"] = target_collection  # PHASE 15
@@ -570,6 +587,7 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
         doc_type=args.get("doc_type"),
         vendor=args.get("vendor"),  # PHASE 11.1
         subsystem=args.get("subsystem"),  # PHASE 11.1
+        module=args.get("module"),  # PHASE 17
         limit=args.get("limit", 50),
     )
     if target_collection is not None:
@@ -593,11 +611,13 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
         for d in items:
             vendor_info = f" | vendor: {d.get('vendor','n/a')}" if d.get('vendor') else ""
             subsystem_info = f" | subsystem: {d.get('subsystem','n/a')}" if d.get('subsystem') else ""
+            module_info = f" | module: {d.get('module','n/a')}" if d.get('module') else ""
             lines.append(
             f"- `{d['source_file']}` — {d['chunk_count']} chunks"
             f" | product: {d.get('product','n/a')}"
             f"{vendor_info}"
             f"{subsystem_info}"
+            f"{module_info}"
             f" | format: {d['file_type']}"
             )
         lines.append("")

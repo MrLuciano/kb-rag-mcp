@@ -164,10 +164,11 @@ class VectorStore:
         version: str | None = None,  # PHASE 13: Version filter
         vendor: str | None = None,  # PHASE 11.1: Vendor filter
         subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
+        module: str | None = None,  # PHASE 17: Module filter
         collection_name: str | None = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
         """Semantic search with optional filters by
-        file_type, product, doc_type, version, vendor, and subsystem.
+        file_type, product, doc_type, version, vendor, subsystem, and module.
         """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
@@ -206,6 +207,12 @@ class VectorStore:
                     key="subsystem", match=MatchValue(value=subsystem)
                 )
             )
+        if module:  # PHASE 17: Module filtering
+            conditions.append(
+                FieldCondition(
+                    key="module", match=MatchValue(value=module)
+                )
+            )
 
         query_filter = Filter(must=conditions) if conditions else None
 
@@ -228,6 +235,7 @@ class VectorStore:
                 "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
                 "product": r.payload.get("product", ""),
                 "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
+                "module": r.payload.get("module", ""),  # PHASE 17
                 "doc_type": r.payload.get("doc_type", "document"),
                 "version": r.payload.get("version", ""),  # PHASE 13
                 "page": r.payload.get("page"),
@@ -246,6 +254,7 @@ class VectorStore:
         version: str | None = None,
         vendor: str | None = None,  # PHASE 11.1: Vendor filter
         subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
+        module: str | None = None,  # PHASE 17: Module filter
         collection_name: str | None = None,
     ) -> list[dict]:
         """
@@ -296,6 +305,12 @@ class VectorStore:
             conditions.append(
                 FieldCondition(
                     key="subsystem", match=MatchValue(value=subsystem)
+                )
+            )
+        if module:  # PHASE 17: Module filtering
+            conditions.append(
+                FieldCondition(
+                    key="module", match=MatchValue(value=module)
                 )
             )
 
@@ -426,6 +441,7 @@ class VectorStore:
         doc_type: str | None = None,
         vendor: str | None = None,  # PHASE 11.1: Vendor filter
         subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
+        module: str | None = None,  # PHASE 17: Module filter
         limit: int = 50,
         collection_name: str | None = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
@@ -439,12 +455,13 @@ class VectorStore:
             doc_type: Optional document type filter.
             vendor: Optional vendor name filter (PHASE 11.1).
             subsystem: Optional subsystem name filter (PHASE 11.1).
+            module: Optional module name filter (PHASE 17).
             limit: Maximum number of documents to return (default 50).
             collection_name: Override target collection (PHASE 15).
 
         Returns:
-            List of dicts with source_file, file_type, vendor, product, 
-            subsystem, doc_type, and chunk_count.
+            List of dicts with source_file, file_type, vendor, product,
+            subsystem, module, doc_type, and chunk_count.
 
         Raises:
             RuntimeError: If the VectorStore client is not connected.
@@ -480,6 +497,12 @@ class VectorStore:
                     key="subsystem", match=MatchValue(value=subsystem)
                 )
             )
+        if module:  # PHASE 17: Module filtering
+            conditions.append(
+                FieldCondition(
+                    key="module", match=MatchValue(value=module)
+                )
+            )
 
         query_filter = Filter(must=conditions) if conditions else None
 
@@ -504,6 +527,7 @@ class VectorStore:
                         "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
                         "product": r.payload.get("product", ""),
                         "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
+                        "module": r.payload.get("module", ""),  # PHASE 17
                         "doc_type": r.payload.get("doc_type", "document"),
                         "version": r.payload.get("version", ""),  # PHASE 13
                         "chunk_count": 0,

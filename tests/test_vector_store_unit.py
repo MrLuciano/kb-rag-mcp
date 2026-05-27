@@ -311,6 +311,18 @@ class TestSearch:
         kwargs = mc.query_points.call_args[1]
         assert kwargs.get("query_filter") is None
 
+    def test_search_with_module_filter(self, store):
+        """Phase 17: module filter condition built."""
+        vs, mc = store
+        mc.query_points = AsyncMock(
+            return_value=_make_query_response([])
+        )
+
+        _run(vs.search(vector=[0.1] * 4, module="Administration"))
+
+        kwargs = mc.query_points.call_args[1]
+        assert kwargs.get("query_filter") is not None
+
 
 # ── search_sparse() ───────────────────────────────────────────────────────────
 
@@ -542,6 +554,16 @@ class TestListDocuments:
         results = _run(vs.list_documents(limit=2))
 
         assert len(results) == 2
+
+    def test_list_documents_with_module_filter(self, store):
+        """Phase 17: module filter condition built."""
+        vs, mc = store
+        mc.scroll = AsyncMock(return_value=([], None))
+
+        _run(vs.list_documents(module="Administration"))
+
+        kwargs = mc.scroll.call_args[1]
+        assert kwargs.get("scroll_filter") is not None
 
 
 # ── get_chunk_with_context() ──────────────────────────────────────────────────
