@@ -164,6 +164,31 @@ Plans:
 - [x] **16-02:** CLI Commands (8h) — reclassify, verify, rollback, sessions subcommands with Rich progress/preview
 - [x] **16-03:** Documentation (4h) — README.md/pt-BR/es sections, OPERATIONS.md procedures
 
+### Phase 17: Improve capability negotiation on the MCP server to advertise classified attributes
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 17 to break down)
+
+---
+
+### Phase 17: Improve capability negotiation on the MCP server to advertise classified attributes
+
+**Goal:** Advertise OTCS auto-tagging attributes (vendor, product, module, subsystem, version) during MCP tool negotiation so clients can discover available filter values. Maintain a compact terms table indexed from the knowledge base — token-size controlled to avoid excessive context consumption.
+
+**Milestone:** v1.3
+**Requirements:** TBD
+**Depends on:** Phase 11 (auto-classification stores vendor/product/subsystem/version in Qdrant)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD
+
 ---
 
 ## Progress
@@ -187,14 +212,4 @@ Plans:
 | 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
 | 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
 | 16. Reclassification | v1.3 | 3/3 | Complete   | 2026-05-27 |
-
-## Backlog
-
-### Phase 999.1: Improve capability negotiation on the MCP server to advertise classified attributes (BACKLOG)
-
-**Goal:** Advertise OTCS auto-tagging attributes (vendor, product, module, subsystem, version) during MCP tool negotiation so clients can discover available filter values. Maintain a compact terms table indexed from the knowledge base — token-size controlled to avoid excessive context consumption.
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with `/gsd-review-backlog` when ready)
+| 17. Capability Negotiation | v1.3 | 0/0 | Planned    | —
