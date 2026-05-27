@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Post-Ship Polish & Infrastructure
 status: executing
-last_updated: "2026-05-27T20:15:00Z"
-last_activity: 2026-05-27 -- Phase 17 context gathered
+last_updated: "2026-05-27T21:15:00Z"
+last_activity: 2026-05-27 -- Phase 17 executed
 progress:
   total_phases: 11
-  completed_phases: 5
-  total_plans: 18
-  completed_plans: 18
-  percent: 45
+  completed_phases: 6
+  total_plans: 21
+  completed_plans: 21
+  percent: 55
 ---
 
 # Project State
@@ -24,10 +24,48 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 17 (improve-capability-negotiation) — CONTEXT GATHERED
+Phase: 18 (upcoming — to be determined)
 Plan: 0 of 0 (not yet planned)
-Status: Context gathered — ready for planning
-Last activity: 2026-05-27 -- Phase 17 context gathered
+Status: Awaiting next phase planning
+Last activity: 2026-05-27 -- Phase 17 executed (3 plans, 10 commits, 34 new tests)
+
+## Phase 17 Outcomes
+
+### Status
+
+- **Phase:** 17 (improve-capability-negotiation)
+- **Status:** Complete — all 3 plans fully executed
+- **Completed:** 2026-05-27
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 17-01 | Module Classification Axis | 4 tasks | Complete |
+| 17-02 | Terms Table & Dynamic Descriptions | 4 tasks | Complete |
+| 17-03 | list_filter_options Tool | 3 tasks | Complete |
+
+### Key Artifacts
+
+- `ingest/classifier.py` — `MODULE_PATTERNS`, `infer_module()`
+- `ingest/utils.py` — `write_filter_cache_bust()`
+- `kb_server/filter_terms_cache.py` — `FilterTermsCache`
+- `kb_server/vector_store.py` — `get_distinct_values()`, module filter
+- `kb_server/server.py` — dynamic `list_tools()`, `list_filter_options` tool
+- Tests: `test_classifier_module.py` (16), `test_vector_store_terms.py` (7), `test_cache_bust_marker.py` (3), `test_server_terms.py` (2), `test_server_filter_options.py` (5) — 33 new tests total + 1 integration
+
+### Commits (10)
+
+1. `9de51c1` feat(classifier): add infer_module() with MODULE_PATTERNS table
+2. `3541e8d` feat(ingest): integrate module field into classify() and chunk payload
+3. `537e6e4` feat(server): add module filter to search_kb, list_documents, VectorStore
+4. `e48b40d` feat(reclassify): add module field to reclassification scope
+5. `c25b2aa` feat(store): add get_distinct_values() for terms table scanning
+6. `018630c` feat(cache): add FilterTermsCache with cache-bust marker refresh
+7. `2b44c14` feat(pipeline): write filter cache-bust marker after ingest/reclassify
+8. `ee7c102` feat(server): dynamic list_tools() descriptions with top-20 filter values
+9. `5c96d6b` feat(server): register and implement list_filter_options tool
+10. `ae66280` test: add integration smoke test for list_filter_options
 
 ## Phase 16 Outcomes
 
