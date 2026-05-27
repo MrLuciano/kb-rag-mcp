@@ -543,6 +543,321 @@ To reduce:
 
 ---
 
+## Reclassification Management
+
+### Overview
+
+The reclassification system allows operators to update document metadata in Qdrant without re-ingesting or re-embedding documents. This is useful when:
+- Classification rules improve (e.g., better vendor/subsystem detection)
+- Documents were misclassified during initial ingest
+- Metadata standards change (e.g., new product taxonomy)
+
+### Architecture
+
+**Components:**
+- `kb_server/vector_store.py:update_chunk_metadata()` — In-place Qdrant payload updates
+- `ingest/reclassify_engine.py` — Detection, backup, audit logic
+- `ingest/cli/reclassify.py` — CLI commands (reclassify, verify, sessions, rollback)
+- `data/registry.db` — SQLite tables: `reclassify_backups`, `reclassify_history`
+
+**Data Flow:**
+1. Scan Qdrant for documents matching pattern/filter
+2. Run `classify()` on each source file
+3. Compare current metadata vs. expected
+4. Backup old metadata to SQLite
+5. Update Qdrant payloads via `set_payload()`
+6. Log changes to audit table
+
+### Safety Mechanisms
+
+#### 1. Interactive Confirmation
+
+All reclassify operations show aggregated preview before applying changes:
+
+```bash
+kb-ingest reclassify "docs/**/*.pdf"
+
+# Output:
+# Found 47 documents with classification changes:
+# 
+# Field      Documents  Change
+# vendor     47         (empty) → 'OpenText'
+# subsystem  23         (empty) → 'Admin'
+#
+# Apply these changes? [y/N]:
+```
+
+Use `--yes` flag only in automated scripts after testing interactively.
+
+#### 2. Automatic Backup
+
+Before updating Qdrant, old metadata is written to `reclassify_backups` table:
+
+```sql
+CREATE TABLE reclassify_backups (
+    session_timestamp TEXT NOT NULL,
+    source_file TEXT NOT NULL,
+    field_name TEXT NOT NULL,
+    old_value TEXT,
+    chunk_index INTEGER,
+    PRIMARY KEY (session_timestamp, source_file, field_name, chunk_index)
+);
+```
+
+Each reclassify operation creates a session (timestamp: `2026-05-26T15-30-00`) linking all backups for that run.
+
+#### 3. Audit Trail
+
+All changes logged to `reclassify_history` table:
+
+```sql
+CREATE TABLE reclassify_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    source_file TEXT NOT NULL,
+    field_name TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    session_timestamp TEXT NOT NULL,
+    FOREIGN KEY (session_timestamp) REFERENCES reclassify_backups(session_timestamp)
+);
+```
+
+Query audit history:
+
+```bash
+sqlite3 data/registry.db
+sqlite> SELECT * FROM reclassify_history WHERE source_file LIKE '%WebReports%';
+```
+
+#### 4. Backup Retention
+
+Backups are kept for 30 days by default, auto-cleaned on each reclassify run. Configure:
+
+```bash
+export RECLASSIFY_BACKUP_RETENTION_DAYS=90
+```
+
+Disable auto-cleanup: `export RECLASSIFY_BACKUP_RETENTION_DAYS=0`
+
+### Operational Procedures
+
+#### Procedure 1: Verify Before Reclassify
+
+Always verify changes before applying:
+
+```bash
+# 1. Check what would change
+kb-ingest reclassify verify "docs/**/*.pdf" > /tmp/verify-before.txt
+
+# 2. Review output
+less /tmp/verify-before.txt
+
+# 3. Apply changes
+kb-ingest reclassify "docs/**/*.pdf"
+
+# 4. Verify applied
+kb-ingest reclassify verify "docs/**/*.pdf" > /tmp/verify-after.txt
+
+# 5. Compare
+diff /tmp/verify-before.txt /tmp/verify-after.txt
+```
+
+#### Procedure 2: Rollback Session
+
+If reclassification produces incorrect results:
+
+```bash
+# 1. List recent sessions
+kb-ingest reclassify sessions
+
+# Output:
+# Session               Documents  Fields Changed  Date
+# 2026-05-26T15-30-00   47         70              2026-05-26 15:30:00
+
+# 2. Rollback session
+kb-ingest reclassify rollback --session 2026-05-26T15-30-00
+
+# 3. Verify rollback
+kb-ingest reclassify verify "docs/**/*.pdf"
+```
+
+#### Procedure 3: Selective Rollback
+
+Rollback specific documents to state before timestamp:
+
+```bash
+# Rollback only OpenText docs to state before 16:00
+kb-ingest reclassify rollback "docs/OT*.pdf" --before 2026-05-26T16-00-00
+```
+
+#### Procedure 4: Bulk Reclassification (Large Datasets)
+
+For datasets with 10,000+ documents:
+
+```bash
+# Disable progress bar for faster processing
+kb-ingest reclassify "**/*" --no-progress --yes > /tmp/reclassify.log 2>&1
+
+# Monitor progress in separate terminal
+watch -n 5 'tail -20 /tmp/reclassify.log'
+```
+
+### Monitoring
+
+**Check reclassification activity:**
+
+```sql
+-- Recent reclassifications
+SELECT 
+    session_timestamp,
+    COUNT(DISTINCT source_file) as docs,
+    COUNT(*) as fields_changed
+FROM reclassify_history
+WHERE timestamp > datetime('now', '-7 days')
+GROUP BY session_timestamp
+ORDER BY timestamp DESC;
+
+-- Most frequently reclassified documents
+SELECT 
+    source_file,
+    COUNT(*) as reclassify_count
+FROM reclassify_history
+GROUP BY source_file
+HAVING COUNT(*) > 1
+ORDER BY reclassify_count DESC
+LIMIT 20;
+```
+
+**Prometheus metrics (Phase 14 integration):**
+
+```prometheus
+# Reclassified documents total (counter)
+reclassified_documents_total
+
+# Reclassified chunks total (counter)
+reclassified_chunks_total
+
+# Backup sessions total (gauge)
+reclassify_backup_sessions_total
+```
+
+### Troubleshooting
+
+#### Issue: Reclassify slow for large collections
+
+**Symptom:** `kb-ingest reclassify "**/*"` takes >10 minutes
+
+**Cause:** Running `classify()` on thousands of files is I/O-bound
+
+**Solution:**
+1. Use metadata filters to reduce scope: `--filter 'vendor=""'`
+2. Process in batches: `kb-ingest reclassify "docs/batch-1/*.pdf"`
+3. Disable progress bar: `--no-progress`
+
+#### Issue: Rollback fails with "Qdrant update error"
+
+**Symptom:** `kb-ingest reclassify rollback --session <timestamp>` fails mid-restore
+
+**Cause:** Qdrant connection issues or collection deleted
+
+**Solution:**
+1. Check Qdrant health: `curl http://localhost:6333/healthz`
+2. Verify collection exists: `kb-ingest db collections`
+3. Manual restore from SQLite backup:
+
+```python
+import sqlite3
+from kb_server.vector_store import VectorStore
+
+conn = sqlite3.connect("data/registry.db")
+session = "2026-05-26T15-30-00"
+
+backups = conn.execute(
+    "SELECT source_file, field_name, old_value FROM reclassify_backups WHERE session_timestamp=?",
+    (session,)
+).fetchall()
+
+# Manually restore using VectorStore API
+store = VectorStore()
+await store.connect()
+# ... restore logic ...
+```
+
+#### Issue: Backup session missing (auto-cleaned)
+
+**Symptom:** `kb-ingest reclassify sessions` doesn't show expected session
+
+**Cause:** Session older than retention period (default 30 days)
+
+**Solution:**
+- No automatic recovery — backups are deleted
+- Prevention: Set longer retention: `export RECLASSIFY_BACKUP_RETENTION_DAYS=90`
+- For critical operations, export backups before cleanup:
+
+```bash
+# Export backups to JSON before cleanup
+sqlite3 data/registry.db -json "SELECT * FROM reclassify_backups" > backups.json
+```
+
+### Best Practices
+
+1. **Test on small subset first:** Before reclassifying thousands of documents, test on small pattern: `kb-ingest reclassify "docs/test/*.pdf"`
+
+2. **Use verify workflow:** Always run `verify` before and after reclassification to confirm changes
+
+3. **Document classification rule changes:** When updating `ingest/classifier.py`, document rationale in commit message for future reference
+
+4. **Monitor audit history:** Regularly review `reclassify_history` table to identify frequently-reclassified documents (may indicate unstable classification rules)
+
+5. **Backup before major changes:** Export `reclassify_backups` table before bulk reclassification:
+
+```bash
+sqlite3 data/registry.db ".dump reclassify_backups" > /backups/reclassify-$(date +%Y%m%d).sql
+```
+
+6. **Set retention based on change frequency:** If classification rules change often, increase retention: `export RECLASSIFY_BACKUP_RETENTION_DAYS=90`
+
+### Integration with CI/CD
+
+**Automated reclassification after classifier updates:**
+
+```yaml
+# .github/workflows/reclassify-on-classifier-update.yml
+name: Auto-reclassify on classifier update
+
+on:
+  push:
+    paths:
+      - 'ingest/classifier.py'
+    branches:
+      - main
+
+jobs:
+  reclassify:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Verify changes
+        run: |
+          kb-ingest reclassify verify "**/*" --filter 'vendor=""' > verify-before.txt
+          
+      - name: Reclassify if changes detected
+        run: |
+          if grep -q "Found.*documents with mismatches" verify-before.txt; then
+            kb-ingest reclassify "**/*" --filter 'vendor=""' --yes
+          fi
+          
+      - name: Verify applied
+        run: |
+          kb-ingest reclassify verify "**/*" --filter 'vendor=""'
+```
+
+**Safety check:** Only auto-reclassify with narrow filters (e.g., `vendor=""`) to avoid unintended changes.
+
+---
+
 ## Common Tasks
 
 ### Restart Services After Config Change
