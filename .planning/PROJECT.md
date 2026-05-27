@@ -8,22 +8,21 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-## Current Milestone: v1.2 Tech Debt & Classification
+## Current Milestone: v1.3 Post-Ship Polish & Infrastructure
 
-**Goal:** Resolve accumulated technical debt from v1.0/v1.1 while adding automated document classification with Vendor/Product/Subsystem/Version extraction.
+**Goal:** Complete the v1.3 cycle: deliver capability negotiation, fix Grafana datasource, backfill process debt (VERIFICATION.md), fix test environment issues, codebase hygiene sweep, and wire integration checker CI gate.
 
 **Target features:**
-- Startup dependency pre-flight check + LM Studio fallback handling
-- Lazy-load cross-encoder model to save 500MB memory at startup
-- Helm chart validation in CI
-- Fix MagicMock pollution from qdrant_client stubs in test suite
-- Enforce logging coverage gate in CI
-- Auto-classification: Vendor/Product/Subsystem/Version from filename + content
-- Ingest OTCS docs on acemagic deployment
+- Capability negotiation — advertise classified attributes to MCP clients
+- Grafana datasource fix — resolve DS_PROMETHEUS variable resolution error
+- VERIFICATION.md backfill — create verification artifacts for 14 phases
+- Test environment fixes — resolve test_reranker_lazy.py conftest issues
+- Codebase hygiene sweep — logs, comments, types, unused imports
+- Integration checker CI gate — catch gaps automatically in CI
 
-## Current State (v1.1)
+## Current State (v1.3)
 
-- **Shipped:** 2026-05-23
+- **Shipped:** 2026-05-27 (v1.2)
 - **Tests:** 585 passing, 5 skipped, 0 failures
 - **Coverage:** 90% branch target enforced (kb_server/ + ingest/)
 - **Codebase:** ~251k LOC Python; single canonical module `kb_server/`
@@ -79,14 +78,12 @@ AI assistants stop hallucinating about closed-source products — every answer i
 
 ### Active
 
-- [ ] **DEBT-01**: Lazy-load cross-encoder model to save 500MB+ memory and 10s startup latency
-- [ ] **DEBT-02**: Helm chart validated with `helm lint` in CI
-- [ ] **DEBT-03**: MagicMock pollution from qdrant_client stubs resolved in test suite
-- [ ] **DEBT-04**: Startup dependency pre-flight check warns on unreachable Qdrant/LM Studio
-- [ ] **DEBT-05**: Logging coverage audited and enforced via CI gate (--fail-under)
-- [ ] **DEBT-06**: LM Studio dependency documented with graceful fallback options
-- [ ] **CLASSIFY-01**: Documents auto-classified with Vendor, Product, Subsystem, Version from filename patterns and content heuristics
-- [ ] **CLASSIFY-02**: Classification extends existing OTCS tagging with multi-dimensional attributes
+- [ ] **PHASE-17**: Capability negotiation — advertise classified attributes to MCP clients
+- [ ] **PHASE-18**: Grafana datasource fix — resolve DS_PROMETHEUS error
+- [ ] **PHASE-19**: VERIFICATION.md backfill — 14 phases missing verification
+- [ ] **PHASE-20**: Test environment fixes — test_reranker_lazy.py conftest issues
+- [ ] **PHASE-21**: Codebase hygiene sweep — logs, comments, types, unused imports
+- [ ] **PHASE-22**: Integration checker CI gate — automate gap detection
 
 ### Out of Scope
 
@@ -97,7 +94,8 @@ AI assistants stop hallucinating about closed-source products — every answer i
 
 ## Context
 
-- v1.0 shipped 2026-05-19: all 15 release-readiness requirements met across 4 phases
+- v1.3 in progress: phases 12-16 complete, phases 17-22 planned
+- v1.2 shipped 2026-05-27: 9/9 requirements met across 4 phases
 - `kb_server/` is the single canonical package; `server/` deleted; `ingest/core/metadata.py` is the registry
 - Committed `.env` files resolved: removed from tracking; `CONTRIBUTING.md` documents git history cleanup
 - Embedding model: local LM Studio (`http://<LM_STUDIO_HOST>:1234`); configurable via `EMBED_BACKEND`
@@ -143,4 +141,4 @@ AI assistants stop hallucinating about closed-source products — every answer i
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-25 — v1.2 milestone started*
+*Last updated: 2026-05-27 — v1.3 milestone in progress*
