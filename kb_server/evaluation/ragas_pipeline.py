@@ -1,5 +1,5 @@
 """RAGAS-based RAG evaluation pipeline."""
-from typing import Dict, Any, List, Optional
+from typing import Dict
 from pathlib import Path
 import json
 from kb_server.evaluation.dataset import GoldenDataset
@@ -44,12 +44,6 @@ class RAGASEvaluator:
         Raises:
             NotImplementedError: Always - requires LLM API setup.
         """
-        # TODO: Implement RAGAS evaluation
-        # This requires:
-        # 1. Run queries through RAG system
-        # 2. Collect retrieved contexts and generated answers
-        # 3. Run RAGAS metrics
-        # 4. Aggregate scores
         raise NotImplementedError(
             "RAGAS evaluation requires LLM API setup. "
             "See docs/RAG_EVALUATION.md for setup instructions."

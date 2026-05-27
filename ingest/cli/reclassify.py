@@ -7,7 +7,6 @@ Provides reclassify, verify, sessions, and rollback subcommands.
 import asyncio
 import logging
 from datetime import datetime
-from pathlib import Path
 from typing import Optional
 
 import click

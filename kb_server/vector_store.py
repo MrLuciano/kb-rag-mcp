@@ -8,7 +8,7 @@ PHASE 8: Enhanced with connection pooling and batch optimizations.
 import logging
 import os
 import uuid
-from typing import Optional
+
 
 from kb_server.embed_client import get_embed_dim
 from qdrant_client import AsyncQdrantClient  # type: ignore[import]
@@ -633,8 +633,6 @@ class VectorStore:
             return []
 
         try:
-            from qdrant_client import models
-
             all_values: dict[str, int] = {}
             next_offset = None
             limit = 100

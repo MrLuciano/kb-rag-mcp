@@ -22,10 +22,8 @@ from ingest.validation.content import (
 from ingest.validation.format import (
     FileExistsValidator,
     FileExtensionValidator,
-    MimeTypeValidator,
 )
 from ingest.validation.size import (
-    FileSizeValidator,
     FileTypeSpecificSizeValidator,
 )
 

@@ -12,7 +12,6 @@ This runs as a separate lightweight service alongside the main MCP server.
 import logging
 import os
 import sys
-from pathlib import Path
 
 # ── Load .env before any os.getenv
 from config.bootstrap_env import bootstrap_env
