@@ -10,15 +10,24 @@ Phase 16: Core reclassification capability.
 import asyncio
 import glob
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
 from ingest.classifier import classify
+from ingest.core.metadata import MetadataStore
 from kb_server.vector_store import VectorStore
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 log = logging.getLogger("kb-ingest.reclassify")
+
+
+# Environment config
+import os
+
+RECLASSIFY_BACKUP_RETENTION_DAYS = int(
+    os.getenv("RECLASSIFY_BACKUP_RETENTION_DAYS", "30")
+)
 
 
 async def detect_changed_classifications(
@@ -157,3 +166,182 @@ async def detect_changed_classifications(
 
     log.info(f"Detected {len(changes)} documents with classification changes")
     return changes
+
+
+def backup_metadata(
+    session_timestamp: str, changes: list[dict[str, Any]]
+) -> None:
+    """
+    Write old metadata to reclassify_backups table before Qdrant update.
+
+    Creates backup records for rollback capability. Each changed field
+    for each document gets a backup entry.
+
+    Args:
+        session_timestamp: ISO timestamp for this reclassification session
+            (format: YYYY-MM-DDTHH-MM-SS for filesystem-safe names).
+        changes: List of change dicts from detect_changed_classifications().
+
+    Raises:
+        sqlite3.Error: If database write fails.
+    """
+    if not changes:
+        log.info("No changes to backup")
+        return
+
+    log.info(f"Backing up metadata for {len(changes)} documents")
+
+    with MetadataStore() as store:
+        # Batch insert for performance
+        backup_records = []
+        for change in changes:
+            source_file = change["source_file"]
+            for field_name, (old_value, new_value) in change[
+                "fields_changed"
+            ].items():
+                # One backup record per field per document
+                backup_records.append(
+                    (
+                        session_timestamp,
+                        source_file,
+                        field_name,
+                        old_value,
+                        0,  # chunk_index (0 for document-level metadata)
+                    )
+                )
+
+        # Insert all backups
+        store.conn.executemany(
+            """
+            INSERT INTO reclassify_backups
+            (session_timestamp, source_file, field_name, old_value, chunk_index)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            backup_records,
+        )
+        store.conn.commit()
+
+    log.info(f"Backed up {len(backup_records)} field changes")
+
+
+def log_changes(session_timestamp: str, changes: list[dict[str, Any]]) -> None:
+    """
+    Write metadata changes to reclassify_history audit table.
+
+    Creates audit trail of all changes for compliance and analysis.
+
+    Args:
+        session_timestamp: ISO timestamp for this reclassification session.
+        changes: List of change dicts from detect_changed_classifications().
+
+    Raises:
+        sqlite3.Error: If database write fails.
+    """
+    if not changes:
+        log.info("No changes to log")
+        return
+
+    log.info(f"Logging {len(changes)} document changes to audit history")
+
+    timestamp = datetime.utcnow().isoformat()
+
+    with MetadataStore() as store:
+        # Batch insert for performance
+        history_records = []
+        for change in changes:
+            source_file = change["source_file"]
+            for field_name, (old_value, new_value) in change[
+                "fields_changed"
+            ].items():
+                history_records.append(
+                    (
+                        timestamp,
+                        source_file,
+                        field_name,
+                        old_value,
+                        new_value,
+                        session_timestamp,
+                    )
+                )
+
+        # Insert all history entries
+        store.conn.executemany(
+            """
+            INSERT INTO reclassify_history
+            (timestamp, source_file, field_name, old_value, new_value, session_timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            history_records,
+        )
+        store.conn.commit()
+
+    log.info(f"Logged {len(history_records)} field changes to audit history")
+
+
+def cleanup_old_backups(retention_days: int | None = None) -> int:
+    """
+    Delete backup sessions older than retention_days.
+
+    Auto-cleanup runs on each reclassification to prevent unbounded
+    backup growth. Configurable via RECLASSIFY_BACKUP_RETENTION_DAYS
+    environment variable (default 30 days).
+
+    Args:
+        retention_days: Days to keep backups (default from env var).
+
+    Returns:
+        Number of backup records deleted.
+
+    Raises:
+        sqlite3.Error: If database operation fails.
+    """
+    if retention_days is None:
+        retention_days = RECLASSIFY_BACKUP_RETENTION_DAYS
+
+    cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+    cutoff_str = cutoff_date.isoformat()[:10]  # YYYY-MM-DD prefix
+
+    log.info(
+        f"Cleaning up backups older than {retention_days} days "
+        f"(before {cutoff_str})"
+    )
+
+    with MetadataStore() as store:
+        # Count before deletion
+        cursor = store.conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM reclassify_backups
+            WHERE session_timestamp < ?
+            """,
+            (cutoff_str,),
+        )
+        count_before = cursor.fetchone()[0]
+
+        if count_before == 0:
+            log.info("No old backups to clean up")
+            return 0
+
+        # Delete old backups
+        store.conn.execute(
+            """
+            DELETE FROM reclassify_backups
+            WHERE session_timestamp < ?
+            """,
+            (cutoff_str,),
+        )
+
+        # Delete corresponding history entries (cascade should handle this,
+        # but explicit delete for safety)
+        store.conn.execute(
+            """
+            DELETE FROM reclassify_history
+            WHERE session_timestamp < ?
+            """,
+            (cutoff_str,),
+        )
+
+        store.conn.commit()
+
+    log.info(f"Cleaned up {count_before} old backup records")
+    return count_before
