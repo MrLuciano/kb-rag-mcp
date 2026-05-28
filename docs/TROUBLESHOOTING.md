@@ -5,6 +5,20 @@ deployment, and operation issues.
 
 ---
 
+## Common
+
+Troubleshooting guidance organized by deployment mode.
+Most content applies to all modes — cross-mode issues below.
+
+For mode-specific troubleshooting, see the corresponding section:
+
+- **Docker Compose** → [↓ Docker Compose](#docker-compose)
+- **Helm (Kubernetes)** → [↓ Helm](#helm)
+- **Systemd (Bare Metal)** → [↓ Systemd](#systemd)
+- **Manual (Source)** → [↓ Manual](#manual)
+
+---
+
 ## Table of Contents
 
 1. [Installation Issues](#installation-issues)
@@ -1012,6 +1026,66 @@ sudo /opt/kb-rag/deployment/scripts/restore.sh \
 sudo /opt/kb-rag/deployment/scripts/uninstall.sh
 sudo ./deployment/scripts/install.sh
 ```
+
+---
+
+## Docker Compose
+
+Docker Compose-specific troubleshooting:
+
+- **Container fails to start** → Check `docker-compose logs` for container-specific errors
+- **Qdrant connection refused** → Ensure Qdrant container is healthy: `docker-compose ps qdrant`
+- **Port conflicts** → Check `docker-compose.yml` port mappings; change host ports if needed
+- **Volume permissions** → Ensure `DATA_DIR` and `QDRANT_DATA_PATH` directories have correct permissions
+
+For general service troubleshooting (applies to all modes): see [Service Issues](#service-issues) above.
+
+> **See also:** [OPERATIONS.md → Docker Compose](OPERATIONS.md#docker-compose), [INSTRUCTIONS.md → Docker Compose](INSTRUCTIONS.md#docker-compose)
+
+---
+
+## Helm
+
+Helm (Kubernetes) troubleshooting:
+
+- **Pod CrashLoopBackOff** → `kubectl describe pod <pod-name>` and `kubectl logs <pod-name>`
+- **PVC not binding** → Check StorageClass availability: `kubectl get storageclass`
+- **Ingress not routing** → Verify ingress controller is deployed and DNS resolves
+- **Helm install fails** → Validate values: `helm template . --debug` to see rendered manifests
+
+For Kubernetes-specific guidance: [docs/KUBERNETES.md](KUBERNETES.md)
+
+> **See also:** [OPERATIONS.md → Helm](OPERATIONS.md#helm), [INSTRUCTIONS.md → Helm](INSTRUCTIONS.md#helm)
+
+---
+
+## Systemd
+
+Systemd (bare metal) troubleshooting — most of the general sections above use systemd
+commands (`systemctl`, `journalctl`). Key sections:
+
+- **Service management** → [Service Issues](#service-issues)
+- **Health check failures** → [Health Check Failures](#health-check-failures)
+- **Log viewing** → [Logging and Debugging](#logging-and-debugging)
+
+For systemd unit files: `scripts/kb-mcp.service`, `scripts/kb-rag.target`
+
+> **See also:** [OPERATIONS.md → Systemd](OPERATIONS.md#systemd), [INSTRUCTIONS.md → Systemd](INSTRUCTIONS.md#systemd)
+
+---
+
+## Manual
+
+Manual (source-based) deployment troubleshooting:
+
+- **Python virtual environment issues** → [Installation Issues](#installation-issues)
+- **Missing dependencies** → `pip install -r requirements.txt` from project root
+- **LM Studio not connecting** → [Health Check Failures → Embedding Backend](#health-check-failures)
+- **Qdrant not running** → Start manually: `docker run -d -p 6333:6333 qdrant/qdrant`
+
+For Qdrant-specific issues: [Database Issues](#database-issues)
+
+> **See also:** [OPERATIONS.md → Manual](OPERATIONS.md#manual), [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manual)
 
 ---
 

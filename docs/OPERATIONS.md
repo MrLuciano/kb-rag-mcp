@@ -9,6 +9,18 @@ Quick reference for daily operations, maintenance, and monitoring.
 
 ---
 
+## Common
+
+Content in this file applies to all deployment modes unless noted.
+For mode-specific guidance:
+
+- **Docker Compose** → [↓ Docker Compose](#docker-compose)
+- **Helm (Kubernetes)** → [↓ Helm](#helm)
+- **Systemd (Bare Metal)** → [↓ Systemd](#systemd)
+- **Manual (Source)** → [↓ Manual](#manual)
+
+---
+
 ## Daily Operations
 
 ### Service Management
@@ -1302,6 +1314,65 @@ sudo -u kb-rag venv/bin/pip install -r requirements.txt
 - [ ] Test restore procedure
 - [ ] Run test suite
 - [ ] Review security logs
+
+---
+
+## Docker Compose
+
+See the following sections for Docker Compose-specific operations:
+
+- **Accessing the dashboard** → [Health Dashboard → Docker Compose](#accessing-the-dashboard) (lines starting with "Docker Compose Deployments")
+- **Customizing dashboards** → [Health Dashboard → Customizing](#customizing-the-dashboard) (`deployment/config/grafana-dashboard.json`)
+- **Disabling monitoring** → [Health Dashboard → Disabling](#disabling-monitoring)
+- **Prometheus retention** → [Health Dashboard → Storage Configuration](#storage-configuration)
+
+For complete Docker Compose setup: [INSTRUCTIONS.md → Docker Compose](INSTRUCTIONS.md#docker-compose)
+
+> **See also:** [TROUBLESHOOTING.md → Docker Compose](TROUBLESHOOTING.md#docker-compose), [INSTRUCTIONS.md → Docker Compose](INSTRUCTIONS.md#docker-compose)
+
+---
+
+## Helm
+
+Helm (Kubernetes) deployments have dedicated operational guidance:
+
+- **Dashboard access via port-forward** → [Health Dashboard → Kubernetes Deployments](#kubernetes-deployments)
+- **Customizing via Helm values** → [Health Dashboard → Customizing](#customizing-the-dashboard) (Helm paths)
+- **Monitoring toggle** → [Health Dashboard → Disabling](#disabling-monitoring) (Helm flags)
+- **Storage configuration** → [Health Dashboard → Storage Configuration](#storage-configuration) (Helm values)
+
+For complete Helm deployment: [KUBERNETES.md](../KUBERNETES.md)
+
+> **See also:** [TROUBLESHOOTING.md → Helm](TROUBLESHOOTING.md#helm), [INSTRUCTIONS.md → Helm](INSTRUCTIONS.md#helm)
+
+---
+
+## Systemd
+
+Systemd (bare metal) operations appear in the following sections:
+
+- **Service management** → [Daily Operations → Service Management](#service-management) (`systemctl` commands)
+- **Viewing logs** → [Viewing Logs](#viewing-logs) (`journalctl` commands)
+- **Routine maintenance** → [Routine Maintenance](#routine-maintenance) (morning/weekly/monthly checks)
+- **Emergency procedures** → [Emergency Procedures](#emergency-procedures)
+
+Systemd unit files: `scripts/kb-mcp.service`, `scripts/kb-rag.target`
+
+> **See also:** [TROUBLESHOOTING.md → Systemd](TROUBLESHOOTING.md#systemd), [INSTRUCTIONS.md → Systemd](INSTRUCTIONS.md#systemd)
+
+---
+
+## Manual
+
+Manual (source-based) deployment operations:
+
+- **Windows Firewall** → [Windows Firewall Management](#windows-firewall-management)
+- **Direct `python -m` ingestion** → [Document Ingestion](#document-ingestion)
+- **Embedding backend configuration** → [Embedding Backend (LM Studio)](#embedding-backend-lm-studio) (applies to all modes, but manual setup offers most flexibility)
+
+For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manual)
+
+> **See also:** [TROUBLESHOOTING.md → Manual](TROUBLESHOOTING.md#manual), [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manual)
 
 ---
 

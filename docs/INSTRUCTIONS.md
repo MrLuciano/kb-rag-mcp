@@ -5,6 +5,20 @@
 
 ---
 
+## Common
+
+This technical reference covers architecture, environment, ingestion pipeline, and MCP tool configuration.
+Content applies across all deployment modes unless noted.
+
+For mode-specific instructions:
+
+- **Docker Compose** → [↓ Docker Compose](#docker-compose)
+- **Helm (Kubernetes)** → [↓ Helm](#helm)
+- **Systemd (Bare Metal)** → [↓ Systemd](#systemd)
+- **Manual (Source)** → [↓ Manual](#manual)
+
+---
+
 ## 1. Visão Geral
 
 Servidor MCP (Model Context Protocol) que expõe busca semântica sobre uma knowledge base local
@@ -961,3 +975,55 @@ case studies, normas e artefatos de release.
 O objetivo principal é apoiar **engenheiros e consultores** no dia a dia de
 desenvolvimento, configuração e troubleshooting, usando LLMs como Claude Code
 para acelerar o trabalho.
+
+---
+
+## Docker Compose
+
+- **Environment variables** → [§4. Variáveis de Ambiente](#4-vari%C3%A1veis-de-ambiente) (all modes)
+- **MCP client config** → [§8. Configuração dos Clientes MCP](#8-configura%C3%A7%C3%A3o-dos-clientes-mcp) (all modes)
+- **Quick start:** `docker compose up -d` from project root (Qdrant + MCP server + monitoring)
+
+Docker Compose manifest: `docker-compose.yml` at project root.
+
+> **See also:** [OPERATIONS.md → Docker Compose](OPERATIONS.md#docker-compose), [TROUBLESHOOTING.md → Docker Compose](TROUBLESHOOTING.md#docker-compose)
+
+---
+
+## Helm
+
+- **Kubernetes deployment** → See [docs/KUBERNETES.md](KUBERNETES.md) for full Helm chart reference
+- **Helm values** → `deployment/helm/kb-rag-mcp/values.yaml`
+- **Customization:** Set environment variables via Helm `values.yaml` or `--set` flags
+- **Monitoring:** Prometheus/Grafana included via Helm sub-charts (toggle with `monitoring.enabled`)
+
+> **See also:** [OPERATIONS.md → Helm](OPERATIONS.md#helm), [TROUBLESHOOTING.md → Helm](TROUBLESHOOTING.md#helm)
+
+---
+
+## Systemd
+
+- **Environment** → [§2. Ambiente de Execução → LXC Server](#2-ambiente-de-execução) (LXC/systemd setup)
+- **Service management** → `sudo systemctl start/stop/status kb-mcp`
+- **Logs** → `sudo journalctl -u kb-mcp -f`
+- **Unit files** → `scripts/kb-mcp.service`, `scripts/kb-rag.target`
+
+Key commands (from [§12. Comandos de Operação](#12-comandos-de-operação)):
+```
+sudo systemctl status kb-mcp
+sudo journalctl -u kb-mcp -f
+```
+
+> **See also:** [OPERATIONS.md → Systemd](OPERATIONS.md#systemd), [TROUBLESHOOTING.md → Systemd](TROUBLESHOOTING.md#systemd)
+
+---
+
+## Manual
+
+- **Environment** → [§2. Ambiente de Execução → Local Machine](#2-ambiente-de-execução) (WSL2/manual setup)
+- **Python setup** → Create venv, `pip install -r requirements.txt`
+- **Run server** → `python kb_server/server.py` (stdio) or with SSE transport
+- **Ingestion** → `python ingest/ingest.py --docs <path>` (see [§7. Pipeline de Ingestão](#7-pipeline-de-ingestão))
+- **Windows startup** → `pwsh scripts/start-kb-rag.ps1`
+
+> **See also:** [OPERATIONS.md → Manual](OPERATIONS.md#manual), [TROUBLESHOOTING.md → Manual](TROUBLESHOOTING.md#manual)

@@ -4,6 +4,17 @@
 
 ---
 
+## Deployment Modes
+
+Choose your deployment mode:
+
+- **Docker Compose** → [OPERATIONS.md](OPERATIONS.md#docker-compose), [TROUBLESHOOTING.md](TROUBLESHOOTING.md#docker-compose), [INSTRUCTIONS.md](INSTRUCTIONS.md#docker-compose)
+- **Helm (Kubernetes)** → [OPERATIONS.md](OPERATIONS.md#helm), [TROUBLESHOOTING.md](TROUBLESHOOTING.md#helm), [INSTRUCTIONS.md](INSTRUCTIONS.md#helm)
+- **Systemd (Bare Metal)** → [OPERATIONS.md](OPERATIONS.md#systemd), [TROUBLESHOOTING.md](TROUBLESHOOTING.md#systemd), [INSTRUCTIONS.md](INSTRUCTIONS.md#systemd)
+- **Manual (Source)** → [OPERATIONS.md](OPERATIONS.md#manual), [TROUBLESHOOTING.md](TROUBLESHOOTING.md#manual), [INSTRUCTIONS.md](INSTRUCTIONS.md#manual)
+
+---
+
 ## Getting Started
 
 - [README.md](../README.md) — Quick start, installation, usage
