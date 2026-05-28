@@ -1,113 +1,27 @@
 {
   "version": "1.0",
-  "timestamp": "2026-05-26T04:03:10Z",
-  "phase": "14",
-  "phase_name": "health-dashboard",
-  "phase_dir": ".planning/phases/14",
-  "plan": null,
-  "task": 2,
-  "total_tasks": 15,
-  "status": "paused",
-  "context_type": "verification",
-  "workflow": "verify-work",
+  "timestamp": "2026-05-28T02:17:10.486Z",
+  "phase": "23",
+  "phase_name": "documentation-overhaul",
+  "phase_dir": "23-documentation-overhaul",
+  "status": "complete",
   "completed_tasks": [
-    {
-      "id": 1,
-      "name": "Cold Start - Docker Compose Stack",
-      "status": "done",
-      "result": "pass"
-    }
+    {"id": 1, "name": "Add deployment-mode sections to OPERATIONS/TROUBLESHOOTING/INSTRUCTIONS/INDEX (DOCS-01/02)", "status": "done", "commit": "e77d9d6"},
+    {"id": 2, "name": "Restructure README/README.pt-BR/README.es (two-tier format)", "status": "done", "commit": "b8fc362"},
+    {"id": 3, "name": "Update CHANGELOG and REFERENCE.md", "status": "done", "commit": "b8fc362"},
+    {"id": 4, "name": "Fix UAT gaps — INSTRUCTIONS translation + CHANGELOG restructure", "status": "done", "commit": "a116f7d"},
+    {"id": 5, "name": "Resolve integration checker gaps (VERIFICATION.md + script fix)", "status": "done", "commit": "d9f4f1f"}
   ],
-  "remaining_tasks": [
-    {
-      "id": 2,
-      "name": "Metrics Endpoint Accessibility",
-      "status": "awaiting_response"
-    },
-    {
-      "id": 3,
-      "name": "Prometheus Scraping kb-rag-mcp",
-      "status": "not_started"
-    },
-    {
-      "id": 4,
-      "name": "Prometheus Metrics Query",
-      "status": "not_started"
-    },
-    {
-      "id": 5,
-      "name": "Grafana UI Access",
-      "status": "not_started"
-    },
-    {
-      "id": 6,
-      "name": "Grafana Dashboard Discovery",
-      "status": "not_started"
-    },
-    {
-      "id": 7,
-      "name": "Dashboard Structure - 6 Row Sections",
-      "status": "not_started"
-    },
-    {
-      "id": 8,
-      "name": "Dashboard Panels - Server Metrics",
-      "status": "not_started"
-    },
-    {
-      "id": 9,
-      "name": "Dashboard Panels - Cache Performance",
-      "status": "not_started"
-    },
-    {
-      "id": 10,
-      "name": "Dashboard Refresh Intervals",
-      "status": "not_started"
-    },
-    {
-      "id": 11,
-      "name": "Prometheus Datasource in Grafana",
-      "status": "not_started"
-    },
-    {
-      "id": 12,
-      "name": "Documentation - OPERATIONS.md Health Dashboard Section",
-      "status": "not_started"
-    },
-    {
-      "id": 13,
-      "name": "Documentation - README Monitoring Link",
-      "status": "not_started"
-    },
-    {
-      "id": 14,
-      "name": "Helm Chart Validation",
-      "status": "not_started"
-    },
-    {
-      "id": 15,
-      "name": "Helm Chart - Monitoring Disabled",
-      "status": "not_started"
-    }
-  ],
+  "remaining_tasks": [],
   "blockers": [],
-  "human_actions_pending": [
-    {
-      "action": "Test /metrics endpoint accessibility",
-      "context": "User needs to visit http://localhost:8000/metrics and verify response",
-      "blocking": false
-    },
-    {
-      "action": "Complete UAT testing for Phase 14",
-      "context": "14 tests remaining to validate health dashboard implementation",
-      "blocking": false
-    }
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "INSTRUCTIONS.md translated from Portuguese to English (1029 lines)", "rationale": "Phase 12 (English-only enforce) covered source code only, not docs", "phase": "23"},
+    {"decision": "CHANGELOG.md: FASE→Phase, newest-first order, remove stale sections", "rationale": "Keep a Changelog convention + project-wide Phase standardization", "phase": "23"},
+    {"decision": "Created VERIFICATION.md for Phase 23", "rationale": "Integration checker requires it; no prior phases had one", "phase": "23"},
+    {"decision": "Fixed check-integration-gaps.py traceability table header detection", "rationale": "Script expected | REQ-ID | header but table uses | Requirement |", "phase": "23"}
   ],
-  "decisions": [],
-  "uncommitted_files": [
-    ".planning/phases/14/14-UAT.md",
-    ".planning/phases/14/.checkpoint-decision.md"
-  ],
-  "next_action": "Resume UAT session: /gsd-verify-work 14 to continue with test 2 (Metrics Endpoint Accessibility)",
-  "context_notes": "Phase 14 execution completed successfully (all 5 plans done). Started UAT verification session. Test 1 (Cold Start) passed. Currently awaiting user response for test 2 (Metrics Endpoint). UAT file tracks progress at .planning/phases/14/14-UAT.md."
+  "uncommitted_files": [],
+  "next_action": "Start Phase 24 planning — RAGAS evaluation pipeline (see .planning/REQUIREMENTS.md EVAL-* requirements)",
+  "context_notes": "Phase 23 fully complete. All 5 plans executed, all UAT gaps closed, integration checker passes (3/3). Working tree clean. Next milestone: v1.4 Evaluations & Docs — Phase 24 (RAGAS evaluation), Phase 25 (optimization experiments)."
 }
