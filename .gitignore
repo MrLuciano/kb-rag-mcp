@@ -61,6 +61,9 @@ Thumbs.db
 qa/fixtures/*.pdf
 QA_REPORT*.md
 
+# Runtime data (Qdrant storage, SQLite databases)
+data/
+
 # Environment / secrets — never commit real credentials
 .env
 .env.*

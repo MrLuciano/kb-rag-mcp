@@ -206,7 +206,9 @@ root — it is loaded automatically before `kb_server` is imported.
 
 | Extension(s) | Type | Parser | Notes |
 |---|---|---|---|
-| `.pdf` | PDF | docling → PyMuPDF fallback | Best quality; extracts text per page |
+| `.pdf` | PDF | docling ^ → PyMuPDF fallback | Best quality; extracts text per page |
+
+> ^ `docling` is optional — requires `pip install -e ".[pdf]"` or use `scripts/install-pdf-extras.sh`. Falls back to PyMuPDF when not installed.
 | `.docx` | Word 2007+ | python-docx | — |
 | `.doc` | Word 97-2003 | docx2txt → python-docx fallback | Compatibility mode files work well |
 | `.xlsx` | Excel 2007+ | openpyxl | All sheets extracted |

@@ -262,7 +262,9 @@ Products are also inferred from the file name when the file is in `varios/` or a
 
 | file_type | Extensions | Library | Fallback |
 |---|---|---|---|
-| `pdf` | .pdf | docling | PyMuPDF (fitz) |
+| `pdf` | .pdf | docling ^ | PyMuPDF (fitz) |
+
+> ^ `docling` é opcional — requer instalação separada. Veja [Instalação do docling](#instalação-do-docling) abaixo.
 | `docx` | .docx | python-docx | — |
 | `doc` | .doc | docx2txt | python-docx |
 | `xlsx` | .xlsx | openpyxl | — |
@@ -421,7 +423,18 @@ python-docx>=1.1.0
 openpyxl>=3.1.0
 python-pptx>=0.6.23
 pymupdf>=1.24.0             # fallback PDF
-# docling>=2.0.0            # Advanced PDF (optional)
+
+# Advanced PDF (optional, extra ~400 MB)
+# Instale com:
+#   pip install -e ".[pdf]"                                    # todos os sistemas
+#   ou
+#   ./scripts/install-pdf-extras.sh                            # Linux — detecta GPU
+#   .\scripts\install-pdf-extras.ps1                           # Windows — detecta GPU (via PowerShell)
+#
+# Sem docling instalado, o sistema usa PyMuPDF (fitz) como fallback automático.
+# Em máquinas AMD/Intel sem GPU NVIDIA, use o script para evitar instalar
+# ~1 GB de pacotes CUDA desnecessários (torch com CUDA toolkit).
+# docling>=2.0.0
 
 # SSE transport (only if MCP_TRANSPORT=sse)
 uvicorn>=0.30.0
@@ -972,6 +985,36 @@ case studies, standards, and release artifacts.
 The main objective is to support **engineers and consultants** in day-to-day
 development, configuration, and troubleshooting tasks, using LLMs like Claude Code
 to accelerate their work.
+
+---
+
+## Instalação do docling (PDF Extra)
+
+> O docling é um extrator de PDF avançado (tabelas, figuras, layout analysis) que
+> substitui o PyMuPDF quando instalado. Sem ele, o sistema usa PyMuPDF como fallback
+> automático — nenhuma perda de funcionalidade em PDFs simples.
+
+**Requisito:** ~400 MB adicionais (ou ~1.4 GB se o pip instalar torch com CUDA).
+
+```bash
+# Opção 1 — instalação básica (todos os sistemas)
+pip install -e ".[pdf]"
+
+# Opção 2 — Linux, com detecção automática de GPU
+./scripts/install-pdf-extras.sh
+
+# Opção 3 — Windows (PowerShell), com detecção automática de GPU
+.\scripts\install-pdf-extras.ps1
+```
+
+**GPU vs CPU:** Em máquinas AMD/Intel sem GPU NVIDIA, o script `install-pdf-extras.sh`
+pré-instala `torch` do canal CPU (`download.pytorch.org/whl/cpu`), evitando que o pip
+baixe ~1 GB de pacotes CUDA (nvidia-cublas, nvidia-cudnn, etc.) que são inúteis sem GPU.
+
+**Verificação:**
+```bash
+python -c "from docling.document_converter import DocumentConverter; print('docling OK')"
+```
 
 ---
 
