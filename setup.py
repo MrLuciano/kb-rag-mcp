@@ -12,6 +12,7 @@ setup(
     description="Knowledge Base RAG system with job management",
     author="Luciano Marinho",
     python_requires=">=3.11",
+    license="MIT",
     packages=find_packages(include=["ingest*", "server*", "observability*"]),
     install_requires=[
         # Core dependencies from requirements.txt
@@ -53,6 +54,7 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
     ],
