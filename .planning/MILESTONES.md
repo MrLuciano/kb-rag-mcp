@@ -55,7 +55,11 @@ Established operational reliability and auto-classification maturity: lazy cross
 
 ### Git Tag
 
-`v1.2`## v1.1 — Quality & Operational Excellence
+`v1.2`
+
+---
+
+## v1.1 — Quality & Operational Excellence
 
 **Shipped:** 2026-05-23
 **Phases:** 4 (5-8) | **Plans:** 10 | **Tests:** 576 passing
@@ -83,3 +87,34 @@ Established operational maturity and code quality foundations: SSE stability wit
 ### Git Tag
 
 `v1.1`
+
+---
+
+## v1.3 — Post-Ship Polish & Infrastructure
+
+**Shipped:** 2026-05-27
+**Phases:** 11 (12-22) | **Plans:** 27 | **Tests:** 656 passing
+
+### Delivered
+
+English-only codebase with CI enforcement, multilingual README (EN/PT-BR/ES), Grafana + Prometheus monitoring stack (6 tabs, 28 panels, 4 services), PowerShell Windows firewall config, document reclassification engine (in-place metadata + SQLite rollback), capability negotiation (FilterTermsCache + list_filter_options), Grafana datasource fix (stable UID), 13 VERIFICATION.md files + gap detection, LOG_PATH PermissionError fix, codebase hygiene sweep (13 unused imports, 3 TODOs, 2 dead code), and integration checker CI gate (3 checks, needs: test).
+
+### Key Accomplishments
+
+1. **English-only codebase** — All Portuguese translated to English across ~35 files in `kb_server/` and `ingest/`; CI gate with `english-audit --check-inline --fail-under 0` on every push/PR; false positive technical terms removed from detection set
+2. **Grafana + Prometheus monitoring** — `/metrics` endpoint at port 8080 exposing 28 Prometheus metrics; 6-tab Grafana dashboard with 28 panels; 4-service Docker Compose stack (Qdrant, kb-rag-mcp, Prometheus, Grafana); Helm monitoring toggle with StatefulSet + Deployment
+3. **Document reclassification** — In-place metadata updates preserve embeddings; SQLite backup/audit tables for rollback; 4 CLI subcommands (run/verify/sessions/rollback) with interactive preview; session-based tracking with 30-day auto-cleanup
+4. **Capability negotiation** — MCP server advertises classified attributes (vendor, product, subsystem, version, module) via dynamic tool descriptions; FilterTermsCache with cache-bust marker; `list_filter_options` tool for full enumeration; 33 new tests + integration smoke test
+5. **Grafana datasource fix** — Stable `uid: prometheus` resolves dashboard load errors; 63 `${DS_PROMETHEUS}` → `"prometheus"` replacements; `__inputs` sections removed; applied identically across Docker Compose and Helm paths
+6. **Process debt resolved** — 13 VERIFICATION.md files backfilled for phases 05-13, 16-18; `scripts/check-verification-gaps.sh` detection script; `scripts/check-integration-gaps.py` wired as CI gate with Rich + JSON output
+
+### Stats
+
+- Timeline: 2026-05-25 → 2026-05-27 (3 days)
+- Files changed: 331 | Commits: ~187 feature commits
+- Requirements: 26/26 v1.3 requirements met (1 cancelled with rationale)
+- Final planned milestone — product is feature-complete for target use case
+
+### Git Tag
+
+`v1.3`

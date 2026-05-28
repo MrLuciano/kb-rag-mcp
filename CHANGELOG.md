@@ -97,6 +97,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `docs/RAG_EVALUATION.md`: full evaluation guide
   - `docs/FASE16_COMPLETION.md`: completion report
 
+## [1.3] 2026-05-27
+
+### Added
+
+- Phase 12: English Comments & Docstrings
+  - 12-01: Translate kb_server/ modules to English (165 changes)
+  - 12-02: Translate ingest/ modules to English (100+ changes)
+  - 12-03: English-only CI gate
+- Phase 13: Docs Sync & Readme Languages
+  - 13-01: Sync features/readme for OTCS
+  - 13-02: Sync features/readme for Content Server
+  - 13-03: README.pt-BR.md translation
+  - 13-04: README.es.md translation
+- Phase 14: Health Dashboard
+  - 14-01: /metrics endpoint with 28 Prometheus metrics
+  - 14-02: Grafana dashboard with 6-row, 28-panel layout
+  - 14-03: Docker Compose Prometheus/Grafana integration
+  - 14-04: Kubernetes/Helm monitoring stack
+  - 14-05: Health Dashboard documentation (OPERATIONS.md)
+  - 14-06: Docker Compose fixes (entrypoint, healthchecks)
+- Phase 15: PowerShell Ports Script
+  - 15-01: Windows firewall configuration in start-kb-rag.ps1
+  - 15-02: Windows firewall documentation (EN/PT-BR/ES + OPERATIONS.md)
+- Phase 16: Reclassification
+  - 16-01: Core reclassification engine (detect, backup, rollback)
+  - 16-02: kb-ingest reclassify CLI (run, verify, sessions, rollback)
+  - 16-03: Reclassification documentation (~820 lines across 4 files)
+- Phase 17: Capability Negotiation
+  - 17-01: Module classification axis (infer_module, MODULE_PATTERNS)
+  - 17-02: FilterTermsCache with dynamic descriptions (top-20 values)
+  - 17-03: list_filter_options MCP tool
+- Phase 18: Grafana Datasource Fix
+  - 18-01: Stable Prometheus UID across Docker Compose and Helm paths
+- Phase 19: VERIFICATION.md Backfill
+  - 19-01: Backfill VERIFICATION.md for 13 shipped phases + gap detection script
+- Phase 20: Test Environment Fixes
+  - 20-01: Fix LOG_PATH PermissionError, fixture isolation, clean env
+- Phase 21: Codebase Hygiene Sweep
+  - 21-01: Remove 13 unused imports, resolve 3 TODOs, remove 2 dead code instances
+- Phase 22: Integration Checker CI Gate
+  - 22-01: Integration gap checker script (3 checks) + CI job
+
+## [1.4] 2026-05-27
+
+### Added
+
+- Phase 23: Documentation Overhaul
+  - 23-01: Add deployment-mode navigation sections to OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md, INDEX.md
+  - 23-02: Restructure README.md, README.pt-BR.md, README.es.md (two-tier format: quickstart + docs/)
+  - 23-03: Update CHANGELOG with v1.3/v1.4 sections; audit and update REFERENCE.md
+
 ### Added - FASE 14: Observability and Audit (2026-05-16)
 
 - **Query Logging System**

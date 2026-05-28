@@ -86,6 +86,9 @@ return ranked chunks
 | Migration tools | `scripts/migrate` | `export.py`, `import_.py`, `validate.py` | Export/import/validate Qdrant snapshots + env |
 | QA pipeline | `qa` | `run_qa.py`, `metrics.py`, `embedder.py`, `report.py` | End-to-end retrieval quality evaluation |
 | Evaluation | `kb_server/evaluation` | `dataset.py`, `golden_dataset.json` | Golden dataset management |
+| Reclassification engine | `ingest` | `reclassify_engine.py`, `cli/reclassify.py` | Detect, backup, and rollback reclassification (FASE 16) |
+| FilterTermsCache | `kb_server` | `filter_terms_cache.py` | Dynamic top-20 filter values with cache (FASE 17) |
+| Integration checker | `scripts` | `check-integration-gaps.py` | CI gate: 3 integration gap checks (FASE 22) |
 | Grafana dashboard | `deployment/config` | `grafana-dashboard.json` | 18-panel dashboard: ingestion, workers, cache, embedding API |
 | Helm chart | `deployment/helm/kb-rag-mcp` | `Chart.yaml`, `values.yaml`, `templates/` | Kubernetes deployment (Deployment, StatefulSet, HPA, Services) |
 
@@ -291,6 +294,20 @@ See [KUBERNETES.md](KUBERNETES.md) for full Helm-based deployment guide.
 helm install kb-rag-mcp ./deployment/helm/kb-rag-mcp
 ```
 
+### Deployment Modes
+
+The system supports four deployment modes:
+
+| Mode | Description | Quick Start |
+|------|-------------|-------------|
+| Docker Compose | Single-machine deployment with containers. Ideal for development and small teams. | `docker compose up -d` |
+| Helm (Kubernetes) | Multi-replica, auto-scaling cluster deployment. Ideal for production. | `helm install kb-rag-mcp ./deployment/helm/kb-rag-mcp` |
+| Systemd | Bare metal / VM deployment with systemd services. Ideal for dedicated servers. | `sudo ./deployment/scripts/install.sh` |
+| Manual (Source) | Run from source with `python -m` commands. Ideal for development and customization. | `python -m kb_server.server` |
+
+See [INDEX.md](INDEX.md) for per-mode navigation. Each deployment mode has dedicated subsections in [INSTRUCTIONS.md](INSTRUCTIONS.md),
+[OPERATIONS.md](OPERATIONS.md), and [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
 ### Migration (backup/restore)
 
 See [MIGRATION.md](MIGRATION.md) for export/import/validate guide.
@@ -360,7 +377,7 @@ PYTHONPATH=. pytest -m "not integration"
 
 ## Roadmap Status
 
-All planned phases are complete. See [PLAN.md](PLAN.md) for full specifications.
+Phases 1–22 (v1.3) are complete. Phase 23 (v1.4) is active. See [PLAN.md](PLAN.md) for full specifications.
 
 | FASE | Title | Status | Key Deliverable |
 |---|---|---|---|
@@ -380,7 +397,14 @@ All planned phases are complete. See [PLAN.md](PLAN.md) for full specifications.
 | 13 | Ingestion Automation | ✅ Complete | File watcher, version extractor, _meta.json |
 | 14 | Observability & Audit | ✅ Complete | Query logger, registry export, web UI |
 | 15 | Advanced Infrastructure | ✅ Complete | Multi-collection routing, Kubernetes/Helm chart |
-| 16 | RAG Performance & Accuracy | ✅ Complete | RAGAS pipeline, golden dataset, experiments |
+| 16 | Reclassification | ✅ Complete | Reclassification engine (detect/backup/rollback), CLI |
+| 17 | Capability Negotiation | ✅ Complete | Module classification, FilterTermsCache, list_filter_options |
+| 18 | Grafana Datasource Fix | ✅ Complete | Stable Prometheus UID across Docker Compose and Helm |
+| 19 | VERIFICATION.md Backfill | ✅ Complete | Backfill verification docs for 13 shipped phases |
+| 20 | Test Environment Fixes | ✅ Complete | LOG_PATH fix, fixture isolation, clean env |
+| 21 | Codebase Hygiene Sweep | ✅ Complete | Remove unused imports, resolve TODOs, dead code |
+| 22 | Integration Checker CI Gate | ✅ Complete | Gap checker script + CI job |
+| 23 | Documentation Overhaul | 🟡 Active | Deployment-mode navigation, README restructure, CHANGELOG/REFERENCE update |
 | QA | QA Evaluation Pipeline | ✅ Complete | End-to-end eval, Hit Rate 100%, MRR 0.78 |
 
 ---

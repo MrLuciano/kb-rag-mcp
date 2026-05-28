@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Evaluations & Docs
-status: completed
-last_updated: "2026-05-28T00:26:37.248Z"
-last_activity: 2026-05-27 — Milestone v1.4 started
+status: executing
+last_updated: "2026-05-28T00:33:09.269Z"
+last_activity: 2026-05-28 -- Phase 23 execution complete
 progress:
   total_phases: 1
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 3
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -20,21 +20,70 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 23 — documentation overhaul
+**Current focus:** Phase 23 — documentation-overhaul (complete)
 
 ## Current Position
 
-Phase: 23 (documentation-overhaul)
-Plan: — (context gathered, ready for planning)
-Status: Context gathered
-Last activity: 2026-05-27 — Phase 23 context gathered
+Phase: 23 (documentation-overhaul) — COMPLETE
+Plan: 3 of 3
+Status: Phase 23 complete — 3/3 plans executed
+Last activity: 2026-05-28 -- Phase 23 execution complete
+
+## Phase 23 Outcomes
+
+### Status
+
+- **Phase:** 23 (documentation-overhaul)
+- **Status:** Complete — 3 plans, 3 commits
+- **Completed:** 2026-05-27
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 23-01 | Deployment-mode sections in OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md, INDEX.md | DOCS-01, DOCS-02 | Complete |
+| 23-02 | Restructure README.md, README.pt-BR.md, README.es.md (two-tier format) | DOCS-01, DOCS-02 | Complete |
+| 23-03 | Update CHANGELOG with v1.3/v1.4 sections; audit/update REFERENCE.md | DOCS-03, DOCS-04 | Complete |
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| DOCS-01: Deployment-mode navigation sections | ✅ | OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md have Common + Docker Compose/Helm/Systemd/Manual H2 sections |
+| DOCS-02: Per-mode source of truth in INDEX.md | ✅ | INDEX.md has Deployment Modes section with file-level links per mode |
+| DOCS-03: CHANGELOG update | ✅ | `## [1.3] 2026-05-27` and `## [1.4]` sections with per-plan bullet points for all v1.3/v1.4 phases |
+| DOCS-04: REFERENCE update | ✅ | Audit applied (stale entries corrected); v1.3/v1.4 components documented; Deployment Modes subsection added |
+
+### Key Changes
+
+1. **docs/OPERATIONS.md** — Added Common + Docker Compose/Helm/Systemd/Manual H2 sections with see-also footers (DOCS-01)
+2. **docs/TROUBLESHOOTING.md** — Added mode sections with troubleshooting guidance (DOCS-01)
+3. **docs/INSTRUCTIONS.md** — Portuguese; added mode sections with instruction pointers (DOCS-01)
+4. **docs/INDEX.md** — Enhanced with Deployment Modes section (DOCS-02)
+5. **README.md** — Restructured EN section (~160 lines with quickstart mode table + docs/ links); PT-BR section condensed from ~800 to ~30 lines (DOCS-01)
+6. **README.pt-BR.md** — Restructured standalone file from 1551 to ~60 lines with same two-tier format (DOCS-01)
+7. **README.es.md** — Restructured standalone file from 1551 to ~60 lines with same two-tier format (DOCS-01)
+8. **CHANGELOG.md** — Added `## [1.3] 2026-05-27` with all 11 phases (12-22) per-plan + `## [1.4]` with Phase 23 (DOCS-03)
+9. **docs/REFERENCE.md** — Added 3 Component Map entries (Reclassification, FilterTermsCache, Integration checker), Deployment Modes subsection, updated Roadmap Status with v1.3/v1.4 phases (DOCS-04)
+
+### Commits (3)
+
+1. `e77d9d6` docs(23): add deployment-mode sections to OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md, INDEX.md (DOCS-01, DOCS-02)
+2. `0f2f245` docs(23): restructure README.md, README.pt-BR.md, README.es.md to two-tier format (DOCS-01)
+3. *(pending)* docs(23): update CHANGELOG with v1.3/v1.4 milestones and audit REFERENCE.md (DOCS-03, DOCS-04)
+
+### Verification
+
+- CHANGELOG.md: `## [1.3]` present, `## [1.4]` present, all 11 v1.3 phases listed with per-plan detail
+- REFERENCE.md: Reclassification engine referenced, Deployment Modes subsection present, v1.3/v1.4 entries in Roadmap Status
+- 3 README files restructured with deployment-mode quickstart tables and docs/ link sections
 
 ## Phase 22 Outcomes
 
 ### Status
 
 - **Phase:** 22 (integration-checker-ci-gate)
-- **Status:** Complete — 1 plan, 2 commits
+- **Status:** Complete
 - **Completed:** 2026-05-27
 
 ### Plans Executed

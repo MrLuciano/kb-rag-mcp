@@ -68,13 +68,13 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 </details>
 
 <details open>
-<summary>◆ v1.4 Evaluations & Docs (Phases 23–25) — PLANNING</summary>
+<summary>◆ v1.4 Evaluations & Docs (Phases 23–25) — PARTIALLY COMPLETE</summary>
 
-- [ ] Phase 23: Documentation Overhaul — Organize docs by deployment mode, CHANGELOG/REFERENCE update
+- [x] Phase 23: Documentation Overhaul — 3 plans (doc reorganization, README restructuring, CHANGELOG/REFERENCE update) — completed 2026-05-27
 - [ ] Phase 24: RAGAS Evaluation Pipeline — 4-core-metric evaluation with dataset loading and results export
 - [ ] Phase 25: Optimization Experiments — Chunking and scoring experiments with comparison metrics
 
-**Planned:** Documentation restructuring (deployment-mode grouping), RAGAS evaluation pipeline with LLM-as-judge, chunking/scoring optimization experiments.
+**Completed:** Documentation restructuring with deployment-mode navigation, README two-tier format (quickstart + docs/), CHANGELOG v1.3/v1.4 milestones and REFERENCE.md audit. **Planned:** RAGAS evaluation pipeline with LLM-as-judge, chunking/scoring optimization experiments.
 
 </details>
 
@@ -105,7 +105,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 20. Test Environment Fixes | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 21. Codebase Hygiene Sweep | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
-| 23. Documentation Overhaul | v1.4 | 0/0 | Planning | — |
+| 23. Documentation Overhaul | v1.4 | 3/3 | Complete | 2026-05-27 |
 | 24. RAGAS Evaluation Pipeline | v1.4 | 0/0 | Planning | — |
 | 25. Optimization Experiments | v1.4 | 0/0 | Planning | — |
 
