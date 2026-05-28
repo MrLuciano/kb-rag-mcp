@@ -82,7 +82,7 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./deployment/config/grafana-provisioning:/etc/grafana/provisioning:ro
-      - ./deployment/config:/etc/grafana/dashboards:ro
+      - ./deployment/config/grafana-dashboard.json:/etc/grafana/dashboards/grafana-dashboard.json:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
