@@ -80,7 +80,7 @@ def check_requirements_traceability(project_root: Path) -> GapCheck:
     req_status: dict[str, str] = {}
 
     for line in text.split("\n"):
-        if line.startswith("| REQ-ID") and "|" in line:
+        if line.strip().startswith("| Requirement") and "|" in line:
             in_traceability = True
             continue
         if in_traceability:
@@ -93,6 +93,8 @@ def check_requirements_traceability(project_root: Path) -> GapCheck:
             parts = [p.strip() for p in stripped.split("|")]
             if len(parts) >= 2:
                 req_id = parts[1].strip()
+                if req_id == "Requirement":
+                    continue
                 if req_id and not req_id.startswith("REQ-ID"):
                     status_cell = parts[3].strip() if len(parts) > 3 else ""
                     req_status[req_id] = status_cell
