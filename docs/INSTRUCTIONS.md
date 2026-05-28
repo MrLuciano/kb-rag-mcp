@@ -1,7 +1,7 @@
-# KB RAG MCP Server — Instruções do Projeto
+# KB RAG MCP Server — Project Instructions
 
-> Documento de referência para evolução do projeto via geração de código com LLM.
-> Descreve arquitetura atual, decisões técnicas, contratos de interface e direções de melhoria.
+> Reference document for project evolution via LLM-based code generation.
+> Describes current architecture, technical decisions, interface contracts, and improvement directions.
 
 ---
 
@@ -19,214 +19,214 @@ For mode-specific instructions:
 
 ---
 
-## 1. Visão Geral
+## 1. Overview
 
-Servidor MCP (Model Context Protocol) que expõe busca semântica sobre uma knowledge base local
-de documentação técnica e manuais de produtos.
+MCP (Model Context Protocol) server that exposes semantic search over a local knowledge base
+of technical documentation and product manuals.
 
-O servidor é consumido por **Claude Code** e **OpenCode** via protocolo MCP, permitindo que o
-LLM recupere automaticamente trechos relevantes de documentação durante tarefas de desenvolvimento.
+The server is consumed by **Claude Code** and **OpenCode** via the MCP protocol, allowing the
+LLM to automatically retrieve relevant documentation snippets during development tasks.
 
-### Fluxo de dados
+### Data Flow
 
 ```
-Documentos locais (PDF, DOCX, XLSX, PPTX, TXT, formatos legados, ZIP, código)
+Local documents (PDF, DOCX, XLSX, PPTX, TXT, legacy formats, ZIP, code)
     │
     ▼  ingest/ingest.py
-Extração de texto  →  Chunking  →  Embedding (LM Studio / Ollama)
+Text extraction  →  Chunking  →  Embedding (LM Studio / Ollama)
     │
     ▼
-Qdrant (vector store local, Docker)
+Qdrant (local vector store, Docker)
     │
-    ▼  kb_server/server.py  [protocolo MCP]
+    ▼  kb_server/server.py  [MCP protocol]
 Claude Code / OpenCode
 ```
 
 ---
 
-## 2. Ambiente de Execução
+## 2. Runtime Environment
 
 ### Local Machine (primary)
 - **Hardware:** Local machine with GPU or iGPU
 - **OS:** Windows 11 Pro
-- **Embedding:** LM Studio rodando no Windows nativo com aceleração Vulkan
-- **Servidor MCP:** Python no WSL2 (Ubuntu 24.04)
-- **Vector store:** Qdrant em Docker no WSL2
-- **Acesso:** LM Studio acessível via `http://<LM_STUDIO_HOST>:1234` (IP fixo na rede local)
-- **Transport MCP:** stdio via `wsl.exe` invocado pelo Claude Code no Windows
+- **Embedding:** LM Studio running on native Windows with Vulkan acceleration
+- **MCP Server:** Python in WSL2 (Ubuntu 24.04)
+- **Vector store:** Qdrant in Docker on WSL2
+- **Access:** LM Studio accessible via `http://<LM_STUDIO_HOST>:1234` (fixed IP on local network)
+- **MCP Transport:** stdio via `wsl.exe` invoked by Claude Code on Windows
 
 ### LXC Server (secondary / always-on)
 - **Hardware:** LXC Ubuntu 24.04, 6 vCPU, 8–12 GB RAM, CPU only
-- **Embedding:** Ollama local (`nomic-embed-text`)
-- **Transport MCP:** SSE em `http://<ip-lxc>:8765/sse`
-- **Serviço:** systemd (`kb-mcp.service`)
+- **Embedding:** Local Ollama (`nomic-embed-text`)
+- **MCP Transport:** SSE at `http://<ip-lxc>:8765/sse`
+- **Service:** systemd (`kb-mcp.service`)
 
 ---
 
-## 3. Estrutura de Arquivos
+## 3. File Structure
 
 ```
 kb-rag-mcp/
 ├── kb_server/
-│   ├── server.py          # Entrypoint MCP — registra tools, roteia calls
-│   ├── embed_client.py    # Abstração de embedding (multi-backend)
-│   ├── vector_store.py    # Abstração Qdrant (search, upsert, list, stats)
-│   ├── collections/       # Multi-collection routing (FASE 15)
-│   │   ├── manager.py     # CollectionManager — CRUD de coleções Qdrant
-│   │   └── router.py      # CollectionRouter — resolve/ensure por parâmetro
-│   ├── cache/             # LRU cache + Redis opcional
+│   ├── server.py          # MCP entrypoint — registers tools, routes calls
+│   ├── embed_client.py    # Embedding abstraction (multi-backend)
+│   ├── vector_store.py    # Qdrant abstraction (search, upsert, list, stats)
+│   ├── collections/       # Multi-collection routing (Phase 15)
+│   │   ├── manager.py     # CollectionManager — CRUD for Qdrant collections
+│   │   └── router.py      # CollectionRouter — resolve/ensure by parameter
+│   ├── cache/             # LRU cache + optional Redis
 │   ├── retrieval/         # Hybrid search (BM25+dense RRF) + reranker
-│   ├── ui/                # Web UI FastAPI+HTMX
-│   └── telemetry/         # Query logger SQLite
+│   ├── ui/                # FastAPI+HTMX Web UI
+│   └── telemetry/         # SQLite query logger
 ├── ingest/
-│   ├── ingest.py          # Pipeline de ingestão — CLI principal
-│   ├── classifier.py      # Inferência de product e doc_type por regex
-│   ├── registry.py        # Controle de estado (SQLite) — evita re-ingestão
+│   ├── ingest.py          # Ingestion pipeline — main CLI
+│   ├── classifier.py      # Product/doc_type inference via regex
+│   ├── registry.py        # State control (SQLite) — prevents re-ingestion
 │   ├── parsers/
 │   │   ├── legacy_office.py  # .doc, .xls, .ppt, .odt, .ods, .odp, .wpd
-│   │   └── zip_handler.py    # Extração recursiva de arquivos ZIP
-│   ├── job/               # Sistema de jobs SQLite com prioridades
-│   ├── worker/            # Pool async + rate limiter token bucket
-│   ├── validation/        # Validadores de formato, tamanho, conteúdo
-│   └── watcher/           # File watcher watchdog para auto-ingestão
+│   │   └── zip_handler.py    # Recursive ZIP extraction
+│   ├── job/               # SQLite job system with priorities
+│   ├── worker/            # Async pool + token bucket rate limiter
+│   ├── validation/        # Format, size, content validators
+│   └── watcher/           # Watchdog file watcher for auto-ingestion
 ├── qa/
-│   ├── run_qa.py          # Pipeline de avaliação QA
+│   ├── run_qa.py          # QA evaluation pipeline
 │   ├── metrics.py         # Hit rate, MRR, p50_score
-│   └── queries.json       # Dataset de queries para avaliação
+│   └── queries.json       # Query evaluation dataset
 ├── observability/
-│   └── metrics.py         # 28 métricas Prometheus (kb_* prefix)
+│   └── metrics.py         # 28 Prometheus metrics (kb_* prefix)
 ├── scripts/
-│   ├── migrate/           # Ferramentas de migração (FASE 1.5)
-│   │   ├── export.py      # Exporta snapshot Qdrant + env sanitizado
-│   │   ├── import_.py     # Importa com validação SHA256
-│   │   └── validate.py    # Valida manifesto SHA256
-│   ├── kb-migrate.sh      # Wrapper shell: export/import/validate
-│   ├── setup.sh           # Instalação de dependências por perfil
-│   ├── health_check.py    # Testa embedding + Qdrant + busca end-to-end
-│   └── start-kb-rag.ps1   # Autostart WSL2 no Windows (PowerShell)
+│   ├── migrate/           # Migration tools (Phase 1.5)
+│   │   ├── export.py      # Exports Qdrant snapshot + sanitized env
+│   │   ├── import_.py     # Imports with SHA256 validation
+│   │   └── validate.py    # Validates SHA256 manifest
+│   ├── kb-migrate.sh      # Shell wrapper: export/import/validate
+│   ├── setup.sh           # Dependency installation by profile
+│   ├── health_check.py    # Tests embedding + Qdrant + end-to-end search
+│   └── start-kb-rag.ps1   # WSL2 autostart on Windows (PowerShell)
 ├── deployment/
-│   ├── systemd/           # Units systemd para bare-metal
+│   ├── systemd/           # systemd units for bare-metal
 │   ├── config/
-│   │   ├── grafana-dashboard.json          # Dashboard Grafana 18 painéis
+│   │   ├── grafana-dashboard.json          # 18-panel Grafana dashboard
 │   │   └── grafana-provisioning/           # Datasource + dashboard YAML
-│   └── helm/kb-rag-mcp/   # Helm chart Kubernetes (FASE 15)
+│   └── helm/kb-rag-mcp/   # Kubernetes Helm chart (Phase 15)
 │       ├── Chart.yaml
 │       ├── values.yaml
 │       └── templates/     # Deployment, StatefulSet, HPA, Services, ConfigMap
 ├── config/
-│   ├── .env.local         # Variáveis para local machine
-│   ├── .env.lxc           # Variáveis para LXC Server
-│   └── mcp-clients.json   # Configs prontas para Claude Code e OpenCode
+│   ├── .env.local         # Environment variables for local machine
+│   ├── .env.lxc           # Environment variables for LXC Server
+│   └── mcp-clients.json   # Ready-to-use configs for Claude Code and OpenCode
 ├── docs/
-│   ├── REFERENCE.md       # Referência técnica principal
-│   ├── INSTRUCTIONS.md    # Este arquivo (inglês)
-│   ├── INSTRUCTIONS.pt-BR.md  # Este arquivo (português)
-│   ├── LEGACY_FORMATS.md  # Formatos legados e regras de extração ZIP
+│   ├── REFERENCE.md       # Main technical reference
+│   ├── INSTRUCTIONS.md    # This file (English)
+│   ├── INSTRUCTIONS.pt-BR.md  # This file (Portuguese)
+│   ├── LEGACY_FORMATS.md  # Legacy formats and ZIP extraction rules
 │   └── ...
 ├── data/
-│   └── registry.db        # SQLite — gerado automaticamente na primeira ingestão
+│   └── registry.db        # SQLite — auto-generated on first ingestion
 ├── docker-compose.yml     # Qdrant
 ├── requirements.txt
-└── .env                   # Cópia ativa de .env.local ou .env.lxc
+└── .env                   # Active copy of .env.local or .env.lxc
 ```
 
 ---
 
-## 4. Variáveis de Ambiente
+## 4. Environment Variables
 
-Todas lidas via `.env` na raiz do projeto. O `load_dotenv` é chamado **antes de qualquer import**
-que leia `os.getenv()` — padrão crítico mantido em todos os entrypoints.
+All read via `.env` at the project root. `load_dotenv` is called **before any import**
+that reads `os.getenv()` — a critical pattern maintained in all entrypoints.
 
-| Variável | Padrão | Descrição |
+| Variable | Default | Description |
 |---|---|---|
-| `EMBED_BACKEND` | `openai-compat` | Backend de embedding: `lmstudio-sdk`, `lmstudio-rest`, `openai-compat`, `ollama` |
-| `EMBED_MODEL` | `text-embedding-nomic-embed-text-v1.5-embedding` | Nome exato do modelo conforme listado pelo servidor |
-| `LMS_BASE_URL` | `http://localhost:1234` | URL base do LM Studio — **sem** path (`/v1` ou `/api/v0` são adicionados automaticamente por backend) |
-| `OLLAMA_HOST` | `http://localhost:11434` | URL do Ollama |
-| `QDRANT_HOST` | `localhost` | Host do Qdrant |
-| `QDRANT_PORT` | `6333` | Porta REST do Qdrant |
-| `QDRANT_PATH` | _(vazio)_ | Se definido, usa Qdrant embedded (sem Docker) |
-| `QDRANT_COLLECTION` | `kb_docs` | Nome da coleção no Qdrant |
-| `SCORE_THRESHOLD` | `0.35` | Score mínimo de relevância (0.0–1.0) para retornar resultados |
-| `MCP_TRANSPORT` | `stdio` | `stdio` (Claude Code local) ou `sse` (acesso via URL) |
-| `SSE_HOST` | `0.0.0.0` | Bind address para modo SSE |
-| `SSE_PORT` | `8765` | Porta para modo SSE |
-| `DEFAULT_TOP_K` | `5` | Número padrão de resultados por busca |
-| `LOG_PATH` | `/tmp/kb-mcp.log` | Caminho do arquivo de log |
-| `REGISTRY_DB` | `data/registry.db` | Caminho do SQLite de controle de ingestão |
+| `EMBED_BACKEND` | `openai-compat` | Embedding backend: `lmstudio-sdk`, `lmstudio-rest`, `openai-compat`, `ollama` |
+| `EMBED_MODEL` | `text-embedding-nomic-embed-text-v1.5-embedding` | Exact model name as listed by the server |
+| `LMS_BASE_URL` | `http://localhost:1234` | LM Studio base URL — **without** path (`/v1` or `/api/v0` are added automatically per backend) |
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama URL |
+| `QDRANT_HOST` | `localhost` | Qdrant host |
+| `QDRANT_PORT` | `6333` | Qdrant REST port |
+| `QDRANT_PATH` | _(empty)_ | If set, uses Qdrant embedded (no Docker) |
+| `QDRANT_COLLECTION` | `kb_docs` | Qdrant collection name |
+| `SCORE_THRESHOLD` | `0.35` | Minimum relevance score (0.0–1.0) to return results |
+| `MCP_TRANSPORT` | `stdio` | `stdio` (local Claude Code) or `sse` (URL access) |
+| `SSE_HOST` | `0.0.0.0` | Bind address for SSE mode |
+| `SSE_PORT` | `8765` | Port for SSE mode |
+| `DEFAULT_TOP_K` | `5` | Default result count per search |
+| `LOG_PATH` | `/tmp/kb-mcp.log` | Log file path |
+| `REGISTRY_DB` | `data/registry.db` | SQLite path for ingest state control |
 
-### Normalização de URL (embed_client.py)
+### URL Normalization (embed_client.py)
 
-O código normaliza `LMS_BASE_URL` removendo qualquer path final:
+The code normalizes `LMS_BASE_URL` by stripping any trailing path:
 ```python
 LMS_BASE_URL = re.sub(r"/(api/v\d+|v\d+)/?$", "", raw_url).rstrip("/")
 # "http://<LM_STUDIO_HOST>:1234/api/v1"  →  "http://<LM_STUDIO_HOST>:1234"
 # "http://<LM_STUDIO_HOST>:1234/v1"      →  "http://<LM_STUDIO_HOST>:1234"
 ```
-Cada backend então adiciona o path correto:
+Each backend then adds the correct path:
 - `openai-compat` → `{LMS_BASE_URL}/v1/embeddings`
 - `lmstudio-rest`  → `{LMS_BASE_URL}/api/v0/embeddings`
 - `lmstudio-sdk`   → WebSocket `ws://{LMS_HOST}:{LMS_PORT}`
 
 ---
 
-## 5. MCP Tools Expostas
+## 5. Exposed MCP Tools
 
 ### `search_kb`
-Busca semântica principal. Parâmetros:
+Main semantic search. Parameters:
 
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `query` | string | ✓ | Pergunta ou termo |
-| `top_k` | integer | — | Resultados (1–20, padrão: 5) |
-| `product` | string | — | Filtro de produto (inferido pelo classifier) |
-| `doc_type` | string | — | Filtro: ver taxonomia abaixo |
-| `filter_type` | string | — | Formato do arquivo: `pdf`, `docx`, `xlsx`, `pptx`, `txt`, `code` |
+| Parameter | Type | Required | Description |
+|---|---|---|---|---|
+| `query` | string | ✓ | Question or term |
+| `top_k` | integer | — | Results (1–20, default: 5) |
+| `product` | string | — | Product filter (inferred by classifier) |
+| `doc_type` | string | — | Filter: see taxonomy below |
+| `filter_type` | string | — | File format: `pdf`, `docx`, `xlsx`, `pptx`, `txt`, `code` |
 
-**Retorno:** lista de chunks com `chunk_id`, `score`, `text`, `source_file`, `product`, `doc_type`, `file_type`, `page`.
+**Returns:** list of chunks with `chunk_id`, `score`, `text`, `source_file`, `product`, `doc_type`, `file_type`, `page`.
 
 ### `list_documents`
-Lista documentos indexados. Aceita os mesmos filtros de `search_kb` exceto `query` e `top_k`. Retorna documentos agrupados por `doc_type`.
+Lists indexed documents. Accepts the same filters as `search_kb` except `query` and `top_k`. Returns documents grouped by `doc_type`.
 
 ### `get_chunk`
-Retorna chunk completo com contexto vizinho.
+Returns the full chunk with neighboring context.
 
-| Parâmetro | Tipo | Obrigatório | Descrição |
+| Parameter | Type | Required | Description |
 |---|---|---|---|
-| `chunk_id` | string | ✓ | ID retornado pelo `search_kb` |
-| `context_window` | integer | — | Chunks vizinhos a incluir (0–3, padrão: 1) |
+| `chunk_id` | string | ✓ | ID returned by `search_kb` |
+| `context_window` | integer | — | Neighboring chunks to include (0–3, default: 1) |
 
 ### `kb_stats`
-Estatísticas da KB: total de documentos e chunks, breakdown por `doc_type` e por formato de arquivo.
+KB statistics: total documents and chunks, breakdown by `doc_type` and file format.
 
 ---
 
-## 6. Taxonomia de Conteúdo (doc_type)
+## 6. Content Taxonomy (doc_type)
 
-Inferida automaticamente por `ingest/classifier.py` via regex no nome do arquivo e caminho.
-Nenhuma reorganização de pastas é necessária.
+Automatically inferred by `ingest/classifier.py` via regex on the file name and path.
+No folder reorganization is needed.
 
-| doc_type | Descrição | Exemplos de padrões |
+| doc_type | Description | Example patterns |
 |---|---|---|
-| `admin_guide` | Guias de administração | Administration Guide, ACN, AGD |
-| `install_guide` | Guias de instalação | Installation Guide, IGW, IASW, IGU |
-| `upgrade_guide` | Guias de upgrade/migração | Upgrading, Update Installation, Migration |
-| `config_guide` | Guias de configuração | Configuration Guide, CGD, STORM, Cookbook |
-| `user_guide` | Guias de usuário | User Guide, UGD |
-| `api_guide` | APIs / SDKs / programação | Programming Guide, API, SDK, PSA, Endpoints |
-| `release_notes` | Notas de release | Release Notes, What's New, Changelog |
-| `howto` | Tutoriais / case studies | How-to, Case Study, Troubleshoot, KB\d+ |
-| `training` | Treinamentos / webinars | Training, VILT, Webinar, Module N, Study Guide |
-| `overview` | Visão geral / introdução | Overview, What is, Understanding, Architecture |
-| `standard` | Normas e regulamentos | ISO, 15489, LGPD, Lei Geral |
-| `reference` | Referência técnica | Technical Paper, Terminology, Spec |
-| `meeting` | Gravações de reuniões | Meeting Recording, Knowledge Sharing |
-| `release_artifact` | Artefatos binários | .zip, .patch, pat\d{9} |
-| `document` | Fallback genérico | Qualquer arquivo não classificado |
+| `admin_guide` | Administration guides | Administration Guide, ACN, AGD |
+| `install_guide` | Installation guides | Installation Guide, IGW, IASW, IGU |
+| `upgrade_guide` | Upgrade/migration guides | Upgrading, Update Installation, Migration |
+| `config_guide` | Configuration guides | Configuration Guide, CGD, STORM, Cookbook |
+| `user_guide` | User guides | User Guide, UGD |
+| `api_guide` | APIs / SDKs / programming | Programming Guide, API, SDK, PSA, Endpoints |
+| `release_notes` | Release notes | Release Notes, What's New, Changelog |
+| `howto` | Tutorials / case studies | How-to, Case Study, Troubleshoot, KB\d+ |
+| `training` | Training / webinars | Training, VILT, Webinar, Module N, Study Guide |
+| `overview` | Overview / introduction | Overview, What is, Understanding, Architecture |
+| `standard` | Standards and regulations | ISO, 15489, LGPD, Lei Geral |
+| `reference` | Technical reference | Technical Paper, Terminology, Spec |
+| `meeting` | Meeting recordings | Meeting Recording, Knowledge Sharing |
+| `release_artifact` | Binary artifacts | .zip, .patch, pat\d{9} |
+| `document` | Generic fallback | Any unclassified file |
 
-### Mapeamento de produtos (pasta raiz → product)
+### Product mapping (root folder → product)
 
-| Pasta | product |
+| Folder | product |
 |---|---|
 | `Archive/` | `product_archive` |
 | `AppServer/` | `product_content` |
@@ -235,32 +235,32 @@ Nenhuma reorganização de pastas é necessária.
 | `wem/` | `product_wem` |
 | `Adobe/` | `Adobe` |
 | `RecordsManagement/` | `RecordsManagement` |
-| `varios/`, raiz | `geral` |
+| `varios/`, root | `geral` |
 
-Produtos também são inferidos do nome do arquivo quando o arquivo está em `varios/` ou na raiz.
+Products are also inferred from the file name when the file is in `varios/` or at the root.
 
 ---
 
-## 7. Pipeline de Ingestão
+## 7. Ingestion Pipeline
 
-### Fluxo por arquivo
+### Per-file flow
 
 ```
 1. classifier.classify(file_path) → {product, doc_type}
-2. registry.needs_ingest(file_path) → (bool, razão)
-   ├── False → skip (SHA256 idêntico, status ok)
-   └── True  → continuar
+2. registry.needs_ingest(file_path) → (bool, reason)
+   ├── False → skip (same SHA256, status ok)
+   └── True  → continue
 3. EXTRACTOR[file_type](file_path) → [{text, page}]
 4. chunk_text(text, file_type) → [chunks]
 5. embed_client.get_embeddings_batch(chunks) → [vectors]
-6. store.delete_document(source_file)  # remove versão anterior
+6. store.delete_document(source_file)  # remove previous version
 7. store.upsert_chunks(chunks + vectors + metadata)
-8. registry.mark_ok(...)  # salva SHA256 + timestamp + doc_type
+8. registry.mark_ok(...)  # saves SHA256 + timestamp + doc_type
 ```
 
 ### Extratores por tipo
 
-| file_type | Extensões | Biblioteca | Fallback |
+| file_type | Extensions | Library | Fallback |
 |---|---|---|---|
 | `pdf` | .pdf | docling | PyMuPDF (fitz) |
 | `docx` | .docx | python-docx | — |
@@ -268,20 +268,20 @@ Produtos também são inferidos do nome do arquivo quando o arquivo está em `va
 | `xlsx` | .xlsx | openpyxl | — |
 | `xls` | .xls | xlrd | — |
 | `pptx` | .pptx | python-pptx | — |
-| `ppt` | .ppt | python-pptx (best-effort) | — (falha com binary .ppt) |
+| `ppt` | .ppt | python-pptx (best-effort) | — (fails with binary .ppt) |
 | `odt` | .odt | odfpy | — |
 | `ods` | .ods | odfpy | — |
 | `odp` | .odp | odfpy | — |
-| `wpd` | .wpd | heuristic latin-1 | — (qualidade baixa) |
+| `wpd` | .wpd | heuristic latin-1 | — (low quality) |
 | `txt` | .txt, .md, .rst | built-in | — |
 | `code` | .py .ts .js .java .go .rs .cpp .c .cs .yaml .yml .json .xml .sh .sql | built-in | — |
-| `zip` | .zip | stdlib zipfile (recursivo) | — (máx 2 níveis, 500 MB/entry) |
+| `zip` | .zip | stdlib zipfile (recursive) | — (max 2 levels, 500 MB/entry) |
 
-Veja [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes sobre formatos legados e extração ZIP.
+See [LEGACY_FORMATS.md](LEGACY_FORMATS.md) for details on legacy formats and ZIP extraction.
 
-Arquivos ignorados: `.mp4`, `.avi`, `.jpg`, `.png`, `.ini`, `.exe`, `.dll`.
+Ignored files: `.mp4`, `.avi`, `.jpg`, `.png`, `.ini`, `.exe`, `.dll`.
 
-### Configurações de chunking por tipo
+### Chunking configuration by type
 
 | file_type | chunk_size | overlap |
 |---|---|---|
@@ -300,11 +300,11 @@ Tabela `files` em `data/registry.db`:
 
 ```sql
 CREATE TABLE files (
-    path        TEXT PRIMARY KEY,  -- caminho relativo a docs_root
-    sha256      TEXT NOT NULL,     -- hash do conteúdo
+    path        TEXT PRIMARY KEY,  -- relative to docs_root
+    sha256      TEXT NOT NULL,     -- content hash
     file_type   TEXT,              -- pdf | docx | xlsx | pptx | txt | code
     product     TEXT,              -- produto inferido
-    doc_type    TEXT,              -- tipo de conteúdo inferido
+    doc_type    TEXT,              -- inferred content type
     chunks      INTEGER,           -- chunks gerados
     status      TEXT,              -- ok | error | deleted
     error_msg   TEXT,
@@ -314,45 +314,45 @@ CREATE TABLE files (
 );
 ```
 
-**Migração automática:** se a tabela já existia sem `doc_type`, a coluna é adicionada via `ALTER TABLE`.
+**Auto-migration:** if the table already existed without `doc_type`, the column is added via `ALTER TABLE`.
 
-### CLI do ingest.py
+### ingest.py CLI
 
 ```bash
-# Ingestão incremental (só novos e modificados)
+# Incremental ingestion (new and modified only)
 python ingest/ingest.py --docs /path/to/docs
 
-# Com produto explícito (override do classifier)
+# With explicit product (classifier override)
 python ingest/ingest.py --docs /path --product AppServer
 
-# Arquivo único
+# Single file
 python ingest/ingest.py --file /path/to/doc.pdf
 
-# Forçar re-ingestão de tudo
+# Force re-ingestion
 python ingest/ingest.py --docs /path --force
 
-# Limpa KB e registry, reinicia do zero
+# Clears KB and registry, starts fresh
 python ingest/ingest.py --docs /path --clean
 
-# Marca como deleted arquivos removidos do disco
+# Marks files removed from disk as deleted
 python ingest/ingest.py --docs /path --sync
 
-# Paralelismo (padrão: 2 workers)
+# Parallelism (default: 2 workers)
 python ingest/ingest.py --docs /path --workers 4
 
-# Status do registry
+# Registry status
 python ingest/ingest.py --status
-python ingest/ingest.py --status --errors   # só com erro
-python ingest/ingest.py --status --list     # lista todos
+python ingest/ingest.py --status --errors   # errors only
+python ingest/ingest.py --status --list     # list all
 ```
 
 ---
 
-## 8. Configuração dos Clientes MCP
+## 8. MCP Client Configuration
 
 ### Claude Code — Local Machine (WSL2)
 
-Arquivo: `%APPDATA%\Claude\claude_desktop_config.json`
+File: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -372,7 +372,7 @@ Arquivo: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ### Claude Code — LXC Server (SSE)
 
-Arquivo: `~/.claude/settings.json`
+File: `~/.claude/settings.json`
 
 ```json
 {
@@ -386,7 +386,7 @@ Arquivo: `~/.claude/settings.json`
 
 ### OpenCode
 
-Arquivo: `opencode.json` (raiz do projeto ou `~/.config/opencode/`)
+File: `opencode.json` (project root or `~/.config/opencode/`)
 
 ```json
 {
@@ -403,7 +403,7 @@ Arquivo: `opencode.json` (raiz do projeto ou `~/.config/opencode/`)
 
 ---
 
-## 9. Dependências
+## 9. Dependencies
 
 ```
 # Core
@@ -421,32 +421,29 @@ python-docx>=1.1.0
 openpyxl>=3.1.0
 python-pptx>=0.6.23
 pymupdf>=1.24.0             # fallback PDF
-# docling>=2.0.0            # PDF avançado (opcional)
+# docling>=2.0.0            # Advanced PDF (optional)
 
-# Chunking
-langchain-text-splitters>=0.2.0
-
-# SSE transport (só se MCP_TRANSPORT=sse)
+# SSE transport (only if MCP_TRANSPORT=sse)
 uvicorn>=0.30.0
 starlette>=0.37.0
 ```
 
 ---
 
-## 10. Decisões Técnicas e Restrições Conhecidas
+## 10. Technical Decisions and Known Constraints
 
 ### Qdrant client API
-A versão ≥1.7 do `qdrant-client` removeu `client.search()`. Usar sempre:
+`qdrant-client` ≥1.7 removed `client.search()`. Always use:
 ```python
-# CORRETO
+# CORRECT
 response = await client.query_points(collection_name=..., query=vector, ...)
-results = response.points  # lista de ScoredPoint
+results = response.points  # list of ScoredPoint
 
-# ERRADO — gera AttributeError
+# WRONG — raises AttributeError
 results = await client.search(query_vector=vector, ...)
 ```
 
-Para delete com filtro, usar `FilterSelector`:
+For filtered delete, use `FilterSelector`:
 ```python
 await client.delete(
     collection_name=...,
@@ -454,127 +451,127 @@ await client.delete(
 )
 ```
 
-### load_dotenv deve ser o primeiro import
-Em qualquer entrypoint (`server.py`, `ingest.py`, `health_check.py`), o `load_dotenv` deve
-rodar **antes** de importar módulos do projeto, pois `embed_client.py` e `vector_store.py`
-leem `os.getenv()` no nível de módulo (fora de funções).
+### load_dotenv must be the first import
+In any entrypoint (`server.py`, `ingest.py`, `health_check.py`), `load_dotenv` must
+run **before** importing project modules, because `embed_client.py` and `vector_store.py`
+read `os.getenv()` at module level (outside functions).
 
 ```python
-# PADRÃO CORRETO — sempre no topo, antes de imports do projeto
+# CORRECT PATTERN — always at the top, before project imports
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 
-# Só depois:
+# Only after:
 from embed_client import get_embedding
 from vector_store import VectorStore
 ```
 
-### LM Studio remoto vs local
-- `lmstudio-sdk` conecta via WebSocket ao daemon LM Studio. Só funciona se o daemon
-  estiver na mesma máquina ou acessível por WebSocket (não via HTTP simples).
-- Para LM Studio em outro IP na rede: usar `openai-compat` com `LMS_BASE_URL=http://ip:porta`.
-- O nome do modelo deve ser exatamente como aparece em `/v1/models` — verificar antes de configurar.
+### LM Studio remote vs local
+- `lmstudio-sdk` connects via WebSocket to the LM Studio daemon. Only works if the daemon
+  is on the same machine or accessible via WebSocket (not plain HTTP).
+- For LM Studio on another IP on the network: use `openai-compat` with `LMS_BASE_URL=http://ip:port`.
+- The model name must match exactly what appears in `/v1/models` — verify before configuring.
 
 ### WSL2 → Windows networking
-O WSL2 acessa o Windows host pelo IP em `/etc/resolv.conf` (nameserver) ou pelo IP da rede local.
-Se `localhost` não funcionar para o LM Studio, usar o IP real da máquina Windows na rede local.
+WSL2 accesses the Windows host via the IP in `/etc/resolv.conf` (nameserver) or the local network IP.
+If `localhost` does not work for LM Studio, use the actual Windows machine IP on the local network.
 
-### Ingestão paralela
-O semáforo de workers limita chamadas simultâneas ao servidor de embedding.
-Com LM Studio em CPU, manter `--workers 1` ou `2`. Com GPU: até `4`.
-Ingestão dos 7 GB leva estimadamente 3–6 horas em CPU only.
-
----
-
-## 11. Melhorias Planejadas (backlog)
-
-> **Nota:** Este backlog está mapeado para FASE 11-16 em docs/PLAN.md.  
-> Cada item contém detalhes técnicos suficientes para implementação autônoma.
+### Parallel ingestion
+The worker semaphore limits simultaneous calls to the embedding server.
+With LM Studio on CPU, keep `--workers 1` or `2`. With GPU: up to `4`.
+Ingesting 7 GB takes approximately 3–6 hours on CPU only.
 
 ---
 
-### Alta prioridade
+## 11. Planned Improvements (backlog)
 
-#### ✅ Formatos legados (FASE 11 — implementado)
+> **Note:** This backlog maps to Phase 11-16 in docs/PLAN.md.  
+> Each item contains sufficient technical detail for autonomous implementation.
 
-Suporte completo a formatos legados implementado em `ingest/parsers/`:
+---
+
+### High priority
+
+#### ✅ Legacy formats (Phase 11 — implemented)
+
+Full legacy format support implemented in `ingest/parsers/`:
 
 - `.doc` — docx2txt → python-docx fallback
 - `.xls` — xlrd (Excel 97-2003)
 - `.ppt` — python-pptx best-effort
 - `.odt`, `.ods`, `.odp` — odfpy (OpenDocument)
-- `.wpd` — extração heurística latin-1
-- `.zip` — stdlib zipfile, recursivo até 2 níveis, 500 MB/entry limit
+- `.wpd` — heuristic latin-1 extraction
+- `.zip` — stdlib zipfile, recursive up to 2 levels, 500 MB/entry limit
 
-Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes completos.
+See [LEGACY_FORMATS.md](LEGACY_FORMATS.md) for full details.
 
 ---
 
-#### Reranking (FASE 12)
-**Problema:** Resultados vetoriais incluem falsos positivos (similaridade semântica sem 
-relevância factual). Top-5 pode conter documentos irrelevantes.
+#### Reranking (Phase 12)
+**Problem:** Vector results include false positives (semantic similarity without 
+factual relevance). Top-5 may contain irrelevant documents.
 
-**Solução técnica:**
-- Criar `server/retrieval/reranker.py` com cross-encoder:
-  - Modelo: `cross-encoder/ms-marco-MiniLM-L-6-v2` via `sentence-transformers`
-  - Pipeline: `search_kb` retorna top-20 → reranker → top-k ao usuário
-  - Batch processing: grupos de 20 pares (query, chunk) por vez
-  - Async: não bloquear thread principal
-- Adicionar parâmetro `rerank: bool = False` ao tool `search_kb` (opt-in)
-- Cache de resultados rerankeados (key: hash(query + results))
+**Technical solution:**
+- Create `server/retrieval/reranker.py` with cross-encoder:
+  - Model: `cross-encoder/ms-marco-MiniLM-L-6-v2` via `sentence-transformers`
+  - Pipeline: `search_kb` returns top-20 → reranker → top-k to user
+  - Batch processing: groups of 20 pairs (query, chunk) at a time
+  - Async: do not block main thread
+- Add `rerank: bool = False` parameter to `search_kb` tool (opt-in)
+- Cache reranked results (key: hash(query + results))
 
-**Arquivos afetados:**
-- `requirements.in`: adicionar `sentence-transformers>=2.2.0`
-- `server/retrieval/reranker.py`: novo módulo
-- `server/mcp_server.py`: integrar reranker no `search_kb`
-- `server/cache/cache_manager.py`: adicionar cache de reranking
-- `tests/test_reranker.py`: testes unitários
-- `tests/e2e/test_reranking_quality.py`: testes de qualidade
+**Affected files:**
+- `requirements.in`: add `sentence-transformers>=2.2.0`
+- `server/retrieval/reranker.py`: new module
+- `server/mcp_server.py`: integrate reranker in `search_kb`
+- `server/cache/cache_manager.py`: add reranking cache
+- `tests/test_reranker.py`: unit tests
+- `tests/e2e/test_reranking_quality.py`: quality tests
 
-**Configuração:**
+**Configuration:**
 ```bash
 # .env
 RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
 RERANKER_BATCH_SIZE=20
-RERANKER_CACHE_TTL=3600  # 1 hora
+RERANKER_CACHE_TTL=3600  # 1 hour
 ```
 
-**Testes:**
-- Dataset de golden queries com expected top doc
-- Métrica: NDCG@5 antes/depois do reranking
-- Teste de performance: latência p95 <500ms
-- Validação: ordem de resultados muda corretamente
+**Tests:**
+- Golden query dataset with expected top doc
+- Metric: NDCG@5 before/after reranking
+- Performance test: p95 latency <500ms
+- Validation: result order changes correctly
 
-**Critério de aceitação:**
-- NDCG@5 melhora >20% no dataset de teste
-- Latência adicional <200ms (p95)
-- Opt-in não quebra comportamento existente
+**Acceptance criteria:**
+- NDCG@5 improves >20% on test dataset
+- Additional latency <200ms (p95)
+- Opt-in does not break existing behavior
 
 ---
 
-#### Busca híbrida (FASE 12)
-**Problema:** Busca puramente vetorial falha em termos técnicos específicos 
-(nomes de produto, versões, códigos). Exemplo: "Archive Center 22.3" não 
-ranqueia documentos com esse termo exato no topo.
+#### Hybrid search (Phase 12)
+**Problem:** Pure vector search fails on specific technical terms 
+(product names, versions, codes). Example: "Archive Center 22.3" does not
+rank documents with that exact term at the top.
 
-**Solução técnica:**
+**Technical solution:**
 - Qdrant `SparseVector` + BM25 via `fastembed`:
-  - Dense vector: embedding atual (nomic-embed-text)
-  - Sparse vector: BM25 tokenization com fastembed
-  - Fusão: **RRF (Reciprocal Rank Fusion)** ou weighted sum
-- Adicionar parâmetro `hybrid: bool = False` ao `search_kb` (opt-in)
-- Armazenar sparse vector junto com dense no upsert
+  - Dense vector: current embedding (nomic-embed-text)
+  - Sparse vector: BM25 tokenization with fastembed
+  - Fusion: **RRF (Reciprocal Rank Fusion)** or weighted sum
+- Add `hybrid: bool = False` parameter to `search_kb` (opt-in)
+- Store sparse vector alongside dense on upsert
 
-**Arquivos afetados:**
-- `requirements.in`: adicionar `fastembed>=0.2.0` (BM25 support)
-- `server/retrieval/hybrid_search.py`: novo módulo
-- `ingest/core/document_processor.py`: gerar sparse vector no chunking
-- `server/vector_store.py`: upsert com sparse vector
-- `server/mcp_server.py`: integrar hybrid search
-- `tests/test_hybrid_search.py`: testes unitários
-- `tests/e2e/test_recall_improvement.py`: métricas de recall
+**Affected files:**
+- `requirements.in`: add `fastembed>=0.2.0` (BM25 support)
+- `server/retrieval/hybrid_search.py`: new module
+- `ingest/core/document_processor.py`: generate sparse vector during chunking
+- `server/vector_store.py`: upsert with sparse vector
+- `server/mcp_server.py`: integrate hybrid search
+- `tests/test_hybrid_search.py`: unit tests
+- `tests/e2e/test_recall_improvement.py`: recall metrics
 
-**Implementação RRF:**
+**RRF implementation:**
 ```python
 def rrf_fusion(dense_results, sparse_results, k=60):
     """Reciprocal Rank Fusion."""
@@ -586,7 +583,7 @@ def rrf_fusion(dense_results, sparse_results, k=60):
     return sorted(scores.items(), key=lambda x: -x[1])
 ```
 
-**Configuração:**
+**Configuration:**
 ```bash
 # .env
 HYBRID_DENSE_WEIGHT=0.7
@@ -594,44 +591,44 @@ HYBRID_SPARSE_WEIGHT=0.3
 HYBRID_RRF_K=60
 ```
 
-**Testes:**
-- Queries com termos técnicos específicos (versões, códigos)
-- Métrica: Recall@10 antes/depois
-- Validação: documentos com match exato ranqueiam melhor
+**Tests:**
+- Queries with specific technical terms (versions, codes)
+- Metric: Recall@10 before/after
+- Validation: documents with exact match rank higher
 
-**Critério de aceitação:**
-- Recall@10 melhora >15% em queries técnicas
-- Compatibilidade com filtros existentes (product, doc_type)
-- Performance: latência <100ms adicional
+**Acceptance criteria:**
+- Recall@10 improves >15% on technical queries
+- Compatibility with existing filters (product, doc_type)
+- Performance: additional latency <100ms
 
 ---
 
-#### Payload indexing (FASE 12)
-**Problema:** Queries filtradas (`product=X`, `doc_type=Y`) são lentas em 
-coleções grandes (>100k chunks) porque Qdrant scana todos os payloads.
+#### Payload indexing (Phase 12)
+**Problem:** Filtered queries (`product=X`, `doc_type=Y`) are slow on 
+large collections (>100k chunks) because Qdrant scans all payloads.
 
-**Solução técnica:**
-- Criar índices Qdrant nos campos `product` e `doc_type`:
+**Technical solution:**
+- Create Qdrant indexes on `product` and `doc_type` fields:
   ```python
   client.create_payload_index(
       collection_name="kb_docs",
       field_name="product",
-      field_schema="keyword"  # index como string exato
+      field_schema="keyword"  # index as exact string
   )
   ```
-- Script de migração: `scripts/migrations/create_payload_indexes.py`
-  - Idempotente: verifica se índice já existe
-  - Progress bar para coleções grandes
-  - Pode rodar em produção sem downtime
-- Integrar criação de índices em `vector_store.py` ao criar collection
+- Migration script: `scripts/migrations/create_payload_indexes.py`
+  - Idempotent: checks if index already exists
+  - Progress bar for large collections
+  - Can run in production without downtime
+- Integrate index creation into `vector_store.py` when creating collection
 
-**Arquivos afetados:**
-- `scripts/migrations/create_payload_indexes.py`: novo script
-- `server/vector_store.py`: adicionar index creation ao `create_collection()`
-- `docs/MIGRATIONS.md`: documentar migração
-- `tests/test_payload_indexes.py`: validar criação de índices
+**Affected files:**
+- `scripts/migrations/create_payload_indexes.py`: new script
+- `server/vector_store.py`: add index creation to `create_collection()`
+- `docs/MIGRATIONS.md`: document migration
+- `tests/test_payload_indexes.py`: validate index creation
 
-**Script de migração:**
+**Migration script:**
 ```python
 # scripts/migrations/create_payload_indexes.py
 import asyncio
@@ -659,51 +656,51 @@ if __name__ == "__main__":
     asyncio.run(create_indexes())
 ```
 
-**Testes:**
-- Benchmark: filtro antes/depois de criar índices
-- Validação: query com filtro retorna resultados corretos
-- Performance: queries filtradas <50ms em coleção de 100k chunks
+**Tests:**
+- Benchmark: filter before/after creating indexes
+- Validation: filtered query returns correct results
+- Performance: filtered queries <50ms on 100k chunk collection
 
-**Critério de aceitação:**
-- Índices criados com sucesso em produção
-- Queries filtradas >10x mais rápidas
-- Script idempotente (pode rodar múltiplas vezes)
-
----
-
-### Média prioridade
-
-#### ✅ Suporte a ZIP (FASE 11 — implementado)
-
-Implementado em `ingest/parsers/zip_handler.py`. Extração recursiva até 2 níveis,
-limite de 500 MB por entry, preservação de `source_path` no payload.
-Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para as regras completas.
+**Acceptance criteria:**
+- Indexes created successfully in production
+- Filtered queries >10x faster
+- Script idempotent (can run multiple times)
 
 ---
 
-#### Versão no payload (FASE 13)
-**Problema:** Documentos de versões diferentes do mesmo produto não são 
-distinguíveis. Usuário não pode filtrar por versão específica.
+### Medium priority
 
-**Solução técnica:**
-- Extrator de versão: `ingest/core/version_extractor.py`
+#### ✅ ZIP support (Phase 11 — implemented)
+
+Implemented in `ingest/parsers/zip_handler.py`. Recursive extraction up to 2 levels,
+500 MB per entry limit, `source_path` preserved in payload.
+See [LEGACY_FORMATS.md](LEGACY_FORMATS.md) for full rules.
+
+---
+
+#### Version in payload (Phase 13)
+**Problem:** Documents from different versions of the same product are not 
+distinguishable. User cannot filter by specific version.
+
+**Technical solution:**
+- Version extractor: `ingest/core/version_extractor.py`
   - Regex patterns:
     - `(\d{2}\.\d+)` → "22.3", "16.2"
     - `(CE \d{2}\.\d+)` → "CE 24.4"
     - `(v\d+\.\d+\.\d+)` → "v3.2.1"
     - `(\d{4}R\d)` → "2024R1" (SAP style)
-  - Buscar em: filename, parent directory, primeiro parágrafo do texto
-  - Retornar primeira match ou `None`
-- Adicionar campo `version: str | None` ao payload Qdrant
-- Filtro `version` no `search_kb` tool
+  - Search in: filename, parent directory, first paragraph of text
+  - Return first match or `None`
+- Add `version: str | None` field to Qdrant payload
+- `version` filter in `search_kb` tool
 
-**Arquivos afetados:**
-- `ingest/core/version_extractor.py`: novo módulo
-- `ingest/core/metadata.py`: integrar extração de versão
-- `server/mcp_server.py`: adicionar parâmetro `version` ao `search_kb`
-- `tests/test_version_extractor.py`: testes com diversos formatos
+**Affected files:**
+- `ingest/core/version_extractor.py`: new module
+- `ingest/core/metadata.py`: integrate version extraction
+- `server/mcp_server.py`: add `version` parameter to `search_kb`
+- `tests/test_version_extractor.py`: tests with various formats
 
-**Implementação:**
+**Implementation:**
 ```python
 import re
 
@@ -729,25 +726,25 @@ class VersionExtractor:
         return None
 ```
 
-**Testes:**
+**Tests:**
 - `"ProductName_22.3_Admin_Guide.pdf"` → `"22.3"`
 - `"/docs/ecm/CE 24.4/manual.pdf"` → `"CE 24.4"`
 - `"Release Notes for version 16.2"` → `"16.2"`
-- Arquivo sem versão → `None`
+- File without version → `None`
 
-**Critério de aceitação:**
-- Extrai versão corretamente de 90% dos arquivos de teste
-- Campo `version` indexado no Qdrant
-- Filtro `version` funciona no search_kb
+**Acceptance criteria:**
+- Correctly extracts version from 90% of test files
+- `version` field indexed in Qdrant
+- `version` filter works in search_kb
 
 ---
 
-#### `_meta.json` por pasta (FASE 13)
-**Problema:** Classificação automática erra em alguns arquivos. Mover arquivos 
-para reestruturar pastas é trabalhoso. Precisa de override pontual.
+#### `_meta.json` per folder (Phase 13)
+**Problem:** Automatic classification gets some files wrong. Moving files 
+to restructure folders is labor-intensive. Need targeted overrides.
 
-**Solução técnica:**
-- Arquivo `_meta.json` por diretório:
+**Technical solution:**
+- `_meta.json` file per directory:
   ```json
   {
     "product": "DefaultProductForDir",
@@ -763,17 +760,17 @@ para reestruturar pastas é trabalhoso. Precisa de override pontual.
     }
   }
   ```
-- Precedência: file-specific > directory-level > auto-inference
-- Validação: rejeitar `product`/`doc_type` inválidos (lista permitida)
-- Carregar em `FileScanner` antes de classificar
+- Precedence: file-specific > directory-level > auto-inference
+- Validation: reject invalid `product`/`doc_type` (allowlist)
+- Load in `FileScanner` before classifying
 
-**Arquivos afetados:**
-- `ingest/core/meta_loader.py`: novo módulo
-- `ingest/core/file_scanner.py`: integrar meta loader
-- `ingest/core/metadata.py`: usar override se disponível
-- `tests/test_meta_loader.py`: testes de precedência
+**Affected files:**
+- `ingest/core/meta_loader.py`: new module
+- `ingest/core/file_scanner.py`: integrate meta loader
+- `ingest/core/metadata.py`: use override if available
+- `tests/test_meta_loader.py`: precedence tests
 
-**Implementação:**
+**Implementation:**
 ```python
 import json
 from pathlib import Path
@@ -828,123 +825,123 @@ class MetaLoader:
         }
 ```
 
-**Testes:**
-- `_meta.json` com default → aplicado a todos os arquivos
-- `_meta.json` com file-specific → override funciona
-- Precedência: file > dir > auto
-- Validação: doc_type inválido → erro
+**Tests:**
+- `_meta.json` with default → applied to all files
+- `_meta.json` with file-specific → override works
+- Precedence: file > dir > auto
+- Validation: invalid doc_type → error
 
-**Critério de aceitação:**
-- `_meta.json` carregado e validado corretamente
-- Precedência funciona (file > dir > auto)
-- Validação rejeita valores inválidos
-- Classificação manual tem prioridade sobre automática
-
----
-
-### Baixa prioridade
-
-#### UI de inspeção (FASE 14)
-**Solução resumida:**
-- FastAPI em `server/ui/` com HTMX
-- Rotas: `/ui` (browse), `/ui/search` (tester), `/ui/doc/{id}` (detail)
-- Bootstrap 5 ou Tailwind para styling
-- Sem autenticação (internal only)
-- Paginação: 50 documentos por página
-
-**Arquivos:** `server/ui/{app.py, templates/, static/}`
+**Acceptance criteria:**
+- `_meta.json` loaded and validated correctly
+- Precedence works (file > dir > auto)
+- Validation rejects invalid values
+- Manual classification takes priority over automatic
 
 ---
 
-#### Métricas de uso (FASE 14)
-**Solução resumida:**
-- Tabela SQLite `query_log`: query, results, scores, latency_ms, timestamp
-- Log após cada `search_kb` invocation
-- Auto-rotação: keep 90 dias, archive mensalmente
-- Query para stats: top queries, low-score queries
+### Low priority
 
-**Arquivos:** `server/telemetry/query_logger.py`
+#### Inspection UI (Phase 14)
+**Summary solution:**
+- FastAPI in `server/ui/` with HTMX
+- Routes: `/ui` (browse), `/ui/search` (tester), `/ui/doc/{id}` (detail)
+- Bootstrap 5 or Tailwind for styling
+- No authentication (internal only)
+- Pagination: 50 documents per page
 
----
-
-#### ✅ Múltiplas coleções (FASE 15 — implementado)
-**Solução implementada:**
-- `CollectionManager` em `kb_server/collections/manager.py` — CRUD (list/create/delete/exists)
-  - Espelha HNSW config e payload indexes do VectorStore
-- `CollectionRouter` em `kb_server/collections/router.py`
-  - `resolve()` — estrito, lança `CollectionNotFoundError` se coleção não existe (paths de leitura)
-  - `ensure()` — cria automaticamente se não existe (paths de ingestão)
-- Parâmetro opcional `collection` em `search_kb` e `list_documents`
-- Nova MCP tool: `list_collections` — lista todas as coleções disponíveis
-- Backward compatible: sem `collection` roteia para `QDRANT_COLLECTION` (padrão `kb_docs`)
-
-**Arquivos:** `kb_server/collections/{__init__.py, manager.py, router.py}`,
-              `kb_server/server.py` (modificado), `kb_server/vector_store.py` (modificado)
-**Testes:** `tests/test_collection_manager.py` (10 testes), `tests/test_collection_router.py` (7 testes)
+**Files:** `server/ui/{app.py, templates/, static/}`
 
 ---
 
-#### Export do registry (FASE 14)
-**Solução resumida:**
-- Comando: `kb-rag registry export --format csv|json`
-- Filtros: `--product`, `--doc_type`, `--status`
-- Streaming export (não carregar tudo em memória)
+#### Usage metrics (Phase 14)
+**Summary solution:**
+- SQLite table `query_log`: query, results, scores, latency_ms, timestamp
+- Log after each `search_kb` invocation
+- Auto-rotation: keep 90 days, archive monthly
+- Stats queries: top queries, low-score queries
 
-**Arquivos:** `ingest/cli/export.py`
+**Files:** `server/telemetry/query_logger.py`
 
 ---
 
-#### ✅ Kubernetes support (FASE 15 — implementado)
-**Solução implementada:**
-- Helm chart em `deployment/helm/kb-rag-mcp/`
-  - `Deployment` para kb-server com liveness/readiness probes
-  - `StatefulSet` para Qdrant + PVC (50 Gi padrão)
-  - `HorizontalPodAutoscaler` (2–10 réplicas, target 70% CPU)
-  - `Services` para kb-server e Qdrant
-  - `ConfigMap` para env vars
-  - `_helpers.tpl` com macros de labels
-- `values.yaml` com defaults configuráveis (réplicas, recursos, Redis opcional, Ingress)
-- Suporte a `ServiceMonitor` para Prometheus Operator
+#### ✅ Multiple collections (Phase 15 — implemented)
+**Implemented solution:**
+- `CollectionManager` in `kb_server/collections/manager.py` — CRUD (list/create/delete/exists)
+  - Mirrors HNSW config and payload indexes from VectorStore
+- `CollectionRouter` in `kb_server/collections/router.py`
+  - `resolve()` — strict, raises `CollectionNotFoundError` if collection doesn't exist (read paths)
+  - `ensure()` — creates automatically if it doesn't exist (ingest paths)
+- Optional `collection` parameter on `search_kb` and `list_documents`
+- New MCP tool: `list_collections` — lists all available collections
+- Backward compatible: without `collection` routes to `QDRANT_COLLECTION` (default `kb_docs`)
 
-**Arquivos:** `deployment/helm/kb-rag-mcp/{Chart.yaml, values.yaml, templates/}`
+**Files:** `kb_server/collections/{__init__.py, manager.py, router.py}`,
+              `kb_server/server.py` (modified), `kb_server/vector_store.py` (modified)
+**Tests:** `tests/test_collection_manager.py` (10 tests), `tests/test_collection_router.py` (7 tests)
+
+---
+
+#### Registry export (Phase 14)
+**Summary solution:**
+- Command: `kb-rag registry export --format csv|json`
+- Filters: `--product`, `--doc_type`, `--status`
+- Streaming export (do not load everything into memory)
+
+**Files:** `ingest/cli/export.py`
+
+---
+
+#### ✅ Kubernetes support (Phase 15 — implemented)
+**Implemented solution:**
+- Helm chart at `deployment/helm/kb-rag-mcp/`
+  - `Deployment` for kb-server with liveness/readiness probes
+  - `StatefulSet` for Qdrant + PVC (50 Gi default)
+  - `HorizontalPodAutoscaler` (2–10 replicas, 70% CPU target)
+  - `Services` for kb-server and Qdrant
+  - `ConfigMap` for env vars
+  - `_helpers.tpl` with label macros
+- `values.yaml` with configurable defaults (replicas, resources, optional Redis, Ingress)
+- `ServiceMonitor` support for Prometheus Operator
+
+**Files:** `deployment/helm/kb-rag-mcp/{Chart.yaml, values.yaml, templates/}`
 **Docs:** `docs/KUBERNETES.md`
 
 ---
 
-#### RAG performance and accuracy (FASE 16)
-**Solução resumida:**
+#### RAG performance and accuracy (Phase 16)
+**Summary solution:**
 - Golden dataset: 50+ (query, expected_answer, expected_docs)
 - RAGAS pipeline: context_precision, answer_relevancy, faithfulness
-- LLM-as-judge via Ollama local ou OpenAI API
-- Query analyzer: identificar padrões, low-score queries
-- Otimizações: chunk size, score thresholds, query expansion
-- CI job semanal de avaliação
+- LLM-as-judge via local Ollama or OpenAI API
+- Query analyzer: identify patterns, low-score queries
+- Optimizations: chunk size, score thresholds, query expansion
+- Weekly CI evaluation job
 
-**Arquivos:** `server/evaluation/{ragas_pipeline.py, dataset.py}`, 
+**Files:** `server/evaluation/{ragas_pipeline.py, dataset.py}`, 
             `server/analytics/query_analyzer.py`
 
 ---
 ---
 
-## 12. Comandos de Operação
+## 12. Operation Commands
 
 ```bash
-# Setup inicial
+# Initial setup
 bash scripts/setup.sh local         # local machine
 bash scripts/setup.sh lxc           # LXC Server
 
-# Verificar saúde dos componentes
+# Check component health
 python scripts/health_check.py
 
-# Ingestão
-cd ~/kb-rag-mcp                     # sempre rodar da raiz
+# Ingestion
+cd ~/kb-rag-mcp                     # always run from the root
 source .venv/bin/activate
 python ingest/ingest.py --docs /mnt/c/Recebedor/learning
 
 # Status
 python ingest/ingest.py --status --list
 
-# Iniciar servidor (teste manual)
+# Start server (manual test)
 python kb_server/server.py
 
 # Local machine — autostart
@@ -957,31 +954,31 @@ sudo systemctl status kb-mcp
 sudo journalctl -u kb-mcp -f
 
 # Qdrant
-docker ps                           # verifica se container está rodando
+docker ps                           # check if container is running
 curl http://localhost:6333/healthz  # health check
-curl http://localhost:6333/collections  # lista coleções
+curl http://localhost:6333/collections  # list collections
 ```
 
 ---
 
-## 13. Contexto de Negócio
+## 13. Business Context
 
-A KB pode conter qualquer documentação técnica. Nomes de produtos e tipos de documentos são classificados automaticamente via metadados.
+The KB can contain any technical documentation. Product names and document types are automatically classified via metadata.
 
-Documentos incluem: guias de administração e instalação, release notes, upgrade guides,
-guias de configuração de cenários, APIs, materiais de treinamento, apresentações,
-case studies, normas e artefatos de release.
+Documents include: administration and installation guides, release notes, upgrade guides,
+scenario configuration guides, APIs, training materials, presentations,
+case studies, standards, and release artifacts.
 
-O objetivo principal é apoiar **engenheiros e consultores** no dia a dia de
-desenvolvimento, configuração e troubleshooting, usando LLMs como Claude Code
-para acelerar o trabalho.
+The main objective is to support **engineers and consultants** in day-to-day
+development, configuration, and troubleshooting tasks, using LLMs like Claude Code
+to accelerate their work.
 
 ---
 
 ## Docker Compose
 
-- **Environment variables** → [§4. Variáveis de Ambiente](#4-vari%C3%A1veis-de-ambiente) (all modes)
-- **MCP client config** → [§8. Configuração dos Clientes MCP](#8-configura%C3%A7%C3%A3o-dos-clientes-mcp) (all modes)
+- **Environment variables** → [§4. Environment Variables](#4-environment-variables) (all modes)
+- **MCP client config** → [§8. MCP Client Configuration](#8-mcp-client-configuration) (all modes)
 - **Quick start:** `docker compose up -d` from project root (Qdrant + MCP server + monitoring)
 
 Docker Compose manifest: `docker-compose.yml` at project root.
@@ -1003,12 +1000,12 @@ Docker Compose manifest: `docker-compose.yml` at project root.
 
 ## Systemd
 
-- **Environment** → [§2. Ambiente de Execução → LXC Server](#2-ambiente-de-execução) (LXC/systemd setup)
+- **Environment** → [§2. Runtime Environment → LXC Server](#2-runtime-environment) (LXC/systemd setup)
 - **Service management** → `sudo systemctl start/stop/status kb-mcp`
 - **Logs** → `sudo journalctl -u kb-mcp -f`
 - **Unit files** → `scripts/kb-mcp.service`, `scripts/kb-rag.target`
 
-Key commands (from [§12. Comandos de Operação](#12-comandos-de-operação)):
+Key commands (from [§12. Operation Commands](#12-operation-commands)):
 ```
 sudo systemctl status kb-mcp
 sudo journalctl -u kb-mcp -f
@@ -1020,10 +1017,10 @@ sudo journalctl -u kb-mcp -f
 
 ## Manual
 
-- **Environment** → [§2. Ambiente de Execução → Local Machine](#2-ambiente-de-execução) (WSL2/manual setup)
+- **Environment** → [§2. Runtime Environment → Local Machine](#2-runtime-environment) (WSL2/manual setup)
 - **Python setup** → Create venv, `pip install -r requirements.txt`
 - **Run server** → `python kb_server/server.py` (stdio) or with SSE transport
-- **Ingestion** → `python ingest/ingest.py --docs <path>` (see [§7. Pipeline de Ingestão](#7-pipeline-de-ingestão))
+- **Ingestion** → `python ingest/ingest.py --docs <path>` (see [§7. Ingestion Pipeline](#7-ingestion-pipeline))
 - **Windows startup** → `pwsh scripts/start-kb-rag.ps1`
 
 > **See also:** [OPERATIONS.md → Manual](OPERATIONS.md#manual), [TROUBLESHOOTING.md → Manual](TROUBLESHOOTING.md#manual)

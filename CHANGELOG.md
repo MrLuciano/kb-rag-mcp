@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added - FASE 15: Multi-Collection Routing + Kubernetes (2026-05-19)
+### Added - Phase 15: Multi-Collection Routing + Kubernetes (2026-05-19)
 
 - **CollectionManager** (`kb_server/collections/manager.py`)
   - CRUD operations: list, create, delete, exists
@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ingestion throughput, worker pool, cache hit rate, batch processing, latency
 - `deployment/config/grafana-provisioning/` — datasource + dashboard YAML for auto-provisioning
 
-### Added - FASE 1.5: Migration Tools (2026-05-17)
+### Added - Phase 1.5: Migration Tools (2026-05-17)
 
 - **`scripts/migrate/export.py`** — snapshots Qdrant collection + sanitized env to `migration_package/`
 - **`scripts/migrate/import_.py`** — restores with SHA256 manifest validation gate
@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SHA256 integrity chain prevents partial/corrupt imports
 - Documentation: `docs/MIGRATION.md`
 
-### Added - FASE 11: Legacy Formats + ZIP (2026-05-17)
+### Added - Phase 11: Legacy Formats + ZIP (2026-05-17)
 
 - **`ingest/parsers/legacy_office.py`** — extractors for `.doc`, `.xls`, `.ppt`, `.odt`, `.ods`, `.odp`, `.wpd`
   - Fallback chain: python-docx → antiword → LibreOffice CLI
@@ -69,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 - **Query Analyzer**
-  - Analyzes FASE 14 query logs to identify patterns
+  - Analyzes Phase 14 query logs to identify patterns
   - APIs: `most_common_queries`, `low_score_queries`, `zero_result_queries`
   - New module: `server/analytics/query_analyzer.py`
   - 4 unit tests, 100% passing
@@ -95,49 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Documentation**
   - `docs/RAG_EVALUATION.md`: full evaluation guide
-  - `docs/FASE16_COMPLETION.md`: completion report
-
-## [1.3] 2026-05-27
-
-### Added
-
-- Phase 12: English Comments & Docstrings
-  - 12-01: Translate kb_server/ modules to English (165 changes)
-  - 12-02: Translate ingest/ modules to English (100+ changes)
-  - 12-03: English-only CI gate
-- Phase 13: Docs Sync & Readme Languages
-  - 13-01: Sync features/readme for OTCS
-  - 13-02: Sync features/readme for Content Server
-  - 13-03: README.pt-BR.md translation
-  - 13-04: README.es.md translation
-- Phase 14: Health Dashboard
-  - 14-01: /metrics endpoint with 28 Prometheus metrics
-  - 14-02: Grafana dashboard with 6-row, 28-panel layout
-  - 14-03: Docker Compose Prometheus/Grafana integration
-  - 14-04: Kubernetes/Helm monitoring stack
-  - 14-05: Health Dashboard documentation (OPERATIONS.md)
-  - 14-06: Docker Compose fixes (entrypoint, healthchecks)
-- Phase 15: PowerShell Ports Script
-  - 15-01: Windows firewall configuration in start-kb-rag.ps1
-  - 15-02: Windows firewall documentation (EN/PT-BR/ES + OPERATIONS.md)
-- Phase 16: Reclassification
-  - 16-01: Core reclassification engine (detect, backup, rollback)
-  - 16-02: kb-ingest reclassify CLI (run, verify, sessions, rollback)
-  - 16-03: Reclassification documentation (~820 lines across 4 files)
-- Phase 17: Capability Negotiation
-  - 17-01: Module classification axis (infer_module, MODULE_PATTERNS)
-  - 17-02: FilterTermsCache with dynamic descriptions (top-20 values)
-  - 17-03: list_filter_options MCP tool
-- Phase 18: Grafana Datasource Fix
-  - 18-01: Stable Prometheus UID across Docker Compose and Helm paths
-- Phase 19: VERIFICATION.md Backfill
-  - 19-01: Backfill VERIFICATION.md for 13 shipped phases + gap detection script
-- Phase 20: Test Environment Fixes
-  - 20-01: Fix LOG_PATH PermissionError, fixture isolation, clean env
-- Phase 21: Codebase Hygiene Sweep
-  - 21-01: Remove 13 unused imports, resolve 3 TODOs, remove 2 dead code instances
-- Phase 22: Integration Checker CI Gate
-  - 22-01: Integration gap checker script (3 checks) + CI job
+  - `docs/Phase16_COMPLETION.md`: completion report
 
 ## [1.4] 2026-05-27
 
@@ -148,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 23-02: Restructure README.md, README.pt-BR.md, README.es.md (two-tier format: quickstart + docs/)
   - 23-03: Update CHANGELOG with v1.3/v1.4 sections; audit and update REFERENCE.md
 
-### Added - FASE 14: Observability and Audit (2026-05-16)
+### Added - Phase 14: Observability and Audit (2026-05-16)
 
 - **Query Logging System**
   - Automatic logging of all search queries to SQLite
@@ -187,7 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SQL query examples for analytics
   - Performance troubleshooting
 
-### Added - FASE 13: Ingestion Automation (2026-05-16)
+### Added - Phase 13: Ingestion Automation (2026-05-16)
 
 - **File Watcher for Automatic Ingestion**
   - Monitors directories for file create/modify/delete events
@@ -234,15 +192,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `docs/AUTO_INGESTION.md` (950 lines) - File watcher guide
   - `docs/METADATA_OVERRIDES.md` (850 lines) - _meta.json guide
   - `docs/VERSION_FILTERING.md` (900 lines) - Version search guide
-  - `docs/FASE13_COMPLETION.md` (800+ lines) - Completion report
-  - Updated `README.md` with FASE 13 features (English and Portuguese)
+  - `docs/Phase13_COMPLETION.md` (800+ lines) - Completion report
+  - Updated `README.md` with Phase 13 features (English and Portuguese)
 
 - **systemd Service Configuration**
   - `deployment/systemd/kb-rag-watcher.service` - Watcher service
   - Updated `deployment/systemd/kb-rag.target` - Include watcher
   - Updated `deployment/config/kb-rag.env.template` - Watcher config
 
-### Changed - FASE 13
+### Changed - Phase 13
 
 - **MCP Server (`server/server.py`)**
   - Added `version: str | None` parameter to `search_kb` tool
@@ -265,7 +223,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Version field added to chunk metadata (conditional)
   - Version passed from classifier to chunk payload
 
-### Migration Guide - FASE 13
+### Migration Guide - Phase 13
 
 For existing deployments:
 
@@ -302,7 +260,7 @@ For existing deployments:
 
 **All features are opt-in.** Existing workflows continue unchanged.
 
-### Performance Impact - FASE 13
+### Performance Impact - Phase 13
 
 | Feature | Overhead | Resource Usage | Use Case |
 |---------|----------|----------------|----------|
@@ -313,7 +271,7 @@ For existing deployments:
 
 ---
 
-### Added - FASE 12: Search Quality Enhancement (2026-05-16)
+### Added - Phase 12: Search Quality Enhancement (2026-05-16)
 
 - **Payload Indexing for Fast Filtered Queries**
   - Qdrant keyword indexes on `product` and `doc_type` fields
@@ -364,20 +322,20 @@ For existing deployments:
   - `kb-rag db create-indexes` - Create payload indexes on existing collections
 
 - **Comprehensive Documentation**
-  - `docs/FASE12_PLAN.md` (296 lines) - Implementation plan
-  - `docs/FASE12_COMPLETION.md` (489 lines) - Completion report with migration guide
+  - `docs/Phase12_PLAN.md` (296 lines) - Implementation plan
+  - `docs/Phase12_COMPLETION.md` (489 lines) - Completion report with migration guide
   - `docs/SEARCH_QUALITY.md` (373 lines) - User guide with examples and best practices
-  - Updated `docs/PLAN.md` with FASE 12 deliverables
+  - Updated `docs/PLAN.md` with Phase 12 deliverables
   - Updated `docs/INSTRUCTIONS.md` with detailed backlog specs
 
-### Changed - FASE 12
+### Changed - Phase 12
 
 - **MCP Server (`server/server.py`)**
   - Added `hybrid: bool` parameter to `search_kb` tool (default: false)
   - Added `rerank: bool` parameter to `search_kb` tool (default: false)
   - Enhanced search pipeline: vector search → (optional) hybrid fusion → (optional) reranking
   - Retrieve 4x results when reranking enabled (better reranking pool)
-  - Search mode indicators in results ("híbrida", "reranked")
+  - Search mode indicators in results ("hybrid", "reranked")
 
 - **Vector Store (`server/vector_store.py`)**
   - Auto-create payload indexes on `product` and `doc_type` when creating collections
@@ -388,7 +346,7 @@ For existing deployments:
   - Integrated `db` command group
   - Version bumped to `0.10.0-dev`
 
-### Performance Impact - FASE 12
+### Performance Impact - Phase 12
 
 | Feature | Latency Impact | Quality Impact | Use Case |
 |---------|---------------|----------------|----------|
@@ -397,7 +355,7 @@ For existing deployments:
 | Reranking | +200ms | +20% precision | Complex queries, high precision needs |
 | Hybrid + Rerank | +250ms | +15% recall, +20% precision | Maximum quality |
 
-### Migration Guide - FASE 12
+### Migration Guide - Phase 12
 
 For existing deployments:
 
@@ -432,7 +390,7 @@ For existing deployments:
 
 ---
 
-### Added - FASE 8: Connection Pooling and Batch Optimization (2026-05-15)
+### Added - Phase 8: Connection Pooling and Batch Optimization (2026-05-15)
 
 - **HTTP Connection Pooling**
   - Configurable connection pool in `embed_client.py` (20-50 connections)
@@ -511,12 +469,12 @@ For existing deployments:
   - Total: 597 lines of test code
 
 - **Documentation**
-  - `docs/FASE8_COMPLETION.md` (22KB): Complete implementation guide
+  - `docs/Phase8_COMPLETION.md` (22KB): Complete implementation guide
   - Performance benchmarks (3-5x speedup demonstrated)
   - Architecture diagrams and flow charts
   - Configuration tuning guide
   - Usage examples for all new features
-  - Migration guide from FASE 7
+  - Migration guide from Phase 7
   - Troubleshooting section
 
 ### Performance
@@ -534,7 +492,7 @@ For existing deployments:
 - `server/vector_store.py`: +118 lines (gRPC, parallel upsert)
 - `observability/metrics.py`: +130 lines (batch metrics)
 
-### Statistics - FASE 8
+### Statistics - Phase 8
 - **New files**: 3 (1,225 lines)
 - **Modified files**: 3 (+404 lines)
 - **Test files**: 1 (597 lines, 14 tests)
@@ -545,7 +503,7 @@ For existing deployments:
 
 ---
 
-### Added - FASE 7: Document Validators and Quality Checks (2026-05-15)
+### Added - Phase 7: Document Validators and Quality Checks (2026-05-15)
 
 - **Comprehensive Validation System**
   - 9 validators across 3 categories (format, size, content)
@@ -584,7 +542,7 @@ For existing deployments:
   - Early rejection saves CPU and API costs
   - Minimal overhead for valid files
 
-### Added - FASE 6: Modern CLI with Click and Rich (2026-05-14)
+### Added - Phase 6: Modern CLI with Click and Rich (2026-05-14)
 
 - **Modern CLI Framework**
   - Click-based command structure replacing argparse
@@ -622,7 +580,7 @@ For existing deployments:
   - click>=8.0.0: Modern CLI framework
   - rich>=13.0.0: Terminal formatting library
 
-### Added - FASE 5: Embedding Cache System (2026-05-13)
+### Added - Phase 5: Embedding Cache System (2026-05-13)
 
 - **Two-Tier Caching Architecture**
   - In-memory LRU cache with thread-safe operations
@@ -658,7 +616,7 @@ For existing deployments:
   - Memory overhead: ~4KB per cached embedding
   - Default capacity: Auto-tuned to system RAM
 
-### Added - FASE 4: Progress Tracking and Observability (2026-05-12)
+### Added - Phase 4: Progress Tracking and Observability (2026-05-12)
 
 - **Structured Logging**
   - JSON-formatted logs with contextual information
@@ -678,7 +636,7 @@ For existing deployments:
   - Speed and throughput measurements
   - Progress persistence across restarts
 
-### Added - FASE 3: Worker Pool and Rate Limiter (2026-05-11)
+### Added - Phase 3: Worker Pool and Rate Limiter (2026-05-11)
 
 - **Worker Pool**
   - Configurable number of parallel workers (default: 4)
@@ -703,7 +661,7 @@ For existing deployments:
   - 23 worker system tests
   - Coverage of worker pool, rate limiter, and file worker
 
-### Added - FASE 2: Job Management and Scheduler (2026-05-10)
+### Added - Phase 2: Job Management and Scheduler (2026-05-10)
 
 - **Job Management System**
   - Job creation with priority support (low/normal/high/critical)
@@ -729,7 +687,7 @@ For existing deployments:
   - 34 job management tests
   - Coverage of CRUD operations, lifecycle, and scheduler
 
-### Added - FASE 1: Foundation & Testing Infrastructure (2026-05-09)
+### Added - Phase 1: Foundation & Testing Infrastructure (2026-05-09)
 
 - **Testing Infrastructure**
   - pytest configuration with async support
@@ -752,6 +710,48 @@ For existing deployments:
   - Testing guide (docs/TESTING.md)
   - Phase completion reports
   - API documentation
+
+## [1.3] 2026-05-27
+
+### Added
+
+- Phase 12: English Comments & Docstrings
+  - 12-01: Translate kb_server/ modules to English (165 changes)
+  - 12-02: Translate ingest/ modules to English (100+ changes)
+  - 12-03: English-only CI gate
+- Phase 13: Docs Sync & Readme Languages
+  - 13-01: Sync features/readme for OTCS
+  - 13-02: Sync features/readme for Content Server
+  - 13-03: README.pt-BR.md translation
+  - 13-04: README.es.md translation
+- Phase 14: Health Dashboard
+  - 14-01: /metrics endpoint with 28 Prometheus metrics
+  - 14-02: Grafana dashboard with 6-row, 28-panel layout
+  - 14-03: Docker Compose Prometheus/Grafana integration
+  - 14-04: Kubernetes/Helm monitoring stack
+  - 14-05: Health Dashboard documentation (OPERATIONS.md)
+  - 14-06: Docker Compose fixes (entrypoint, healthchecks)
+- Phase 15: PowerShell Ports Script
+  - 15-01: Windows firewall configuration in start-kb-rag.ps1
+  - 15-02: Windows firewall documentation (EN/PT-BR/ES + OPERATIONS.md)
+- Phase 16: Reclassification
+  - 16-01: Core reclassification engine (detect, backup, rollback)
+  - 16-02: kb-ingest reclassify CLI (run, verify, sessions, rollback)
+  - 16-03: Reclassification documentation (~820 lines across 4 files)
+- Phase 17: Capability Negotiation
+  - 17-01: Module classification axis (infer_module, MODULE_PATTERNS)
+  - 17-02: FilterTermsCache with dynamic descriptions (top-20 values)
+  - 17-03: list_filter_options MCP tool
+- Phase 18: Grafana Datasource Fix
+  - 18-01: Stable Prometheus UID across Docker Compose and Helm paths
+- Phase 19: VERIFICATION.md Backfill
+  - 19-01: Backfill VERIFICATION.md for 13 shipped phases + gap detection script
+- Phase 20: Test Environment Fixes
+  - 20-01: Fix LOG_PATH PermissionError, fixture isolation, clean env
+- Phase 21: Codebase Hygiene Sweep
+  - 21-01: Remove 13 unused imports, resolve 3 TODOs, remove 2 dead code instances
+- Phase 22: Integration Checker CI Gate
+  - 22-01: Integration gap checker script (3 checks) + CI job
 
 ## [0.1.0] - Initial Release
 
@@ -787,78 +787,5 @@ For existing deployments:
   - Architecture overview
   - API reference
 
----
 
-## Summary Statistics
 
-### Phase 7 (Current)
-- **Files changed**: 17 files
-- **Lines added**: 2,054 lines
-- **Tests added**: 35 tests (100% passing)
-- **Validators**: 9 distinct validators
-- **Total test count**: 113 tests (106 passing)
-
-### Phases 1-7 Combined
-- **Total commits**: 6 major feature commits
-- **Total files changed**: 52+ files
-- **Total lines added**: ~7,824 lines
-- **Total tests**: 113 tests (106 passing, 7 CLI issues)
-- **Code coverage**: 70%+ maintained throughout
-- **Documentation**: 50+ KB of docs (bilingual EN/PT)
-
-### Project Completion
-- **Phases completed**: 7 out of 12 (58%)
-- **Estimated time**: ~7 weeks of 12.6 total
-- **Next phase**: FASE 8 - Connection Pooling and Batch Optimization
-
----
-
-## Migration Notes
-
-### Upgrading to FASE 7 (Validation)
-- Validation is **enabled by default** in `FileWorker`
-- Use `skip_validation=True` to disable (legacy behavior)
-- Invalid files will be logged with specific reasons
-- New status: `validation_failed` in worker results
-
-### Upgrading to FASE 6 (CLI)
-- New CLI: `kb-rag` (recommended)
-- Legacy CLI: `kb-ingest-legacy` (shows deprecation warning)
-- Run `pip install -e .` to install console entry points
-- Dependencies: `click>=8.0.0`, `rich>=13.0.0`
-
-### Upgrading to FASE 5 (Cache)
-- Cache is **enabled by default** with auto-tuning
-- Set `CACHE_BACKEND=redis` for distributed caching
-- Default: LRU cache with 10% available RAM
-- Optional Redis configuration via environment variables
-
----
-
-## Known Issues
-
-### FASE 6 CLI Tests (7 failures)
-- Some CLI tests fail due to f-string formatting issues
-- CLI functionality works correctly in manual testing
-- Tests will be fixed in next iteration
-- Does not affect production usage
-
-### FASE 7 Validation Limitations
-- MIME type detection limited to extension-based guessing
-- Binary signature detection limited to PDF and ZIP-based formats
-- Encoding detection limited to utf-8, ascii, latin-1
-- Content validation is surface-level only
-
----
-
-## Contributors
-
-- Development team
-- Testing and QA
-- Documentation writers
-
----
-
-## License
-
-[Add your license information here]
