@@ -1019,6 +1019,36 @@ baixe ~1 GB de pacotes CUDA (nvidia-cublas, nvidia-cudnn, etc.) que são inútei
 python -c "from docling.document_converter import DocumentConverter; print('docling OK')"
 ```
 
+### Otimização de performance (GPU)
+
+Em máquinas com GPU NVIDIA, docling pode ser **6-10× mais rápido** que CPU. A
+lib `ingest/docling_utils.py` já configura GPU e batch sizes automaticamente.
+
+**Configuração recomendada:**
+
+```bash
+# 1. Certifique-se que torch CUDA está instalado
+python -c "import torch; print('CUDA:', torch.cuda.is_available())"
+
+# 2. (Opcional) Pré-download dos modelos para evitar acessos ao HuggingFace
+./scripts/download-docling-models.sh
+
+# 3. Defina o caminho dos modelos (adicione ao .env)
+export DOCLING_ARTIFACTS_PATH="$PWD/models/docling"
+```
+
+**Variáveis de ambiente úteis:**
+
+| Variável | Efeito |
+|---|---|
+| `DOCLING_ARTIFACTS_PATH=/path/to/models` | Diretório persistente de modelos (evita re-download) |
+| `HF_HUB_ENABLE_HF_TRANSFER=1` | Download mais rápido com `hf_transfer` (Rust) |
+| `HF_HUB_DOWNLOAD_TIMEOUT=120` | Timeout de download (default 60s) |
+
+**Singleton:** O `DocumentConverter` é criado uma única vez (via
+`functools.lru_cache`) e reusado por todos os PDFs — nunca recria modelos
+ou valida ETags contra HuggingFace entre arquivos.
+
 **Remoção:**
 ```bash
 # Remove apenas docling + dependências exclusivas

@@ -21,12 +21,19 @@ log = logging.getLogger("audit")
 
 
 def try_docling(path: Path) -> tuple[bool, float, str]:
-    """Try extracting with docling. Returns (success, duration_seconds, note)."""
+    """Try extracting with docling. Returns (success, duration_seconds, note).
+
+    Uses a singleton DocumentConverter with GPU acceleration — models are
+    loaded once and reused across all files.
+    """
     try:
-        from docling.document_converter import DocumentConverter
+        from ingest.docling_utils import get_docling_converter
+
+        converter = get_docling_converter()
+        if converter is None:
+            return False, 0.0, "docling_not_installed"
 
         start = time.monotonic()
-        converter = DocumentConverter()
         result = converter.convert(str(path))
         text = result.document.export_to_markdown()
         elapsed = time.monotonic() - start

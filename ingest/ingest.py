@@ -105,6 +105,9 @@ def extract_pdf(path: Path) -> list[dict]:
     Attempts docling first (best for complex PDFs with tables/figures),
     then falls back to PyMuPDF (fitz) for simpler documents.
 
+    Docling uses a singleton DocumentConverter (see :func:`get_docling_converter`)
+    that enables GPU acceleration and avoids re-downloading models for every file.
+
     Args:
         path: Path to the PDF file.
 
@@ -113,10 +116,12 @@ def extract_pdf(path: Path) -> list[dict]:
     """
     chunks_raw = []
     try:
-        # Try docling first (best for complex PDFs)
-        from docling.document_converter import DocumentConverter
+        from ingest.docling_utils import get_docling_converter
 
-        converter = DocumentConverter()
+        converter = get_docling_converter()
+        if converter is None:
+            raise ImportError("docling not installed")
+
         result = converter.convert(str(path))
         text = result.document.export_to_markdown()
         chunks_raw.append({"text": text, "page": None})
