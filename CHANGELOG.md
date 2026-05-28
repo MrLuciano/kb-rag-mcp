@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Phase 24: RAGAS Evaluation Pipeline
+- Phase 25: Optimization Experiments
+
+## [1.4] 2026-05-27
+
+### Added
+
+- Phase 23: Documentation Overhaul
+  - 23-01: Add deployment-mode navigation sections to OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md, INDEX.md
+  - 23-02: Restructure README.md, README.pt-BR.md, README.es.md (two-tier format: quickstart + docs/)
+  - 23-03: Update CHANGELOG with v1.3/v1.4 sections; audit and update REFERENCE.md
 
 ### Added - Phase 15: Multi-Collection Routing + Kubernetes (2026-05-19)
 
@@ -96,16 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**
   - `docs/RAG_EVALUATION.md`: full evaluation guide
   - `docs/Phase16_COMPLETION.md`: completion report
-
-## [1.4] 2026-05-27
-
-### Added
-
-- Phase 23: Documentation Overhaul
-  - 23-01: Add deployment-mode navigation sections to OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md, INDEX.md
-  - 23-02: Restructure README.md, README.pt-BR.md, README.es.md (two-tier format: quickstart + docs/)
-  - 23-03: Update CHANGELOG with v1.3/v1.4 sections; audit and update REFERENCE.md
-
+  
 ### Added - Phase 14: Observability and Audit (2026-05-16)
 
 - **Query Logging System**
