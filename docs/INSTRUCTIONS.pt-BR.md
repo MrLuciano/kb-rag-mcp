@@ -622,12 +622,17 @@ Ver `requirements.in` para dependências top-level legíveis.
 - python-docx, openpyxl, python-pptx, pymupdf (obrigatórios)
 - docling (opcional, ~400 MB extra)
 
-  Para instalar o docling:
+  Para instalar:
   ```bash
   pip install -e ".[pdf]"                              # todos os sistemas
-  # ou
   ./scripts/install-pdf-extras.sh                      # Linux — detecta GPU
   .\scripts\install-pdf-extras.ps1                     # Windows — detecta GPU
+  ```
+
+  Para remover:
+  ```bash
+  ./scripts/remove-pdf-extras.sh                       # Linux
+  .\scripts\remove-pdf-extras.ps1                      # Windows
   ```
 
   Sem docling, o sistema usa PyMuPDF como fallback automático.
@@ -789,6 +794,22 @@ baixe ~1 GB de pacotes CUDA (nvidia-cublas, nvidia-cudnn, etc.) que são inútei
 ```bash
 python -c "from docling.document_converter import DocumentConverter; print('docling OK')"
 ```
+
+**Remoção:**
+```bash
+# Remove apenas docling + dependências exclusivas
+./scripts/remove-pdf-extras.sh
+
+# Também remove pacotes CUDA e reinstala torch CPU (para AMD/CPU)
+./scripts/remove-pdf-extras.sh --purge
+
+# Windows (PowerShell)
+.\scripts\remove-pdf-extras.ps1
+.\scripts\remove-pdf-extras.ps1 -Purge
+```
+
+> O `--purge` é seguro: `torch` permanece instalado (exigido pelo reranker
+> sentence-transformers), mas troca a variante CUDA pela CPU (~1 GB liberado).
 
 ---
 

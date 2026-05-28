@@ -427,9 +427,12 @@ pymupdf>=1.24.0             # fallback PDF
 # Advanced PDF (optional, extra ~400 MB)
 # Instale com:
 #   pip install -e ".[pdf]"                                    # todos os sistemas
-#   ou
 #   ./scripts/install-pdf-extras.sh                            # Linux — detecta GPU
-#   .\scripts\install-pdf-extras.ps1                           # Windows — detecta GPU (via PowerShell)
+#   .\scripts\install-pdf-extras.ps1                           # Windows — detecta GPU
+#
+# Remova com:
+#   ./scripts/remove-pdf-extras.sh                             # Linux
+#   .\scripts\remove-pdf-extras.ps1                            # Windows
 #
 # Sem docling instalado, o sistema usa PyMuPDF (fitz) como fallback automático.
 # Em máquinas AMD/Intel sem GPU NVIDIA, use o script para evitar instalar
@@ -1015,6 +1018,22 @@ baixe ~1 GB de pacotes CUDA (nvidia-cublas, nvidia-cudnn, etc.) que são inútei
 ```bash
 python -c "from docling.document_converter import DocumentConverter; print('docling OK')"
 ```
+
+**Remoção:**
+```bash
+# Remove apenas docling + dependências exclusivas
+./scripts/remove-pdf-extras.sh
+
+# Também remove pacotes CUDA e reinstala torch CPU (para AMD/CPU)
+./scripts/remove-pdf-extras.sh --purge
+
+# Windows (PowerShell)
+.\scripts\remove-pdf-extras.ps1
+.\scripts\remove-pdf-extras.ps1 -Purge
+```
+
+> O `--purge` é seguro: `torch` permanece instalado (exigido pelo reranker
+> sentence-transformers), mas troca a variante CUDA pela CPU (~1 GB liberado).
 
 ---
 
