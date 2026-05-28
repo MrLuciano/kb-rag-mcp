@@ -6,6 +6,7 @@
 - ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v1.1-ROADMAP.md)
 - ✅ **v1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v1.2-ROADMAP.md)
 - ✅ **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v1.3-ROADMAP.md)
+- ◆ **v1.4 Evaluations & Docs** — Phases 23–25 (planning)
 
 ## Phases
 
@@ -66,6 +67,17 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
+<details open>
+<summary>◆ v1.4 Evaluations & Docs (Phases 23–25) — PLANNING</summary>
+
+- [ ] Phase 23: Documentation Overhaul — Organize docs by deployment mode, CHANGELOG/REFERENCE update
+- [ ] Phase 24: RAGAS Evaluation Pipeline — 4-core-metric evaluation with dataset loading and results export
+- [ ] Phase 25: Optimization Experiments — Chunking and scoring experiments with comparison metrics
+
+**Planned:** Documentation restructuring (deployment-mode grouping), RAGAS evaluation pipeline with LLM-as-judge, chunking/scoring optimization experiments.
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -93,35 +105,10 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 20. Test Environment Fixes | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 21. Codebase Hygiene Sweep | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
+| 23. Documentation Overhaul | v1.4 | 0/0 | Planning | — |
+| 24. RAGAS Evaluation Pipeline | v1.4 | 0/0 | Planning | — |
+| 25. Optimization Experiments | v1.4 | 0/0 | Planning | — |
 
 ## Backlog
 
-### Phase 999.1: Update documentation in root and docs folder (BACKLOG)
-
-**Goal:** Organize README.md, INSTRUCTIONS.md, OPERATIONS.md, TROUBLESHOOTING.md to group the various modes of operation (Docker Compose, Helm, systemd, manual). Update CHANGELOG, REFERENCE.md and all documentation regarding the last changes to the project. Captured for future planning.
-
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
-
-### Phase 999.2: Implement RAGAS evaluation (BACKLOG)
-
-**Goal:** Implement RAGAS evaluation at `kb_server/evaluation/ragas_pipeline.py:47` (TODO placeholder). Captured for future planning.
-
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
-
-### Phase 999.3: Implement optimization experiments (BACKLOG)
-
-**Goal:** Implement optimization experiments at `kb_server/optimization/chunking_experiments.py:8` and `kb_server/optimization/scoring_experiments.py:8` (TODO placeholders). Captured for future planning.
-
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+*(No backlog items — all previously backlogged items promoted to v1.4 active phases)*

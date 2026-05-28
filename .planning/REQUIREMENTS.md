@@ -37,22 +37,22 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOCS-01 | — | Pending |
-| DOCS-02 | — | Pending |
-| DOCS-03 | — | Pending |
-| DOCS-04 | — | Pending |
-| EVAL-01 | — | Pending |
-| EVAL-02 | — | Pending |
-| EVAL-03 | — | Pending |
-| EVAL-04 | — | Pending |
-| OPT-01 | — | Pending |
-| OPT-02 | — | Pending |
-| OPT-03 | — | Pending |
+| DOCS-01 | Phase 23 | Pending |
+| DOCS-02 | Phase 23 | Pending |
+| DOCS-03 | Phase 23 | Pending |
+| DOCS-04 | Phase 23 | Pending |
+| EVAL-01 | Phase 24 | Pending |
+| EVAL-02 | Phase 24 | Pending |
+| EVAL-03 | Phase 24 | Pending |
+| EVAL-04 | Phase 24 | Pending |
+| OPT-01 | Phase 25 | Pending |
+| OPT-02 | Phase 25 | Pending |
+| OPT-03 | Phase 25 | Pending |
 
 **Coverage:**
 - v1 requirements: 11 total
-- Mapped to phases: 0
-- Unmapped: 11
+- Mapped to phases: 11
+- Unmapped: 0 ✓
 
 ---
 
