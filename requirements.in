@@ -21,7 +21,8 @@ pymupdf>=1.24.0           # PDF (fallback rápido)
 docx2txt>=0.8             # FASE 11: legacy .doc extraction
 xlrd>=2.0.1               # FASE 11: legacy .xls extraction
 odfpy>=1.4.1              # FASE 11: .odt/.ods/.odp extraction
-# docling>=2.0.0          # PDF avançado — descomente para PDFs complexos
+# docling>=2.0.0          # PDF avançado — use `pip install -e ".[pdf]"` ou
+#                        # `scripts/install-pdf-extras.sh` (detecta GPU automaticamente)
 
 # ── Chunking ───────────────────────────────────────────────────
 langchain-text-splitters>=0.2.0

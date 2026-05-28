@@ -42,6 +42,9 @@ setup(
             "isort>=5.12.0",
             "pytest-asyncio>=1.3.0",
         ],
+        "pdf": [
+            "docling>=2.0.0",
+        ],
     },
     entry_points={
         "console_scripts": [
