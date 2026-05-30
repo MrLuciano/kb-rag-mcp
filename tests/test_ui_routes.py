@@ -87,7 +87,19 @@ class TestGetDocuments:
             mock_conn.row_factory = None
             from kb_server.ui.routes import get_documents
             # cursor.fetchall returns dicts; dict(row) on a dict = dict
-            mock_cursor.fetchall.return_value = [fake]
+            # Use sqlite3.Row-like objects (not plain dicts) since routes uses dict(row)
+            class FakeRow:
+                def __init__(self, data):
+                    self._data = data
+                def __iter__(self):
+                    return iter(self._data.items())
+                def keys(self):
+                    return self._data.keys()
+                def __getitem__(self, key):
+                    return self._data[key]
+                def get(self, key, default=None):
+                    return self._data.get(key, default)
+            mock_cursor.fetchall.return_value = [FakeRow(fake)]
             docs, total = get_documents(product="testproduct")
         assert total == 1
 
@@ -127,18 +139,18 @@ class TestGetDocuments:
 # ---------------------------------------------------------------------------
 # routes.py — HTTP endpoints via TestClient
 # ---------------------------------------------------------------------------
-def _html_response(text: str = "<html>ok</html>"):
+def _html_response(text: str = "<html>ok</html>", status_code: int = 200):
     """Return a minimal HTMLResponse for template mocking."""
     from fastapi.responses import HTMLResponse
-    return HTMLResponse(content=text, status_code=200)
+    return HTMLResponse(content=text, status_code=status_code)
 
 
 def _mock_template_response():
     """Patch templates.TemplateResponse to avoid Jinja2 rendering."""
     return patch(
         "kb_server.ui.routes.templates.TemplateResponse",
-        side_effect=lambda name, ctx, **kw: _html_response(
-            f"<html>{name}</html>"
+        side_effect=lambda request, name, ctx, status_code=200, **kw: _html_response(
+            f"<html>{name}</html>", status_code=status_code
         ),
     )
 
@@ -147,7 +159,7 @@ def _not_found_template_response():
     """Simulate a 404 TemplateResponse for document not found."""
     from fastapi.responses import HTMLResponse
 
-    def _side_effect(name, ctx, status_code=200, **kw):
+    def _side_effect(request, name, ctx, status_code=200, **kw):
         return HTMLResponse(
             content=f"<html>{name}</html>", status_code=status_code
         )

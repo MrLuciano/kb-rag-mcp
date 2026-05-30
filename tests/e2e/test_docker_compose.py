@@ -32,7 +32,7 @@ def test_prometheus_scrape_target():
     with open(prom_config) as f:
         config = yaml.safe_load(f)
     targets = config["scrape_configs"][0]["static_configs"][0]["targets"]
-    assert "kb-rag-mcp:8000" in targets, f"Prometheus not scraping kb-rag-mcp, found: {targets}"
+    assert "kb-rag-mcp:8080" in targets, f"Prometheus not scraping kb-rag-mcp, found: {targets}"
 
 def test_grafana_datasource_provisioning():
     """Grafana datasource provisioning config exists."""
@@ -44,7 +44,7 @@ def test_grafana_datasource_provisioning():
 
 def test_grafana_dashboard_provisioning():
     """Grafana dashboard provisioning config exists."""
-    db_config = Path("deployment/config/grafana-provisioning/dashboards/kb-rag.yml")
+    db_config = Path("deployment/config/grafana-provisioning/dashboards/kb-rag.yaml")
     assert db_config.exists(), "Dashboard provisioning config missing"
     with open(db_config) as f:
         config = yaml.safe_load(f)

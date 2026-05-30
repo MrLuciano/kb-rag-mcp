@@ -94,5 +94,10 @@ class TestFilterTermsCache:
 
     def test_cache_needs_refresh_no_marker(self, store):
         vs, mc = store
-        cache = FilterTermsCache(store=vs)
-        assert cache._needs_refresh() is False
+        from pathlib import Path
+        import tempfile
+        # Use a non-existent path to ensure no marker file exists
+        with tempfile.TemporaryDirectory() as tmp:
+            marker = Path(tmp) / ".nonexistent_marker"
+            cache = FilterTermsCache(store=vs, cache_bust_path=marker)
+            assert cache._needs_refresh() is False

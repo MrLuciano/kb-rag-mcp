@@ -106,21 +106,24 @@ class TestConfigurationValidation:
     def test_env_template_complete(self):
         """Test .env.template has all required variables."""
         template_path = Path("deployment/config/kb-rag.env.template")
-        
+
         if not template_path.exists():
             pytest.skip("Template not found")
-        
+
         content = template_path.read_text()
-        
-        # Required variables
+
+        # Required variables (updated for current architecture)
         required_vars = [
-            "EMBED_URL",
-            "QDRANT_URL",
-            "COLLECTION_NAME",
+            "EMBED_BACKEND",
+            "EMBED_MODEL",
+            "LMS_BASE_URL",
+            "QDRANT_HOST",
+            "QDRANT_PORT",
+            "QDRANT_COLLECTION",
             "HEALTH_PORT",
             "LOG_LEVEL",
         ]
-        
+
         for var in required_vars:
             assert var in content, f"Missing required variable: {var}"
     
@@ -242,11 +245,11 @@ class TestDirectoryStructure:
         """Test project root has expected directories."""
         expected_dirs = [
             "ingest",
-            "server",
+            "kb_server",
             "tests",
             "docs",
         ]
-        
+
         for dirname in expected_dirs:
             dir_path = Path(dirname)
             assert dir_path.exists(), f"Missing directory: {dirname}"
@@ -258,20 +261,20 @@ class TestHealthCheckIntegration:
     
     def test_health_server_module_exists(self):
         """Test health server module exists."""
-        module_path = Path("server/health_server.py")
-        assert module_path.exists()
-        
+        module_path = Path("kb_server/health_server.py")
+        assert module_path.exists(), f"Module not found: {module_path}"
+
         # Check it's importable
         try:
             import kb_server.health_server
         except ImportError as e:
             pytest.fail(f"Cannot import health_server: {e}")
-    
+
     def test_health_module_exists(self):
         """Test health check module exists."""
-        module_path = Path("server/health.py")
-        assert module_path.exists()
-        
+        module_path = Path("kb_server/health.py")
+        assert module_path.exists(), f"Module not found: {module_path}"
+
         try:
             import kb_server.health
         except ImportError as e:

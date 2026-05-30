@@ -400,8 +400,12 @@ def infer_doc_type(file_path: Path) -> str:
     Returns:
         Document type string (e.g., 'admin_guide', 'standard', 'training').
     """
-    # Use name + full path as search text, all lowercase
-    text = (file_path.stem + " " + str(file_path)).lower()
+    # Use filename + last few path components as search text, all lowercase.
+    # Avoid full absolute paths to prevent system-directory false positives
+    # (e.g. /tmp/pytest-of-admin matching "admin").
+    parts = list(file_path.parts)
+    relevant = " ".join(parts[-2:])  # immediate parent + filename only
+    text = (file_path.stem + " " + relevant).lower()
     # Replace separators with spaces for easier matching
     text = re.sub(r"[_\-/\\]", " ", text)
 

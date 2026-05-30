@@ -9,6 +9,8 @@ import pytest
 def mock_store():
     s = AsyncMock()
     s.collection = "kb_docs"
+    s.search.return_value = []
+    s.list_documents.return_value = []
     return s
 
 

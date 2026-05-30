@@ -77,35 +77,15 @@ def e2e_temp_db(tmp_path: Path) -> Generator[Path, None, None]:
 
 @pytest.fixture
 def e2e_temp_registry(tmp_path: Path) -> Generator[Path, None, None]:
-    """Create temporary file registry database."""
+    """Create temporary file registry database.
+
+    Returns an empty SQLite path — IngestRegistry manages its own schema.
+    """
     db_path = tmp_path / "test_registry.db"
-    
-    conn = sqlite3.connect(db_path)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS file_registry (
-            file_path TEXT PRIMARY KEY,
-            hash TEXT NOT NULL,
-            product TEXT,
-            doc_type TEXT,
-            status TEXT NOT NULL,
-            ingested_at TEXT,
-            error TEXT
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS metadata (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    """)
-    conn.execute(
-        "INSERT INTO metadata (key, value) VALUES ('schema_version', '1')"
-    )
-    conn.commit()
-    conn.close()
-    
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
     yield db_path
-    
+
     if db_path.exists():
         db_path.unlink()
 

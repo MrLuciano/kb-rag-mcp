@@ -113,6 +113,7 @@ async def test_list_tools_returns_five_tools():
         "get_chunk",
         "kb_stats",
         "list_collections",
+        "list_filter_options",
     }
 
 

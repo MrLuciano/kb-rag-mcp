@@ -55,26 +55,30 @@ def _ensure_stubs():
             async def run(self, *a, **kw): pass
         mcp_server.Server = Server
 
-    # mcp.server.sse
-    sse_mod = types.ModuleType("mcp.server.sse")
-    class SseServerTransport:
-        def __init__(self, *a, **kw): pass
-        def handle_post_session(self, *a, **kw): pass
-        def connect_sse(self, *a, **kw):
-            import contextlib
-            @contextlib.asynccontextmanager
-            async def _(*a, **kw): yield (None, None)
-            return _()
-    sse_mod.SseServerTransport = SseServerTransport
-    sys.modules["mcp.server.sse"] = sse_mod
+    # mcp.server.sse — only stub if not already imported (prevents
+    # clobbering real module used by test_sse_handler.py)
+    if "mcp.server.sse" not in sys.modules:
+        sse_mod = types.ModuleType("mcp.server.sse")
+        class SseServerTransport:
+            def __init__(self, *a, **kw): pass
+            def handle_post_session(self, *a, **kw): pass
+            def handle_post_message(self, *a, **kw): pass
+            def connect_sse(self, *a, **kw):
+                import contextlib
+                @contextlib.asynccontextmanager
+                async def _(*a, **kw): yield (None, None)
+                return _()
+        sse_mod.SseServerTransport = SseServerTransport
+        sys.modules["mcp.server.sse"] = sse_mod
 
     # mcp.server.stdio
-    stdio_mod = types.ModuleType("mcp.server.stdio")
-    import contextlib
-    @contextlib.asynccontextmanager
-    async def stdio_server(*a, **kw): yield (None, None)
-    stdio_mod.stdio_server = stdio_server
-    sys.modules["mcp.server.stdio"] = stdio_mod
+    if "mcp.server.stdio" not in sys.modules:
+        stdio_mod = types.ModuleType("mcp.server.stdio")
+        import contextlib
+        @contextlib.asynccontextmanager
+        async def stdio_server(*a, **kw): yield (None, None)
+        stdio_mod.stdio_server = stdio_server
+        sys.modules["mcp.server.stdio"] = stdio_mod
 
     # mcp.types needs TextContent and Tool
     mt = sys.modules["mcp.types"]
@@ -189,7 +193,8 @@ def test_search_kb_returns_text_content_on_results(monkeypatch):
 
     class FakeStore:
         async def search(self, vector, top_k, filter_type, product,
-                         doc_type, version):
+                         doc_type, version, vendor=None,
+                         subsystem=None, module=None, **kw):
             return [_make_chunk()]
     monkeypatch.setattr(srv, "store", FakeStore())
 
@@ -233,7 +238,8 @@ def test_search_kb_passes_filters_to_store(monkeypatch):
 
     class FakeStore:
         async def search(self, vector, top_k, filter_type, product,
-                         doc_type, version):
+                         doc_type, version, vendor=None,
+                         subsystem=None, module=None, **kw):
             captured["filter_type"] = filter_type
             captured["product"] = product
             captured["doc_type"] = doc_type
