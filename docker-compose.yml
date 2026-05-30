@@ -46,6 +46,34 @@ services:
       start_period: 120s
       retries: 5
 
+  web-ui:
+    build: .
+    container_name: kb-web-ui
+    restart: unless-stopped
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    ports:
+      - "${UI_PORT:-8001}:${UI_PORT:-8001}"
+    env_file:
+      - .env
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - KB_METADATA_DB=/app/data/registry.db
+      - UI_HOST=0.0.0.0
+      - UI_PORT=${UI_PORT:-8001}
+    volumes:
+      - ${DATA_DIR:-./data}:/app/data
+      - ${LOGS_DIR:-./logs}:/app/logs
+    entrypoint: ["python", "-m", "kb_server.ui.run_ui"]
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "-q", "http://localhost:${UI_PORT:-8001}/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
   prometheus:
     image: prom/prometheus:latest
     container_name: kb-prometheus

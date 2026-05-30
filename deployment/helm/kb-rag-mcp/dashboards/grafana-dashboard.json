@@ -1,40 +1,6 @@
 {
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "9.0.0"
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
-    }
-  ],
-  "annotations": {
-    "list": []
-  },
-  "description": "KB-RAG MCP Server monitoring dashboard with 6-section health overview",
+  "annotations": { "list": [] },
+  "description": "KB-RAG MCP Server monitoring dashboard — live metrics only",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -45,7 +11,7 @@
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "id": 1,
-      "title": "Server Metrics",
+      "title": "Server Health",
       "type": "row"
     },
     {
@@ -77,329 +43,26 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 6, "w": 9, "x": 6, "y": 1 },
-      "id": 20,
-      "title": "HTTP Requests Rate",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(kb_ingest_api_requests_total[5m])",
-          "legendFormat": "requests/s"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 6, "w": 9, "x": 15, "y": 1 },
-      "id": 21,
-      "title": "API Latency by Endpoint (p95)",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, rate(kb_ingest_api_latency_seconds_bucket[5m]))",
-          "legendFormat": "{{endpoint}}"
-        }
-      ]
-    },
-    {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
       "id": 2,
-      "title": "Ingestion Metrics",
+      "title": "Query Metrics",
       "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
-      "id": 4,
-      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "title": "Files Processed (total)",
-      "type": "stat",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_files_processed_total",
-          "legendFormat": "files"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
-      "id": 5,
-      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "title": "Chunks Generated (total)",
-      "type": "stat",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_chunks_generated_total",
-          "legendFormat": "chunks"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
-      "id": 22,
-      "title": "Files Processed Rate",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(kb_ingest_files_processed_total[5m])",
-          "legendFormat": "files/s"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
-      "id": 23,
-      "title": "Chunks Generated Rate",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(kb_ingest_chunks_generated_total[5m])",
-          "legendFormat": "chunks/s"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "min": 0,
-          "max": 10,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 5 },
-              { "color": "red", "value": 8 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 12 },
-      "id": 24,
-      "title": "File Processing Duration p95",
-      "type": "gauge",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, rate(kb_ingest_file_processing_seconds_bucket[5m]))",
-          "legendFormat": "p95"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 12 },
-      "id": 25,
-      "title": "Worker Pool Size / Queue",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_worker_pool_size",
-          "legendFormat": "pool size"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_worker_pool_queue_size",
-          "legendFormat": "queue size"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.7 },
-              { "color": "red", "value": 0.9 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 12 },
-      "id": 26,
-      "title": "Worker Pool Utilization",
-      "type": "gauge",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_worker_pool_utilization",
-          "legendFormat": "utilization"
-        }
-      ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
-      "id": 3,
-      "title": "Jobs",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null }
-            ]
-          },
-          "unit": "short"
-        }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 19 },
-      "id": 2,
-      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "title": "Jobs Created (total)",
-      "type": "stat",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_jobs_created_total",
-          "legendFormat": "{{priority}}"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 5 }
-            ]
-          },
-          "unit": "short"
-        }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 19 },
-      "id": 3,
-      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "title": "Active Jobs",
-      "type": "stat",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_jobs_active",
-          "legendFormat": "{{status}}"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "max": 10,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 3 },
-              { "color": "red", "value": 7 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 19 },
-      "id": 27,
-      "title": "Active Jobs by Status",
-      "type": "gauge",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_jobs_active",
-          "legendFormat": "{{status}}"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 19 },
-      "id": 28,
-      "title": "Job Completion Rate",
-      "type": "timeseries",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(kb_ingest_jobs_completed_total[5m])",
-          "legendFormat": "{{status}}"
-        }
-      ]
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
       },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 23 },
-      "id": 6,
-      "title": "Job Duration (p50 / p95 / p99)",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 },
+      "id": 50,
+      "title": "Query Duration p95",
       "type": "timeseries",
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.50, rate(kb_ingest_job_duration_seconds_bucket[5m]))",
-          "legendFormat": "p50"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, rate(kb_ingest_job_duration_seconds_bucket[5m]))",
-          "legendFormat": "p95"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.99, rate(kb_ingest_job_duration_seconds_bucket[5m]))",
-          "legendFormat": "p99"
+          "expr": "histogram_quantile(0.95, rate(kb_rag_query_duration_seconds_bucket[5m]))",
+          "legendFormat": "{{tool}}"
         }
       ]
     },
@@ -408,72 +71,38 @@
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 23 },
-      "id": 29,
-      "title": "Rate Limiter - Tokens / Waits",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 },
+      "id": 51,
+      "title": "Query Errors",
       "type": "timeseries",
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_rate_limiter_tokens",
-          "legendFormat": "tokens {{limiter}}"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(kb_ingest_rate_limiter_waits_total[5m])",
-          "legendFormat": "waits/s {{limiter}}"
+          "expr": "rate(kb_rag_query_errors_total[5m])",
+          "legendFormat": "{{tool}}"
         }
       ]
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 },
-      "id": 8,
-      "title": "Embedding Health",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 3,
+      "title": "Batch Embedding Metrics",
       "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "min": 0,
-          "max": 5,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 3 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 30 },
-      "id": 30,
-      "title": "API Latency p95",
-      "type": "gauge",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, rate(kb_ingest_api_latency_seconds_bucket[5m]))",
-          "legendFormat": "{{endpoint}}"
-        }
-      ]
     },
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 30 },
-      "id": 31,
-      "title": "Batch Embeddings Rate",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 15 },
+      "id": 52,
+      "title": "Batch Embedding Texts Rate",
       "type": "timeseries",
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(kb_batch_embeddings_total[5m])",
+          "expr": "rate(kb_batch_embedding_texts_total[5m])",
           "legendFormat": "{{backend}}"
         }
       ]
@@ -481,46 +110,13 @@
     {
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
-        "defaults": {
-          "unit": "cps",
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 10 },
-              { "color": "green", "value": 50 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 30 },
-      "id": 32,
-      "title": "Batch Processing Throughput",
-      "type": "gauge",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_batch_processing_throughput_chunks_per_sec",
-          "legendFormat": "chunks/sec"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 38 },
-      "id": 33,
-      "title": "Batch Upserts Total / Points",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 15 },
+      "id": 53,
+      "title": "Batch Upsert Points Rate",
       "type": "timeseries",
       "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "rate(kb_batch_upserts_total[5m])",
-          "legendFormat": "upserts/s {{parallel}}"
-        },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(kb_batch_upsert_points_total[5m])",
@@ -533,8 +129,8 @@
       "fieldConfig": {
         "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }
       },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 38 },
-      "id": 34,
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 21 },
+      "id": 54,
       "title": "Batch Duration (Embedding / Upsert)",
       "type": "timeseries",
       "targets": [
@@ -552,8 +148,8 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
-      "id": 15,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "id": 4,
       "title": "Cache Performance",
       "type": "row"
     },
@@ -574,7 +170,7 @@
           }
         }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 45 },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 28 },
       "id": 16,
       "title": "Cache Hit Rate %",
       "type": "gauge",
@@ -602,7 +198,7 @@
           }
         }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 45 },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 28 },
       "id": 35,
       "title": "Cache Size (MB)",
       "type": "gauge",
@@ -619,7 +215,7 @@
       "fieldConfig": {
         "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 45 },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 28 },
       "id": 36,
       "title": "Cache Evictions Rate",
       "type": "timeseries",
@@ -636,7 +232,7 @@
       "fieldConfig": {
         "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
       },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 53 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 36 },
       "id": 17,
       "title": "Cache Hits / Misses",
       "type": "timeseries",
@@ -658,7 +254,7 @@
       "fieldConfig": {
         "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
       },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 53 },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 36 },
       "id": 18,
       "title": "Cache Entries Count",
       "type": "timeseries",
@@ -667,48 +263,6 @@
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "kb_rag_cache_entries",
           "legendFormat": "entries {{backend}}"
-        }
-      ]
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 59 },
-      "id": 37,
-      "title": "Qdrant Health",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
-      },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 60 },
-      "id": 38,
-      "title": "HTTP Pool Connections",
-      "type": "gauge",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_http_pool_connections",
-          "legendFormat": "{{state}}"
-        }
-      ]
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } }
-      },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 60 },
-      "id": 39,
-      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "title": "Qdrant Collection Info",
-      "type": "stat",
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "kb_ingest_chunks_generated_total",
-          "legendFormat": "total vectors (approx)"
         }
       ]
     }
@@ -725,5 +279,5 @@
   "timezone": "browser",
   "title": "KB-RAG MCP Health Dashboard",
   "uid": "kb-rag-mcp-v2",
-  "version": 2
+  "version": 3
 }

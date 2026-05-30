@@ -63,6 +63,7 @@ QA_REPORT*.md
 
 # Runtime data (Qdrant storage, SQLite databases)
 data/
+models/
 
 # Environment / secrets — never commit real credentials
 .env
@@ -71,3 +72,7 @@ data/
 config/.env.*
 !config/.env.template
 scripts/check-integration-gaps-results.json
+
+# Audit reports
+audit_report.json
+audit_summary.txt

@@ -77,10 +77,18 @@ async def _reclassify_impl(
 ) -> None:
     """Async implementation of reclassify command."""
     log.info(f"Reclassifying: pattern={pattern}, collection={collection}")
-    
+
     # Resolve collection
+    from kb_server.collections.manager import CollectionManager
     from kb_server.collections.router import CollectionRouter
-    router = CollectionRouter()
+    from kb_server.vector_store import VectorStore
+
+    store = VectorStore()
+    await store.connect()
+    manager = CollectionManager(store.client, vector_size=store.dim)
+    router = CollectionRouter(
+        manager, default_collection=store.collection or os.getenv("QDRANT_COLLECTION", "kb_docs")
+    )
     resolved_collection = await router.resolve(collection)
     
     # Step 1: Detect changed classifications
@@ -161,10 +169,18 @@ async def _verify_impl(
 ) -> None:
     """Async implementation of verify command."""
     log.info(f"Verifying: pattern={pattern}, collection={collection}")
-    
+
     # Resolve collection
+    from kb_server.collections.manager import CollectionManager
     from kb_server.collections.router import CollectionRouter
-    router = CollectionRouter()
+    from kb_server.vector_store import VectorStore
+
+    store = VectorStore()
+    await store.connect()
+    manager = CollectionManager(store.client, vector_size=store.dim)
+    router = CollectionRouter(
+        manager, default_collection=store.collection or os.getenv("QDRANT_COLLECTION", "kb_docs")
+    )
     resolved_collection = await router.resolve(collection)
     
     console.print(f"[bold cyan]Verifying documents matching: {pattern}[/bold cyan]")
@@ -444,7 +460,7 @@ async def _apply_rollback(backups: list[tuple]) -> None:
         await store.update_chunk_metadata(
             collection_name=default_collection,
             source_file=source_file,
-            metadata_updates=updates
+            updates=updates
         )
 
 
@@ -524,7 +540,7 @@ async def _apply_updates(
             await store.update_chunk_metadata(
                 collection_name=collection,
                 source_file=change["source_file"],
-                metadata_updates=update_payload
+                updates=update_payload
             )
     else:
         # Rich progress bar
@@ -545,7 +561,7 @@ async def _apply_updates(
                 await store.update_chunk_metadata(
                     collection_name=collection,
                     source_file=change["source_file"],
-                    metadata_updates=update_payload
+                    updates=update_payload
                 )
                 
                 progress.advance(task)

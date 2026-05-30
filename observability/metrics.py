@@ -48,6 +48,9 @@ class MetricsCollector:
         self.cache_evictions = cache_evictions
         self.cache_size_bytes = cache_size_bytes
         self.cache_entries = cache_entries
+        # Query metrics
+        self.query_duration = query_duration
+        self.query_errors = query_errors
         # FASE 8: Batch metrics
         self.batch_embeddings_total = batch_embeddings_total
         self.batch_embedding_texts = batch_embedding_texts
@@ -211,6 +214,22 @@ cache_entries = Gauge(
 )
 
 
+# ── Query Metrics ────────────────────────────────────────────────
+
+query_duration = Histogram(
+    "kb_rag_query_duration_seconds",
+    "KB query execution duration in seconds",
+    ["tool", "status"],
+    buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0],
+)
+
+query_errors = Counter(
+    "kb_rag_query_errors_total",
+    "Total number of query errors",
+    ["tool"],
+)
+
+
 # ── Helper Functions ─────────────────────────────────────────────
 
 
@@ -335,6 +354,28 @@ def update_cache_metrics(backend: str, size_bytes: int, entries: int) -> None:
     """
     cache_size_bytes.labels(backend=backend).set(size_bytes)
     cache_entries.labels(backend=backend).set(entries)
+
+
+def record_query(tool: str, status: str, duration: float) -> None:
+    """
+    Record a query execution.
+
+    Args:
+        tool: Tool name (search_kb, list_documents, get_chunk, etc.)
+        status: "success" or "error"
+        duration: Query duration in seconds
+    """
+    query_duration.labels(tool=tool, status=status).observe(duration)
+
+
+def record_query_error(tool: str) -> None:
+    """
+    Record a query error.
+
+    Args:
+        tool: Tool name where the error occurred
+    """
+    query_errors.labels(tool=tool).inc()
 
 
 def get_metrics() -> tuple[bytes, str]:

@@ -30,6 +30,7 @@ from kb_server.telemetry.query_logger import QueryLogger
 from kb_server.collections.manager import CollectionManager
 from kb_server.collections.router import CollectionRouter, CollectionNotFoundError
 from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
+from observability.metrics import record_query, record_query_error
 
 # ── Logging ───────────────────────────────────────────────────────
 _log_path = os.getenv("LOG_PATH", "/tmp/kb-mcp.log")
@@ -386,27 +387,33 @@ async def call_tool(
     Returns:
         List of TextContent responses with results or error message.
     """
+    start = time.time()
     try:
         if name == "search_kb":
-            return await _search_kb(arguments)
+            result = await _search_kb(arguments)
         elif name == "list_documents":
-            return await _list_documents(arguments)
+            result = await _list_documents(arguments)
         elif name == "get_chunk":
-            return await _get_chunk(arguments)
+            result = await _get_chunk(arguments)
         elif name == "kb_stats":
-            return await _kb_stats()
+            result = await _kb_stats()
         elif name == "list_collections":
-            return await _list_collections()
+            result = await _list_collections()
         elif name == "list_filter_options":
-            return await _list_filter_options(arguments)
+            result = await _list_filter_options(arguments)
         else:
-            return [
+            result = [
                 types.TextContent(
                     type="text", text=f"Unknown tool: {name}"
                 )
             ]
+        record_query(name, "success", time.time() - start)
+        return result
     except Exception as e:
+        latency = time.time() - start
         log.error(f"Error in {name}: {e}", exc_info=True)
+        record_query(name, "error", latency)
+        record_query_error(name)
         return [
                 types.TextContent(
                     type="text", text=f"Error executing {name}: {str(e)}"

@@ -170,8 +170,8 @@ ls -la /opt/kb-rag/
 
 2. **Port already in use:**
    ```bash
-   # Check if port 8000 is in use
-   sudo lsof -i :8000
+    # Check if port 8080 is in use
+    sudo lsof -i :8080
    
    # Kill conflicting process or change port
    sudo nano /opt/kb-rag/config/kb-rag.env
@@ -255,7 +255,7 @@ sudo systemctl daemon-reexec
 
 ### Health Endpoint Not Responding
 
-**Symptom:** `curl http://localhost:8000/health` fails.
+**Symptom:** `curl http://localhost:8080/health` fails.
 
 **Diagnosis:**
 
@@ -274,7 +274,7 @@ sudo ufw status
 sudo iptables -L -n | grep 8000
 
 # 5. Test with full curl output
-curl -v http://localhost:8000/health
+curl -v http://localhost:8080/health
 ```
 
 **Solutions:**
@@ -434,7 +434,7 @@ sudo find /backups -name "kb-rag-*.tar.gz" -mtime +30 -delete
 
 ```bash
 # Check component latencies
-curl http://localhost:8000/health/detailed | \
+curl http://localhost:8080/health/detailed | \
   jq '.components | to_entries[] | 
       {name: .key, latency: .value.latency_ms}'
 
@@ -443,7 +443,7 @@ curl http://localhost:6333/collections/kb_docs | \
   jq '.result.points_count'
 
 # Check cache hit rate (should be >80%)
-curl http://localhost:8000/health/detailed | \
+curl http://localhost:8080/health/detailed | \
   jq '.components.cache.details.hit_rate'
 ```
 
@@ -652,7 +652,7 @@ curl http://localhost:6333/collections/kb_docs | \
 grep SCORE_THRESHOLD /opt/kb-rag/config/kb-rag.env
 
 # 3. Test with simple query
-curl -X POST http://localhost:8000/search \
+curl -X POST http://localhost:8080/search \
   -H "Content-Type: application/json" \
   -d '{"query": "test", "top_k": 10}'
 ```
@@ -771,7 +771,7 @@ sudo journalctl -k | grep -i "killed process"
 watch -n 5 'systemctl show kb-rag-server -p MemoryCurrent'
 
 # Check for growing cache
-curl http://localhost:8000/health/detailed | \
+curl http://localhost:8080/health/detailed | \
   jq '.components.cache.details.size_bytes'
 ```
 
@@ -952,7 +952,7 @@ sudo journalctl -u kb-rag-server --since "1 hour ago" > \
   kb-rag-debug.log
 
 # Include health status
-curl http://localhost:8000/health/detailed > \
+curl http://localhost:8080/health/detailed > \
   kb-rag-health.json
 
 # Include configuration (remove secrets first)
@@ -978,7 +978,7 @@ tar czf kb-rag-support-$(date +%Y%m%d-%H%M%S).tar.gz \
 3. ✅ Gather diagnostic information:
    - Service status: `systemctl status kb-rag.target`
    - Recent logs: `journalctl -u kb-rag-server -n 100`
-   - Health status: `kb-rag check health` or `curl localhost:8000/health/detailed`
+   - Health status: `kb-rag check health` or `curl localhost:8080/health/detailed`
    - System info: `uname -a`, `free -h`, `df -h`
 
 ### Reporting Issues

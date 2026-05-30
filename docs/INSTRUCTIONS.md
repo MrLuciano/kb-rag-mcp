@@ -1037,6 +1037,30 @@ python -c "import torch; print('CUDA:', torch.cuda.is_available())"
 export DOCLING_ARTIFACTS_PATH="$PWD/models/docling"
 ```
 
+### Escolha do extrator de PDF
+
+Por padrão (`PDF_EXTRACTOR=auto`), o sistema tenta docling primeiro e cai
+para PyMuPDF em caso de falha. Você pode forçar um extrator específico:
+
+```bash
+# Forçar PyMuPDF apenas (mais rápido, ignora docling)
+export PDF_EXTRACTOR=pymupdf
+python ingest/ingest.py --docs /path/to/docs
+
+# Forçar docling apenas (melhor qualidade de extração)
+export PDF_EXTRACTOR=docling
+python ingest/ingest.py --docs /path/to/docs
+
+# Via flag CLI (sobrescreve a variável de ambiente para aquela execução)
+python ingest/ingest.py --docs /path/to/docs --pdf-extractor pymupdf
+```
+
+| Modo | Comportamento | Quando usar |
+|---|---|---|
+| `auto` (padrão) | docling → fallback PyMuPDF | Geral — melhor qualidade quando docling funciona |
+| `docling` | docling apenas, falha se não instalado | Quando precisa de tabelas/estrutura e tem GPU |
+| `pymupdf` | PyMuPDF apenas, ignora docling | CPU-only, grandes volumes, ou PDFs simples |
+
 **Variáveis de ambiente úteis:**
 
 | Variável | Efeito |

@@ -13,7 +13,7 @@ setup(
     author="Luciano Marinho",
     python_requires=">=3.11",
     license="MIT",
-    packages=find_packages(include=["ingest*", "server*", "observability*"]),
+    packages=find_packages(include=["config*", "ingest*", "server*", "observability*"]),
     install_requires=[
         # Core dependencies from requirements.txt
         "mcp>=1.0.0",

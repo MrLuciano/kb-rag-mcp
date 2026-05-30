@@ -25,11 +25,12 @@ import asyncio
 import logging
 import os
 import re
+import time
 from typing import Optional
 
 import httpx
 
-from observability.metrics import MetricsCollector
+from observability.metrics import MetricsCollector, record_batch_embedding
 from kb_server.cache.manager import CacheManager
 
 log = logging.getLogger("kb-mcp.embed")
@@ -377,12 +378,14 @@ async def get_embeddings_batch(
             )
             if _metrics:
                 _metrics.increment(
-                    "embedding_cache_hits_total",
+                    "cache_hits",
                     len(cache_results),
+                    backend="lru",
                 )
                 _metrics.increment(
-                    "embedding_cache_misses_total",
+                    "cache_misses",
                     len(uncached_indices),
+                    backend="lru",
                 )
     else:
         uncached_indices = list(range(len(texts)))
@@ -395,11 +398,12 @@ async def get_embeddings_batch(
     uncached_texts = [texts[i] for i in uncached_indices]
     
     # Step 3: Process via native batch API if supported
+    new_vectors: list[list[float]] = []
     if BACKEND == "openai-compat":
         # Use native batch API
-        new_vectors: list[list[float]] = []
         for i in range(0, len(uncached_texts), batch_size):
             batch_texts = uncached_texts[i : i + batch_size]
+            batch_start = time.time()
             try:
                 batch_vectors = await _embed_openai_compat_batch(batch_texts)
                 new_vectors.extend(batch_vectors)
@@ -419,12 +423,16 @@ async def get_embeddings_batch(
                     *[get_embedding(t, use_cache=False) for t in batch_texts]
                 )
                 new_vectors.extend(batch_vectors)
+            finally:
+                record_batch_embedding(
+                    BACKEND, len(batch_texts), time.time() - batch_start
+                )
     
     elif BACKEND == "ollama":
         # Ollama: parallel requests in batches
-        new_vectors = []
         for i in range(0, len(uncached_texts), batch_size):
             batch_texts = uncached_texts[i : i + batch_size]
+            batch_start = time.time()
             batch_vectors = await _embed_ollama_batch(batch_texts)
             new_vectors.extend(batch_vectors)
             log.info(
@@ -432,12 +440,15 @@ async def get_embeddings_batch(
                 min(i + batch_size, len(uncached_texts)),
                 len(uncached_texts),
             )
+            record_batch_embedding(
+                BACKEND, len(batch_texts), time.time() - batch_start
+            )
     
     else:
         # Other backends: parallel requests
-        new_vectors = []
         for i in range(0, len(uncached_texts), batch_size):
             batch_texts = uncached_texts[i : i + batch_size]
+            batch_start = time.time()
             batch_vectors = await asyncio.gather(
                 *[get_embedding(t, use_cache=False) for t in batch_texts]
             )
@@ -446,6 +457,9 @@ async def get_embeddings_batch(
                 "Batch embeddings: %d/%d (parallel)",
                 min(i + batch_size, len(uncached_texts)),
                 len(uncached_texts),
+            )
+            record_batch_embedding(
+                BACKEND, len(batch_texts), time.time() - batch_start
             )
     
     # Step 4: Cache new results

@@ -48,13 +48,13 @@ sudo systemctl restart kb-rag-scheduler # Job scheduler
 
 ```bash
 # Quick health check
-curl http://localhost:8000/health
+curl http://localhost:8080/health
 
 # Detailed health status
-curl http://localhost:8000/health/detailed | jq
+curl http://localhost:8080/health/detailed | jq
 
 # Check specific component
-curl http://localhost:8000/health/detailed | jq '.components.embedding'
+curl http://localhost:8080/health/detailed | jq '.components.embedding'
 
 # Health check script
 ./deployment/scripts/health-check.sh all
@@ -104,7 +104,7 @@ running and reachable on the expected host:port.
 **Checking backend health:**
 ```bash
 # Via health check endpoint
-curl http://localhost:8000/health/detailed | jq '.components.embedding'
+curl http://localhost:8080/health/detailed | jq '.components.embedding'
 
 # Via CLI (requires kb-ingest on PATH)
 kb-ingest check health
@@ -169,7 +169,7 @@ sudo journalctl -u kb-rag-server --since today > kb-rag.log
 sudo systemctl status kb-rag.target
 
 # 2. Check health
-curl http://localhost:8000/health/detailed | jq '.healthy'
+curl http://localhost:8080/health/detailed | jq '.healthy'
 
 # 3. Check disk space
 df -h /opt/kb-rag
@@ -189,7 +189,7 @@ sudo journalctl -u kb-rag-server --since "24 hours ago" -p err
 systemd-cgtop -1 | grep kb-rag
 
 # 3. Review cache hit rate (should be >80%)
-curl http://localhost:8000/health/detailed | jq '.components.cache.details.hit_rate'
+curl http://localhost:8080/health/detailed | jq '.components.cache.details.hit_rate'
 
 # 4. Clean old logs (if not auto-rotating)
 sudo journalctl --vacuum-time=30d
@@ -236,7 +236,7 @@ pytest tests/ -v
 sudo ./deployment/scripts/restore.sh /path/to/backup.tar.gz
 
 # Verify after restore
-curl http://localhost:8000/health/detailed
+curl http://localhost:8080/health/detailed
 ```
 
 ### Backup Strategy
@@ -513,7 +513,7 @@ To use a specific StorageClass in Kubernetes:
 
 2. Check kb-rag-mcp `/metrics` endpoint:
    ```bash
-   curl http://localhost:8000/metrics | grep kb_ingest
+   curl http://localhost:8080/metrics | grep kb_ingest
    # Should return multiple metrics
    ```
 
@@ -526,13 +526,13 @@ To use a specific StorageClass in Kubernetes:
 **Docker Compose:**
 ```bash
 # Verify service networking
-docker-compose exec prometheus wget -O- http://kb-rag-mcp:8000/metrics
+docker-compose exec prometheus wget -O- http://kb-rag-mcp:8080/metrics
 ```
 
 **Kubernetes:**
 ```bash
 # Verify service discovery
-kubectl exec -it <prometheus-pod> -- wget -O- http://<kb-rag-service>:8000/metrics
+kubectl exec -it <prometheus-pod> -- wget -O- http://<kb-rag-service>:8080/metrics
 ```
 
 Check Prometheus logs:
@@ -564,6 +564,31 @@ The reclassification system allows operators to update document metadata in Qdra
 - Documents were misclassified during initial ingest
 - Metadata standards change (e.g., new product taxonomy)
 
+### CLI Installation
+
+The `kb-rag` command is installed as a console script via `setup.py`:
+
+```bash
+# Install in editable mode (development)
+pip install -e .
+
+# Verify command is available
+kb-rag --help
+kb-rag reclassify --help
+```
+
+> **Note:** `kb-ingest` is the legacy CLI entrypoint (`kb-ingest-legacy`).
+> The modern CLI uses `kb-rag` for all operations including reclassification.
+
+### Quick Reference
+
+| Subcommand | Purpose | Example |
+|-----------|---------|---------|
+| `run` | Apply classification changes | `kb-rag reclassify run "docs/**/*.pdf"` |
+| `verify` | Preview changes without applying | `kb-rag reclassify verify "docs/**/*.pdf"` |
+| `sessions` | List backup sessions | `kb-rag reclassify sessions` |
+| `rollback` | Restore from backup | `kb-rag reclassify rollback --session <ts>` |
+
 ### Architecture
 
 **Components:**
@@ -587,11 +612,11 @@ The reclassification system allows operators to update document metadata in Qdra
 All reclassify operations show aggregated preview before applying changes:
 
 ```bash
-kb-ingest reclassify "docs/**/*.pdf"
+kb-rag reclassify run "docs/**/*.pdf"
 
 # Output:
 # Found 47 documents with classification changes:
-# 
+#
 # Field      Documents  Change
 # vendor     47         (empty) → 'OpenText'
 # subsystem  23         (empty) → 'Admin'
@@ -660,16 +685,16 @@ Always verify changes before applying:
 
 ```bash
 # 1. Check what would change
-kb-ingest reclassify verify "docs/**/*.pdf" > /tmp/verify-before.txt
+kb-rag reclassify verify "docs/**/*.pdf" > /tmp/verify-before.txt
 
 # 2. Review output
 less /tmp/verify-before.txt
 
 # 3. Apply changes
-kb-ingest reclassify "docs/**/*.pdf"
+kb-rag reclassify run "docs/**/*.pdf"
 
 # 4. Verify applied
-kb-ingest reclassify verify "docs/**/*.pdf" > /tmp/verify-after.txt
+kb-rag reclassify verify "docs/**/*.pdf" > /tmp/verify-after.txt
 
 # 5. Compare
 diff /tmp/verify-before.txt /tmp/verify-after.txt
@@ -681,17 +706,17 @@ If reclassification produces incorrect results:
 
 ```bash
 # 1. List recent sessions
-kb-ingest reclassify sessions
+kb-rag reclassify sessions
 
 # Output:
 # Session               Documents  Fields Changed  Date
 # 2026-05-26T15-30-00   47         70              2026-05-26 15:30:00
 
 # 2. Rollback session
-kb-ingest reclassify rollback --session 2026-05-26T15-30-00
+kb-rag reclassify rollback --session 2026-05-26T15-30-00
 
 # 3. Verify rollback
-kb-ingest reclassify verify "docs/**/*.pdf"
+kb-rag reclassify verify "docs/**/*.pdf"
 ```
 
 #### Procedure 3: Selective Rollback
@@ -700,7 +725,7 @@ Rollback specific documents to state before timestamp:
 
 ```bash
 # Rollback only OpenText docs to state before 16:00
-kb-ingest reclassify rollback "docs/OT*.pdf" --before 2026-05-26T16-00-00
+kb-rag reclassify rollback "docs/OT*.pdf" --before 2026-05-26T16-00-00
 ```
 
 #### Procedure 4: Bulk Reclassification (Large Datasets)
@@ -709,7 +734,7 @@ For datasets with 10,000+ documents:
 
 ```bash
 # Disable progress bar for faster processing
-kb-ingest reclassify "**/*" --no-progress --yes > /tmp/reclassify.log 2>&1
+kb-rag reclassify run "**/*" --no-progress --yes > /tmp/reclassify.log 2>&1
 
 # Monitor progress in separate terminal
 watch -n 5 'tail -20 /tmp/reclassify.log'
@@ -758,18 +783,18 @@ reclassify_backup_sessions_total
 
 #### Issue: Reclassify slow for large collections
 
-**Symptom:** `kb-ingest reclassify "**/*"` takes >10 minutes
+**Symptom:** `kb-rag reclassify run "**/*"` takes >10 minutes
 
 **Cause:** Running `classify()` on thousands of files is I/O-bound
 
 **Solution:**
 1. Use metadata filters to reduce scope: `--filter 'vendor=""'`
-2. Process in batches: `kb-ingest reclassify "docs/batch-1/*.pdf"`
+2. Process in batches: `kb-rag reclassify run "docs/batch-1/*.pdf"`
 3. Disable progress bar: `--no-progress`
 
 #### Issue: Rollback fails with "Qdrant update error"
 
-**Symptom:** `kb-ingest reclassify rollback --session <timestamp>` fails mid-restore
+**Symptom:** `kb-rag reclassify rollback --session <timestamp>` fails mid-restore
 
 **Cause:** Qdrant connection issues or collection deleted
 
@@ -798,7 +823,7 @@ await store.connect()
 
 #### Issue: Backup session missing (auto-cleaned)
 
-**Symptom:** `kb-ingest reclassify sessions` doesn't show expected session
+**Symptom:** `kb-rag reclassify sessions` doesn't show expected session
 
 **Cause:** Session older than retention period (default 30 days)
 
@@ -814,7 +839,7 @@ sqlite3 data/registry.db -json "SELECT * FROM reclassify_backups" > backups.json
 
 ### Best Practices
 
-1. **Test on small subset first:** Before reclassifying thousands of documents, test on small pattern: `kb-ingest reclassify "docs/test/*.pdf"`
+1. **Test on small subset first:** Before reclassifying thousands of documents, test on small pattern: `kb-rag reclassify run "docs/test/*.pdf"`
 
 2. **Use verify workflow:** Always run `verify` before and after reclassification to confirm changes
 
@@ -853,17 +878,17 @@ jobs:
       
       - name: Verify changes
         run: |
-          kb-ingest reclassify verify "**/*" --filter 'vendor=""' > verify-before.txt
+          kb-rag reclassify verify "**/*" --filter 'vendor=""' > verify-before.txt
           
       - name: Reclassify if changes detected
         run: |
           if grep -q "Found.*documents with mismatches" verify-before.txt; then
-            kb-ingest reclassify "**/*" --filter 'vendor=""' --yes
+              kb-rag reclassify run "**/*" --filter 'vendor=""' --yes
           fi
           
       - name: Verify applied
         run: |
-          kb-ingest reclassify verify "**/*" --filter 'vendor=""'
+          kb-rag reclassify verify "**/*" --filter 'vendor=""'
 ```
 
 **Safety check:** Only auto-reclassify with narrow filters (e.g., `vendor=""`) to avoid unintended changes.
@@ -882,7 +907,7 @@ sudo nano /opt/kb-rag/config/kb-rag.env
 sudo systemctl restart kb-rag.target
 
 # 3. Verify health
-curl http://localhost:8000/health/detailed
+curl http://localhost:8080/health/detailed
 ```
 
 ### Clear Cache
@@ -1236,7 +1261,7 @@ sudo systemctl stop kb-rag.target
 sleep 5
 sudo systemctl start kb-rag.target
 sudo systemctl status kb-rag.target
-curl http://localhost:8000/health/detailed
+curl http://localhost:8080/health/detailed
 ```
 
 ### Rollback After Failed Update
@@ -1382,7 +1407,7 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 |------|---------|
 | Start services | `sudo systemctl start kb-rag.target` |
 | Stop services | `sudo systemctl stop kb-rag.target` |
-| Check health | `curl localhost:8000/health` |
+| Check health | `curl localhost:8080/health` |
 | View logs | `sudo journalctl -u kb-rag-server -f` |
 | Create backup | `./deployment/scripts/backup.sh` |
 | Restore backup | `sudo ./deployment/scripts/restore.sh <file>` |

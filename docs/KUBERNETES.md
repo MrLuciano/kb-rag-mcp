@@ -30,8 +30,8 @@ kubectl rollout status deployment/kb-rag-mcp-kb-rag-mcp
 kubectl rollout status statefulset/kb-rag-mcp-kb-rag-mcp-qdrant
 
 # 4. Port-forward and test
-kubectl port-forward svc/kb-rag-mcp-kb-rag-mcp 8000:8000 &
-curl http://localhost:8000/health
+kubectl port-forward svc/kb-rag-mcp-kb-rag-mcp 8080:8080 &
+curl http://localhost:8080/health
 ```
 
 ---

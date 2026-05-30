@@ -273,7 +273,7 @@ rate(rerank_error_total[5m])
 ### Health Checks
 ```bash
 # Test baseline
-curl -X POST localhost:8000/search -d '{"query":"test"}'
+curl http://localhost:8080/health
 
 # Test hybrid (requires MCP client)
 # Test rerank (requires MCP client)

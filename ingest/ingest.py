@@ -95,18 +95,65 @@ CHUNK_SETTINGS = {
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PDF extractor selection
+# ─────────────────────────────────────────────────────────────────────────────
+PDF_EXTRACTOR = os.getenv("PDF_EXTRACTOR", "auto").lower()
+"""PDF extraction backend. One of: ``auto``, ``docling``, ``pymupdf``.
+
+* ``auto`` (default) — try docling first, fall back to PyMuPDF on failure.
+* ``docling`` — force docling only; fail if not installed or conversion fails.
+* ``pymupdf`` — force PyMuPDF only; skip docling entirely (fastest).
+
+Set via environment variable::
+
+    export PDF_EXTRACTOR=pymupdf
+
+Or CLI flag ``--pdf-extractor`` on ``ingest/ingest.py``.
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # EXTRATORES
 # ─────────────────────────────────────────────────────────────────────────────
+
+
+def _extract_pdf_docling(path: Path) -> list[dict]:
+    """Extract PDF via docling."""
+    from ingest.docling_utils import get_docling_converter
+
+    converter = get_docling_converter()
+    if converter is None:
+        raise ImportError("docling not installed")
+
+    result = converter.convert(str(path))
+    text = result.document.export_to_markdown()
+    log.info(f"  docling OK: {path.name}")
+    return [{"text": text, "page": None}]
+
+
+def _extract_pdf_pymupdf(path: Path) -> list[dict]:
+    """Extract PDF via PyMuPDF."""
+    import fitz  # PyMuPDF
+
+    doc = fitz.open(str(path))
+    chunks = []
+    for page_num, page in enumerate(doc, 1):
+        text = page.get_text("text").strip()
+        if text:
+            chunks.append({"text": text, "page": page_num})
+    log.info(f"  PyMuPDF OK: {path.name} ({len(chunks)} pages)")
+    return chunks
 
 
 def extract_pdf(path: Path) -> list[dict]:
     """Extract text from a PDF file preserving page structure.
 
-    Attempts docling first (best for complex PDFs with tables/figures),
-    then falls back to PyMuPDF (fitz) for simpler documents.
+    Backend is controlled by :data:`PDF_EXTRACTOR` (env var ``PDF_EXTRACTOR``
+    or ``--pdf-extractor`` CLI flag).
 
-    Docling uses a singleton DocumentConverter (see :func:`get_docling_converter`)
-    that enables GPU acceleration and avoids re-downloading models for every file.
+    * ``auto`` — docling first, PyMuPDF fallback.
+    * ``docling`` — docling only.
+    * ``pymupdf`` — PyMuPDF only (fastest, skips model loading).
 
     Args:
         path: Path to the PDF file.
@@ -114,43 +161,35 @@ def extract_pdf(path: Path) -> list[dict]:
     Returns:
         List of dicts with 'text' and 'page' keys, or empty list on error.
     """
-    chunks_raw = []
-    try:
-        from ingest.docling_utils import get_docling_converter
+    mode = PDF_EXTRACTOR
 
-        converter = get_docling_converter()
-        if converter is None:
-            raise ImportError("docling not installed")
-
-        result = converter.convert(str(path))
-        text = result.document.export_to_markdown()
-        chunks_raw.append({"text": text, "page": None})
-        log.info(f"  docling OK: {path.name}")
-    except ImportError:
-        pass
-    except Exception as e:
-        log.warning(f"  docling failed ({e}), trying PyMuPDF")
-
-    if not chunks_raw:
+    # docling branch
+    if mode in ("auto", "docling"):
         try:
-            import fitz  # PyMuPDF
-
-            doc = fitz.open(str(path))
-            for page_num, page in enumerate(doc, 1):
-                text = page.get_text("text").strip()
-                if text:
-                    chunks_raw.append({"text": text, "page": page_num})
-            log.info(f"  PyMuPDF OK: {path.name} ({len(chunks_raw)} pages)")
+            return _extract_pdf_docling(path)
         except ImportError:
-            log.error(
-                "  Instale docling ou pymupdf: pip install docling pymupdf"
-            )
+            if mode == "docling":
+                log.error("  docling not installed but PDF_EXTRACTOR=docling")
+                return []
+            # auto mode: fall through to pymupdf
+        except Exception as e:
+            log.warning(f"  docling failed ({e}), trying PyMuPDF")
+            if mode == "docling":
+                return []
+
+    # pymupdf branch
+    if mode in ("auto", "pymupdf"):
+        try:
+            return _extract_pdf_pymupdf(path)
+        except ImportError:
+            log.error("  PyMuPDF not installed: pip install pymupdf")
             return []
         except Exception as e:
             log.error(f"  Error extracting PDF: {e}")
             return []
 
-    return chunks_raw
+    log.error(f"  Unknown PDF_EXTRACTOR mode: {mode}")
+    return []
 
 
 def extract_docx(path: Path) -> list[dict]:
@@ -737,6 +776,13 @@ def main():
         action="store_true",
         help="Mark files removed from disk as deleted",
     )
+    p_ingest.add_argument(
+        "--pdf-extractor",
+        type=str,
+        choices=["auto", "docling", "pymupdf"],
+        default=None,
+        help="PDF extraction backend (default: env PDF_EXTRACTOR or auto)",
+    )
 
     # ── status
     p_status = sub.add_parser("status", help="Display registry status")
@@ -761,6 +807,13 @@ def main():
     )
     parser.add_argument("--errors", action="store_true")
     parser.add_argument("--list", action="store_true")
+    parser.add_argument(
+        "--pdf-extractor",
+        type=str,
+        choices=["auto", "docling", "pymupdf"],
+        default=None,
+        help="PDF extraction backend (default: env PDF_EXTRACTOR or auto)",
+    )
 
     args = parser.parse_args()
 
@@ -776,6 +829,13 @@ def main():
 
     if not ingest_args.docs and not ingest_args.file:
         parser.error("Provide --docs or --file")
+
+    # Apply --pdf-extractor CLI override to env var for extract_pdf()
+    pdf_extractor = getattr(ingest_args, "pdf_extractor", None)
+    if pdf_extractor:
+        os.environ["PDF_EXTRACTOR"] = pdf_extractor
+        global PDF_EXTRACTOR
+        PDF_EXTRACTOR = pdf_extractor
 
     docs_path = ingest_args.docs or (
         ingest_args.file.parent if ingest_args.file else Path(".")

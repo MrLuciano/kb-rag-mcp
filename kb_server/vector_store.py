@@ -7,10 +7,12 @@ PHASE 8: Enhanced with connection pooling and batch optimizations.
 
 import logging
 import os
+import time
 import uuid
 
 
 from kb_server.embed_client import get_embed_dim
+from observability.metrics import record_batch_upsert
 from qdrant_client import AsyncQdrantClient  # type: ignore[import]
 from qdrant_client import models as qmodels  # type: ignore[import]
 from qdrant_client.models import Distance  # type: ignore[import]
@@ -395,9 +397,16 @@ class VectorStore:
             range(0, len(points), self.batch_size), 1
         ):
             batch_points = points[i : i + self.batch_size]
+            batch_start = time.time()
             await self.client.upsert(
                 collection_name=self.collection,
                 points=batch_points,
+            )
+            batch_duration = time.time() - batch_start
+            record_batch_upsert(
+                parallel=False,
+                num_points=len(batch_points),
+                duration=batch_duration,
             )
             log.debug(
                 f"Batch {batch_num}/{total_batches} uploaded "
@@ -778,9 +787,16 @@ class VectorStore:
                 batch_num: Batch number (for logging).
                 batch: List of PointStruct points to upload.
             """
+            batch_start = time.time()
             await self.client.upsert(
                 collection_name=self.collection,
                 points=batch,
+            )
+            batch_duration = time.time() - batch_start
+            record_batch_upsert(
+                parallel=True,
+                num_points=len(batch),
+                duration=batch_duration,
             )
             log.debug(
                 f"Parallel batch {batch_num}/{len(batches)} uploaded "

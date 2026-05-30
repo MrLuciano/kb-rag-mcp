@@ -197,8 +197,18 @@ root — it is loaded automatically before `kb_server` is imported.
 | `UI_PORT` | `8080` | Web UI port |
 | `HEALTH_HOST` | `0.0.0.0` | Health server bind host |
 | `HEALTH_PORT` | `8081` | Health server port |
+
+**PDF extraction**
+
+| Variable | Default | Description |
+|---|---|---|
+| `PDF_EXTRACTOR` | `auto` | Backend: `auto` (docling→PyMuPDF), `docling` (force), `pymupdf` (force) |
+| `DOCLING_ARTIFACTS_PATH` | — | Persistent model cache directory (avoids re-download) |
+| `DOCLING_DEVICE` | `auto` | Accelerator: `auto`, `cpu`, `cuda`, `mps` |
+| `DOCLING_NUM_THREADS` | `os.cpu_count()` | CPU threads for ONNX inference |
+| `RECLASSIFY_BACKUP_RETENTION_DAYS` | `30` | Days to keep reclassification backups |
 | `SSE_HOST` | `0.0.0.0` | MCP SSE transport host |
-| `SSE_PORT` | `8000` | MCP SSE transport port |
+| `SSE_PORT` | `8765` | MCP SSE transport port |
 
 ---
 
@@ -209,6 +219,7 @@ root — it is loaded automatically before `kb_server` is imported.
 | `.pdf` | PDF | docling ^ → PyMuPDF fallback | Best quality; extracts text per page |
 
 > ^ `docling` is optional — requires `pip install -e ".[pdf]"` or use `scripts/install-pdf-extras.sh`. Falls back to PyMuPDF when not installed.
+> ^^ PDF backend is selectable via `PDF_EXTRACTOR` env var or `--pdf-extractor` CLI flag (`auto` | `docling` | `pymupdf`).
 | `.docx` | Word 2007+ | python-docx | — |
 | `.doc` | Word 97-2003 | docx2txt → python-docx fallback | Compatibility mode files work well |
 | `.xlsx` | Excel 2007+ | openpyxl | All sheets extracted |

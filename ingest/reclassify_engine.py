@@ -115,34 +115,39 @@ async def detect_changed_classifications(
     matched_files = set(glob.glob(pattern, recursive=True))
     log.info(f"Pattern '{pattern}' matched {len(matched_files)} files on disk")
 
+    # Resolve source_file relative to DOCS_PATH (stored as relative in Qdrant)
+    docs_path = Path(os.getenv("DOCS_PATH", "."))
+
     # Detect changes
     changes = []
 
     for source_file, current_meta in docs_metadata.items():
+        abs_path = docs_path / source_file
+        abs_path_str = str(abs_path)
+
         # Check if file exists on disk
-        file_path = Path(source_file)
-        if not file_path.exists():
+        if not abs_path.exists():
             if allow_missing:
                 log.warning(
-                    f"File missing but allow_missing=True: {source_file}"
+                    f"File missing but allow_missing=True: {abs_path_str}"
                 )
                 # For missing files with allow_missing, we can't re-run classify()
                 # so we skip them (could be enhanced to use metadata-only logic)
                 continue
             else:
-                log.warning(f"Skipping missing file: {source_file}")
+                log.warning(f"Skipping missing file: {abs_path_str}")
                 continue
 
         # Check if file matches glob pattern
-        if source_file not in matched_files:
+        if abs_path_str not in matched_files and source_file not in matched_files:
             # File in Qdrant but doesn't match current pattern
             continue
 
         # Run classify() to get expected metadata
         try:
-            expected_meta = classify(source_file)
+            expected_meta = classify(abs_path, docs_path)
         except Exception as e:
-            log.error(f"classify() failed for {source_file}: {e}")
+            log.error(f"classify() failed for {abs_path_str}: {e}")
             continue
 
         # Compare classification fields
@@ -459,7 +464,7 @@ async def reclassify_documents(
             updated_count = await store.update_chunk_metadata(
                 collection_name=collection_name,
                 source_file=source_file,
-                metadata_updates=update_fields,
+                updates=update_fields,
             )
             chunks_updated += updated_count
 
