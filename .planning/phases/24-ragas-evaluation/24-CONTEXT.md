@@ -1,7 +1,8 @@
 # Phase 24: RAGAS Evaluation Pipeline — Context
 
 **Gathered:** 2026-05-30
-**Status:** Ready for planning
+**Updated:** 2026-05-31
+**Status:** Ready for execution
 **Source:** REQUIREMENTS.md (EVAL-01/02/03/04) + existing codebase analysis
 
 ## Phase Boundary
@@ -22,13 +23,33 @@ This phase delivers a complete RAGAS evaluation pipeline that measures RAG quali
 - **Output format**: CSV export + console table (rich library, existing dependency) — EVAL-04 requirement
 - **Metrics**: faithfulness, answer_relevancy, context_precision, context_recall — EVAL-01 requirement
 - **Integration point**: Evaluation runs against live `kb_server/server.py` search_kb tool or direct VectorStore queries
+- **Evaluation entry point**: `kb-rag evaluate` CLI subcommand (consistent with existing `kb-rag reclassify` pattern)
+- **Async pattern**: Wrap sync RAGAS metrics in `asyncio.to_thread()` to avoid blocking the async event loop; VectorStore.search() remains async
+- **RAGAS version**: Pin `ragas==0.2.14` — verified compatible with pydantic v2 (used by project)
+- **Dataset ground_truth**: Require ground_truth for all datasets; skip metrics silently if ground_truth missing per-example rather than failing entire run
+- **LLM judge backend**: Use same `EMBED_BACKEND` configuration as the main app (no separate `EVAL_BACKEND` for v1.4 simplicity)
+- **Result persistence**: CSV + console table only for v1.4; SQLite trend storage deferred to future phase
 
 ### the agent's Discretion
-- Exact RAGAS version to pin (need to check compatibility with async patterns)
-- Whether to implement async evaluation (parallel metric computation) vs sync
-- CLI command name (`kb-rag evaluate` or standalone script)
-- Whether to cache evaluation results to SQLite (kb_metadata.db) or just CSV files
-- How to handle the 4 metrics: RAGAS built-in vs custom implementations
+- Exact CSV column names and delimiter detection thresholds
+- Console table styling (rich vs plain text fallback)
+- Whether to run metrics sequentially or in parallel batches
+- Default dataset path when --dataset not provided
+- Error handling strategy when LLM backend is unreachable during evaluation
+
+### Recent Codebase Changes (2026-05-30 ad-hoc session)
+The following changes were made to files referenced by Phase 24 plans and should be accounted for during execution:
+
+1. **embed_client.py**: Cache metric names fixed (`cache_hits`/`cache_misses` with `backend="lru"` label). `import time` added. Batch embedding metrics now wired (`record_batch_embedding()`).
+2. **vector_store.py**: Batch upsert metrics wired (`record_batch_upsert()`). `import time` added.
+3. **server.py**: Query metrics wired (`record_query()`, `record_query_error()` in `call_tool()`).
+4. **observability/metrics.py**: New metrics added: `kb_rag_query_duration_seconds`, `kb_rag_query_errors_total`.
+5. **Grafana dashboard**: Rebuilt to only show live metrics. Ingest panels removed (jobs, files, workers) — these metrics exist but are not wired in ingest pipeline.
+6. **CONCERNS.md**: Updated with current audit (6 issues resolved, 4 new issues added).
+7. **AGENTS.md**: Personal info removed; project context kept.
+8. **.planning/backlog.md**: Created with session context and pending items.
+
+**Implication for Phase 24**: The evaluation pipeline should follow the same metrics wiring pattern used for query metrics (server.py) and batch metrics (embed_client.py, vector_store.py). If evaluation emits its own metrics, use `observability.metrics` module and ensure metric names match dashboard queries.
 
 ## Canonical References
 
@@ -37,9 +58,10 @@ This phase delivers a complete RAGAS evaluation pipeline that measures RAG quali
 ### Architecture
 - `kb_server/evaluation/ragas_pipeline.py` — existing stub (NotImplementedError)
 - `kb_server/evaluation/dataset.py` — existing GoldenDataset class
-- `kb_server/embed_client.py` — embedding backend abstraction (must be reused)
-- `kb_server/server.py` — MCP server with search_kb tool (evaluation target)
-- `kb_server/vector_store.py` — direct Qdrant search (alternative evaluation target)
+- `kb_server/embed_client.py` — embedding backend abstraction (must be reused). **Recently updated (2026-05-30):** batch metrics wired, cache metric names fixed, `import time` added
+- `kb_server/server.py` — MCP server with search_kb tool (evaluation target). **Recently updated (2026-05-30):** query metrics wired in `call_tool()`
+- `kb_server/vector_store.py` — direct Qdrant search (alternative evaluation target). **Recently updated (2026-05-30):** batch upsert metrics wired
+- `observability/metrics.py` — Prometheus metrics definitions. **Recently updated (2026-05-30):** added `kb_rag_query_duration_seconds`, `kb_rag_query_errors_total`
 
 ### Documentation
 - `docs/RAG_EVALUATION.md` — existing RAGAS guide (needs path updates server/ → kb_server/)
