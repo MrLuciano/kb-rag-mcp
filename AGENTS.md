@@ -14,7 +14,7 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 - **Compatibility**: CLI interface must remain backward-compatible; deprecation warnings for removed flags
 - **Deployment**: Must support bare metal (systemd), Docker Compose, and Kubernetes/Helm
 - **No auth**: Internal use only — no authentication layer planned
-- **Test baseline**: 268 passing tests; no regressions allowed
+- **Test baseline**: 666 passing tests; no regressions allowed
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:codebase/STACK.md -->
@@ -257,11 +257,9 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 <!-- GSD:profile-start -->
 ## Developer Profile
 
-**Developer:** Luciano Marinho (luciano.marinho@gmail.com)  
-**Role:** Lead Developer / System Architect  
-**Experience Level:** Senior
-
-**Full profile:** `.planning/developer-profile.json` (221 lines, comprehensive)
+Personal developer context (name, email, role, experience level) is kept outside the repo in
+`~/.opencode/developer-profile.json` for privacy. The file below contains only project-relevant
+context that agents need when working on this codebase.
 
 ### Quick Reference
 
@@ -277,7 +275,7 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 - **Logging:** `log = logging.getLogger('kb-mcp.{module}')`, INFO for operations
 
 **Development Practices:**
-- **Testing:** TDD for behavior changes, 90% branch coverage baseline, 585 passing tests
+- **Testing:** TDD for behavior changes, 90% branch coverage baseline, 666 passing tests
 - **Git:** Conventional commits with phase tracking (fix/feat/docs/test/chore/plan)
 - **Planning:** GSD framework, phase-based execution, wave parallelization, UAT validation
 - **Execution:** Worktree isolation when safe, quality gates enforced, dev+prod testing
@@ -287,6 +285,4 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 - Write English-only comments, commit atomically per task, run pytest after changes
 - Reference completed phases 9-14 for patterns, maintain 90%+ branch coverage
 - Test on both dev (WSL) and production (acemagic) for deployment changes
-
-> This section is auto-generated from `.planning/developer-profile.json` -- do not edit manually.
 <!-- GSD:profile-end -->
