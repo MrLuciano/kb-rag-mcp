@@ -25,7 +25,7 @@
 - [ ] **OPT-02**: User can run scoring/reranking experiments comparing cross-encoder to other strategies
 - [ ] **OPT-03**: User can view comparison metrics (recall@K, MRR) across experiment runs
 
-## Active Requirements (v1.5)
+## Active Requirements (v1.4)
 
 ### Enterprise Data Source Connectors (Phase 29)
 
@@ -151,4 +151,4 @@
 ---
 
 *Requirements defined: 2026-05-27*
-*Last updated: 2026-06-03 after v1.5 planning update*
+*Last updated: 2026-06-03 after v1.4 planning update (phases 29–37)*

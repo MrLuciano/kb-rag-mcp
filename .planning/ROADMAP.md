@@ -6,8 +6,7 @@
 - ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v1.1-ROADMAP.md)
 - ✅ **v1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v1.2-ROADMAP.md)
 - ✅ **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v1.3-ROADMAP.md)
-- ✅ **v1.4 Content Discovery & Platform** — Phases 23, 26–28 (shipped 2026-06-03) — [archive](milestones/v1.4-ROADMAP.md)
-- ◆ **v1.5 Enterprise & Reliability** — Phases 29–37 (active)
+- ◆ **v1.4 Platform, Analytics & Enterprise** — Phases 23–37 (active)
 
 ## Phases
 
@@ -68,20 +67,22 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
-<details>
-<summary>✅ v1.4 Content Discovery & Platform (Phases 23, 26–28) — SHIPPED 2026-06-03</summary>
+<details open>
+<summary>◆ v1.4 Platform, Analytics & Enterprise (Phases 23–37) — ACTIVE</summary>
+
+**Completed:**
 
 - [x] Phase 23: Documentation Overhaul — 3 plans (doc reorganization, README restructuring, CHANGELOG/REFERENCE update) — completed 2026-05-27
-- [x] Phase 26: KB Content Discoverability — Dynamic content-summary tool descriptions + `kb://overview` MCP Resource for AI client awareness of indexed content — completed 2026-06-03
-- [x] Phase 27: Knowledge Base Registry — SQLite-backed KB registry with public/agent_private scopes, owner user/agent, stable `kb_<id>` collection names — completed 2026-06-03
-- [x] Phase 28: MCP Streamable HTTP Transport — Add `/mcp` HTTP endpoint alongside stdio/SSE for remote MCP clients — completed 2026-06-03
+- [x] Phase 26: KB Content Discoverability — Dynamic content-summary tool descriptions + `kb://overview` MCP Resource — completed 2026-06-03
+- [x] Phase 27: Knowledge Base Registry — SQLite-backed KB registry with public/agent_private scopes, stable `kb_<id>` collection names — completed 2026-06-03
+- [x] Phase 28: MCP Streamable HTTP Transport — `/mcp` HTTP endpoint alongside stdio/SSE — completed 2026-06-03
 
-**Delivered:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports).
+**Deferred (low priority):**
 
-</details>
+- [ ] Phase 24: RAGAS Evaluation Pipeline — 3 plans created, execution deferred
+- [ ] Phase 25: Optimization Experiments — Chunking and scoring experiments
 
-<details open>
-<summary>◆ v1.5 Enterprise & Reliability (Phases 29–37) — ACTIVE</summary>
+**In Progress (planned, not started):**
 
 - [ ] Phase 29: Enterprise Data Source Connectors — Confluence (Cloud + Data Center), JIRA (Cloud + Data Center), Git repositories
 - [ ] Phase 30: Cross-Document Knowledge Graph — similarity clustering, entity extraction, topic modeling
@@ -93,11 +94,11 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 - [ ] Phase 36: Provider Budget & Circuit Breaker — per-provider budgets, failure thresholds, automatic fallback
 - [ ] Phase 37: Request-level Retrieval Cache — in-memory LRU cache for identical queries
 
-**Completed:** None yet. **Promoted from backlog:** 9 items from ROADMAP.md competitive analysis (mcp-rag, qdrant-loader, local_faiss_mcp).
+**Delivered so far:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports). Competitive intelligence from mcp-rag, qdrant-loader, local_faiss_mcp informed phases 29–37.
 
 </details>
 
-## Progress (v1.5 Active)
+## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -114,10 +115,10 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
 | 11.1. Vendor/Subsystem Integration | v1.2 | 1/1 | Complete | 2026-05-27 |
 | 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
-| 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete    | 2026-05-26 |
-| 14. Health Dashboard | v1.3 | 6/6 | Complete   | 2026-05-26 |
-| 15. PowerShell Ports Script | v1.3 | 2/2 | Complete   | 2026-05-26 |
-| 16. Reclassification | v1.3 | 3/3 | Complete   | 2026-05-27 |
+| 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete | 2026-05-26 |
+| 14. Health Dashboard | v1.3 | 6/6 | Complete | 2026-05-26 |
+| 15. PowerShell Ports Script | v1.3 | 2/2 | Complete | 2026-05-26 |
+| 16. Reclassification | v1.3 | 3/3 | Complete | 2026-05-27 |
 | 17. Capability Negotiation | v1.3 | 3/3 | Complete | 2026-05-27 |
 | 18. Grafana Datasource Fix | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 19. VERIFICATION.md Backfill | v1.3 | 1/1 | Complete | 2026-05-27 |
@@ -130,46 +131,21 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 26. KB Content Discoverability | v1.4 | 1/1 | Complete | 2026-06-03 |
 | 27. Knowledge Base Registry | v1.4 | 3/3 | Complete | 2026-06-03 |
 | 28. MCP Streamable HTTP | v1.4 | 1/1 | Complete | 2026-06-03 |
-| 29. Enterprise Data Source Connectors | v1.5 | 0/0 | Backlog | — |
-| 30. Cross-Document Knowledge Graph | v1.5 | 0/0 | Backlog | — |
-| 31. MCP Prompt Templates | v1.5 | 0/0 | Backlog | — |
-| 32. API Key Authentication | v1.5 | 0/0 | Backlog | — |
-| 33. Request Rate Limiting | v1.5 | 0/0 | Backlog | — |
-| 34. Upload and Index Quotas | v1.5 | 0/0 | Backlog | — |
-| 35. Multi-KB Aggregated Search | v1.5 | 0/0 | Backlog | — |
-| 36. Provider Budget & Circuit Breaker | v1.5 | 0/0 | Backlog | — |
-| 37. Request-level Retrieval Cache | v1.5 | 0/0 | Backlog | — |
+| 29. Enterprise Data Source Connectors | v1.4 | 0/1 | Planned | — |
+| 30. Cross-Document Knowledge Graph | v1.4 | 0/1 | Planned | — |
+| 31. MCP Prompt Templates | v1.4 | 0/1 | Planned | — |
+| 32. API Key Authentication | v1.4 | 0/1 | Planned | — |
+| 33. Request Rate Limiting | v1.4 | 0/1 | Planned | — |
+| 34. Upload and Index Quotas | v1.4 | 0/1 | Planned | — |
+| 35. Multi-KB Aggregated Search | v1.4 | 0/1 | Planned | — |
+| 36. Provider Budget & Circuit Breaker | v1.4 | 0/1 | Planned | — |
+| 37. Request-level Retrieval Cache | v1.4 | 0/1 | Planned | — |
 
-*Earlier milestones (v1.0–v1.4): see archived roadmaps in [milestones/](milestones/).*
-
-## Backlog
-
-Items derived from competitive analysis and future planning. Each item is a candidate for v1.6 or later.
-
-### Low Priority
-
-- **CONF-01: Hot-reload Configuration** — JSON/env config changes take effect without restart. `reload_if_changed()` polling on config file mtime.
-- **CONF-02: Configuration API Endpoints** — `GET /config`, `POST /config`, `POST /config/bulk`, `POST /config/reset`, `POST /config/reload` for runtime configuration management.
-- **METRICS-01: Per-operation Percentile Metrics** — p50/p95/p99 latency tracking per operation and per embedding/LLM provider. Complements existing Prometheus metrics with in-memory histograms.
-- **OBS-01: Health/Readiness Endpoints** — `/health` (summary with runtime snapshot), `/ready` (503 when not bootstrapped), `/metrics` (operational metrics) as HTTP endpoints alongside existing MCP server. Reuses the health endpoint already setup to improve upon it.
-- **SPA-01: Management SPA Panel** — Built-in web UI (`/app`) for document management, knowledge base admin, and configuration. Requires frontend build toolchain. Reuses / merge web-ui created before, adding the Classification items to the data table and allowing sorting of columns. Provides a link to grafana Dashboard.
-- **PROV-01: Provider Aliases** — Normalize provider names (e.g., `dashscope` → `aliyun`) for easier configuration.
-- **OBS-02: Request Identity Middleware** — `X-Request-Id` and `X-Trace-Id` headers propagated through all operations for distributed tracing.
-| 29. Enterprise Data Source Connectors | v1.5 | 0/1 | Planned | 2026-06-03 |
-| 30. Cross-Document Knowledge Graph | v1.5 | 0/1 | Planned | 2026-06-03 |
-| 31. MCP Prompt Templates | v1.5 | 0/1 | Planned | 2026-06-03 |
-| 32. API Key Authentication | v1.5 | 0/1 | Planned | 2026-06-03 |
-| 33. Request Rate Limiting | v1.5 | 0/1 | Planned | 2026-06-03 |
-| 34. Upload and Index Quotas | v1.5 | 0/1 | Planned | 2026-06-03 |
-| 35. Multi-KB Aggregated Search | v1.5 | 0/1 | Planned | 2026-06-03 |
-| 36. Provider Budget & Circuit Breaker | v1.5 | 0/1 | Planned | 2026-06-03 |
-| 37. Request-level Retrieval Cache | v1.5 | 0/1 | Planned | 2026-06-03 |
-
-*Earlier milestones (v1.0–v1.4): see archived roadmaps in [milestones/](milestones/).*
+*Earlier milestones (v1.0–v1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
-Items derived from competitive analysis and future planning. Each item is a candidate for v1.6 or later.
+Items derived from competitive analysis and future planning. Each item is a candidate for v1.5 or later.
 
 ### Low Priority
 

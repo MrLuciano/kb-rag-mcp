@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.4
-milestone_name: Evaluations & Docs
-status: executing
-last_updated: "2026-05-30T21:00:00.000Z"
-last_activity: 2026-05-30 -- Phase 24 planning complete
+milestone_name: Platform, Analytics & Enterprise
+status: planning
+last_updated: "2026-06-03T21:00:00.000Z"
+last_activity: 2026-06-03 -- Phases 29-37 plans created, ready for execution
 progress:
-  total_phases: 3
-  completed_phases: 1
-  total_plans: 6
-  completed_plans: 3
-  percent: 50
+  total_phases: 15
+  completed_phases: 6
+  total_plans: 19
+  completed_plans: 9
+  percent: 47
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 23 — documentation-overhaul (complete)
+**Current focus:** Phases 29–37 — enterprise connectors, knowledge graph, MCP prompts, auth, rate limiting, quotas, multi-KB search, circuit breaker, retrieval cache (all planned, ready for execution)
 
 ## Current Position
 
-Phase: 24 (ragas-evaluation) — PLANNED
-Plan: 0 of 3
-Status: Phase 24 planned — 3 plans created, ready for execution
-Last activity: 2026-05-30 -- Phase 24 planning complete
+Phase: 29 (enterprise-data-source-connectors) — PLANNED
+Plan: 0 of 1
+Status: Phase 29 planned — ready for execution
+Last activity: 2026-06-03 -- Phases 29-37 plans created
 
 ## Phase 23 Outcomes
 
