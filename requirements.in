@@ -1,6 +1,9 @@
 # ── Core MCP ─────────────────────────────────────────────────────
 mcp>=1.0.0
 
+# ── Phase 29: Enterprise Connectors ─────────────────────────────
+html2text>=2024.2.26       # Confluence Storage Format -> Markdown
+
 # ── Vector Store ────────────────────────────────────────────────
 qdrant-client>=1.9.0
 fastembed>=0.2.0          # FASE 12: BM25 sparse vectors for hybrid search
