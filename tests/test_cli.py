@@ -15,9 +15,29 @@ import pytest
 from click.testing import CliRunner
 
 from ingest.cli.main import cli
+from ingest.connectors.base import ConnectorBase
+from ingest.connectors.factory import register
+from ingest.connectors.models import ConnectorConfig, SyncResult
 from ingest.core.metadata import MetadataStore
 from ingest.job.manager import JobManager
 from ingest.job.models import JobPriority
+
+
+# Register a mock connector for CLI tests
+class _MockTestConnector(ConnectorBase):
+    """Mock connector for testing purposes."""
+
+    async def fetch_documents(self, since=None):
+        return SyncResult(source_key=self.source_key)
+
+    async def fetch_document(self, remote_id):
+        return None
+
+    async def close(self):
+        pass
+
+
+register("test-con", _MockTestConnector)
 
 
 @pytest.fixture
@@ -484,3 +504,62 @@ class TestCLIIntegration:
         )
         assert result.exit_code == 0
         assert "Showing 3 job(s)" in result.output
+
+
+class TestConnectorCommands:
+    """Tests for 'connectors' CLI commands."""
+
+    def test_connectors_list(self, cli_runner, temp_db):
+        """Test 'connectors list' shows registered types."""
+        result = cli_runner.invoke(
+            cli, ["--db", str(temp_db), "connectors", "list"]
+        )
+        assert result.exit_code == 0
+        assert "test-con" in result.output
+
+    def test_connectors_list_empty(self, cli_runner, temp_db):
+        """Test 'connectors list' without mock registration."""
+        result = cli_runner.invoke(
+            cli, ["--db", str(temp_db), "connectors", "list"]
+        )
+        assert result.exit_code == 0
+
+    def test_connectors_stage_unknown_type(self, cli_runner, temp_db):
+        """Test 'connectors stage' with unknown type errors."""
+        result = cli_runner.invoke(
+            cli,
+            [
+                "--db",
+                str(temp_db),
+                "connectors",
+                "stage",
+                "--type",
+                "nonexistent",
+                "--source-key",
+                "nonexistent://test",
+                "--endpoint",
+                "https://example.com",
+            ],
+        )
+        assert result.exit_code != 0  # Should error
+
+    def test_connectors_stage_known_type(self, cli_runner, temp_db):
+        """Test 'connectors stage' with known type succeeds."""
+        result = cli_runner.invoke(
+            cli,
+            [
+                "--db",
+                str(temp_db),
+                "connectors",
+                "stage",
+                "--type",
+                "test-con",
+                "--source-key",
+                "test-con://example",
+                "--endpoint",
+                "https://test.example.com",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "test-con" in result.output
+        assert "test-con://example" in result.output

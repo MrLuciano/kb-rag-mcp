@@ -18,6 +18,7 @@ import asyncio
 import logging
 import os
 import sys
+import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -557,6 +558,8 @@ async def run_ingest(
     clean: bool = False,
     force: bool = False,
     sync: bool = False,
+    staged_paths: list[Path] | None = None,
+    connector_source: str | None = None,
 ):
     """Run the full ingest pipeline or process a single file.
 
@@ -572,8 +575,14 @@ async def run_ingest(
         clean: Clear KB and registry before re-ingesting.
         force: Re-ingest even if no changes detected.
         sync: Mark deleted files removed from disk in registry.
+        staged_paths: Pre-staged connector file paths to process.
+            When provided, the pipeline uses these instead of directory
+            scanning and propagates connector metadata.
+        connector_source: Connector source key when processing staged
+            files. Used to associate chunk metadata with the source.
     """
-    from ingest.core.metadata import IngestRegistry
+    from ingest.core.metadata import IngestRegistry, MetadataStore
+    from ingest.connectors.staging import resolve_staged_metadata
     from kb_server.vector_store import VectorStore
 
     store = VectorStore()
@@ -592,6 +601,10 @@ async def run_ingest(
     if single_file:
         files = [single_file]
         docs_root = single_file.parent
+    elif staged_paths:
+        files = [p for p in staged_paths if p.is_file()]
+        docs_root = Path(tempfile.mkdtemp(prefix="kb-connector-ingest-"))
+        log.info("Processing %d staged connector files", len(files))
     else:
         files = [
             f
@@ -601,7 +614,7 @@ async def run_ingest(
         docs_root = docs_path
 
     # ── Detect files removed from disk
-    if sync and not single_file:
+    if sync and not single_file and not staged_paths:
         _sync_deleted(registry, docs_root, files)
 
     total_chunks = 0
@@ -618,6 +631,27 @@ async def run_ingest(
             n, status = await process_file(
                 f, docs_root, store, registry, product, force
             )
+            # Record connector state for staged files
+            if status in ("ok", "error") and staged_paths and connector_source:
+                try:
+                    meta_store = MetadataStore()
+                    meta_store.connect()
+                    if status == "ok":
+                        staged_meta = resolve_staged_metadata(f)
+                        meta_store.upsert_connector_state(
+                            source_key=connector_source,
+                            remote_id=staged_meta.get("remote_id", f.name),
+                            connector_type=staged_meta.get(
+                                "connector_type", "unknown"
+                            ),
+                            local_path=str(f),
+                            status="ok",
+                        )
+                    meta_store.close()
+                except Exception:
+                    log.warning(
+                        "Could not record connector state for %s", f
+                    )
             return n, status
 
     results = await asyncio.gather(*[process_one(f) for f in files])

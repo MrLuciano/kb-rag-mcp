@@ -16,7 +16,7 @@ from typing import Optional
 log = logging.getLogger("kb-ingest.metadata")
 
 DEFAULT_DB = Path(__file__).parent.parent.parent / "data" / "kb_metadata.db"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 class MetadataStore:
@@ -86,8 +86,12 @@ class MetadataStore:
 
         if current_version == 0:
             self._create_schema_v2()
+            self._migrate_v2_to_v3()
         elif current_version == 1:
             self._migrate_v1_to_v2()
+            self._migrate_v2_to_v3()
+        elif current_version == 2:
+            self._migrate_v2_to_v3()
         elif current_version == SCHEMA_VERSION:
             log.debug(f"Schema v{current_version} up to date")
         else:
@@ -239,6 +243,51 @@ class MetadataStore:
 
         log.info(f"Migrated files from {v1_path}")
 
+    def _migrate_v2_to_v3(self) -> None:
+        """Migrate from v2 to v3: add connector_state table."""
+        log.info("Migrating schema v2 → v3...")
+
+        # Check if connector_state already exists
+        tables = [
+            r[0]
+            for r in self.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        if "connector_state" in tables:
+            log.debug("connector_state table already exists")
+        else:
+            self.conn.execute("""
+                CREATE TABLE connector_state (
+                    source_key     TEXT NOT NULL,
+                    remote_id      TEXT NOT NULL,
+                    connector_type TEXT NOT NULL,
+                    sync_checkpoint TEXT,
+                    remote_etag    TEXT,
+                    remote_mtime   REAL,
+                    local_path     TEXT,
+                    sha256         TEXT,
+                    status         TEXT DEFAULT 'ok',
+                    ingested_at    REAL NOT NULL,
+                    PRIMARY KEY (source_key, remote_id)
+                )
+            """)
+            self.conn.execute("""
+                CREATE INDEX idx_cs_connector_type
+                    ON connector_state(connector_type)
+            """)
+            self.conn.execute("""
+                CREATE INDEX idx_cs_status
+                    ON connector_state(status)
+            """)
+            self.conn.execute("""
+                CREATE INDEX idx_cs_ingested_at
+                    ON connector_state(ingested_at)
+            """)
+            log.info("Created connector_state table")
+
+        self._set_schema_version(3)
+
     # ── Transaction Helpers
 
     def begin(self) -> None:
@@ -276,6 +325,170 @@ class MetadataStore:
         stats["total_files"] = row[0] if row else 0
 
         return stats
+
+    # ── Connector State Helpers
+
+    def upsert_connector_state(
+        self,
+        source_key: str,
+        remote_id: str,
+        connector_type: str,
+        sync_checkpoint: str | None = None,
+        remote_etag: str | None = None,
+        remote_mtime: float | None = None,
+        local_path: str | None = None,
+        sha256: str | None = None,
+        status: str = "ok",
+    ) -> None:
+        """Persist or update connector sync state for a remote document.
+
+        Args:
+            source_key: Stable identifier for the connector source
+                (e.g. ``confluence://myspace``, ``jira://PROJ``).
+            remote_id: Stable remote document identity
+                (e.g. Confluence page ID, JIRA issue key, Git blob hash).
+            connector_type: Connector type string
+                (``confluence``, ``jira``, ``git``).
+            sync_checkpoint: Opaque cursor or checkpoint token for
+                incremental sync.
+            remote_etag: Remote server ETag or content hash.
+            remote_mtime: Last-modified timestamp from remote source.
+            local_path: Path to staged local copy of the content.
+            sha256: SHA-256 of the content (for dedup).
+            status: Current status (``ok``, ``error``, ``pending``).
+        """
+        import time
+
+        self.conn.execute(
+            """
+            INSERT INTO connector_state (
+                source_key, remote_id, connector_type,
+                sync_checkpoint, remote_etag, remote_mtime,
+                local_path, sha256, status, ingested_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(source_key, remote_id) DO UPDATE SET
+                sync_checkpoint = excluded.sync_checkpoint,
+                remote_etag     = excluded.remote_etag,
+                remote_mtime    = excluded.remote_mtime,
+                local_path      = excluded.local_path,
+                sha256          = excluded.sha256,
+                status          = excluded.status,
+                ingested_at     = excluded.ingested_at
+            """,
+            (
+                source_key,
+                remote_id,
+                connector_type,
+                sync_checkpoint,
+                remote_etag,
+                remote_mtime,
+                local_path,
+                sha256,
+                status,
+                time.time(),
+            ),
+        )
+        self.conn.commit()
+        log.debug(
+            "Connector state upserted: %s/%s (type=%s)",
+            source_key, remote_id, connector_type,
+        )
+
+    def get_connector_state(
+        self, source_key: str, remote_id: str
+    ) -> dict | None:
+        """Retrieve connector sync state for a remote document.
+
+        Args:
+            source_key: Connector source key.
+            remote_id: Remote document identity.
+
+        Returns:
+            Dict with connector state fields, or None if not found.
+        """
+        row = self.conn.execute(
+            "SELECT * FROM connector_state "
+            "WHERE source_key = ? AND remote_id = ?",
+            (source_key, remote_id),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def list_connector_state(
+        self,
+        connector_type: str | None = None,
+        source_key: str | None = None,
+        status: str | None = None,
+    ) -> list[dict]:
+        """List connector state records, with optional filters.
+
+        Args:
+            connector_type: Filter by connector type.
+            source_key: Filter by source key.
+            status: Filter by status.
+
+        Returns:
+            List of connector state dicts.
+        """
+        conditions = []
+        params = []
+        if connector_type is not None:
+            conditions.append("connector_type = ?")
+            params.append(connector_type)
+        if source_key is not None:
+            conditions.append("source_key = ?")
+            params.append(source_key)
+        if status is not None:
+            conditions.append("status = ?")
+            params.append(status)
+
+        where = " AND ".join(conditions) if conditions else "1=1"
+        rows = self.conn.execute(
+            f"SELECT * FROM connector_state WHERE {where} "
+            "ORDER BY ingested_at DESC",
+            params,
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def delete_connector_state(
+        self, source_key: str, remote_id: str
+    ) -> None:
+        """Remove a connector state record.
+
+        Args:
+            source_key: Connector source key.
+            remote_id: Remote document identity.
+        """
+        self.conn.execute(
+            "DELETE FROM connector_state "
+            "WHERE source_key = ? AND remote_id = ?",
+            (source_key, remote_id),
+        )
+        self.conn.commit()
+        log.debug(
+            "Connector state deleted: %s/%s", source_key, remote_id
+        )
+
+    def get_connector_sync_checkpoint(
+        self, source_key: str
+    ) -> str | None:
+        """Retrieve the latest sync checkpoint for a connector source.
+
+        Uses the most recent ``ingested_at`` record to determine
+        the checkpoint value.
+
+        Args:
+            source_key: Connector source key.
+
+        Returns:
+            Sync checkpoint string, or None if no records exist.
+        """
+        row = self.conn.execute(
+            "SELECT sync_checkpoint FROM connector_state "
+            "WHERE source_key = ? AND sync_checkpoint IS NOT NULL "
+            "ORDER BY ingested_at DESC LIMIT 1",
+            (source_key,),
+        ).fetchone()
+        return row["sync_checkpoint"] if row else None
 
 
 # ── Legacy registry (migrated from ingest/registry.py) ──────────────────────

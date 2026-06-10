@@ -30,9 +30,11 @@ Add ingest connectors for enterprise data sources: Confluence (Cloud + Data Cent
 
 ## Implementation Scope
 
-### Confluence Connector
+### Confluence Connector (including 7.9.3 Server/Data Center)
 - Fetch pages, attachments, comments via Confluence REST API
-- Space-level and page-level ingestion
+- **Confluence 7.9.3 (Server/DC):** Uses REST API `/rest/api/content` with `limit/start` pagination (not cursor-based). Auth via basic auth or personal access tokens. CQL for space/page filtering.
+- **Confluence Cloud:** Uses REST API with cursor-based pagination and OAuth 2.0.
+- Common: Space-level and page-level ingestion
 - Convert Confluence wiki markup to plain text
 - Handle content_history for incremental updates
 
