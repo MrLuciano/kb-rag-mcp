@@ -5,7 +5,7 @@ FASE 25: Optimization Experiments
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 log = logging.getLogger("kb-mcp.optimization")
 
@@ -63,7 +63,9 @@ class ExperimentConfig:
 # ── Chunking strategies ─────────────────────────────────────────────
 
 
-def _fixed_chunker(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
+def _fixed_chunker(
+    text: str, chunk_size: int, chunk_overlap: int
+) -> List[str]:
     """Fixed-size chunking with overlap (manual fallback)."""
     chunks = []
     start = 0
@@ -74,7 +76,9 @@ def _fixed_chunker(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
     return chunks
 
 
-def _recursive_chunker(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
+def _recursive_chunker(
+    text: str, chunk_size: int, chunk_overlap: int
+) -> List[str]:
     """Recursive character text splitting via LangChain."""
     try:
         from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -90,7 +94,9 @@ def _recursive_chunker(text: str, chunk_size: int, chunk_overlap: int) -> List[s
         return _fixed_chunker(text, chunk_size, chunk_overlap)
 
 
-def _semantic_chunker(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
+def _semantic_chunker(
+    text: str, chunk_size: int, chunk_overlap: int
+) -> List[str]:
     """Semantic chunking via docling HybridChunker.
 
     Falls back to recursive chunking if docling is unavailable.

@@ -23,6 +23,7 @@ filterwarnings = [
 markers = [
     "integration: Tests that require live infrastructure (Qdrant, LM Studio, Redis). Skipped via `pytest -m 'not integration'`.",
     "fase12: Tests targeting FASE 12 features (hybrid search, reranking).",
+    "fase25: Tests targeting FASE 25 features (optimization experiments).",
     "cli: CLI integration tests that exercise click commands end-to-end.",
 ]
 
