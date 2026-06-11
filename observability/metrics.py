@@ -559,6 +559,25 @@ def update_batch_throughput(chunks_per_sec: float) -> None:
     batch_processing_throughput.set(chunks_per_sec)
 
 
+# ── PHASE 37: Retrieval Cache Metrics ───────────────────────────────
+
+
+retrieval_cache_ops = Counter(
+    "kb_rag_retrieval_cache_ops_total",
+    "Total number of retrieval cache operations",
+    ["operation"],  # hit, miss
+)
+
+
+def record_retrieval_cache_op(operation: str) -> None:
+    """Record a retrieval cache hit or miss.
+
+    Args:
+        operation: "hit" or "miss".
+    """
+    retrieval_cache_ops.labels(operation=operation).inc()
+
+
 # ── PHASE 36: Provider Resilience Metrics ───────────────────────────
 
 

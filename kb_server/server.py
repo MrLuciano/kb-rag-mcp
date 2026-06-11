@@ -36,6 +36,7 @@ from observability.metrics import (
     record_query_error,
     record_rate_limit_allowed,
     record_rate_limit_rejected,
+    record_retrieval_cache_op,
     update_rate_limit_subjects,
 )
 from kb_server.cache.request_cache import RetrievalCache  # PHASE 37
@@ -684,10 +685,13 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         cached_results = retrieval_cache.get(cache_key)
         if cached_results is not None:
             results = cached_results
+            record_retrieval_cache_op("hit")
             log.info(
                 "Retrieval cache hit: key=%s query='%s' results=%d",
                 cache_key[:16], query, len(results),
             )
+        else:
+            record_retrieval_cache_op("miss")
 
     if results is None:
         # ── Full search pipeline (cache miss) ─────────────────────
