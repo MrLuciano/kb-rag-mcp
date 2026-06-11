@@ -1,0 +1,70 @@
+# Ollama Docker Compose — Optional embedding backend
+# Usage: docker compose -f docker-compose.yml -f deployment/docker-compose/ollama.yml up -d
+# Model: nomic-embed-text:v1.5 (274MB, 137M params, 768-dim)
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: kb-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_PORT=11434
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+    # Uncomment to enable GPU (requires NVIDIA Container Toolkit or ROCm)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    #       # For AMD ROCm:
+    #       # devices:
+    #       #   - driver: amdgpu
+    #       #     count: 1
+    #       #     capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/11434' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    # Model pull init container - pulls nomic-embed-text on startup
+    # This can be done manually via: docker compose exec ollama ollama pull nomic-embed-text
+    # Or run the init container below
+    #
+    # Alternatively, add to docker-compose.yml:
+    #  ollama-init:
+    #    image: ollama/ollama:latest
+    #    container_name: kb-ollama-init
+    #    depends_on:
+    #      ollama:
+    #        condition: service_healthy
+    #    volumes:
+    #      - ollama-models:/root/.ollama
+    #    entrypoint: ["ollama", "pull", "nomic-embed-text:v1.5"]
+    #    restart: "no"
+
+  # Uncomment to auto-pull model on startup
+  # ollama-init:
+  #   image: ollama/ollama:latest
+  #   container_name: kb-ollama-init
+  #   depends_on:
+  #     ollama:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ollama-models:/root/.ollama
+  #   command: >
+  #     sh -c "sleep 10 && ollama pull nomic-embed-text:v1.5"
+  #   restart: "no"
+
+volumes:
+  ollama-models:
+    driver: local
