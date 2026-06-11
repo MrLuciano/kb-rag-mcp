@@ -3,24 +3,58 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 status: completed
-last_updated: "2026-06-11T04:10:32.227Z"
+last_updated: "2026-06-11T05:00:43.523Z"
 last_activity: 2026-06-11 -- Phase 37 marked complete
 progress:
-  total_phases: 11
-  completed_phases: 8
-  total_plans: 17
-  completed_plans: 14
-  percent: 73
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
+
+## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-06-11:
+
+| Category | Item | Status |
+|----------|------|--------|
+| context_questions | Phase 29: Should connectors run as part of the ingest pipeline or as separate services? | Resolved via code — connectors use factory pattern with staged local artifacts |
+| context_questions | Phase 29: How to handle large Confluence spaces (1000+ pages) without timing out? | Resolved via code — pagination with configurable rate limiting |
+| context_questions | Phase 29: Should we support Webhook-based real-time sync or just polling? | Resolved via code — polling-based incremental sync |
+| context_questions | Phase 30: Real-time updates or batch recompute on schedule? | Resolved via code — batch compute at ingest time |
+| context_questions | Phase 30: How to handle very large corpora (100K+ docs) — graph traversal costs? | Resolved via code — per-KB graph metadata with payload indexes |
+| context_questions | Phase 30: Should graph data be per-KB or global across all KBs? | Resolved via code — per-KB graph metadata |
+| context_questions | Phase 31: Should prompts run through the LLM backend or be template-only? | Resolved via code — template-only (client-side rendering) |
+| context_questions | Phase 31: How to handle conflicting information across documents in extract_answer? | Resolved via code — client-side LLM resolves conflicts |
+| context_questions | Phase 31: Rate limits on prompt generation? | Resolved via code — no rate limits on prompt templates |
+| context_questions | Phase 32: Should API keys support expiry dates or be permanent? | Resolved via code — permanent keys with revocation |
+| context_questions | Phase 32: Do we need rate limiting per key? | Resolved via code — per-subject token bucket covers key-level limiting |
+| context_questions | Phase 32: How to handle key revocation in-flight requests? | Resolved via code — hash check at request time |
+| context_questions | Phase 33: Should rate limits be configurable per KB? | Resolved via code — global rate limits per subject |
+| context_questions | Phase 33: Do we need Redis-backed distributed rate limiting? | Resolved via code — in-memory token bucket (single instance) |
+| context_questions | Phase 33: Should ingest vs search have different limits? | Resolved via code — same rate limiter for all operations |
+| context_questions | Phase 34: Should quotas apply per time period (monthly reset)? | Resolved via code — cumulative counters with explicit reset |
+| context_questions | Phase 34: Do we notify users before hitting quota? | Resolved via code — hard rejection at ingest boundary |
+| context_questions | Phase 34: Cross-KB aggregation limits? | Resolved via code — per-KB quotas |
+| context_questions | Phase 35: Should we support kb_ids with wildcard? | Resolved via code — explicit kb_ids only |
+| context_questions | Phase 35: Different embedding dimensions across KBs? | Resolved via code — same-dimension assumption (validated at search time) |
+| context_questions | Phase 35: Result provenance? | Resolved via code — normalized scores with RRF fusion |
+| context_questions | Phase 36: Should circuit state be persisted? | Resolved via code — in-memory only, resets on restart |
+| context_questions | Phase 36: Apply circuit breaker to LLM calls too? | Resolved via code — embedding providers only |
+| context_questions | Phase 36: Budget across concurrent requests? | Resolved via code — per-provider sliding window with monotonic clock |
+| context_questions | Phase 37: Should cached results skip reranking? | Resolved via code — cached results skip entire pipeline |
+| context_questions | Phase 37: How to handle cache stampede? | Resolved via code — simple LRU with TTL expiry |
+| context_questions | Phase 37: Differentiate cache by user/API key? | Resolved via code — cache key includes all query parameters |
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-19)
+See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 37 — request-level-retrieval-cache
+**Current focus:** Planning next milestone
 
 ## Current Position
 

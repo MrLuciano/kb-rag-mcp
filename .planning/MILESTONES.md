@@ -1,32 +1,70 @@
-# Milestones
+# Project Milestones: kb-rag-mcp
 
-## v1.0 — Release-Readiness
+## v1.4 — Platform, Analytics & Enterprise
 
-**Shipped:** 2026-05-19
-**Phases:** 4 | **Plans:** 13 | **Tests:** 491 passing
+**Shipped:** 2026-06-11
+**Phases:** 13 (23, 26-37; 24-25 deferred) | **Plans:** 21 | **Tests:** 1095 passing, 12 skipped
 
 ### Delivered
 
-Made kb-rag-mcp safe to release publicly: deleted legacy `server/` module, fixed real BM25 hybrid search, unified env loading, hardened data integrity (file-watcher deletion, secrets), raised test coverage to 88% branch with full CI, and shipped Dockerfile + quickstart.sh + new README getting-started guide.
+Enterprise hardening of kb-rag-mcp: enterprise data source connectors (Confluence/JIRA/Git), cross-document knowledge graph, MCP prompt templates, API key authentication, request rate limiting, upload/index quotas, multi-KB aggregated search, provider budget & circuit breaker, and request-level retrieval cache. 8 MCP tools, 2 MCP prompts.
 
 ### Key Accomplishments
 
-1. `kb_server/` is now the single canonical module — `server/` and `ingest/registry.py` deleted
-2. Real BM25+dense RRF hybrid search — sparse path was dead code before this milestone
-3. 491 tests passing, 88% branch coverage on `kb_server/` (up from ~50% pre-milestone)
-4. GitHub Actions CI on every push/PR; integration tests cover ingest→search and multi-collection routing
-5. Multi-stage Dockerfile + `scripts/quickstart.sh` — zero-to-running setup in one command
-6. Secrets fully removed from git tracking; `CONTRIBUTING.md` documents remediation for teams
+1. **Enterprise data source connectors** — Confluence (Cloud + Server/DC), JIRA (Cloud + Data Center), and Git connectors via factory pattern with incremental sync and staged local artifacts
+2. **Cross-document knowledge graph** — Graph metadata (doc_graph_id, entities, topics, related) derived at ingest time; `get_related_documents` and `explore_topic` MCP tools (8 total tools)
+3. **MCP prompt templates** — `extract_answer` (grounded answer with citations) and `summarize_documents` (structured overview with section headers); prompt discovery via `prompts/list`
+4. **API key authentication** — SHA-256 hashed keys stored in SQLite; SSE middleware validation; CLI create/list/revoke; `AUTH_ENABLED` flag for backward compatibility
+5. **Request rate limiting** — Token-bucket per subject; two-layer enforcement (HTTP 429 + MCP error payload); 3 Prometheus metrics; contextvars for per-connection tracking
+6. **Upload and index quotas** — 6 quota fields (files, bytes, file_bytes, documents, chunks, chars); schema v3→v4 migration; CLI quota show/set/reset; enforcement before expensive operations
+7. **Multi-KB aggregated search** — `kb_ids` parameter on `search_kb`; RRF fusion with score normalization; deduplication with provenance; backward-compatible single-KB path preserved
+8. **Provider budget & circuit breaker** — CircuitBreaker with CLOSED/OPEN/HALF_OPEN and exponential backoff; ProviderBudget sliding window; fallback chain across providers; 7 new Prometheus metrics
+9. **Request-level retrieval cache** — Deterministic SHA-256 cache keys covering all query parameters; cache-first check before embedding/search/reranking; TTL expiry + invalidation hooks; observability preserved
 
 ### Stats
 
-- Timeline: 2026-05-14 → 2026-05-19 (5 days)
-- Files changed: 308 | Python LOC: ~251k | Commits: 103
-- Requirements: 15/15 v1 requirements met
+- Timeline: 2026-05-27 → 2026-06-11 (15 days)
+- Files changed: N/A | Commits: 81 feature/docs/test commits since v1.3
+- Requirements: 40/46 complete (6 deferred — Phases 24, 25)
 
 ### Git Tag
 
-`v1.0`
+`v1.4`
+
+### Known Deferred Items at Close
+
+- 27 CONTEXT.md open questions acknowledged (resolved via code, see STATE.md Deferred Items)
+- Phase 35 SUMMARY.md created retroactively at close
+
+---
+
+## v1.3 — Post-Ship Polish & Infrastructure
+
+**Shipped:** 2026-05-27
+**Phases:** 11 (12-22) | **Plans:** 27 | **Tests:** 656 passing
+
+### Delivered
+
+English-only codebase with CI enforcement, multilingual README (EN/PT-BR/ES), Grafana + Prometheus monitoring stack (6 tabs, 28 panels, 4 services), PowerShell Windows firewall config, document reclassification engine (in-place metadata + SQLite rollback), capability negotiation (FilterTermsCache + list_filter_options), Grafana datasource fix (stable UID), 13 VERIFICATION.md files + gap detection, LOG_PATH PermissionError fix, codebase hygiene sweep (13 unused imports, 3 TODOs, 2 dead code), and integration checker CI gate (3 checks, needs: test).
+
+### Key Accomplishments
+
+1. **English-only codebase** — All Portuguese translated to English across ~35 files in `kb_server/` and `ingest/`; CI gate with `english-audit --check-inline --fail-under 0` on every push/PR; false positive technical terms removed from detection set
+2. **Grafana + Prometheus monitoring** — `/metrics` endpoint at port 8080 exposing 28 Prometheus metrics; 6-tab Grafana dashboard with 28 panels; 4-service Docker Compose stack (Qdrant, kb-rag-mcp, Prometheus, Grafana); Helm monitoring toggle with StatefulSet + Deployment
+3. **Document reclassification** — In-place metadata updates preserve embeddings; SQLite backup/audit tables for rollback; 4 CLI subcommands (run/verify/sessions/rollback) with interactive preview; session-based tracking with 30-day auto-cleanup
+4. **Capability negotiation** — MCP server advertises classified attributes (vendor, product, subsystem, version, module) via dynamic tool descriptions; FilterTermsCache with cache-bust marker; `list_filter_options` tool for full enumeration; 33 new tests + integration smoke test
+5. **Grafana datasource fix** — Stable `uid: prometheus` resolves dashboard load errors; 63 `${DS_PROMETHEUS}` → `"prometheus"` replacements; `__inputs` sections removed; applied identically across Docker Compose and Helm paths
+6. **Process debt resolved** — 13 VERIFICATION.md files backfilled for phases 05-13, 16-18; `scripts/check-verification-gaps.sh` detection script; `scripts/check-integration-gaps.py` wired as CI gate with Rich + JSON output
+
+### Stats
+
+- Timeline: 2026-05-25 → 2026-05-27 (3 days)
+- Files changed: 331 | Commits: ~187 feature commits
+- Requirements: 26/26 v1.3 requirements met (1 cancelled with rationale)
+
+### Git Tag
+
+`v1.3`
 
 ---
 
@@ -90,31 +128,30 @@ Established operational maturity and code quality foundations: SSE stability wit
 
 ---
 
-## v1.3 — Post-Ship Polish & Infrastructure
+## v1.0 — Release-Readiness
 
-**Shipped:** 2026-05-27
-**Phases:** 11 (12-22) | **Plans:** 27 | **Tests:** 656 passing
+**Shipped:** 2026-05-19
+**Phases:** 4 | **Plans:** 13 | **Tests:** 491 passing
 
 ### Delivered
 
-English-only codebase with CI enforcement, multilingual README (EN/PT-BR/ES), Grafana + Prometheus monitoring stack (6 tabs, 28 panels, 4 services), PowerShell Windows firewall config, document reclassification engine (in-place metadata + SQLite rollback), capability negotiation (FilterTermsCache + list_filter_options), Grafana datasource fix (stable UID), 13 VERIFICATION.md files + gap detection, LOG_PATH PermissionError fix, codebase hygiene sweep (13 unused imports, 3 TODOs, 2 dead code), and integration checker CI gate (3 checks, needs: test).
+Made kb-rag-mcp safe to release publicly: deleted legacy `server/` module, fixed real BM25 hybrid search, unified env loading, hardened data integrity (file-watcher deletion, secrets), raised test coverage to 88% branch with full CI, and shipped Dockerfile + quickstart.sh + new README getting-started guide.
 
 ### Key Accomplishments
 
-1. **English-only codebase** — All Portuguese translated to English across ~35 files in `kb_server/` and `ingest/`; CI gate with `english-audit --check-inline --fail-under 0` on every push/PR; false positive technical terms removed from detection set
-2. **Grafana + Prometheus monitoring** — `/metrics` endpoint at port 8080 exposing 28 Prometheus metrics; 6-tab Grafana dashboard with 28 panels; 4-service Docker Compose stack (Qdrant, kb-rag-mcp, Prometheus, Grafana); Helm monitoring toggle with StatefulSet + Deployment
-3. **Document reclassification** — In-place metadata updates preserve embeddings; SQLite backup/audit tables for rollback; 4 CLI subcommands (run/verify/sessions/rollback) with interactive preview; session-based tracking with 30-day auto-cleanup
-4. **Capability negotiation** — MCP server advertises classified attributes (vendor, product, subsystem, version, module) via dynamic tool descriptions; FilterTermsCache with cache-bust marker; `list_filter_options` tool for full enumeration; 33 new tests + integration smoke test
-5. **Grafana datasource fix** — Stable `uid: prometheus` resolves dashboard load errors; 63 `${DS_PROMETHEUS}` → `"prometheus"` replacements; `__inputs` sections removed; applied identically across Docker Compose and Helm paths
-6. **Process debt resolved** — 13 VERIFICATION.md files backfilled for phases 05-13, 16-18; `scripts/check-verification-gaps.sh` detection script; `scripts/check-integration-gaps.py` wired as CI gate with Rich + JSON output
+1. `kb_server/` is now the single canonical module — `server/` and `ingest/registry.py` deleted
+2. Real BM25+dense RRF hybrid search — sparse path was dead code before this milestone
+3. 491 tests passing, 88% branch coverage on `kb_server/` (up from ~50% pre-milestone)
+4. GitHub Actions CI on every push/PR; integration tests cover ingest→search and multi-collection routing
+5. Multi-stage Dockerfile + `scripts/quickstart.sh` — zero-to-running setup in one command
+6. Secrets fully removed from git tracking; `CONTRIBUTING.md` documents remediation for teams
 
 ### Stats
 
-- Timeline: 2026-05-25 → 2026-05-27 (3 days)
-- Files changed: 331 | Commits: ~187 feature commits
-- Requirements: 26/26 v1.3 requirements met (1 cancelled with rationale)
-- Final planned milestone — product is feature-complete for target use case
+- Timeline: 2026-05-14 → 2026-05-19 (5 days)
+- Files changed: 308 | Python LOC: ~251k | Commits: 103
+- Requirements: 15/15 v1 requirements met
 
 ### Git Tag
 
-`v1.3`
+`v1.0`

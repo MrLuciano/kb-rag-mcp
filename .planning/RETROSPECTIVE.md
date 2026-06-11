@@ -54,8 +54,67 @@
 
 ---
 
+## Milestone: v1.4 — Platform, Analytics & Enterprise
+
+**Shipped:** 2026-06-11
+**Phases:** 13 active (23, 26-37) + 2 deferred (24, 25) | **Plans:** 21
+
+### What Was Built
+
+1. **Documentation overhaul** — Deployment-mode sections in 4 operational docs; CHANGELOG + REFERENCE updated
+2. **KB content discoverability** — Dynamic tool descriptions, `kb://overview` MCP Resource
+3. **Knowledge Base Registry** — SQLite-backed with public/agent_private scopes, stable kb_<id> names
+4. **MCP Streamable HTTP** — `/mcp` HTTP endpoint alongside stdio/SSE
+5. **Enterprise connectors** — Confluence, JIRA, Git via factory pattern with incremental sync
+6. **Cross-document knowledge graph** — Graph metadata + 2 MCP tools (get_related_documents, explore_topic)
+7. **MCP prompt templates** — extract_answer + summarize_documents with prompt discovery
+8. **API key authentication** — SHA-256 hashed keys, CLI create/list/revoke, optional via AUTH_ENABLED
+9. **Request rate limiting** — Token-bucket per subject, HTTP 429 + MCP error, Prometheus metrics
+10. **Upload and index quotas** — 6 dimensions, schema v3→v4, CLI management, pre-enforcement
+11. **Multi-KB aggregated search** — kb_ids parameter, RRF fusion, score normalization, dedup
+12. **Provider budget & circuit breaker** — State machine, sliding window, fallback chain, 7 metrics
+13. **Request-level retrieval cache** — LRU with deterministic keys, TTL, invalidation hooks
+
+### What Worked
+
+- **Phases 29-37 executed efficiently at the tail end** — Connectors through retrieval cache shipped with minimal rework; most phases had single-plans that were completed in one session
+- **Two-phase deferral pattern** — Phases 24-25 identified early as lower priority and explicitly deferred, keeping milestone scope focused on enterprise features
+- **UAT-driven quality** — Phase 35 UAT caught connector auto-registration bug (empty `__init__.py`); fix applied before milestone close
+- **Competitive intelligence** — Referencing existing OSS projects (mcp-rag, qdrant-loader, local_faiss_mcp) informed design decisions for phases 29-37
+
+### What Was Inefficient
+
+- **Missing Phase 35 SUMMARY.md** — Phase 35 was executed but the plan's `output` instruction to create SUMMARY.md wasn't followed; had to be created retroactively at milestone close
+- **CONTEXT.md questions never resolved** — 27 open design questions across 9 CONTEXT.md files were answered via code but never documented in the context files; had to be acknowledged as deferred at close
+- **Phase 26-28 didn't have planning directories** — These were executed in a different session without creating `.planning/phases/` directories, creating a gap in execution history
+
+### Patterns Established
+
+- **Eager connector import registration** — `ingest/connectors/__init__.py` must eagerly import submodules for factory auto-registration
+- **Resilience wrapper pattern** — `_try_provider()` + `_dispatch_with_resilience()` for provider fallback chain
+- **Cache structured results** — Cache `list[dict]` before rendering, not rendered output
+- **Version enumeration in env vars** — `KB_REGISTRY_DB_PATH` and similar for registry paths
+
+### Key Lessons
+
+1. **Plan output instructions must be verified** — Each plan with an `output` section specifying files to create needs verification at completion
+2. **Context.md questions should be archived when resolved** — Either answer inline or note "resolved via code" to avoid open questions at milestone close
+3. **Phase directory creation should be part of /gsd-init** — Ensures every phase has consistent artifact tracking
+4. **Batch phases benefit from a coordinator pass** — The 2-wave structure (29-35, 36-37) worked well; consider structured wave planning for future multi-phase milestones
+
+### Cost Observations
+
+- Model: claude-sonnet-4.6 throughout
+- Sessions: ~10 across 15 days
+- Most expensive phases: Phase 29 (4 plans: foundation + 3 connectors) with the most file creation
+- Notable: Phases 23 and 26-28 were lightweight (documentation + config), phases 29-37 were heavier (new modules, tests, schemas)
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Tests | Coverage | Duration |
 |-----------|--------|-------|----------|----------|
 | v1.0 | 4 | 491 | 88% | 5 days |
+| v1.1 | 4 | 576 | 90% | 8 days |
+| v1.2 | 4 | 585 | 90% | 13 days |
+| v1.3 | 11 | 656 | 90% | 3 days |
+| v1.4 | 13 | 1095 | 90% | 15 days |
