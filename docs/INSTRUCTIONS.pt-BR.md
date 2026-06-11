@@ -92,10 +92,17 @@ kb-rag-mcp/
 │   ├── collections/       # Roteamento multi-coleção (FASE 15)
 │   │   ├── manager.py     # CollectionManager — CRUD de coleções Qdrant
 │   │   └── router.py      # CollectionRouter — resolve/ensure por parâmetro
+│   ├── auth.py            # Autenticação opcional via Bearer token (FASE 32)
+│   ├── auth_registry.py   # Registry de chaves SHA-256 (FASE 32)
+│   ├── rate_limiter.py    # Rate limiting por assunto (FASE 33)
+│   ├── circuit_breaker.py # State machine CLOSED/OPEN/HALF_OPEN (FASE 36)
+│   ├── provider_budget.py # Orçamento por provider com sliding window (FASE 36)
+│   ├── prompts.py         # Templates de prompt MCP (FASE 31)
 │   ├── cache/             # Sistema de cache (LRU + Redis opcional)
 │   │   ├── lru.py         # Cache LRU com auto-tune de RAM
 │   │   ├── redis.py       # Backend Redis opcional
-│   │   └── manager.py     # Interface unificada
+│   │   ├── manager.py     # Interface unificada
+│   │   └── request_cache.py # Cache de busca em nível de requisição (FASE 37)
 │   ├── retrieval/         # Busca híbrida (BM25+dense RRF) + reranker
 │   ├── ui/                # Web UI FastAPI+HTMX
 │   └── telemetry/         # Query logger SQLite (90 dias de retenção)
@@ -106,8 +113,16 @@ kb-rag-mcp/
 │   ├── parsers/
 │   │   ├── legacy_office.py  # .doc, .xls, .ppt, .odt, .ods, .odp, .wpd
 │   │   └── zip_handler.py    # Extração recursiva de arquivos ZIP
+│   ├── connectors/        # Conectores empresariais (FASE 29)
+│   │   ├── factory.py     # Registry + create_connector
+│   │   ├── base.py        # ConnectorBase ABC
+│   │   ├── confluence.py  # Conector Confluence (Cloud + Server/DC)
+│   │   ├── jira.py        # Conector JIRA (Cloud + Data Center)
+│   │   ├── git.py         # Conector Git (clone/pull, incremental)
+│   │   └── staging.py     # Stage de documentos remotos
+│   ├── graph_builder.py   # Metadados de grafo de conhecimento (FASE 30)
 │   ├── core/
-│   │   └── metadata.py    # Schema v2 (jobs, job_progress, files)
+│   │   └── metadata.py    # Schema v4 (jobs, job_progress, files, quotas)
 │   ├── job/               # Sistema de jobs SQLite com prioridades
 │   │   ├── models.py      # Dataclasses Job/JobStatus/JobPriority
 │   │   ├── manager.py     # JobManager (CRUD + lifecycle)
@@ -194,6 +209,14 @@ que leia `os.getenv()` — padrão crítico mantido em todos os entrypoints.
 | `LOG_PATH` | `/tmp/kb-mcp.log` | Caminho do arquivo de log |
 | `REGISTRY_DB` | `data/registry.db` | SQLite v1 (legado) |
 | `METADATA_DB` | `data/kb_metadata.db` | SQLite v2 (jobs + files) |
+| `AUTH_ENABLED` | `false` | Habilita autenticação Bearer token no SSE (FASE 32) |
+| `AUTH_DB_PATH` | `data/auth.db` | Caminho do SQLite de chaves de API |
+| `RATE_LIMIT_ENABLED` | `false` | Habilita rate limiting por assunto (FASE 33) |
+| `RATE_LIMIT_REQUESTS` | `100` | Máx. requisições por janela de tempo |
+| `RATE_LIMIT_WINDOW` | `60` | Janela de tempo em segundos |
+| `CIRCUIT_BREAKER_THRESHOLD` | `5` | Falhas consecutivas antes de OPEN (FASE 36) |
+| `CIRCUIT_BREAKER_COOLDOWN` | `30` | Cooldown inicial em segundos |
+| `RETRIEVAL_CACHE_TTL` | `300` | TTL do cache de busca em segundos (FASE 37) |
 
 ### Normalização de URL (embed_client.py)
 
@@ -222,6 +245,14 @@ Cada backend adiciona o path correto:
 | `product` | string | — | Filtro de produto |
 | `doc_type` | string | — | Filtro de tipo de documento |
 | `filter_type` | string | — | Formato: `pdf`, `docx`, `xlsx`, `pptx`, `txt`, `code` |
+| `version` | string | — | Filtro por versão do produto (FASE 13) |
+| `vendor` | string | — | Filtro por fornecedor (FASE 11.1) |
+| `subsystem` | string | — | Filtro por subsistema (FASE 11.1) |
+| `module` | string | — | Filtro por módulo (FASE 17) |
+| `hybrid` | boolean | — | Busca híbrida dense + BM25 sparse (FASE 12) |
+| `rerank` | boolean | — | Re-ranking com cross-encoder (FASE 12) |
+| `collection` | string | — | Coleção Qdrant alvo (FASE 15) |
+| `kb_ids` | string[] | — | Busca multi-KB agregada (FASE 35) |
 
 **Retorno:** Lista de chunks com `chunk_id`, `score`, `text`, `source_file`,
 `product`, `doc_type`, `file_type`, `page`.
@@ -241,6 +272,27 @@ Retorna documentos agrupados por `doc_type`.
 ### `kb_stats` — Estatísticas
 
 Estatísticas da KB: total de documentos, chunks, breakdown por `doc_type` e formato.
+
+### `list_collections` — Listar Coleções (FASE 15)
+
+Lista todas as coleções Qdrant disponíveis.
+
+### `list_filter_options` — Listar Opções de Filtro (FASE 17)
+
+Lista valores disponíveis para atributos (product, vendor, doc_type, etc.).
+
+### `get_related_documents` — Documentos Relacionados (FASE 30)
+
+Retorna chunks de documentos relacionados por grafo de conhecimento.
+
+### `explore_topic` — Explorar Tópico (FASE 30)
+
+Busca documentos por tópicos do grafo de conhecimento.
+
+### Prompts MCP (FASE 31)
+
+- **`extract_answer`** — Prompt para extrair resposta fundamentada de resultados de busca
+- **`summarize_documents`** — Prompt para resumir documentos com seções
 
 ---
 
@@ -305,6 +357,8 @@ Inferida automaticamente por `ingest/classifier.py` via regex no nome do arquivo
 | `zip` | .zip | stdlib zipfile (recursivo) | — (máx 2 níveis, 500 MB/entry) |
 
 Veja [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes sobre formatos legados e extração ZIP.
+
+**Conectores empresariais (FASE 29):** Também é possível ingerir de fontes remotas como Confluence, JIRA e Git. Consulte [AUTO_INGESTION.md](AUTO_INGESTION.md) para configuração de conectores.
 
 ### Configurações de Chunking
 
@@ -460,7 +514,7 @@ CREATE TABLE files (
 
 ### Métricas Prometheus (observability/metrics.py)
 
-**15 métricas:**
+**28+ métricas (v1.4):**
 
 **Jobs:**
 - `kb_ingest_jobs_created_total` (Counter, labels: priority)
@@ -491,6 +545,19 @@ CREATE TABLE files (
 - `kb_rag_cache_hits_total` / `kb_rag_cache_misses_total` (Counter, labels: backend)
 - `kb_rag_cache_evictions_total` (Counter, labels: backend, reason)
 - `kb_rag_cache_size_bytes` / `kb_rag_cache_entries` (Gauge, labels: backend)
+
+**Provider Resilience (FASE 36):**
+- `kb_provider_requests_total{provider}` — Total de requisições por provider
+- `kb_provider_errors_total{provider}` — Total de erros por provider
+- `kb_provider_circuit_state{provider,state}` — Estado do circuit breaker (1=CLOSED, 2=OPEN, 3=HALF_OPEN)
+- `kb_provider_fallbacks_total{from,to}` — Eventos de fallback entre providers
+- `kb_provider_skipped_circuit_open_total{provider}` — Requisições ignoradas por OPEN
+- `kb_provider_skipped_budget_exhausted_total{provider}` — Requisições ignoradas por orçamento esgotado
+- `kb_provider_circuit_opened_total{provider}` — Transições para estado OPEN
+
+**Retrieval Cache (FASE 37):**
+- `kb_retrieval_cache_hits_total` — Cache hit no cache de busca
+- `kb_retrieval_cache_misses_total` — Cache miss no cache de busca
 
 **MetricsCollector:**
 - Container para todas as métricas
@@ -703,32 +770,21 @@ from kb_server.embed_client import get_embedding
 
 ## 15. Melhorias Planejadas
 
-### ✅ Implementado (FASE 11)
+Todas as fases v1.3 (FASEs 1-16) e v1.4 (FASEs 29-37) foram implementadas.
 
-- **Formatos legados:** `.doc` (docx2txt), `.xls` (xlrd), `.ppt` (python-pptx),
-  `.odt`/`.ods`/`.odp` (odfpy), `.wpd` (heurístico) — `ingest/parsers/legacy_office.py`
-- **Extração ZIP:** Recursiva até 2 níveis, 500 MB/entry limit — `ingest/parsers/zip_handler.py`
+### v1.4 — Platform, Analytics & Enterprise (FASEs 29-37)
 
-Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes completos.
-
-### Alta Prioridade (implementado)
-
-- [x] **Reranking:** Cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) sobre top-20 — `kb_server/retrieval/reranker.py`
-- [x] **Busca híbrida:** Dense + BM25 sparse com RRF fusion — `kb_server/retrieval/hybrid_search.py`
-- [x] **Payload indexing:** Índices em `product`, `doc_type`, `source` no Qdrant
-
-### Média Prioridade (implementado)
-
-- [x] **File watcher:** `watchdog` para ingestão automática — `ingest/watcher/file_watcher.py`
-- [x] **Versão no payload:** Extração de versão do produto (ex: `22.3`, `CE 24.4`) — `ingest/core/version_extractor.py`
-- [x] **_meta.json por pasta:** Override de product/doc_type sem mover arquivos
-
-### Baixa Prioridade (implementado)
-
-- [x] **UI de inspeção:** FastAPI + HTMX para navegação/testes — `kb_server/ui/`
-- [x] **Métricas de uso:** Query logger SQLite 90 dias — `kb_server/telemetry/`
-- [x] **Múltiplas coleções (FASE 15):** `CollectionManager` + `CollectionRouter` + tool `list_collections` + Kubernetes/Helm
-- [x] **Export do registry:** CSV/JSON para auditoria — `ingest/cli/export.py`
+| FASE | Título | Entregas |
+|------|--------|----------|
+| 29 | Conectores Enterprise | Confluence, JIRA, Git via factory pattern |
+| 30 | Grafo de Conhecimento | Metadados de grafo, get_related_documents, explore_topic |
+| 31 | Prompts MCP | extract_answer, summarize_documents |
+| 32 | Autenticação por API Key | AUTH_ENABLED, CLI auth create/list/revoke |
+| 33 | Rate Limiting | RATE_LIMIT_ENABLED, token bucket por assunto |
+| 34 | Cotas de Upload | CLI quota show/set/reset, schema v3→v4 |
+| 35 | Busca Multi-KB Agregada | kb_ids, resolve_multi, merge com RRF |
+| 36 | Circuit Breaker & Budget | Provider resilience, fallback chain |
+| 37 | Cache de Busca | Request-level cache com invalidação |
 
 ---
 
@@ -739,10 +795,24 @@ Consulte [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes completos.
 bash scripts/setup.sh local        # ou lxc
 python scripts/health_check.py
 
-# Ingestão
+# Ingestão local
 source .venv/bin/activate
 python ingest/ingest.py --docs /caminho/docs
 python ingest/ingest.py --status --list
+
+# Ingestão via conectores empresariais (FASE 29)
+python -m ingest.cli.main connectors list
+python -m ingest.cli.main connectors stage --type confluence --source-key wiki
+
+# Gerenciamento de chaves de API (FASE 32)
+python -m ingest.cli.main auth create --scope global --description "minha-chave"
+python -m ingest.cli.main auth list
+python -m ingest.cli.main auth revoke <prefixo>
+
+# Gerenciamento de cotas (FASE 34)
+python -m ingest.cli.main quota show
+python -m ingest.cli.main quota set --max-files 50000
+python -m ingest.cli.main quota reset
 
 # Servidor (teste manual)
 python kb_server/server.py
@@ -762,7 +832,7 @@ curl http://localhost:6333/healthz
 curl http://localhost:6333/collections
 
 # Métricas (se endpoint habilitado)
-curl http://localhost:9090/metrics | grep kb_
+curl http://localhost:8081/metrics | grep kb_
 \`\`\`
 
 ---
@@ -853,5 +923,5 @@ para acelerar o trabalho.
 
 ---
 
-**Última atualização:** 2026-05-18  
-**Versão:** 3.0 (FASE 1-11 completas — formatos legados e ZIP implementados)
+**Última atualização:** 2026-06-11  
+**Versão:** 4.0 (v1.4 completo — FASEs 1-37)
