@@ -130,7 +130,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 23. Documentation Overhaul | v1.4 | 3/3 | Complete | 2026-05-27 |
 | 24. RAGAS Evaluation Pipeline | v1.4 | 0/0 | Deferred | — |
-| 25. Optimization Experiments | v1.4 | 4/4 | Planned | 2026-06-11 |
+| 25. Optimization Experiments | v1.4 | 3/4 | In Progress|  |
 | 26. KB Content Discoverability | v1.4 | 1/1 | Complete | 2026-06-03 |
 | 27. Knowledge Base Registry | v1.4 | 3/3 | Complete | 2026-06-03 |
 | 28. MCP Streamable HTTP | v1.4 | 1/1 | Complete | 2026-06-03 |
@@ -174,11 +174,11 @@ Items derived from competitive analysis and future planning. Each item is a cand
 **Goal:** Run systematic chunking and scoring experiments to optimize retrieval quality and provide actionable recommendations for RAG configuration.
 **Requirements:** OPT-01, OPT-02, OPT-03
 **Depends on:** Phase 24
-**Plans:** 4 plans
+**Plans:** 3/4 plans executed
 
 Plans:
 
-- [ ] 25-01-PLAN.md — Core infrastructure: config, metric_computer, result_store
-- [ ] 25-02-PLAN.md — Chunking experiments: fixed, recursive, semantic strategies
-- [ ] 25-03-PLAN.md — Scoring experiments: dense, hybrid, reranked variants
+- [x] 25-01-PLAN.md — Core infrastructure: config, metric_computer, result_store
+- [x] 25-02-PLAN.md — Chunking experiments: fixed, recursive, semantic strategies
+- [x] 25-03-PLAN.md — Scoring experiments: dense, hybrid, reranked variants
 - [ ] 25-04-PLAN.md — Experiment runner + CLI: `kb-rag optimize` command
