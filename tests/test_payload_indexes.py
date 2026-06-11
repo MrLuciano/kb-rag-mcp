@@ -46,9 +46,9 @@ class TestPayloadIndexCreation:
         assert mock_client.create_collection.called
         
         # Verify indexes created for both fields
-        assert mock_client.create_payload_index.call_count == 3
+        assert mock_client.create_payload_index.call_count == 6
         
-        # Check that 'product', 'doc_type', and 'version' were indexed
+        # Check that all 6 expected fields are indexed
         calls = mock_client.create_payload_index.call_args_list
         indexed_fields = [
             call.kwargs["field_name"] for call in calls
@@ -56,6 +56,9 @@ class TestPayloadIndexCreation:
         assert "product" in indexed_fields
         assert "doc_type" in indexed_fields
         assert "version" in indexed_fields
+        assert "doc_graph_id" in indexed_fields
+        assert "graph_topics" in indexed_fields
+        assert "graph_related" in indexed_fields
         
         # Schema type is PayloadSchemaType.KEYWORD — verified implicitly
         # by the production code; asserting the enum value here is fragile

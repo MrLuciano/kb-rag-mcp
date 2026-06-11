@@ -101,8 +101,9 @@ async def test_create_collection_uses_custom_vector_size(client, manager):
 async def test_create_collection_creates_payload_indexes(client, manager):
     client.get_collections.return_value = _make_collections()
     await manager.create_collection("col")
-    # 3 payload indexes: product, doc_type, source
-    assert client.create_payload_index.await_count == 3
+    # 6 payload indexes: product, doc_type, source, doc_graph_id,
+    # graph_topics, graph_related
+    assert client.create_payload_index.await_count == 6
 
 
 # ------------------------------------------------------------------

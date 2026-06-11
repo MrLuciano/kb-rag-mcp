@@ -187,7 +187,7 @@ class TestEnsureCollection:
         mc.create_collection.assert_not_called()
 
     def test_create_payload_indexes_called_for_three_fields(self):
-        """Line 115: _create_payload_indexes called → 3 index creations."""
+        """Line 115: _create_payload_indexes called → 6 index creations."""
         vs, mc = _make_store_with_mock()
         mc.get_collections.return_value = MagicMock(collections=[])
         mc.create_collection = AsyncMock()
@@ -195,7 +195,7 @@ class TestEnsureCollection:
 
         _run(vs._ensure_collection())
 
-        assert mc.create_payload_index.call_count == 3
+        assert mc.create_payload_index.call_count == 6
 
     def test_create_payload_indexes_ignores_exception(self):
         """Lines 137-141: exception in create_payload_index is swallowed."""

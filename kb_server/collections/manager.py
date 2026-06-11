@@ -12,7 +12,11 @@ log = logging.getLogger(__name__)
 # HNSW settings — mirrors VectorStore._ensure_collection
 _HNSW_M = 16
 _HNSW_EF = 100
-_PAYLOAD_INDEXES = ["product", "doc_type", "source"]
+_PAYLOAD_INDEXES = [
+    "product", "doc_type", "source",
+    # PHASE 30: Graph metadata fields
+    "doc_graph_id", "graph_topics", "graph_related",
+]
 
 
 class CollectionManager:

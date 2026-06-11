@@ -138,7 +138,11 @@ class VectorStore:
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
         
-        indexed_fields = ["product", "doc_type", "version"]        
+        indexed_fields = [
+            "product", "doc_type", "version",
+            # PHASE 30: Graph metadata fields
+            "doc_graph_id", "graph_topics", "graph_related",
+        ]
         for field in indexed_fields:
             try:
                 await self.client.create_payload_index(
@@ -891,10 +895,84 @@ class VectorStore:
         log.info(f"Updated {len(point_ids)} chunks for {source_file}")
         return len(point_ids)
 
+    # ── PHASE 30: Graph introspection helpers ──────────────────────────────
+
+    async def list_documents_by_graph_id(
+        self,
+        doc_graph_id: str,
+        limit: int = 20,
+        collection_name: str | None = None,
+    ) -> list[dict]:
+        """Return chunks belonging to a specific document graph ID.
+
+        Args:
+            doc_graph_id: The stable ``doc_graph_id`` value to search for.
+            limit: Maximum chunks to return (default 20).
+            collection_name: Override target collection (PHASE 15).
+
+        Returns:
+            List of chunk payload dicts matching the graph ID.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+        query_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="doc_graph_id",
+                    match=MatchValue(value=doc_graph_id),
+                )
+            ]
+        )
+        results, _ = await self.client.scroll(
+            collection_name=collection_name or self.collection,
+            scroll_filter=query_filter,
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+        return [r.payload for r in results]
+
+    async def get_graph_topic_summary(
+        self,
+        collection_name: str | None = None,
+    ) -> dict[str, int]:
+        """Return a summary of graph topic counts across the collection.
+
+        Scrolls all chunks to aggregate ``graph_topics`` field values.
+        Best-effort; may be slow on large collections. Intended for
+        analytics and admin tooling rather than per-request use.
+
+        Args:
+            collection_name: Override target collection (PHASE 15).
+
+        Returns:
+            Dict mapping topic label to chunk count.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+        counts: dict[str, int] = {}
+        offset: str | None = None
+        while True:
+            results, offset = await self.client.scroll(
+                collection_name=collection_name or self.collection,
+                limit=500,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            for r in results:
+                topics = r.payload.get("graph_topics", [])
+                if isinstance(topics, list):
+                    for t in topics:
+                        counts[t] = counts.get(t, 0) + 1
+            if offset is None:
+                break
+        return counts
+
     async def close(self) -> None:
         """
         PHASE 8: Cleanup Qdrant client connections.
-        
+
         Call on server shutdown for graceful cleanup.
         """
         if self.client is not None:

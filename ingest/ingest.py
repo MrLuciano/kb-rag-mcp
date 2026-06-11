@@ -441,6 +441,7 @@ async def process_file(
         or 'error'.
     """
     from ingest.classifier import classify
+    from ingest.graph_builder import build_graph_metadata
     from kb_server.embed_client import get_embeddings_batch
 
     ext = file_path.suffix.lower()
@@ -511,6 +512,19 @@ async def process_file(
                 # PHASE 13: Add version if available
                 if version:
                     chunk_data["version"] = version
+                # PHASE 30: Graph metadata
+                graph_meta = build_graph_metadata(
+                    text=chunk_text_content,
+                    source_file=source_file,
+                    meta={
+                        "product": product,
+                        "doc_type": doc_type,
+                        "vendor": vendor,
+                        "subsystem": subsystem,
+                        "module": module,
+                    },
+                )
+                chunk_data.update(graph_meta)
                 all_chunks_data.append(chunk_data)
                 chunk_index += 1
 
