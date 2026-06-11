@@ -227,6 +227,89 @@ class HybridSearcher:
         return fused_results
 
 
+# ── PHASE 35: Multi-KB merge helpers ──────────────────────────────
+
+
+def _min_max_normalize(
+    results: list[dict],
+) -> list[dict]:
+    """Min-max normalize scores in a result list to [0, 1]."""
+    if not results:
+        return results
+    scores = [r["score"] for r in results]
+    lo, hi = min(scores), max(scores)
+    if hi - lo < 1e-9:
+        for r in results:
+            r["score"] = 1.0
+        return results
+    for r in results:
+        r["score"] = (r["score"] - lo) / (hi - lo)
+    return results
+
+
+def merge_multi_collection_results(
+    per_collection: dict[str, list[dict]],
+    top_k: int,
+    rrf_k: int = 60,
+) -> list[dict]:
+    """Merge results from multiple collections with score normalization and RRF.
+
+    Steps:
+    1. Normalize scores to [0,1] per collection (min-max scaling)
+    2. RRF fusion across all results
+    3. Deduplicate by ``chunk_id`` (keep highest RRF score)
+    4. Return top-k results
+
+    Each result carries a ``"_collection"`` field for provenance.
+
+    Args:
+        per_collection: Maps collection name → list of result dicts.
+        top_k: Number of results to return.
+        rrf_k: RRF constant (default 60).
+
+    Returns:
+        Merged, deduplicated, top-k result list.
+    """
+    all_results: list[dict] = []
+    for _coll, items in per_collection.items():
+        if not items:
+            continue
+        items = _min_max_normalize(items)
+        for rank, item in enumerate(items):
+            rrf = 1.0 / (rrf_k + rank + 1)
+            item["_rrf_score"] = rrf
+        all_results.extend(items)
+
+    if not all_results:
+        return []
+
+    # Aggregate RRF scores by chunk_id
+    score_map: dict[str, float] = {}
+    result_map: dict[str, dict] = {}
+    for item in sorted(all_results, key=lambda x: -x.get("_rrf_score", 0)):
+        cid = item["chunk_id"]
+        prev = score_map.get(cid, 0.0)
+        score_map[cid] = prev + item.get("_rrf_score", 0)
+        if cid not in result_map:
+            result_map[cid] = item
+
+    # Sort by aggregated RRF score
+    ranked = sorted(score_map.items(), key=lambda x: -x[1])
+
+    merged = []
+    for cid, rrf_total in ranked[:top_k]:
+        entry = result_map[cid].copy()
+        entry["score"] = rrf_total
+        entry["fusion"] = "rrf"
+        merged.append(entry)
+
+    log.info(
+        "Multi-collection merge: %d collections, %d unique chunks → %d results",
+        len(per_collection), len(score_map), len(merged),
+    )
+    return merged
+
+
 # Global instance (lazy loaded)
 _hybrid_searcher: HybridSearcher | None = None
 

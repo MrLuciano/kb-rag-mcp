@@ -253,6 +253,17 @@ async def list_tools() -> list[types.Tool]:
                             "Omit to use the default collection (QDRANT_COLLECTION)."
                         ),
                     },
+                    "kb_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": (
+                            "PHASE 35: Search across multiple knowledge bases. "
+                            "Provide a list of KB identifiers (e.g. kb_main, kb_hr). "
+                            "Results are merged with RRF fusion and deduplication. "
+                            "Omit to search a single KB using the collection parameter "
+                            "or default collection."
+                        ),
+                    },
                 },
                 "required": ["query"],
             },
@@ -601,33 +612,67 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     hybrid = args.get("hybrid", False)
     rerank = args.get("rerank", False)
     collection_param = args.get("collection")
+    kb_ids = args.get("kb_ids")  # PHASE 35: Multi-KB
 
     # PHASE 15: resolve target collection (raises CollectionNotFoundError if missing)
     target_collection = getattr(store, "collection", None)
-    if collection_router is not None:
+    if collection_router is not None and not kb_ids:
         try:
             target_collection = await collection_router.resolve(collection_param)
         except CollectionNotFoundError as exc:
             return [types.TextContent(type="text", text=str(exc))]
 
+    # PHASE 35: Resolve multi-KB collection list
+    if collection_router is not None and kb_ids:
+        try:
+            multi_collections = await collection_router.resolve_multi(kb_ids)
+        except CollectionNotFoundError as exc:
+            return [types.TextContent(type="text", text=str(exc))]
+    else:
+        multi_collections = []
+
     log.info(
         f"search_kb: '{query}' top_k={top_k} product={product} "
         f"doc_type={doc_type} version={version} vendor={vendor} "
         f"subsystem={subsystem} module={module} file_type={filter_type} "
-        f"hybrid={hybrid} rerank={rerank}"
+        f"hybrid={hybrid} rerank={rerank} kb_ids={kb_ids}"
     )
 
     vector = await get_embedding(query)
     
     # PHASE 12: Determine retrieve_k for reranking
-    # If reranking, retrieve more results (up to 4x) for better reranking pool
     retrieve_k = top_k
     if rerank:
         retrieve_k = min(top_k * 4, 20)
         log.info(f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}")
-    
+
+    # PHASE 35: Multi-KB aggregated search path
+    if multi_collections:
+        from kb_server.retrieval.hybrid_search import (
+            merge_multi_collection_results,
+        )
+
+        per_collection = await store.multi_search(
+            vector=vector,
+            collection_names=multi_collections,
+            top_k=retrieve_k,
+            filter_type=filter_type,
+            product=product,
+            doc_type=doc_type,
+            version=version,
+            vendor=vendor,
+            subsystem=subsystem,
+            module=module,
+        )
+        results = merge_multi_collection_results(
+            per_collection, top_k=top_k
+        )
+        log.info(
+            "Multi-KB search: %d collections → %d results",
+            len(multi_collections), len(results),
+        )
     # PHASE 12: Route to hybrid search if enabled
-    if hybrid:
+    elif hybrid:
         from kb_server.retrieval.hybrid_search import get_hybrid_searcher
         
         log.info("Using hybrid search (dense + sparse)")
@@ -640,7 +685,7 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             filter_type=filter_type,
             product=product,
             doc_type=doc_type,
-            version=version,  # PHASE 13: Pass version to hybrid search
+            version=version,
         )
     else:
         # Standard dense vector search
@@ -659,8 +704,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             _search_kwargs["collection_name"] = target_collection  # PHASE 15
         results = await store.search(**_search_kwargs)
     
-    # PHASE 12: Apply reranking if enabled
-    if rerank and results:
+    # PHASE 12: Apply reranking if enabled (skip for multi-KB — already merged)
+    if rerank and results and not multi_collections:
         from kb_server.retrieval.reranker import get_reranker
         
         log.info(f"Applying cross-encoder reranking to {len(results)} results")
@@ -675,11 +720,9 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         except Exception as e:
             log.error(f"Reranking failed: {e}", exc_info=True)
             log.warning("Falling back to original results")
-            # Fallback: use original results, truncate to top_k
             results = results[:top_k]
 
     if not results:
-        # PHASE 14: Log query with zero results
         latency_ms = (time.time() - start_time) * 1000
         if query_logger:
             try:
@@ -714,8 +757,11 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
 
     lines = [f'## Results for: "{query}"\n']
     
-    # Add search mode indicator
     mode_indicators = []
+    if multi_collections:
+        mode_indicators.append(
+            f"multi-KB ({', '.join(multi_collections)})"
+        )
     if hybrid:
         mode_indicators.append("hybrid")
     if rerank:
@@ -725,15 +771,24 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     
     for i, r in enumerate(results, 1):
         score_pct = f"{r['score'] * 100:.1f}%"
-        lines.append(
-            f"### [{i}] {r['source_file']}  (relevance: {score_pct})"
-        )
-        lines.append(
+        source = r['source_file']
+        coll_tag = r.get("_collection", "")
+        meta = (
             f"**ID:** `{r['chunk_id']}`  |  "
             f"**Product:** {r.get('product','n/a')}  |  "
             f"**Type:** {r.get('doc_type','n/a')}  |  "
             f"**Format:** {r['file_type']}"
         )
+        if coll_tag:
+            source = f"{source} [KB: {coll_tag}]"
+            meta = (
+                f"**ID:** `{r['chunk_id']}`  |  "
+                f"**KB:** `{coll_tag}`  |  "
+                f"**Product:** {r.get('product','n/a')}  |  "
+                f"**Type:** {r.get('doc_type','n/a')}"
+            )
+        lines.append(f"### [{i}] {source}  (relevance: {score_pct})")
+        lines.append(meta)
         if r.get("page"):
             lines.append(f"**Page/section:** {r['page']}")
         lines.append("")
@@ -742,11 +797,9 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
 
     lines.append("\n*Use `get_chunk` with the ID to get expanded context.*")
     
-    # PHASE 14: Log query if enabled
     latency_ms = (time.time() - start_time) * 1000
     if query_logger:
         try:
-            # Build filters dict
             filters = {}
             if product:
                 filters['product'] = product
@@ -755,13 +808,12 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             if filter_type:
                 filters['file_type'] = filter_type
             
-            # Extract scores
             scores = [r['score'] for r in results]
             
             query_logger.log_query(
                 query_text=query,
                 top_k=top_k,
-                score_threshold=None,  # Not exposed in API yet
+                score_threshold=None,
                 filters=filters if filters else None,
                 version_filter=version,
                 result_count=len(results),

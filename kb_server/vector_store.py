@@ -5,6 +5,7 @@ Manages collections, semantic search, filters, and metadata.
 PHASE 8: Enhanced with connection pooling and batch optimizations.
 """
 
+import asyncio
 import logging
 import os
 import time
@@ -249,6 +250,55 @@ class VectorStore:
             }
             for r in response.points
         ]
+
+    async def multi_search(
+        self,
+        vector: list[float],
+        collection_names: list[str],
+        top_k: int = 5,
+        filter_type: str | None = None,
+        product: str | None = None,
+        doc_type: str | None = None,
+        version: str | None = None,
+        vendor: str | None = None,
+        subsystem: str | None = None,
+        module: str | None = None,
+    ) -> dict[str, list[dict]]:
+        """Search across multiple collections in parallel.
+
+        Runs :meth:`search` on each collection concurrently and returns
+        results keyed by collection name. Each result carries an extra
+        ``"_collection"`` field for provenance tracking.
+
+        Returns:
+            Mapping of collection name → list of result dicts.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+
+        async def _search_one(coll: str) -> tuple[str, list[dict]]:
+            items = await self.search(
+                vector=vector,
+                top_k=top_k,
+                filter_type=filter_type,
+                product=product,
+                doc_type=doc_type,
+                version=version,
+                vendor=vendor,
+                subsystem=subsystem,
+                module=module,
+                collection_name=coll,
+            )
+            for item in items:
+                item["_collection"] = coll
+            return coll, items
+
+        tasks = [_search_one(c) for c in collection_names]
+        results: dict[str, list[dict]] = {}
+        for coro in asyncio.as_completed(tasks):
+            coll, items = await coro
+            results[coll] = items
+        return results
 
     async def search_sparse(
         self,

@@ -46,3 +46,38 @@ class CollectionRouter:
         await self.manager.create_collection(name)  # no-op if already exists
         log.info("Ensured collection: '%s'", name)
         return name
+
+    async def resolve_multi(self, kb_ids: list[str] | None) -> list[str]:
+        """Resolve multiple KB identifiers to collection names.
+
+        Each ``kb_id`` is expected to correspond to a Qdrant collection
+        name (matching the ``kb_<id>`` naming convention from Phase 27).
+        Collections are validated to exist; missing ones raise
+        ``CollectionNotFoundError`` with the first failure.
+
+        Args:
+            kb_ids: List of KB identifiers, or ``None`` for single-KB mode.
+
+        Returns:
+            List of resolved collection names.
+
+        Raises:
+            CollectionNotFoundError: If any kb_id maps to a non-existent
+                collection.
+        """
+        if not kb_ids:
+            return [self.default]
+
+        names: list[str] = []
+        for kb_id in kb_ids:
+            if not await self.manager.collection_exists(kb_id):
+                log.warning(
+                    "Collection for kb_id '%s' does not exist", kb_id
+                )
+                raise CollectionNotFoundError(
+                    f"Knowledge base '{kb_id}' does not exist. "
+                    "Use list_collections to see available collections."
+                )
+            names.append(kb_id)
+        log.debug("Resolved %d KB IDs to collections", len(names))
+        return names
