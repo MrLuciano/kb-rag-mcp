@@ -67,8 +67,10 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
+## v1.4 Platform, Analytics & Enterprise
+
 <details open>
-<summary>◆ v1.4 Platform, Analytics & Enterprise (Phases 23–37) — ACTIVE</summary>
+<summary>◆ v1.4 Phase Overview — ACTIVE</summary>
 
 **Completed:**
 
@@ -80,9 +82,10 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Deferred (low priority):**
 
 - [ ] Phase 24: RAGAS Evaluation Pipeline — 3 plans created, execution deferred
-- [ ] Phase 25: Optimization Experiments — Chunking and scoring experiments
 
 **In Progress (planned, not started):**
+
+- [ ] Phase 25: Optimization Experiments — Chunking and scoring experiments
 
 - [ ] Phase 29: Enterprise Data Source Connectors — Confluence (Cloud + Data Center), JIRA (Cloud + Data Center), Git repositories
 - [ ] Phase 30: Cross-Document Knowledge Graph — similarity clustering, entity extraction, topic modeling
@@ -127,7 +130,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 23. Documentation Overhaul | v1.4 | 3/3 | Complete | 2026-05-27 |
 | 24. RAGAS Evaluation Pipeline | v1.4 | 0/0 | Deferred | — |
-| 25. Optimization Experiments | v1.4 | 0/0 | Deferred | — |
+| 25. Optimization Experiments | v1.4 | 0/0 | Planned | — |
 | 26. KB Content Discoverability | v1.4 | 1/1 | Complete | 2026-06-03 |
 | 27. Knowledge Base Registry | v1.4 | 3/3 | Complete | 2026-06-03 |
 | 28. MCP Streamable HTTP | v1.4 | 1/1 | Complete | 2026-06-03 |
@@ -151,6 +154,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Source phase:** 35
 **Deferred at:** 2026-06-11 during /gsd-next advancement to Phase 37
 **Plans:**
+
 - [ ] 35-01: multi-kb-aggregated-search (ran, no SUMMARY.md)
 
 Items derived from competitive analysis and future planning. Each item is a candidate for v1.5 or later.
@@ -164,3 +168,17 @@ Items derived from competitive analysis and future planning. Each item is a cand
 - **SPA-01: Management SPA Panel** — Built-in web UI (`/app`) for document management, knowledge base admin, and configuration. Requires frontend build toolchain. Reuses / merge web-ui created before, adding the Classification items to the data table and allowing sorting of columns. Provides a link to grafana Dashboard.
 - **PROV-01: Provider Aliases** — Normalize provider names (e.g., `dashscope` → `aliyun`) for easier configuration.
 - **OBS-02: Request Identity Middleware** — `X-Request-Id` and `X-Trace-Id` headers propagated through all operations for distributed tracing.
+
+### Phase 25: Optimization Experiments
+
+**Goal:** Run systematic chunking and scoring experiments to optimize retrieval quality and provide actionable recommendations for RAG configuration.
+**Requirements:** OPT-01, OPT-02, OPT-03
+**Depends on:** Phase 24
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] 25-01-PLAN.md — Core infrastructure: config, metric_computer, result_store
+- [ ] 25-02-PLAN.md — Chunking experiments: fixed, recursive, semantic strategies
+- [ ] 25-03-PLAN.md — Scoring experiments: dense, hybrid, reranked variants
+- [ ] 25-04-PLAN.md — Experiment runner + CLI: `kb-rag optimize` command
