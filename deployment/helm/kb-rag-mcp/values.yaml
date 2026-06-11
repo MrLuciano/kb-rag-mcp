@@ -81,6 +81,40 @@ redis:
       cpu: 500m
       memory: 512Mi
 
+# ── Ollama (embedding backend) ───────────────────────────────────────────────
+ollama:
+  enabled: false
+  model: "nomic-embed-text:v1.5"
+  replicas: 1
+  initPullModel: true
+  image:
+    repository: ollama/ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 11434
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: standard
+    accessMode: ReadWriteOnce
+  keepAlive: "24h"
+  numParallel: 1
+  maxLoadedModels: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  # GPU acceleration (optional, nomic-embed-text works fine on CPU)
+  gpu:
+    enabled: false
+    vendor: nvidia  # or "amd" for ROCm
+    count: 1
+
 # ── Prometheus / Grafana (monitoring) ────────────────────────────────────────
 monitoring:
   enabled: true

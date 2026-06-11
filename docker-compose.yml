@@ -1,3 +1,10 @@
+# kb-rag-mcp Docker Compose — Core services
+# Optional: Add Ollama for local embedding backend:
+#   docker compose -f docker-compose.yml -f deployment/docker-compose/ollama.yml up -d
+#
+# Optional: Add Redis for caching:
+#   docker compose -f docker-compose.yml -f deployment/docker-compose/redis.yml up -d
+
 services:
   qdrant:
     image: qdrant/qdrant:latest

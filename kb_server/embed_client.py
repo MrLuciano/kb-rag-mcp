@@ -92,6 +92,7 @@ KNOWN_DIMS = {
     "nomic-embed-text-v1.5": 768,
     "text-embedding-nomic-embed-text-v1.5-embedding": 768,
     "nomic-embed-text": 768,
+    "nomic-embed-text:v1.5": 768,
     "mxbai-embed-large": 1024,
     "text-embedding-3-small": 1536,
     "nomic-embed-code": 768,

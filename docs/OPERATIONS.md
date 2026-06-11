@@ -63,7 +63,7 @@ curl http://localhost:8080/health/detailed | jq '.components.embedding'
 kb-ingest check health
 ```
 
-### Embedding Backend (LM Studio)
+### Embedding Backend (LM Studio / Ollama)
 
 KB-RAG requires an embedding service to convert text into vector
 representations for semantic search. The server does not perform
@@ -73,8 +73,56 @@ embedding natively — it delegates to one of these backends:
 |---------|-----------|-------------|
 | LM Studio (SDK) | `lmstudio-sdk` | **Default.** Uses LM Studio's local inference server via SDK (port 1234) |
 | LM Studio (REST) | `lmstudio-rest` | REST API to LM Studio (port 1234) |
-| Ollama | `ollama` | Local Ollama instance |
+| Ollama | `ollama` | Local Ollama instance (recommended for Docker/K8s) |
 | OpenAI-compatible | `openai-compat` | Any OpenAI-compatible API |
+
+### Ollama Deployment (Optional)
+
+For Docker Compose and Kubernetes deployments, Ollama can be deployed as a
+self-contained embedding backend. The model `nomic-embed-text:v1.5` is used:
+
+- **Size:** 274MB (137M parameters, 768-dim)
+- **Memory:** ~1Gi runtime (274MB weights + 500MB overhead)
+- **GPU:** Optional — works on CPU
+- **Model:** `nomic-embed-text:v1.5` (2K context window)
+
+**Docker Compose:**
+```bash
+# Start Ollama alongside the main stack
+docker compose -f docker-compose.yml -f deployment/docker-compose/ollama.yml up -d
+
+# Pull model
+docker compose exec ollama ollama pull nomic-embed-text:v1.5
+
+# Configure .env
+export OLLAMA_HOST=http://localhost:11434
+export EMBED_BACKEND=ollama
+export EMBED_MODEL=nomic-embed-text:v1.5
+```
+
+**Kubernetes / Helm:**
+```bash
+helm install kb-rag-mcp ./deployment/helm/kb-rag-mcp \
+  --set ollama.enabled=true \
+  --set ollama.model=nomic-embed-text:v1.5
+```
+
+See [KUBERNETES.md](KUBERNETES.md) for full Helm configuration.
+
+**Configuration:**
+```bash
+# Set the backend
+export EMBED_BACKEND=ollama
+export OLLAMA_HOST=http://localhost:11434
+export EMBED_MODEL=nomic-embed-text:v1.5
+
+# Or via .env file (see config/.env.template)
+```
+
+#### Startup Requirements
+
+Before starting the KB-RAG server, ensure the embedding backend is
+running and reachable on the expected host:port.
 
 #### Configuration
 

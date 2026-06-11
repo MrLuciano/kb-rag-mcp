@@ -41,8 +41,8 @@ Choose your deployment mode:
 - [WEB_UI.md](WEB_UI.md) — Web UI for document browsing and search testing
 - [LEGACY_FORMATS.md](LEGACY_FORMATS.md) — Legacy Office (.doc/.xls/.ppt) and ZIP extraction rules
 - [MIGRATION.md](MIGRATION.md) — Export, import, and validate knowledge base backups
-- [OPERATIONS.md](OPERATIONS.md) — systemd services, backup, Prometheus, Grafana monitoring
-- [KUBERNETES.md](KUBERNETES.md) — Kubernetes deployment guide (Helm chart, multi-collection)
+- [OPERATIONS.md](OPERATIONS.md) — systemd services, backup, Prometheus, Grafana monitoring, Ollama embedding backend
+- [KUBERNETES.md](KUBERNETES.md) — Kubernetes deployment guide (Helm chart, multi-collection, Ollama deployment)
 - [SECURITY.md](SECURITY.md) — Threat model, hardening checklist, known limitations
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Common issues and fixes
 

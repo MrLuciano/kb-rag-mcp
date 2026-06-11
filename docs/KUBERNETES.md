@@ -241,6 +241,142 @@ Expected output: `1 chart(s) linted, 0 chart(s) failed`
 
 ---
 
+## Ollama Embedding Backend (Optional)
+
+KB-RAG-MCP supports deploying an Ollama instance as a local embedding backend.
+This is useful for teams that prefer self-hosted embedding over external APIs.
+
+### Model: nomic-embed-text v1.5
+
+| Property | Value |
+|----------|-------|
+| **Parameters** | 137M |
+| **Download size** | **274MB** (Q4_0 quantized) |
+| **Dimensions** | 768 |
+| **Context window** | 2,048 tokens |
+| **Runtime memory** | ~1Gi (274MB weights + 500MB overhead) |
+| **GPU** | Optional — works on CPU |
+| **GPU memory if offloaded** | ~500MB (fits on any GPU with >1GB VRAM) |
+
+### Enabling Ollama
+
+```bash
+# 1. Enable Ollama in Helm values
+helm install kb-rag-mcp ./deployment/helm/kb-rag-mcp \
+  --set ollama.enabled=true \
+  --set ollama.model=nomic-embed-text:v1.5
+
+# 2. Wait for model pull (init container handles this automatically)
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=ollama --timeout=300s
+
+# 3. Verify
+kubectl logs -l app.kubernetes.io/component=ollama
+# → "Pull complete!"
+
+# 4. Port-forward for testing
+kubectl port-forward svc/kb-rag-mcp-ollama 11434:11434
+```
+
+### Helm Configuration
+
+```yaml
+# my-values.yaml
+ollama:
+  enabled: true
+  model: "nomic-embed-text:v1.5"
+  replicas: 1
+  initPullModel: true
+  image:
+    repository: ollama/ollama
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 11434
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: standard
+  keepAlive: "24h"
+  numParallel: 1
+  maxLoadedModels: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  # GPU acceleration (optional, not required for nomic-embed-text)
+  gpu:
+    enabled: false
+    vendor: nvidia  # or "amd" for ROCm
+    count: 1
+```
+
+### GPU Acceleration
+
+For GPU-accelerated embedding (optional):
+
+```yaml
+ollama:
+  gpu:
+    enabled: true
+    vendor: nvidia
+    count: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+      nvidia.com/gpu: 1
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+      nvidia.com/gpu: 1
+```
+
+### KB-RAG Integration
+
+After deploying Ollama, configure KB-RAG to use it:
+
+```yaml
+extraEnv:
+  - name: EMBED_BACKEND
+    value: "ollama"
+  - name: OLLAMA_HOST
+    value: "http://kb-rag-mcp-ollama:11434"
+  - name: EMBED_MODEL
+    value: "nomic-embed-text:v1.5"
+```
+
+Or set via `--set`:
+
+```bash
+helm install kb-rag-mcp ./deployment/helm/kb-rag-mcp \
+  --set ollama.enabled=true \
+  --set extraEnv[0].name=EMBED_BACKEND \
+  --set extraEnv[0].value=ollama \
+  --set extraEnv[1].name=OLLAMA_HOST \
+  --set extraEnv[1].value="http://kb-rag-mcp-ollama:11434" \
+  --set extraEnv[2].name=EMBED_MODEL \
+  --set extraEnv[2].value="nomic-embed-text:v1.5"
+```
+
+### Manual Model Pull
+
+If `initPullModel` is disabled, pull the model manually:
+
+```bash
+# Forward to Ollama pod
+kubectl port-forward svc/kb-rag-mcp-ollama 11434:11434 &
+
+# Pull model
+curl -X POST http://localhost:11434/api/pull \
+  -d '{"name":"nomic-embed-text:v1.5"}'
+
+# Verify
+curl http://localhost:11434/api/tags
+```
+
 ## v1.4 Environment Variables
 
 When deploying v1.4 features, you may need to add these env vars:
