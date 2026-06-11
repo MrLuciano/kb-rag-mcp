@@ -85,7 +85,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 **In Progress (planned, not started):**
 
-- [ ] Phase 25: Optimization Experiments — Chunking and scoring experiments
+- [ ] Phase 25: Optimization Experiments — 4 plans (chunking experiments, scoring experiments, metric computation, CLI runner) — planned 2026-06-11
 
 - [ ] Phase 29: Enterprise Data Source Connectors — Confluence (Cloud + Data Center), JIRA (Cloud + Data Center), Git repositories
 - [ ] Phase 30: Cross-Document Knowledge Graph — similarity clustering, entity extraction, topic modeling
@@ -130,7 +130,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 23. Documentation Overhaul | v1.4 | 3/3 | Complete | 2026-05-27 |
 | 24. RAGAS Evaluation Pipeline | v1.4 | 0/0 | Deferred | — |
-| 25. Optimization Experiments | v1.4 | 0/0 | Planned | — |
+| 25. Optimization Experiments | v1.4 | 4/4 | Planned | 2026-06-11 |
 | 26. KB Content Discoverability | v1.4 | 1/1 | Complete | 2026-06-03 |
 | 27. Knowledge Base Registry | v1.4 | 3/3 | Complete | 2026-06-03 |
 | 28. MCP Streamable HTTP | v1.4 | 1/1 | Complete | 2026-06-03 |
