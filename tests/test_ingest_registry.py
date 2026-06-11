@@ -228,8 +228,8 @@ class TestConnectorState:
         store.close()
 
     def test_schema_migration_v3_on_fresh_db(self, tmp_path):
-        """Fresh database gets v3 schema with connector_state table."""
-        db = tmp_path / "test_v3_fresh.db"
+        """Fresh database gets v4 schema with connector_state and quota tables."""
+        db = tmp_path / "test_v4_fresh.db"
         store = MetadataStore(db_path=db)
         store.connect()
 
@@ -240,10 +240,12 @@ class TestConnectorState:
             ).fetchall()
         ]
         assert "connector_state" in tables
+        assert "quota_config" in tables
+        assert "quota_usage" in tables
 
         row = store.conn.execute(
             "SELECT version FROM schema_version"
         ).fetchone()
-        assert row["version"] == 3
+        assert row["version"] == 4
 
         store.close()

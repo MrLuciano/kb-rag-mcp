@@ -16,7 +16,7 @@ from typing import Optional
 log = logging.getLogger("kb-ingest.metadata")
 
 DEFAULT_DB = Path(__file__).parent.parent.parent / "data" / "kb_metadata.db"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 class MetadataStore:
@@ -87,11 +87,16 @@ class MetadataStore:
         if current_version == 0:
             self._create_schema_v2()
             self._migrate_v2_to_v3()
+            self._migrate_v3_to_v4()
         elif current_version == 1:
             self._migrate_v1_to_v2()
             self._migrate_v2_to_v3()
+            self._migrate_v3_to_v4()
         elif current_version == 2:
             self._migrate_v2_to_v3()
+            self._migrate_v3_to_v4()
+        elif current_version == 3:
+            self._migrate_v3_to_v4()
         elif current_version == SCHEMA_VERSION:
             log.debug(f"Schema v{current_version} up to date")
         else:
@@ -287,6 +292,237 @@ class MetadataStore:
             log.info("Created connector_state table")
 
         self._set_schema_version(3)
+
+    def _migrate_v3_to_v4(self) -> None:
+        """Migrate from v3 to v4: add quota tables."""
+        log.info("Migrating schema v3 → v4...")
+        tables = [
+            r[0]
+            for r in self.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        if "quota_config" not in tables:
+            self.conn.execute("""
+                CREATE TABLE quota_config (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    max_files_per_upload INTEGER,
+                    max_bytes_per_upload INTEGER,
+                    max_bytes_per_file INTEGER,
+                    max_documents_per_index INTEGER,
+                    max_chunks_per_index INTEGER,
+                    max_chars_per_index INTEGER
+                )
+            """)
+            self.conn.execute(
+                "INSERT INTO quota_config (id) VALUES (1)"
+            )
+            log.info("Created quota_config table")
+        else:
+            log.debug("quota_config table already exists")
+
+        if "quota_usage" not in tables:
+            self.conn.execute("""
+                CREATE TABLE quota_usage (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    total_files INTEGER DEFAULT 0,
+                    total_bytes INTEGER DEFAULT 0,
+                    total_documents INTEGER DEFAULT 0,
+                    total_chunks INTEGER DEFAULT 0,
+                    total_chars INTEGER DEFAULT 0,
+                    updated_at REAL
+                )
+            """)
+            self.conn.execute(
+                "INSERT INTO quota_usage (id, total_files, total_bytes, "
+                "total_documents, total_chunks, total_chars, updated_at) "
+                "VALUES (1, 0, 0, 0, 0, 0, ?)",
+                (time.time(),),
+            )
+            log.info("Created quota_usage table")
+        else:
+            log.debug("quota_usage table already exists")
+
+        self._set_schema_version(4)
+
+    # ── Quota Helpers
+
+    def set_quotas(
+        self,
+        max_files_per_upload: int | None = None,
+        max_bytes_per_upload: int | None = None,
+        max_bytes_per_file: int | None = None,
+        max_documents_per_index: int | None = None,
+        max_chunks_per_index: int | None = None,
+        max_chars_per_index: int | None = None,
+    ) -> None:
+        """Set upload/index quota limits. ``None`` means unlimited."""
+        self.conn.execute(
+            """
+            UPDATE quota_config SET
+                max_files_per_upload = ?,
+                max_bytes_per_upload = ?,
+                max_bytes_per_file = ?,
+                max_documents_per_index = ?,
+                max_chunks_per_index = ?,
+                max_chars_per_index = ?
+            WHERE id = 1
+            """,
+            (
+                max_files_per_upload,
+                max_bytes_per_upload,
+                max_bytes_per_file,
+                max_documents_per_index,
+                max_chunks_per_index,
+                max_chars_per_index,
+            ),
+        )
+        self.conn.commit()
+        log.info("Quotas updated")
+
+    def get_quotas(self) -> dict:
+        """Return current quota limits dict. ``None`` = unlimited."""
+        row = self.conn.execute(
+            "SELECT * FROM quota_config WHERE id = 1"
+        ).fetchone()
+        if row is None:
+            return {}
+        return dict(row)
+
+    def get_quota_usage(self) -> dict:
+        """Return current usage counters."""
+        row = self.conn.execute(
+            "SELECT * FROM quota_usage WHERE id = 1"
+        ).fetchone()
+        if row is None:
+            return {
+                "total_files": 0,
+                "total_bytes": 0,
+                "total_documents": 0,
+                "total_chunks": 0,
+                "total_chars": 0,
+            }
+        return dict(row)
+
+    def check_quota(
+        self,
+        files_count: int = 0,
+        bytes_total: int = 0,
+        file_bytes: int = 0,
+    ) -> tuple[bool, str]:
+        """Check whether an ingest operation would exceed configured limits.
+
+        Args:
+            files_count: Number of files in this ingest call.
+            bytes_total: Total bytes across all files.
+            file_bytes: Size of the current file (for per-file check).
+
+        Returns:
+            (ok, message) — ``(True, "")`` if within limits,
+            ``(False, "description")`` if a quota would be exceeded.
+        """
+        quotas = self.get_quotas()
+        usage = self.get_quota_usage()
+
+        mfu = quotas.get("max_files_per_upload")
+        if mfu is not None and files_count > mfu:
+            return (
+                False,
+                f"Upload would exceed max files per upload: "
+                f"{files_count} > {mfu}",
+            )
+
+        mbu = quotas.get("max_bytes_per_upload")
+        if mbu is not None and bytes_total > mbu:
+            return (
+                False,
+                f"Upload would exceed max bytes per upload: "
+                f"{bytes_total} > {mbu}",
+            )
+
+        mbf = quotas.get("max_bytes_per_file")
+        if mbf is not None and file_bytes > mbf:
+            return (
+                False,
+                f"File exceeds max bytes per file: "
+                f"{file_bytes} > {mbf}",
+            )
+
+        mdi = quotas.get("max_documents_per_index")
+        if mdi is not None:
+            current_docs = usage.get("total_documents", 0)
+            if current_docs >= mdi:
+                return (
+                    False,
+                    f"Index at capacity: {current_docs} >= {mdi} "
+                    f"max documents",
+                )
+
+        mci = quotas.get("max_chunks_per_index")
+        if mci is not None:
+            current_chunks = usage.get("total_chunks", 0)
+            if current_chunks >= mci:
+                return (
+                    False,
+                    f"Index at capacity: {current_chunks} >= {mci} "
+                    f"max chunks",
+                )
+
+        mcci = quotas.get("max_chars_per_index")
+        if mcci is not None:
+            current_chars = usage.get("total_chars", 0)
+            if current_chars >= mcci:
+                return (
+                    False,
+                    f"Index at capacity: {current_chars} >= {mcci} "
+                    f"max characters",
+                )
+
+        return True, ""
+
+    def update_quota_usage(
+        self,
+        files: int = 0,
+        bytes_count: int = 0,
+        documents: int = 0,
+        chunks: int = 0,
+        chars: int = 0,
+    ) -> None:
+        """Increment usage counters after a successful ingest."""
+        self.conn.execute(
+            """
+            UPDATE quota_usage SET
+                total_files   = total_files + ?,
+                total_bytes   = total_bytes + ?,
+                total_documents = total_documents + ?,
+                total_chunks  = total_chunks + ?,
+                total_chars   = total_chars + ?,
+                updated_at    = ?
+            WHERE id = 1
+            """,
+            (files, bytes_count, documents, chunks, chars, time.time()),
+        )
+        self.conn.commit()
+
+    def reset_quota_usage(self) -> dict:
+        """Zero out all usage counters. Returns the previous usage dict."""
+        prev = self.get_quota_usage()
+        self.conn.execute(
+            """
+            UPDATE quota_usage SET
+                total_files = 0,
+                total_bytes = 0,
+                total_documents = 0,
+                total_chunks = 0,
+                total_chars = 0,
+                updated_at = ?
+            WHERE id = 1
+            """,
+            (time.time(),),
+        )
+        self.conn.commit()
+        log.info("Quota usage reset")
+        return prev
 
     # ── Transaction Helpers
 

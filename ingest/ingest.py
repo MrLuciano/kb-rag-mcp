@@ -627,6 +627,20 @@ async def run_ingest(
         ]
         docs_root = docs_path
 
+    # ── PHASE 34: Quota enforcement before processing
+    mds = MetadataStore()
+    mds.connect()
+    total_bytes = sum(f.stat().st_size for f in files) if files else 0
+    ok_quota, quota_msg = mds.check_quota(
+        files_count=len(files),
+        bytes_total=total_bytes,
+    )
+    if not ok_quota:
+        mds.close()
+        log.error("Quota rejected: %s", quota_msg)
+        raise RuntimeError(f"Quota limit exceeded: {quota_msg}")
+    mds.close()
+
     # ── Detect files removed from disk
     if sync and not single_file and not staged_paths:
         _sync_deleted(registry, docs_root, files)
