@@ -9,6 +9,7 @@ multi-collection routing, and query logging.
 """
 
 import asyncio
+import contextvars
 import logging
 import os
 import sys
@@ -30,7 +31,13 @@ from kb_server.telemetry.query_logger import QueryLogger
 from kb_server.collections.manager import CollectionManager
 from kb_server.collections.router import CollectionRouter, CollectionNotFoundError
 from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
-from observability.metrics import record_query, record_query_error
+from observability.metrics import (
+    record_query,
+    record_query_error,
+    record_rate_limit_allowed,
+    record_rate_limit_rejected,
+    update_rate_limit_subjects,
+)
 
 # ── Logging ───────────────────────────────────────────────────────
 _log_path = os.getenv("LOG_PATH", "/tmp/kb-mcp.log")
@@ -51,6 +58,21 @@ SSE_HOST = os.getenv("SSE_HOST", "127.0.0.1")
 SSE_PORT = int(os.getenv("SSE_PORT", "8765"))
 TOP_K = int(os.getenv("DEFAULT_TOP_K", "5"))
 
+# PHASE 33: Rate limiting config
+RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "false").lower() in (
+    "true", "1", "yes"
+)
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+
+# Per-subject tracking for rate limiting across transport sessions
+_current_subject: contextvars.ContextVar[str | None] = (
+    contextvars.ContextVar("current_subject", default=None)
+)
+_current_transport: contextvars.ContextVar[str] = (
+    contextvars.ContextVar("current_transport", default="stdio")
+)
+
 # PHASE 14: Query logging configuration
 QUERY_LOG_ENABLED = os.getenv("QUERY_LOG_ENABLED", "true").lower() in (
     "true", "1", "yes"
@@ -69,6 +91,9 @@ store = VectorStore()
 collection_manager: CollectionManager | None = None
 collection_router: CollectionRouter | None = None
 filter_terms_cache: FilterTermsCache | None = None  # PHASE 17
+
+# PHASE 33: Initialize rate limiter (lazy, configured in main())
+rate_limiter = None
 
 # PHASE 14: Initialize query logger if enabled
 query_logger = None
@@ -496,6 +521,29 @@ async def call_tool(
         List of TextContent responses with results or error message.
     """
     start = time.time()
+
+    # PHASE 33: Rate-limit check for tool calls
+    if RATE_LIMIT_ENABLED and rate_limiter is not None:
+        subject = _current_subject.get() or "unknown"
+        transport = _current_transport.get()
+        allowed, retry_after = await rate_limiter.check(subject)
+        if not allowed:
+            record_rate_limit_rejected(transport)
+            log.warning(
+                "Rate limit exceeded for subject=%s transport=%s tool=%s",
+                subject, transport, name,
+            )
+            return [
+                types.TextContent(
+                    type="text",
+                    text=(
+                        "Rate limit exceeded. "
+                        f"Please retry after {retry_after} seconds."
+                    ),
+                )
+            ]
+        record_rate_limit_allowed(transport)
+
     try:
         if name == "search_kb":
             result = await _search_kb(arguments)
@@ -1025,6 +1073,35 @@ async def _explore_topic(
     return [types.TextContent(type="text", text="\n".join(lines))]
 
 
+def _auth_header_to_subject_prefix(header: str | None) -> str | None:
+    """Derive a rate-limit subject from an Authorization header value.
+
+    Returns the first 8 characters of the bearer token (key prefix)
+    or ``None`` if the header is not a valid bearer token.
+    """
+    if not header:
+        return None
+    parts = header.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None
+    key = parts[1].strip()
+    return key[:8] if len(key) >= 8 else key
+
+
+async def _update_rate_limit_subject_metric() -> None:
+    """Update gauge for tracked rate-limit subjects."""
+    if rate_limiter is not None:
+        count = await rate_limiter.subject_count()
+        update_rate_limit_subjects(count)
+
+
+async def _schedule_metric_updates() -> None:
+    """Periodically update rate-limit subject gauge."""
+    while True:
+        await asyncio.sleep(60)
+        await _update_rate_limit_subject_metric()
+
+
 async def _schedule_log_cleanup() -> None:
     """CR-04: Periodically purge query log entries older than retention window.
 
@@ -1053,9 +1130,22 @@ async def main():
     the MCP server on either stdio or SSE transport based on the
     MCP_TRANSPORT environment variable.
     """
-    global collection_manager, collection_router
+    global collection_manager, collection_router, rate_limiter
     log.info(f"KB RAG MCP Server starting (transport={TRANSPORT})")
     await store.connect()
+
+    # PHASE 33: Initialize rate limiter
+    if RATE_LIMIT_ENABLED:
+        from kb_server.rate_limiter import ServerRateLimiter
+
+        rate_limiter = ServerRateLimiter(
+            requests_per_minute=RATE_LIMIT_REQUESTS / (RATE_LIMIT_WINDOW / 60.0),
+            cleanup_interval=300,
+        )
+        log.info(
+            "Rate limiting enabled: %d requests per %ds window",
+            RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW,
+        )
 
     # Pre-flight health checks
     from kb_server.health import check_embedding_service, check_vector_store
@@ -1099,6 +1189,12 @@ async def main():
             f"Query log cleanup scheduled every {QUERY_LOG_CLEANUP_INTERVAL_HOURS}h, "
             f"retaining last {QUERY_LOG_RETENTION_DAYS} days"
         )
+
+    # PHASE 33: Schedule periodic rate-limit metric updates
+    if RATE_LIMIT_ENABLED:
+        asyncio.create_task(_schedule_metric_updates())
+        log.info("Rate-limit metric updates scheduled every 60s")
+
     if TRANSPORT == "sse":
         import uvicorn
         from starlette.applications import Starlette
@@ -1122,6 +1218,7 @@ async def main():
             # PHASE 32: Optional API key auth
             from kb_server.auth import is_auth_enabled, verify_request
 
+            sse_subject: str | None = None
             if is_auth_enabled():
                 auth_header = request.headers.get("Authorization")
                 ok, err = verify_request(auth_header)
@@ -1131,6 +1228,39 @@ async def main():
                         status_code=401,
                         media_type="application/json",
                     )
+                # Derive subject from API key prefix
+                sse_subject = _auth_header_to_subject_prefix(auth_header)
+
+            # Fall back to client IP when no API key is present
+            if sse_subject is None:
+                forwarded = request.headers.get("X-Forwarded-For", "")
+                sse_subject = (
+                    forwarded.split(",")[0].strip()
+                    or request.client.host
+                    or "unknown"
+                )
+
+            # PHASE 33: Rate-limit the SSE connection itself
+            if RATE_LIMIT_ENABLED and rate_limiter is not None:
+                allowed, retry_after = await rate_limiter.check(sse_subject)
+                if not allowed:
+                    record_rate_limit_rejected("sse")
+                    log.warning(
+                        "Rate-limit connection rejected for subject=%s "
+                        "retry_after=%ds",
+                        sse_subject, retry_after,
+                    )
+                    return Response(
+                        content='{"error":"Rate limit exceeded"}',
+                        status_code=429,
+                        media_type="application/json",
+                        headers={"Retry-After": str(retry_after)},
+                    )
+                record_rate_limit_allowed("sse")
+
+            # Set context for tool-level checks
+            _current_subject.set(sse_subject)
+            _current_transport.set("sse")
 
             async with sse.connect_sse(
                 request.scope, request.receive, request._send
@@ -1160,6 +1290,9 @@ async def main():
         await server.serve()
     else:
         log.info("stdio transport active")
+        # Set context for tool-level rate-limit checks
+        _current_subject.set("stdio")
+        _current_transport.set("stdio")
         async with stdio_server() as (read, write):
             await app.run(read, write, app.create_initialization_options())
 

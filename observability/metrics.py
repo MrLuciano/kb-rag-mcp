@@ -230,6 +230,42 @@ query_errors = Counter(
 )
 
 
+# ── Server Rate Limit Metrics ───────────────────────────────────
+
+
+rate_limit_allowed = Counter(
+    "kb_rag_rate_limit_allowed_total",
+    "Total number of allowed requests after rate-limit check",
+    ["transport"],  # sse, stdio
+)
+
+rate_limit_rejected = Counter(
+    "kb_rag_rate_limit_rejected_total",
+    "Total number of rate-limited (rejected) requests",
+    ["transport"],  # sse, stdio
+)
+
+rate_limit_subjects = Gauge(
+    "kb_rag_rate_limit_subjects",
+    "Number of distinct rate-limit subjects being tracked",
+)
+
+
+def record_rate_limit_allowed(transport: str) -> None:
+    """Record a request that passed the rate-limit check."""
+    rate_limit_allowed.labels(transport=transport).inc()
+
+
+def record_rate_limit_rejected(transport: str) -> None:
+    """Record a request that was rejected by the rate limiter."""
+    rate_limit_rejected.labels(transport=transport).inc()
+
+
+def update_rate_limit_subjects(count: int) -> None:
+    """Update the gauge for tracked rate-limit subjects."""
+    rate_limit_subjects.set(count)
+
+
 # ── Helper Functions ─────────────────────────────────────────────
 
 
