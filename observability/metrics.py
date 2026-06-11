@@ -69,6 +69,15 @@ class MetricsCollector:
         self.provider_skipped_budget_exhausted = provider_skipped_budget_exhausted
         self.provider_circuit_opened = provider_circuit_opened
 
+    def increment(self, metric_name: str, value: int = 1, **labels) -> None:
+        """Helper to increment counter metrics."""
+        metric = getattr(self, metric_name, None)
+        if metric and hasattr(metric, "labels"):
+            if labels:
+                metric.labels(**labels).inc(value)
+            else:
+                metric.inc(value)
+
     def set_gauge(self, metric_name: str, value: float, **labels) -> None:
         """Set a gauge metric to a specific value."""
         metric = getattr(self, metric_name, None)
