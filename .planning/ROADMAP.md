@@ -145,6 +145,14 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 ## Backlog
 
+### Phase 999.1: Follow-up — Phase 35 incomplete summary (BACKLOG)
+
+**Goal:** Create SUMMARY.md for Phase 35 (multi-kb-aggregated-search) which was executed without one
+**Source phase:** 35
+**Deferred at:** 2026-06-11 during /gsd-next advancement to Phase 37
+**Plans:**
+- [ ] 35-01: multi-kb-aggregated-search (ran, no SUMMARY.md)
+
 Items derived from competitive analysis and future planning. Each item is a candidate for v1.5 or later.
 
 ### Low Priority
