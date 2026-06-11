@@ -65,19 +65,22 @@ class CollectionRouter:
             CollectionNotFoundError: If any kb_id maps to a non-existent
                 collection.
         """
-        if not kb_ids:
+        if kb_ids is None:
             return [self.default]
+        if not kb_ids:
+            return []
 
         names: list[str] = []
         for kb_id in kb_ids:
-            if not await self.manager.collection_exists(kb_id):
+            name = kb_id if kb_id is not None else self.default
+            if not await self.manager.collection_exists(name):
                 log.warning(
-                    "Collection for kb_id '%s' does not exist", kb_id
+                    "Collection for kb_id '%s' does not exist", name
                 )
                 raise CollectionNotFoundError(
-                    f"Knowledge base '{kb_id}' does not exist. "
+                    f"Knowledge base '{name}' does not exist. "
                     "Use list_collections to see available collections."
                 )
-            names.append(kb_id)
+            names.append(name)
         log.debug("Resolved %d KB IDs to collections", len(names))
         return names

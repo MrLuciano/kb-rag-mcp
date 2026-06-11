@@ -100,6 +100,150 @@ class TestHybridSearcher:
             assert results == dense_results[:5]
 
 
+class TestMergeMultiCollectionResults:
+    """Tests for merge_multi_collection_results and _min_max_normalize."""
+
+    def test_min_max_normalize_identity(self):
+        from kb_server.retrieval.hybrid_search import _min_max_normalize
+
+        results = [
+            {"chunk_id": "a", "score": 0.5},
+            {"chunk_id": "b", "score": 0.8},
+            {"chunk_id": "c", "score": 0.3},
+        ]
+        normalized = _min_max_normalize(results)
+        scores = [r["score"] for r in normalized]
+        assert max(scores) == 1.0
+        assert min(scores) == 0.0
+
+    def test_min_max_normalize_single_result(self):
+        from kb_server.retrieval.hybrid_search import _min_max_normalize
+
+        results = [{"chunk_id": "a", "score": 0.7}]
+        normalized = _min_max_normalize(results)
+        assert normalized[0]["score"] == 1.0
+
+    def test_min_max_normalize_identical_scores(self):
+        from kb_server.retrieval.hybrid_search import _min_max_normalize
+
+        results = [
+            {"chunk_id": "a", "score": 0.5},
+            {"chunk_id": "b", "score": 0.5},
+        ]
+        normalized = _min_max_normalize(results)
+        assert all(r["score"] == 1.0 for r in normalized)
+
+    def test_min_max_normalize_empty_list(self):
+        from kb_server.retrieval.hybrid_search import _min_max_normalize
+
+        assert _min_max_normalize([]) == []
+
+    def test_merge_multi_empty_collections(self):
+        from kb_server.retrieval.hybrid_search import (
+            merge_multi_collection_results,
+        )
+
+        result = merge_multi_collection_results({}, top_k=5)
+        assert result == []
+
+    def test_merge_multi_single_collection(self):
+        from kb_server.retrieval.hybrid_search import (
+            merge_multi_collection_results,
+        )
+
+        per_collection = {
+            "kb_main": [
+                {"chunk_id": "a", "score": 0.9, "source_file": "doc1.md"},
+                {"chunk_id": "b", "score": 0.7, "source_file": "doc1.md"},
+            ],
+        }
+        result = merge_multi_collection_results(per_collection, top_k=5)
+        assert len(result) == 2
+        assert result[0]["chunk_id"] == "a"
+
+    def test_merge_multi_dedup(self):
+        from kb_server.retrieval.hybrid_search import (
+            merge_multi_collection_results,
+        )
+
+        per_collection = {
+            "kb_hr": [
+                {"chunk_id": "c1", "score": 0.8,
+                 "source_file": "hr.md"},
+                {"chunk_id": "c2", "score": 0.6,
+                 "source_file": "hr.md"},
+            ],
+            "kb_eng": [
+                {"chunk_id": "c1", "score": 0.7,
+                 "source_file": "eng.md"},
+            ],
+        }
+        result = merge_multi_collection_results(per_collection, top_k=5)
+        chunk_ids = [r["chunk_id"] for r in result]
+        assert chunk_ids.count("c1") == 1
+        assert len(result) == 2
+
+    def test_merge_multi_top_k_enforced(self):
+        from kb_server.retrieval.hybrid_search import (
+            merge_multi_collection_results,
+        )
+
+        per_collection = {
+            "kb_a": [
+                {"chunk_id": f"c{i}", "score": 0.9 - i * 0.1,
+                 "source_file": f"doc{i}.md"}
+                for i in range(5)
+            ],
+            "kb_b": [
+                {"chunk_id": f"d{i}", "score": 0.8 - i * 0.1,
+                 "source_file": f"doc{i}.md"}
+                for i in range(5)
+            ],
+        }
+        result = merge_multi_collection_results(per_collection, top_k=3)
+        assert len(result) == 3
+
+    def test_merge_multi_dedup_different_scores(self):
+        from kb_server.retrieval.hybrid_search import (
+            merge_multi_collection_results,
+        )
+
+        per_collection = {
+            "kb_a": [
+                {"chunk_id": "c1", "score": 0.5,
+                 "source_file": "a.md"},
+            ],
+            "kb_b": [
+                {"chunk_id": "c1", "score": 0.9,
+                 "source_file": "b.md"},
+            ],
+        }
+        result = merge_multi_collection_results(per_collection, top_k=5)
+        assert len(result) == 1
+        assert result[0]["chunk_id"] == "c1"
+
+    def test_merge_multi_rrf_fusion_aggregates_scores(self):
+        """Duplicate chunk_ids across collections accumulate RRF scores."""
+        from kb_server.retrieval.hybrid_search import (
+            merge_multi_collection_results,
+        )
+
+        per_collection = {
+            "kb_x": [
+                {"chunk_id": "c1", "score": 0.9,
+                 "source_file": "x.md"},
+            ],
+            "kb_y": [
+                {"chunk_id": "c1", "score": 0.8,
+                 "source_file": "y.md"},
+            ],
+        }
+        result = merge_multi_collection_results(per_collection, top_k=5)
+        assert len(result) == 1
+        # RRF scores should be aggregated: 1/(60+1) + 1/(60+1) = 2/61
+        assert abs(result[0]["score"] - 2.0 / 61.0) < 1e-9
+
+
 class TestHybridSearchCLI:
     @pytest.mark.asyncio
     @pytest.mark.skip(

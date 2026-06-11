@@ -694,6 +694,62 @@ class TestClose:
         _run(vs.close())
 
 
+# ── multi_search() ────────────────────────────────────────────────────────────
+
+class TestMultiSearch:
+
+    def test_multi_search_no_client_raises(self):
+        """multi_search with client=None → RuntimeError."""
+        vs = VectorStore()
+        with pytest.raises(RuntimeError, match="not connected"):
+            _run(vs.multi_search(vector=[0.1] * 4, collection_names=["a", "b"]))
+
+    def test_multi_search_empty_collections_returns_empty_dict(self, store):
+        """multi_search with no collection names → {}."""
+        vs, mc = store
+        result = _run(vs.multi_search(vector=[0.1] * 4, collection_names=[]))
+        assert result == {}
+
+    def test_multi_search_parallel_search_adds_collection_tag(self, store):
+        """Each result gets _collection tag from its collection name."""
+        vs, mc = store
+        mc.query_points = AsyncMock(return_value=_make_query_response([
+            _make_point("c1", 0.9),
+            _make_point("c2", 0.7),
+        ]))
+
+        result = _run(vs.multi_search(
+            vector=[0.1] * 4,
+            collection_names=["kb_hr", "kb_eng"],
+        ))
+
+        assert set(result.keys()) == {"kb_hr", "kb_eng"}
+        for coll, items in result.items():
+            assert len(items) == 2
+            assert all(i["_collection"] == coll for i in items)
+
+    def test_multi_search_passes_filters(self, store):
+        """Filters are forwarded to each underlying search call."""
+        vs, mc = store
+        mc.query_points = AsyncMock(return_value=_make_query_response([
+            _make_point("c1", 0.9),
+        ]))
+
+        _run(vs.multi_search(
+            vector=[0.1] * 4,
+            collection_names=["k1", "k2"],
+            product="acme",
+            doc_type="guide",
+        ))
+
+        # Each collection should have 1 search call
+        assert mc.query_points.await_count == 2
+        # Verify at least one call had the right filter
+        calls = mc.query_points.await_args_list
+        for call in calls:
+            assert call[1].get("query_filter") is not None
+
+
 # ── Helper (defined after fixture to avoid forward-ref issues) ────────────────
 
 def _make_store_with_mock():

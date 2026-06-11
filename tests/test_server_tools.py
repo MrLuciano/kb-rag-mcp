@@ -205,6 +205,131 @@ async def test_search_kb_query_logger_called_after_search(mock_store, mock_route
     mock_query_logger.log_query.assert_called_once()
 
 
+@pytest.mark.asyncio
+async def test_search_kb_with_kb_ids_routes_to_multi_search(mock_store, mock_router):
+    """kb_ids triggers multi_search path instead of single search."""
+    from kb_server.collections.router import CollectionNotFoundError
+
+    mock_router.resolve_multi = AsyncMock(
+        return_value=["kb_hr", "kb_eng"]
+    )
+    mock_store.multi_search = AsyncMock(
+        return_value={
+            "kb_hr": [
+                {
+                    "chunk_id": "hr-1",
+                    "score": 0.9,
+                    "text": "hr result",
+                    "source_file": "hr.md",
+                    "product": "HR",
+                    "doc_type": "guide",
+                    "file_type": "pdf",
+                    "page": None,
+                    "_collection": "kb_hr",
+                },
+            ],
+            "kb_eng": [
+                {
+                    "chunk_id": "eng-1",
+                    "score": 0.8,
+                    "text": "eng result",
+                    "source_file": "eng.md",
+                    "product": "Eng",
+                    "doc_type": "guide",
+                    "file_type": "pdf",
+                    "page": None,
+                    "_collection": "kb_eng",
+                },
+            ],
+        }
+    )
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+        out = await srv._search_kb({"query": "test", "kb_ids": ["kb_hr", "kb_eng"]})
+
+    assert len(out) == 1
+    assert "hr result" in out[0].text
+    assert "eng result" in out[0].text
+    assert "multi-KB" in out[0].text
+    mock_store.multi_search.assert_awaited_once()
+    mock_store.search.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_search_kb_with_kb_ids_collection_not_found_returns_error(mock_store):
+    """CollectionNotFoundError from resolve_multi → error TextContent."""
+    from kb_server.collections.router import CollectionNotFoundError
+
+    mock_router = AsyncMock()
+    mock_router.resolve_multi.side_effect = CollectionNotFoundError("missing_kb")
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+        out = await srv._search_kb({"query": "test", "kb_ids": ["missing_kb"]})
+
+    assert len(out) == 1
+    assert "missing_kb" in out[0].text
+
+
+@pytest.mark.asyncio
+async def test_search_kb_with_kb_ids_no_results(mock_store, mock_router):
+    """multi_search returning empty → 'no results' message."""
+    mock_router.resolve_multi = AsyncMock(return_value=["kb_empty"])
+    mock_store.multi_search = AsyncMock(return_value={"kb_empty": []})
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+        out = await srv._search_kb({"query": "test", "kb_ids": ["kb_empty"]})
+
+    assert len(out) == 1
+    assert "No results found" in out[0].text
+
+
+@pytest.mark.asyncio
+async def test_search_kb_with_kb_ids_rerank_not_applied(mock_store, mock_router):
+    """rerank=True is ignored when kb_ids is set (multi-KB path)."""
+    mock_router.resolve_multi = AsyncMock(return_value=["kb_one"])
+    mock_store.multi_search = AsyncMock(
+        return_value={
+            "kb_one": [
+                {
+                    "chunk_id": "a",
+                    "score": 0.9,
+                    "text": "result",
+                    "source_file": "doc.md",
+                    "product": "P",
+                    "doc_type": "guide",
+                    "file_type": "pdf",
+                    "page": None,
+                    "_collection": "kb_one",
+                },
+            ],
+        }
+    )
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+        with patch(
+            "kb_server.retrieval.reranker.get_reranker",
+        ) as mock_get_reranker:
+            out = await srv._search_kb({
+                "query": "test", "kb_ids": ["kb_one"], "rerank": True,
+            })
+
+    assert len(out) == 1
+    assert "result" in out[0].text
+    mock_get_reranker.assert_not_called()
+
+
 # ---------------------------------------------------------------------------
 # _list_documents
 # ---------------------------------------------------------------------------
