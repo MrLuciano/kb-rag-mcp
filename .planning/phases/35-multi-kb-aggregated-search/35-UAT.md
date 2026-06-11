@@ -116,8 +116,8 @@ blocked: 5
   artifacts:
     - path: "ingest/connectors/__init__.py"
       issue: "Empty __init__.py does not eagerly import connector submodules"
-    - path: "ingest/cli/connectors.py"
-      issue: "list_connectors does not import connector modules before checking registry"
   missing:
     - "Add 'from ingest.connectors import confluence, jira, git' to ingest/connectors/__init__.py"
+  status: fixed
+  fix_commit: "cb42dab"
   debug_session: ""
