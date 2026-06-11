@@ -32,6 +32,8 @@ import httpx
 
 from observability.metrics import MetricsCollector, record_batch_embedding
 from kb_server.cache.manager import CacheManager
+from kb_server.circuit_breaker import CircuitBreaker, CircuitState
+from kb_server.provider_budget import ProviderBudget
 
 log = logging.getLogger("kb-mcp.embed")
 
@@ -41,6 +43,35 @@ MODEL = os.getenv(
     "EMBED_MODEL", "text-embedding-nomic-embed-text-v1.5-embedding"
 )
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+# ── Provider resilience config (PHASE 36)
+# Fallback chain: semicolon-separated provider names in priority order.
+# If the primary provider fails (circuit open, budget exhausted, or error),
+# the client falls back to the next provider in the chain.
+PROVIDER_CHAIN = [
+    p.strip() for p in BACKEND.split(";") if p.strip()
+]
+PRIMARY_BACKEND = PROVIDER_CHAIN[0] if PROVIDER_CHAIN else BACKEND
+
+# Circuit breaker config
+CB_THRESHOLD = int(os.getenv("CIRCUIT_BREAKER_THRESHOLD", "5"))
+CB_COOLDOWN_BASE = float(os.getenv("CIRCUIT_BREAKER_COOLDOWN", "30.0"))
+CB_COOLDOWN_MAX = float(os.getenv("CIRCUIT_BREAKER_COOLDOWN_MAX", "300.0"))
+
+# Provider budget config
+PB_WINDOW = float(os.getenv("PROVIDER_BUDGET_WINDOW_SECONDS", "60.0"))
+PB_MAX_REQUESTS = int(os.getenv("PROVIDER_BUDGET_MAX_REQUESTS", "100"))
+
+# ── Module-level resilience instances
+_circuit_breaker = CircuitBreaker(
+    failure_threshold=CB_THRESHOLD,
+    cooldown_base=CB_COOLDOWN_BASE,
+    cooldown_max=CB_COOLDOWN_MAX,
+)
+_provider_budget = ProviderBudget(
+    window_seconds=PB_WINDOW,
+    max_requests=PB_MAX_REQUESTS,
+)
 
 # LMS_BASE_URL: accepts any user input and normalizes it
 # e.g.: http://<LM_STUDIO_HOST>:1234/api/v1  →  http://<LM_STUDIO_HOST>:1234
@@ -283,11 +314,147 @@ _BACKENDS = {
 }
 
 
+# ── Provider resilience helpers (PHASE 36)
+
+
+async def _try_provider(
+    provider: str, text: str
+) -> Optional[list[float]]:
+    """
+    Attempt to embed text using a single provider.
+
+    Returns the embedding vector on success, or None if the provider is
+    blocked (circuit open, budget exhausted) or fails.
+
+    Args:
+        provider: Provider name.
+        text: Text to embed.
+
+    Returns:
+        Embedding vector or None on failure.
+    """
+    fn = _BACKENDS.get(provider)
+    if fn is None:
+        log.warning("Unknown provider '%s' — not in _BACKENDS", provider)
+        return None
+
+    # Circuit breaker check
+    state = _circuit_breaker.check(provider)
+    if state == CircuitState.OPEN:
+        log.warning("Circuit OPEN for provider '%s' — skipping", provider)
+        if _metrics:
+            _metrics.increment(
+                "provider_skipped_circuit_open", 1, provider=provider
+            )
+        return None
+
+    # Budget check
+    if not _provider_budget.check_budget(provider):
+        log.warning(
+            "Budget exhausted for provider '%s' — skipping", provider
+        )
+        if _metrics:
+            _metrics.increment(
+                "provider_skipped_budget_exhausted", 1, provider=provider
+            )
+        return None
+
+    # Attempt the call
+    try:
+        vector = await fn(text)
+        # Success: record budget usage and circuit success
+        _provider_budget.record_request(provider)
+        _circuit_breaker.record_success(provider)
+        if _metrics:
+            _metrics.increment(
+                "provider_requests_total", 1, provider=provider
+            )
+        return vector
+    except Exception as e:
+        log.warning(
+            "Provider '%s' failed (%s: %s)",
+            provider,
+            type(e).__name__,
+            e,
+        )
+        new_state = _circuit_breaker.record_failure(provider)
+        if _metrics:
+            _metrics.increment(
+                "provider_errors_total", 1, provider=provider
+            )
+            if new_state == CircuitState.OPEN:
+                _metrics.increment(
+                    "provider_circuit_opened", 1, provider=provider
+                )
+        return None
+
+
+async def _dispatch_with_resilience(
+    text: str, providers: Optional[list[str]] = None
+) -> list[float]:
+    """
+    Dispatch an embedding request with provider resilience.
+
+    Tries each provider in order. If a provider is blocked by circuit
+    breaker, budget exhaustion, or runtime error, falls back to the
+    next provider in the chain.
+
+    Args:
+        text: Text to embed.
+        providers: Provider list (defaults to PROVIDER_CHAIN).
+
+    Returns:
+        Embedding vector.
+
+    Raises:
+        RuntimeError: If all providers fail.
+    """
+    chain = providers if providers is not None else PROVIDER_CHAIN
+
+    last_error: Optional[str] = None
+    for provider in chain:
+        result = await _try_provider(provider, text)
+        if result is not None:
+            if last_error is not None and _metrics:
+                # Record fallback event
+                _metrics.increment(
+                    "provider_fallbacks_total", 1,
+                    from_provider=last_error,
+                    to_provider=provider,
+                )
+            return result
+        last_error = provider
+
+    raise RuntimeError(
+        f"All providers failed for embedding request. "
+        f"Providers tried: {chain}"
+    )
+
+
+def validate_providers() -> None:
+    """
+    Validate that all providers in the chain are known.
+
+    Raises ValueError if any provider in the chain is not registered
+    in _BACKENDS.
+    """
+    for provider in PROVIDER_CHAIN:
+        if provider not in _BACKENDS:
+            raise ValueError(
+                f"Invalid provider: '{provider}'. "
+                f"Options: {list(_BACKENDS)}"
+            )
+
+
 async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
     """Return the embedding vector for the given text using the configured backend.
 
     Checks the embedding cache first before calling the backend.
     Backend is selected via the EMBED_BACKEND environment variable.
+
+    Supports fallback chains via `EMBED_BACKEND=primary;secondary` —
+    if the primary provider is unavailable (circuit open, budget
+    exhausted, or error), the next provider in the chain is tried.
 
     Args:
         text: Text to embed.
@@ -298,32 +465,32 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
     """
     # Check cache first
     if use_cache and _embed_cache is not None:
-        cache_key = _embed_cache.hash_key("embed", BACKEND, MODEL, text)
+        cache_key = _embed_cache.hash_key("embed", PRIMARY_BACKEND, MODEL, text)
         cached = _embed_cache.get(cache_key)
         if cached is not None:
             log.debug("Cache hit for text (len=%d)", len(text))
             return cached
 
-    fn = _BACKENDS.get(BACKEND)
-    if fn is None:
-        raise ValueError(
-            f"Invalid EMBED_BACKEND: '{BACKEND}'. Options: {list(_BACKENDS)}"
-        )
+    validate_providers()
 
     try:
-        vector = await fn(text)
-        log.debug("Embedding generated: %d dims via %s", len(vector), BACKEND)
+        vector = await _dispatch_with_resilience(text)
+        log.debug(
+            "Embedding generated: %d dims", len(vector)
+        )
 
         # Cache the result
         if use_cache and _embed_cache is not None:
-            cache_key = _embed_cache.hash_key("embed", BACKEND, MODEL, text)
+            cache_key = _embed_cache.hash_key(
+                "embed", PRIMARY_BACKEND, MODEL, text
+            )
             # Estimate size: len(vector) floats * 8 bytes per float
             size_bytes = len(vector) * 8
             _embed_cache.put(cache_key, vector, size_bytes=size_bytes)
 
         return vector
     except Exception as e:
-        log.error("Embedding error (%s): %s", BACKEND, e)
+        log.error("Embedding error: %s", e)
         raise
 
 
@@ -353,23 +520,27 @@ async def get_embeddings_batch(
     """
     if not texts:
         return []
-    
+
     if batch_size is None:
         batch_size = BATCH_SIZE
-    
+
+    validate_providers()
+
     # Step 1: Check cache for all texts
     cache_results: dict[int, list[float]] = {}
     uncached_indices: list[int] = []
-    
+
     if use_cache and _embed_cache is not None:
         for i, text in enumerate(texts):
-            cache_key = _embed_cache.hash_key("embed", BACKEND, MODEL, text)
+            cache_key = _embed_cache.hash_key(
+                "embed", PRIMARY_BACKEND, MODEL, text
+            )
             cached = _embed_cache.get(cache_key)
             if cached is not None:
                 cache_results[i] = cached
             else:
                 uncached_indices.append(i)
-        
+
         if cache_results:
             log.debug(
                 "Batch cache: %d hits, %d misses",
@@ -389,18 +560,20 @@ async def get_embeddings_batch(
                 )
     else:
         uncached_indices = list(range(len(texts)))
-    
+
     # If all cached, return early
     if not uncached_indices:
         return [cache_results[i] for i in range(len(texts))]
-    
+
     # Step 2: Get uncached texts
     uncached_texts = [texts[i] for i in uncached_indices]
-    
-    # Step 3: Process via native batch API if supported
+
+    # Step 3: Process via resilient dispatch
+    # For batch operations, use parallel dispatch per text
     new_vectors: list[list[float]] = []
-    if BACKEND == "openai-compat":
-        # Use native batch API
+
+    if PRIMARY_BACKEND == "openai-compat" and len(PROVIDER_CHAIN) == 1:
+        # Single provider native batch path (existing optimized path)
         for i in range(0, len(uncached_texts), batch_size):
             batch_texts = uncached_texts[i : i + batch_size]
             batch_start = time.time()
@@ -412,69 +585,110 @@ async def get_embeddings_batch(
                     min(i + batch_size, len(uncached_texts)),
                     len(uncached_texts),
                 )
+                # Record budget and success for batch
+                _provider_budget.record_request("openai-compat")
+                _circuit_breaker.record_success("openai-compat")
+                if _metrics:
+                    _metrics.increment(
+                        "provider_requests_total",
+                        len(batch_texts),
+                        provider="openai-compat",
+                    )
             except Exception as e:
                 log.warning(
-                    "Batch API failed (%s), falling back to parallel: %s",
-                    BACKEND,
+                    "Batch API failed (%s), falling back to resilient: %s",
+                    PRIMARY_BACKEND,
                     e,
                 )
-                # Fallback to parallel requests
-                batch_vectors = await asyncio.gather(
-                    *[get_embedding(t, use_cache=False) for t in batch_texts]
-                )
-                new_vectors.extend(batch_vectors)
+                _circuit_breaker.record_failure("openai-compat")
+                if _metrics:
+                    _metrics.increment(
+                        "provider_errors_total", 1, provider="openai-compat"
+                    )
+                # Fallback to per-text resilient dispatch
+                for t in batch_texts:
+                    v = await _dispatch_with_resilience(t)
+                    new_vectors.append(v)
             finally:
                 record_batch_embedding(
-                    BACKEND, len(batch_texts), time.time() - batch_start
+                    PRIMARY_BACKEND,
+                    len(batch_texts),
+                    time.time() - batch_start,
                 )
-    
-    elif BACKEND == "ollama":
-        # Ollama: parallel requests in batches
+    elif PRIMARY_BACKEND == "ollama" and len(PROVIDER_CHAIN) == 1:
+        # Single provider Ollama: parallel requests in batches
         for i in range(0, len(uncached_texts), batch_size):
             batch_texts = uncached_texts[i : i + batch_size]
             batch_start = time.time()
-            batch_vectors = await _embed_ollama_batch(batch_texts)
-            new_vectors.extend(batch_vectors)
-            log.info(
-                "Batch embeddings: %d/%d (parallel)",
-                min(i + batch_size, len(uncached_texts)),
-                len(uncached_texts),
-            )
-            record_batch_embedding(
-                BACKEND, len(batch_texts), time.time() - batch_start
-            )
-    
+            try:
+                batch_vectors = await _embed_ollama_batch(batch_texts)
+                new_vectors.extend(batch_vectors)
+                log.info(
+                    "Batch embeddings: %d/%d (parallel)",
+                    min(i + batch_size, len(uncached_texts)),
+                    len(uncached_texts),
+                )
+                _provider_budget.record_request("ollama")
+                _circuit_breaker.record_success("ollama")
+                if _metrics:
+                    _metrics.increment(
+                        "provider_requests_total",
+                        len(batch_texts),
+                        provider="ollama",
+                    )
+            except Exception as e:
+                log.warning(
+                    "Ollama batch failed (%s), resilient fallback: %s",
+                    e,
+                )
+                _circuit_breaker.record_failure("ollama")
+                if _metrics:
+                    _metrics.increment(
+                        "provider_errors_total", 1, provider="ollama"
+                    )
+                for t in batch_texts:
+                    v = await _dispatch_with_resilience(t)
+                    new_vectors.append(v)
+            finally:
+                record_batch_embedding(
+                    PRIMARY_BACKEND,
+                    len(batch_texts),
+                    time.time() - batch_start,
+                )
     else:
-        # Other backends: parallel requests
+        # Multi-provider or other backends: per-text resilient dispatch
         for i in range(0, len(uncached_texts), batch_size):
             batch_texts = uncached_texts[i : i + batch_size]
             batch_start = time.time()
-            batch_vectors = await asyncio.gather(
-                *[get_embedding(t, use_cache=False) for t in batch_texts]
-            )
-            new_vectors.extend(batch_vectors)
+            for text in batch_texts:
+                v = await _dispatch_with_resilience(text)
+                new_vectors.append(v)
             log.info(
-                "Batch embeddings: %d/%d (parallel)",
+                "Batch embeddings: %d/%d (resilient dispatch)",
                 min(i + batch_size, len(uncached_texts)),
                 len(uncached_texts),
             )
             record_batch_embedding(
-                BACKEND, len(batch_texts), time.time() - batch_start
+                PRIMARY_BACKEND,
+                len(batch_texts),
+                time.time() - batch_start,
             )
-    
+
     # Step 4: Cache new results
     if use_cache and _embed_cache is not None:
         for i, vector in zip(uncached_indices, new_vectors):
             text = texts[i]
-            cache_key = _embed_cache.hash_key("embed", BACKEND, MODEL, text)
+            cache_key = _embed_cache.hash_key(
+                "embed", PRIMARY_BACKEND, MODEL, text
+            )
             size_bytes = len(vector) * 8
             _embed_cache.put(cache_key, vector, size_bytes=size_bytes)
-    
+
     # Step 5: Merge cached and new results in original order
     all_results: dict[int, list[float]] = {**cache_results}
     for i, vector in zip(uncached_indices, new_vectors):
         all_results[i] = vector
-    
+
     return [all_results[i] for i in range(len(texts))]
 
 
@@ -512,13 +726,22 @@ async def health_check() -> dict:
     """Check if the embedding backend is responding."""
     try:
         vec = await get_embedding("health check")
-        log.info("Embedding health check OK: backend=%s model=%s dims=%d", BACKEND, MODEL, len(vec))
+        log.info(
+            "Embedding health check OK: backend=%s model=%s dims=%d",
+            PRIMARY_BACKEND,
+            MODEL,
+            len(vec),
+        )
         return {
             "status": "ok",
-            "backend": BACKEND,
+            "backend": PRIMARY_BACKEND,
             "model": MODEL,
             "dims": len(vec),
         }
     except Exception as e:
         log.warning("Embedding health check FAILED: %s", e)
-        return {"status": "error", "backend": BACKEND, "error": str(e)}
+        return {
+            "status": "error",
+            "backend": PRIMARY_BACKEND,
+            "error": str(e),
+        }

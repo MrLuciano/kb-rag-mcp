@@ -65,12 +65,23 @@ def reset_embed_cache():
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def reset_provider_chain():
+    """Reset PROVIDER_CHAIN between tests to match initial state."""
+    yield
+    # Restore to single-provider openai-compat default
+    ec.PROVIDER_CHAIN.clear()
+    ec.PROVIDER_CHAIN.append("openai-compat")
+    ec.PRIMARY_BACKEND = "openai-compat"
+
+
 @pytest.mark.asyncio
 async def test_openai_compat_returns_embedding(monkeypatch):
     """openai-compat: POST /v1/embeddings → returns 768 floats."""
     monkeypatch.setenv("EMBED_BACKEND", "openai-compat")
-    # Reset module-level BACKEND var
     ec.BACKEND = "openai-compat"
+    ec.PROVIDER_CHAIN[:] = ["openai-compat"]
+    ec.PRIMARY_BACKEND = "openai-compat"
 
     mock_client = AsyncMock()
     mock_client.post.return_value = _fake_response(OPENAI_RESPONSE)
@@ -93,6 +104,8 @@ async def test_ollama_returns_embedding(monkeypatch):
     """ollama: POST /api/embeddings → returns 768 floats."""
     monkeypatch.setenv("EMBED_BACKEND", "ollama")
     ec.BACKEND = "ollama"
+    ec.PROVIDER_CHAIN[:] = ["ollama"]
+    ec.PRIMARY_BACKEND = "ollama"
 
     mock_client = AsyncMock()
     mock_client.post.return_value = _fake_response(OLLAMA_RESPONSE)
@@ -110,31 +123,41 @@ async def test_ollama_returns_embedding(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_http_500_raises(monkeypatch):
-    """HTTP 500 → HTTPStatusError is raised (not silenced)."""
+async def test_single_provider_error_raises_runtime_error(monkeypatch):
+    """Single provider failure → RuntimeError with all-providers-failed."""
     monkeypatch.setenv("EMBED_BACKEND", "openai-compat")
     ec.BACKEND = "openai-compat"
-
-    mock_client = AsyncMock()
-    mock_client.post.return_value = _fake_response({}, status_code=500)
-    ec._http_client = mock_client
-
-    with pytest.raises(httpx.HTTPStatusError):
-        await ec.get_embedding("test", use_cache=False)
-
-
-@pytest.mark.asyncio
-async def test_connect_error_propagates(monkeypatch):
-    """ConnectError → exception propagates (not silently swallowed)."""
-    monkeypatch.setenv("EMBED_BACKEND", "openai-compat")
-    ec.BACKEND = "openai-compat"
+    ec.PROVIDER_CHAIN[:] = ["openai-compat"]
+    ec.PRIMARY_BACKEND = "openai-compat"
 
     mock_client = AsyncMock()
     mock_client.post.side_effect = httpx.ConnectError("refused")
     ec._http_client = mock_client
 
-    with pytest.raises(httpx.ConnectError):
+    with pytest.raises(RuntimeError, match="All providers failed"):
         await ec.get_embedding("test", use_cache=False)
+
+
+@pytest.mark.asyncio
+async def test_error_clears_circuit_breaker_state(monkeypatch):
+    """Provider failure increments circuit breaker consecutive failures."""
+    monkeypatch.setenv("EMBED_BACKEND", "openai-compat")
+    ec.BACKEND = "openai-compat"
+    ec.PROVIDER_CHAIN[:] = ["openai-compat"]
+    ec.PRIMARY_BACKEND = "openai-compat"
+
+    # Reset breaker state
+    ec._circuit_breaker.reset("openai-compat")
+
+    mock_client = AsyncMock()
+    mock_client.post.side_effect = httpx.ConnectError("refused")
+    ec._http_client = mock_client
+
+    with pytest.raises(RuntimeError):
+        await ec.get_embedding("test", use_cache=False)
+
+    # Failure should be recorded
+    assert ec._circuit_breaker.get_failure_count("openai-compat") >= 1
 
 
 # ---------------------------------------------------------------------------
@@ -147,6 +170,8 @@ async def test_get_embeddings_batch_returns_same_length(monkeypatch):
     """get_embeddings_batch returns list with same length as input."""
     monkeypatch.setenv("EMBED_BACKEND", "openai-compat")
     ec.BACKEND = "openai-compat"
+    ec.PROVIDER_CHAIN[:] = ["openai-compat"]
+    ec.PRIMARY_BACKEND = "openai-compat"
 
     texts = ["text one", "text two", "text three"]
     batch_response = {
@@ -177,6 +202,8 @@ async def test_use_cache_false_bypasses_cache(monkeypatch):
     """use_cache=False skips cache lookup and storage."""
     monkeypatch.setenv("EMBED_BACKEND", "openai-compat")
     ec.BACKEND = "openai-compat"
+    ec.PROVIDER_CHAIN[:] = ["openai-compat"]
+    ec.PRIMARY_BACKEND = "openai-compat"
 
     mock_cache = MagicMock()
     ec._embed_cache = mock_cache
@@ -196,6 +223,8 @@ async def test_use_cache_true_caches_result(monkeypatch):
     """use_cache=True caches result; second identical call returns cached value."""
     monkeypatch.setenv("EMBED_BACKEND", "openai-compat")
     ec.BACKEND = "openai-compat"
+    ec.PROVIDER_CHAIN[:] = ["openai-compat"]
+    ec.PRIMARY_BACKEND = "openai-compat"
 
     # Set up cache with a miss then a hit
     mock_cache = MagicMock()
@@ -213,6 +242,155 @@ async def test_use_cache_true_caches_result(monkeypatch):
     # First call: miss → HTTP request; second call: hit → no extra HTTP
     mock_cache.put.assert_called_once()
     assert result2 == FAKE_VECTOR
+
+
+# ---------------------------------------------------------------------------
+# get_embed_dim
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Provider resilience
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_circuit_breaker_blocks_open_provider(monkeypatch):
+    """Circuit breaker OPEN state blocks dispatch to that provider."""
+    monkeypatch.setenv("EMBED_BACKEND", "provider_a;provider_b")
+    ec.BACKEND = "provider_a;provider_b"
+    ec.PROVIDER_CHAIN[:] = ["provider_a", "provider_b"]
+    ec.PRIMARY_BACKEND = "provider_a"
+
+    # Set circuit breaker to OPEN for provider_a
+    ec._circuit_breaker.record_failure("provider_a")
+    ec._circuit_breaker.record_failure("provider_a")
+    ec._circuit_breaker.record_failure("provider_a")
+    ec._circuit_breaker.record_failure("provider_a")
+    ec._circuit_breaker.record_failure("provider_a")
+
+    # Mock provider_b (the fallback) to work
+    monkeypatch.setitem(ec._BACKENDS, "provider_a", AsyncMock())
+    mock_provider_b = AsyncMock(return_value=FAKE_VECTOR)
+    monkeypatch.setitem(ec._BACKENDS, "provider_b", mock_provider_b)
+
+    result = await ec.get_embedding("test", use_cache=False)
+
+    assert result == FAKE_VECTOR
+    mock_provider_b.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_fallback_on_provider_failure(monkeypatch):
+    """When primary fails, falls back to next provider in chain."""
+    monkeypatch.setenv("EMBED_BACKEND", "provider_c;provider_d")
+    ec.BACKEND = "provider_c;provider_d"
+    ec.PROVIDER_CHAIN[:] = ["provider_c", "provider_d"]
+    ec.PRIMARY_BACKEND = "provider_c"
+
+    # Reset circuit breaker for test providers
+    ec._circuit_breaker.reset("provider_c")
+    ec._circuit_breaker.reset("provider_d")
+
+    # Mock provider_c to fail, provider_d to succeed
+    mock_provider_c = AsyncMock(side_effect=httpx.ConnectError("refused"))
+    mock_provider_d = AsyncMock(return_value=FAKE_VECTOR)
+    monkeypatch.setitem(ec._BACKENDS, "provider_c", mock_provider_c)
+    monkeypatch.setitem(ec._BACKENDS, "provider_d", mock_provider_d)
+
+    result = await ec.get_embedding("test", use_cache=False)
+
+    assert result == FAKE_VECTOR
+    mock_provider_c.assert_called_once()
+    mock_provider_d.assert_called_once()
+    assert ec._circuit_breaker.get_failure_count("provider_c") >= 1
+
+
+@pytest.mark.asyncio
+async def test_budget_exhaustion_triggers_fallback(monkeypatch):
+    """When primary budget is exhausted, falls back to next provider."""
+    monkeypatch.setenv("EMBED_BACKEND", "provider_e;provider_f")
+    ec.BACKEND = "provider_e;provider_f"
+    ec.PROVIDER_CHAIN[:] = ["provider_e", "provider_f"]
+    ec.PRIMARY_BACKEND = "provider_e"
+
+    # Exhaust provider_e budget (max_requests=100)
+    for _ in range(100):
+        ec._provider_budget.record_request("provider_e")
+
+    # Mock providers
+    mock_provider_e = AsyncMock(return_value=FAKE_VECTOR)
+    mock_provider_f = AsyncMock(return_value=FAKE_VECTOR)
+    monkeypatch.setitem(ec._BACKENDS, "provider_e", mock_provider_e)
+    monkeypatch.setitem(ec._BACKENDS, "provider_f", mock_provider_f)
+
+    result = await ec.get_embedding("test", use_cache=False)
+
+    assert result == FAKE_VECTOR
+    mock_provider_e.assert_not_called()  # Skipped by budget check
+    mock_provider_f.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_all_providers_fail_raises_runtime_error(monkeypatch):
+    """When all providers fail, RuntimeError is raised."""
+    monkeypatch.setenv("EMBED_BACKEND", "provider_g;provider_h")
+    ec.BACKEND = "provider_g;provider_h"
+    ec.PROVIDER_CHAIN[:] = ["provider_g", "provider_h"]
+    ec.PRIMARY_BACKEND = "provider_g"
+
+    ec._circuit_breaker.reset("provider_g")
+    ec._circuit_breaker.reset("provider_h")
+
+    # Both providers fail
+    mock_provider_g = AsyncMock(side_effect=httpx.ConnectError("refused"))
+    mock_provider_h = AsyncMock(side_effect=httpx.ConnectError("refused"))
+    monkeypatch.setitem(ec._BACKENDS, "provider_g", mock_provider_g)
+    monkeypatch.setitem(ec._BACKENDS, "provider_h", mock_provider_h)
+
+    with pytest.raises(RuntimeError, match="All providers failed"):
+        await ec.get_embedding("test", use_cache=False)
+
+
+@pytest.mark.asyncio
+async def test_success_resets_circuit_breaker(monkeypatch):
+    """Successful request resets circuit breaker failure count."""
+    monkeypatch.setenv("EMBED_BACKEND", "openai-compat")
+    ec.BACKEND = "openai-compat"
+    ec.PROVIDER_CHAIN[:] = ["openai-compat"]
+    ec.PRIMARY_BACKEND = "openai-compat"
+
+    ec._circuit_breaker.reset("openai-compat")
+    ec._circuit_breaker.record_failure("openai-compat")
+    ec._circuit_breaker.record_failure("openai-compat")
+    assert ec._circuit_breaker.get_failure_count("openai-compat") == 2
+
+    mock_client = AsyncMock()
+    mock_client.post.return_value = _fake_response(OPENAI_RESPONSE)
+    ec._http_client = mock_client
+
+    await ec.get_embedding("test", use_cache=False)
+
+    # Success should reset failure count
+    assert ec._circuit_breaker.get_failure_count("openai-compat") == 0
+
+
+# ---------------------------------------------------------------------------
+# validate_providers
+# ---------------------------------------------------------------------------
+
+
+def test_validate_providers_known_provider():
+    """validate_providers does not raise for known provider."""
+    ec.PROVIDER_CHAIN[:] = ["openai-compat"]
+    ec.validate_providers()  # Should not raise
+
+
+def test_validate_providers_unknown_provider():
+    """validate_providers raises ValueError for unknown provider."""
+    ec.PROVIDER_CHAIN[:] = ["nonexistent-provider"]
+    with pytest.raises(ValueError, match="Invalid provider"):
+        ec.validate_providers()
 
 
 # ---------------------------------------------------------------------------
