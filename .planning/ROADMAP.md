@@ -138,7 +138,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 33. Request Rate Limiting | v1.4 | 0/1 | Planned | — |
 | 34. Upload and Index Quotas | v1.4 | 0/1 | Planned | — |
 | 35. Multi-KB Aggregated Search | v1.4 | 0/1 | Planned | — |
-| 36. Provider Budget & Circuit Breaker | v1.4 | 0/1 | Planned | — |
+| 36. Provider Budget & Circuit Breaker | v1.4 | 1/1 | Complete   | 2026-06-11 |
 | 37. Request-level Retrieval Cache | v1.4 | 0/1 | Planned | — |
 
 *Earlier milestones (v1.0–v1.3): see archived roadmaps in [milestones/](milestones/).*

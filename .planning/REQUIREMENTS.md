@@ -72,9 +72,9 @@
 
 ### Provider Budget & Circuit Breaker (Phase 36)
 
-- [ ] **PROVBUD-01**: Embedding provider calls enforce configurable request budgets and failure thresholds per backend
-- [ ] **PROVBUD-02**: Circuit breaker state supports closed, open, and half-open transitions with cooldown and fallback behavior
-- [ ] **PROVBUD-03**: Provider resilience emits operational metrics without regressing existing embed client APIs
+- [x] **PROVBUD-01**: Embedding provider calls enforce configurable request budgets and failure thresholds per backend
+- [x] **PROVBUD-02**: Circuit breaker state supports closed, open, and half-open transitions with cooldown and fallback behavior
+- [x] **PROVBUD-03**: Provider resilience emits operational metrics without regressing existing embed client APIs
 
 ### Request-level Retrieval Cache (Phase 37)
 
@@ -136,9 +136,9 @@
 | MULTIKB-01 | Phase 35 | Pending |
 | MULTIKB-02 | Phase 35 | Pending |
 | MULTIKB-03 | Phase 35 | Pending |
-| PROVBUD-01 | Phase 36 | Pending |
-| PROVBUD-02 | Phase 36 | Pending |
-| PROVBUD-03 | Phase 36 | Pending |
+| PROVBUD-01 | Phase 36 | Complete |
+| PROVBUD-02 | Phase 36 | Complete |
+| PROVBUD-03 | Phase 36 | Complete |
 | RLCACHE-01 | Phase 37 | Pending |
 | RLCACHE-02 | Phase 37 | Pending |
 | RLCACHE-03 | Phase 37 | Pending |
