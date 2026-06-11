@@ -412,6 +412,19 @@ All metrics are exposed at `/metrics` endpoint on the health server (port 8080, 
 - `kb_rag_cache_size_bytes` - Cache size in bytes
 - `kb_rag_cache_entries` - Number of cached entries
 
+#### Provider Resilience Metrics
+- kb_provider_requests_total{provider}
+- kb_provider_errors_total{provider}
+- kb_provider_circuit_state{provider,state}
+- kb_provider_fallbacks_total{from_provider,to_provider}
+- kb_provider_skipped_circuit_open_total{provider}
+- kb_provider_skipped_budget_exhausted_total{provider}
+- kb_provider_circuit_opened_total{provider}
+
+#### Retrieval Cache Metrics
+- kb_retrieval_cache_hits_total
+- kb_retrieval_cache_misses_total
+
 ### Common Queries
 
 #### Cache Hit Rate (%)
@@ -892,6 +905,74 @@ jobs:
 ```
 
 **Safety check:** Only auto-reclassify with narrow filters (e.g., `vendor=""`) to avoid unintended changes.
+
+---
+
+## Connector Operations (Phase 29)
+
+### Managing Remote Sources
+
+```bash
+# List available connector types
+python -m ingest.cli.main connectors list
+
+# Stage a connector for sync
+python -m ingest.cli.main connectors stage --type confluence \
+  --source-key "my-docs" \
+  --endpoint "https://confluence.example.com/rest/api"
+```
+
+### Confluence Connector
+- Env vars: CONFLUENCE_URL, CONFLUENCE_USERNAME, CONFLUENCE_TOKEN
+- Supports Cloud (Bearer) and Server/DC (Basic) auth
+- Uses CQL for query building, pagination for large spaces
+
+### JIRA Connector
+- Env vars: JIRA_URL, JIRA_USERNAME, JIRA_TOKEN
+- JQL builder with project and incremental sync filters
+- ADF to Markdown extraction
+
+### Git Connector
+- Env vars: GIT_REPO_URL, GIT_REPO_PATH
+- Full sync: clone + ls-tree; incremental: pull + diff
+- Support for HTTPS token and SSH auth
+
+## Auth Operations (Phase 32)
+
+```bash
+# Create a new API key
+python -m ingest.cli.main auth create --scope global --description "CI key"
+
+# List existing keys (shows only prefixes)
+python -m ingest.cli.main auth list
+
+# Revoke a key
+python -m ingest.cli.main auth revoke <8-char-prefix>
+```
+
+Keys are stored as SHA-256 hashes. Enable with AUTH_ENABLED=true in .env.
+
+## Quota Operations (Phase 34)
+
+```bash
+# View current limits and usage
+python -m ingest.cli.main quota show
+
+# Set limits
+python -m ingest.cli.main quota set --max-files 50000 --max-bytes 1073741824
+
+# Reset usage counters
+python -m ingest.cli.main quota reset
+```
+
+## Provider Resilience (Phase 36)
+
+Circuit breaker and budget system protects against cascading provider failures:
+- CLOSED → OPEN after CIRCUIT_BREAKER_THRESHOLD failures
+- OPEN → HALF_OPEN after cooldown (exponential backoff: 30s, 60s, 120s...)
+- HALF_OPEN → CLOSED on success, → OPEN on failure
+
+Fallback chain: semicolon-separated EMBED_BACKEND (e.g., "lmstudio;ollama")
 
 ---
 
@@ -1415,6 +1496,14 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 | Check status | `python -m ingest.ingest --status` |
 | Ingest docs | `python -m ingest.ingest --docs <path>` |
 | Clear cache | `sudo systemctl restart kb-rag-server` |
+| List connectors | `python -m ingest.cli.main connectors list` |
+| Stage connector | `python -m ingest.cli.main connectors stage --type confluence` |
+| Create API key | `python -m ingest.cli.main auth create --scope global` |
+| List API keys | `python -m ingest.cli.main auth list` |
+| Revoke API key | `python -m ingest.cli.main auth revoke <prefix>` |
+| Show quotas | `python -m ingest.cli.main quota show` |
+| Set quota | `python -m ingest.cli.main quota set --max-files 1000` |
+| Reset quota | `python -m ingest.cli.main quota reset` |
 
 ---
 
@@ -1428,4 +1517,4 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 ---
 
 *Quick reference for KB-RAG-MCP v1.1 operations*  
-*Last updated: 2026-05-23*
+*Last updated: 2026-06-11*

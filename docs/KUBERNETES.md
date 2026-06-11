@@ -241,4 +241,51 @@ Expected output: `1 chart(s) linted, 0 chart(s) failed`
 
 ---
 
-*Last updated: 2026-05-25 for v1.3*
+## v1.4 Environment Variables
+
+When deploying v1.4 features, you may need to add these env vars:
+
+```yaml
+# values-v1.4.yaml
+extraEnv:
+  # Auth (Phase 32) — optional, default false
+  - name: AUTH_ENABLED
+    value: "true"
+  - name: AUTH_DB_PATH
+    value: "/data/auth.db"
+
+  # Rate Limiting (Phase 33) — optional, default false
+  - name: RATE_LIMIT_ENABLED
+    value: "true"
+  - name: RATE_LIMIT_REQUESTS
+    value: "100"
+  - name: RATE_LIMIT_WINDOW
+    value: "60"
+
+  # Circuit Breaker (Phase 36)
+  - name: CIRCUIT_BREAKER_THRESHOLD
+    value: "5"
+  - name: CIRCUIT_BREAKER_COOLDOWN
+    value: "30"
+
+  # Retrieval Cache (Phase 37)
+  - name: RETRIEVAL_CACHE_TTL
+    value: "300"
+
+  # Connectors (Phase 29) — uncomment if using enterprise sources
+  # - name: CONFLUENCE_URL
+  #   value: "https://confluence.example.com"
+  # - name: CONFLUENCE_USERNAME
+  #   value: "bot"
+  # - name: CONFLUENCE_TOKEN
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: confluence-credentials
+  #       key: token
+```
+
+> **Note:** Auth, rate limiting, and circuit breaker are all OPTIONAL and OFF by default. Only configure them if you need those features. Connector credentials should be stored as Kubernetes Secrets, not in ConfigMaps.
+
+---
+
+*Last updated: 2026-06-11 for v1.4*

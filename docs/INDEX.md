@@ -86,10 +86,10 @@ FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
 
 | Metric | Value |
 |---|---|
-| **Tests passing** | 585 |
-| **Tests failing** | 0 |
+| **Tests passing** | 1095 |
+| **Tests failing** | 0 (12 skipped — require Qdrant) |
 | **Coverage target** | 90% branch (kb_server/ + ingest/) |
-| **Phases completed** | 16 + QA pipeline |
+| **Phases completed** | 26 (v1.0 through v1.4) |
 | **QA Hit Rate** | 100% |
 | **QA MRR** | 0.78 |
 

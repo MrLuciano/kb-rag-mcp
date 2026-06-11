@@ -8,7 +8,7 @@ TDD and includes a migration toolset.
 ## Constraints and Preferences
 - Dependency management: pip-tools (requirements.in -> requirements.txt).
 - Cache: in-memory LRU with auto-tuning; optional Redis fallback.
-- Authentication: none (internal, trusted use).
+- Authentication: optional (AUTH_ENABLED=false by default, backward compatible). Bearer token auth available on SSE transport.
 - Deployment: bare metal systemd for maximum performance.
 - Redis: optional fallback only.
 - Breaking changes: allowed during refactor.
@@ -476,7 +476,18 @@ Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 - FASE 16: RAG Performance and Accuracy (14 days)
 - QA Pipeline: QA evaluation — Hit Rate 100%, MRR 0.78 ✅
 
-**Total:** ~6 months for complete feature set — **DELIVERED**
+**v1.4 (FASEs 29-37): Platform, Analytics & Enterprise (Phases scheduled: 2026-05-27 to 2026-06-11):**
+- FASE 29: Enterprise Data Source Connectors — Confluence, JIRA, Git remote ingestion
+- FASE 30: Cross-Doc Knowledge Graph — Graph metadata derivation, related doc discovery
+- FASE 31: MCP Prompt Templates — extract_answer + summarize_documents prompts
+- FASE 32: API Key Authentication — Optional Bearer token auth on SSE
+- FASE 33: Request Rate Limiting — Per-subject token bucket server enforcement
+- FASE 34: Upload Index Quotas — Per-KB upload limits, schema v3→v4
+- FASE 35: Multi-KB Aggregated Search — kb_ids parameter, RRF multi-collection merge
+- FASE 36: Provider Budget & Circuit Breaker — Provider resilience, fallback chain
+- FASE 37: Request-level Retrieval Cache — Query result cache with invalidation
+
+**Total:** ~8.5 months for complete feature set — **DELIVERED**
 
 ---
 
@@ -491,3 +502,5 @@ All phases shipped. No pending phases.
 **v1.2.0 (FASEs 13-14):** Ingestion automation (file watcher, version extractor), observability (query logger, web UI).
 
 **v1.3.0 (FASEs 15-16 + QA):** Advanced infrastructure (multi-collection, Kubernetes), RAG accuracy (RAGAS pipeline, golden dataset), QA pipeline validated.
+
+**v1.4.0 (FASEs 29-37):** Platform, Analytics & Enterprise — Connectors, knowledge graph, MCP prompts, auth, rate limiting, quotas, multi-KB search, circuit breaker, retrieval cache.

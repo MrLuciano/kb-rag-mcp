@@ -299,6 +299,75 @@ curl http://localhost:8080/health
 
 ---
 
+---
+
+## Multi-KB Aggregated Search (Phase 35)
+
+Search across multiple knowledge bases simultaneously by passing `kb_ids`:
+
+```python
+search_kb(
+    query="installation requirements",
+    kb_ids=["kb_hr", "kb_eng", "kb_main"],
+    top_k=5,
+)
+```
+
+### How It Works
+
+1. Each `kb_id` maps to a Qdrant collection name
+2. Collections are searched in parallel via `VectorStore.multi_search()`
+3. Results are merged with per-collection min-max normalization + RRF fusion + dedup
+4. Each result is tagged with its source collection (`_collection` field in output)
+
+### Key Behaviors
+
+- **Deduplication**: Identical `chunk_id` values across collections are merged (highest aggregated RRF score wins)
+- **Scoring**: Results are sorted by aggregated RRF score, not raw similarity
+- **Backward compatible**: Omit `kb_ids` for single-KB behavior; `collection` param still works for single-KB routing
+- **Reranking**: Disabled for multi-KB searches (results are already merged and scored)
+
+### When To Use
+
+| Scenario | Use `kb_ids` |
+|----------|-------------|
+| Search a single KB | ❌ Use `collection` or omit |
+| Search 2+ related KBs | ✅ `kb_ids=["kb_hr", "kb_eng"]` |
+| Search all KBs at once | ✅ List all KB identifiers |
+
+---
+
+## Request-Level Retrieval Cache (Phase 37)
+
+Repeated identical searches can return from cache instead of re-embedding and re-searching:
+
+```python
+# First call — embeds query, searches Qdrant
+# Second call (identical) — returns from cache (~2-5ms vs 200-500ms)
+search_kb(query="installation requirements", top_k=5)
+```
+
+### Cache Key
+
+Generated deterministically from all retrieval-affecting inputs:
+- Query text
+- KB scope (`collection` or `kb_ids`)
+- All active filters (product, doc_type, version, vendor, subsystem, module)
+- `top_k` value
+- `hybrid` and `rerank` flags
+
+### Invalidation
+
+- **TTL**: Entries expire after `RETRIEVAL_CACHE_TTL` seconds (default: 300)
+- **Explicit**: Cache is invalidated on ingest/reclassification events
+- **Cold start**: Empty cache until first query populates it
+
+### Observability
+
+Cached and uncached searches both flow through the query logger and emit metrics:
+- `kb_retrieval_cache_hits_total` — Counter
+- `kb_retrieval_cache_misses_total` — Counter
+
 ## FAQ
 
 **Q: Should I enable hybrid and rerank for all queries?**  
@@ -327,5 +396,5 @@ A: Create golden queries with expected docs, measure NDCG@5 and MRR before/after
 
 ---
 
-**Last Updated:** 2026-05-16  
-**Version:** v0.10.0-dev
+**Last Updated:** 2026-06-11  
+**Version:** v1.4.0

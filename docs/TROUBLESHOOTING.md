@@ -31,6 +31,11 @@ For mode-specific troubleshooting, see the corresponding section:
 8. [Network and Connectivity](#network-and-connectivity)
 9. [Database Issues](#database-issues)
 10. [Logging and Debugging](#logging-and-debugging)
+11. [Authentication Issues](#authentication-issues)
+12. [Rate Limiting Issues](#rate-limiting-issues)
+13. [Quota Issues](#quota-issues)
+14. [Circuit Breaker Issues](#circuit-breaker-issues)
+15. [Connector Issues](#connector-issues)
 
 ---
 
@@ -704,6 +709,195 @@ sudo systemctl restart kb-rag-server
 
 ---
 
+## Authentication Issues
+
+### API Key Auth Not Working
+
+**Symptom:** SSE connection refused with 401.
+
+**Fix:**
+
+```bash
+# Check if auth is enabled
+grep AUTH_ENABLED /opt/kb-rag/config/kb-rag.env
+
+# Verify API key exists
+kb-rag auth list
+
+# Create new key if missing or revoked
+kb-rag auth create
+
+# Update client config with new key
+```
+
+### Key Revoked Accidentally
+
+**Fix:**
+
+```bash
+# Create a new key
+kb-rag auth create
+
+# Update client configuration with the new key
+```
+
+---
+
+## Rate Limiting Issues
+
+### Too Many Requests (429)
+
+**Symptom:** SSE returns 429 with `Retry-After` header.
+
+**Fix:**
+
+```bash
+# Increase rate limit thresholds
+sudo nano /opt/kb-rag/config/kb-rag.env
+# Increase: RATE_LIMIT_REQUESTS=1000
+# Increase: RATE_LIMIT_WINDOW=60
+
+sudo systemctl restart kb-rag-server
+```
+
+### Rate Limiting Too Aggressive
+
+**Fix:**
+
+```bash
+# Disable rate limiting entirely
+sudo nano /opt/kb-rag/config/kb-rag.env
+# Set: RATE_LIMIT_ENABLED=false
+
+sudo systemctl restart kb-rag-server
+
+# Or tune limits to be less restrictive
+# RATE_LIMIT_REQUESTS=5000
+# RATE_LIMIT_WINDOW=60
+```
+
+---
+
+## Quota Issues
+
+### Upload Rejected with Quota Exceeded
+
+**Symptom:** Ingest fails with `RuntimeError` about quota.
+
+**Fix:**
+
+```bash
+# Check current quota and usage
+kb-rag quota show
+
+# Increase quota limits
+kb-rag quota set --max-documents 50000 --max-size-gb 10
+
+# Reset quota counters
+kb-rag quota reset
+```
+
+### Quota Migration Failure
+
+**Symptom:** Schema version mismatch error.
+
+**Fix:**
+
+```bash
+# Automatic migration runs on startup
+# Check current schema version in metadata.py
+grep SCHEMA_VERSION /opt/kb-rag/kb_server/metadata.py
+
+# Restart to trigger migration
+sudo systemctl restart kb-rag-server
+```
+
+---
+
+## Circuit Breaker Issues
+
+### Backend Providers Always Failing
+
+**Symptom:** "All providers failed" errors.
+
+**Fix:**
+
+```bash
+# Check EMBED_BACKEND env var
+grep EMBED_BACKEND /opt/kb-rag/config/kb-rag.env
+
+# Verify provider is running
+# For LM Studio: curl http://localhost:1234/v1/models
+# For Ollama: curl http://localhost:11434/api/tags
+
+# Circuit resets automatically after cooldown period
+```
+
+### Circuit Never Closes
+
+**Symptom:** Provider stuck in OPEN state.
+
+**Fix:**
+
+```bash
+# Exponential backoff extends cooldown on repeated failures
+# Increase threshold to reduce sensitivity
+sudo nano /opt/kb-rag/config/kb-rag.env
+# Set: CIRCUIT_BREAKER_THRESHOLD=10
+
+sudo systemctl restart kb-rag-server
+```
+
+---
+
+## Connector Issues
+
+### Confluence Connection Fails
+
+**Symptom:** "Failed to connect to Confluence".
+
+**Fix:**
+
+```bash
+# Verify Confluence environment variables
+grep -E "CONFLUENCE_URL|CONFLUENCE_USERNAME|CONFLUENCE_TOKEN" \
+  /opt/kb-rag/config/kb-rag.env
+
+# Check network connectivity
+curl -I "$CONFLUENCE_URL"
+# Check firewall rules
+```
+
+### JIRA Sync Fails
+
+**Fix:**
+
+```bash
+# Verify JIRA configuration
+grep -E "JIRA_URL|JIRA_USERNAME|JIRA_TOKEN" \
+  /opt/kb-rag/config/kb-rag.env
+
+# Check API permissions on JIRA side
+# Ensure the token has read access to projects
+```
+
+### Git Connector Fails
+
+**Fix:**
+
+```bash
+# Verify repository URL and credentials
+grep GIT_REPO_URL /opt/kb-rag/config/kb-rag.env
+
+# Check SSH configuration if using SSH auth
+echo "$GIT_SSH_COMMAND"
+
+# Test connection manually
+git ls-remote "$GIT_REPO_URL"
+```
+
+---
+
 ## Memory and Resource Issues
 
 ### Out of Memory (OOM) Errors
@@ -1009,6 +1203,10 @@ tar czf kb-rag-support-$(date +%Y%m%d-%H%M%S).tar.gz \
 | Out of memory | Reduce `CACHE_MAX_SIZE_MB`, batch sizes |
 | Files not ingesting | Check file permissions, run with `--clean` |
 | High CPU usage | Reduce `WORKER_POOL_SIZE` |
+| Auth errors (401) | Check `AUTH_ENABLED`, regenerate API key |
+| Rate limited (429) | Increase `RATE_LIMIT_REQUESTS` |
+| Quota exceeded | `kb-rag quota set` to increase limits |
+| Connector fails | Check env vars, network connectivity |
 
 ### Emergency Recovery
 
@@ -1089,4 +1287,4 @@ For Qdrant-specific issues: [Database Issues](#database-issues)
 
 ---
 
-*Last updated: v1.3 - 2026-05-25*
+*Last updated: v1.4 - 2026-06-11*

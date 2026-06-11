@@ -1,13 +1,13 @@
 # KB-RAG-MCP Security Reference
 
 > This document describes the security posture, threat model, hardening
-> measures, and known limitations of KB-RAG-MCP. Last updated: 2026-05-18.
+> measures, and known limitations of KB-RAG-MCP. Last updated: 2026-06-11.
 
 ## Design Assumptions
 
 KB-RAG-MCP is designed as an **internal, trusted-network service**:
 
-- No authentication or authorization on any endpoint
+- Authentication is **optional and opt-in** (`AUTH_ENABLED=false` by default); existing deployments are fully backward compatible
 - No user accounts or sessions
 - No public internet exposure expected
 - Consumers are local AI assistants (Claude Desktop, OpenCode) or internal tools
@@ -29,12 +29,15 @@ If your deployment model differs from the above, see [Production Hardening](#pro
 | Qdrant data corruption | Bulk upsert with malformed vectors | Dimension check enforced before upsert; Qdrant rejects mismatched dims |
 | Log injection | User-supplied query text logged | Queries logged as-is to SQLite (not shell/web logs); no command execution from logs |
 | Backup tampering | Migration packages restored on import | SHA256 manifest validated before any file is written (`scripts/migrate/validate.py`) |
+| Unauthorized SSE access | Network access to MCP SSE endpoint | `AUTH_ENABLED` mitigates with Bearer token (SHA-256 hashed keys via `kb-rag auth`) |
+| Rate limit abuse | High-volume requests to SSE endpoint | `RATE_LIMIT_ENABLED` applies per-subject token bucket; HTTP 429 on exhaustion |
+| Upload quota exhaustion | Bulk ingest saturates disk/storage | Quota check (`kb-rag quota set`) rejects oversized uploads before expensive processing |
 
 ### Out-of-scope threats (accepted risks for internal use)
 
 | Threat | Reason out of scope |
 |---|---|
-| Unauthorized MCP access | stdio transport; only the local AI process connects |
+| Unauthorized MCP access (stdio) | stdio transport has no auth; only the local AI process connects; SSE can be protected via `AUTH_ENABLED` |
 | Web UI unauthorized access | No auth; deploy on trusted network only |
 | Health endpoint data leakage | Exposes metrics; not sensitive for internal use |
 | Prompt injection via retrieved chunks | Out of scope for the RAG layer; LLM handles prompt safety |
@@ -47,7 +50,7 @@ If your deployment model differs from the above, see [Production Hardening](#pro
 | Component | Port | Protocol | Auth | Notes |
 |---|---|---|---|---|
 | MCP server (stdio) | — | stdin/stdout | None | Only accessible to spawning process |
-| MCP server (SSE) | 8000 | HTTP | None | Bind to `127.0.0.1` in production |
+| MCP server (SSE) | 8000 | HTTP | Bearer token (optional, `AUTH_ENABLED`) | Bind to `127.0.0.1` in production |
 | Web UI | 8080 | HTTP | None | Internal only; disable if unused |
 | Health server | 8081 | HTTP | None | Exposes `/health` and `/metrics` |
 | Qdrant | 6333 (HTTP), 6334 (gRPC) | HTTP/gRPC | None | Localhost Docker; firewall from external |
@@ -66,6 +69,9 @@ If your deployment model differs from the above, see [Production Hardening](#pro
 - **systemd sandboxing:** Services run as non-root with `ProtectSystem=strict`, `NoNewPrivileges=true` (see `deployment/systemd/`)
 - **Qdrant local-only:** Docker binding to `localhost` by default
 - **Safe archive extraction:** ZIP and tar extraction filters path traversal members (`..` and absolute paths) before writing
+- **API key authentication:** Optional Bearer token auth on SSE endpoint; `AUTH_ENABLED=true` enables it; SHA-256 hashed keys managed via `kb-rag auth create/list/revoke`
+- **Rate limiting:** `RATE_LIMIT_ENABLED=true` enables per-subject token bucket; returns HTTP 429 on exhaustion
+- **Upload quotas:** Per-source quotas via `kb-rag quota set/show/reset`; schema migration (v3→v4) included
 
 ---
 
@@ -153,7 +159,7 @@ The `_sanitize_env` function in `scripts/migrate/export.py` redacts any key cont
 
 | Limitation | Impact | Workaround |
 |---|---|---|
-| No auth on any endpoint | Any local process can query the MCP/UI/health | Network isolation + firewall |
+| Auth off by default (`AUTH_ENABLED=false`) | MCP SSE, UI, and health endpoints unprotected unless configured | Enable `AUTH_ENABLED=true` + create keys via `kb-rag auth create`; stdio remains unauth |
 | Query log stores raw queries | Query text visible to anyone with file access | Restrict `QUERY_LOG_PATH` file permissions |
 | Qdrant collection has no ACL | Any process with network access can read/write vectors | Qdrant API key (see above) |
 | No TLS on any endpoint | Traffic readable on local network | TLS termination via reverse proxy |

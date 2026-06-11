@@ -18,6 +18,62 @@ The KB-RAG file watcher monitors your documentation directory for changes and au
 
 ---
 
+## Connector-Based Ingestion (Phase 29)
+
+In addition to the file watcher, the system supports ingestion from remote enterprise sources via the connector framework.
+
+### Supported Sources
+
+| Connector | Type | Auth Methods | Env Vars Required |
+|-----------|------|-------------|-------------------|
+| Confluence | Documentation | Basic (Server/DC) or Bearer (Cloud) | CONFLUENCE_URL, CONFLUENCE_USERNAME, CONFLUENCE_TOKEN |
+| JIRA | Issue Tracking | Basic (Server/DC) or Bearer (Cloud) | JIRA_URL, JIRA_USERNAME, JIRA_TOKEN |
+| Git | Code/Config | HTTPS token or SSH key | GIT_REPO_URL, GIT_REPO_PATH |
+
+### How It Works
+
+Connectors follow a three-phase lifecycle:
+1. **Stage** — Configure the source via `kb-rag connectors stage --type <type> --source-key <name>`
+2. **Sync** — The connector fetches documents (full or incremental) and writes them to a staging directory
+3. **Ingest** — Staged documents are processed through the normal ingest pipeline (chunk → embed → upsert)
+
+### Connector vs File Watcher
+
+| Feature | File Watcher | Connector |
+|---------|-------------|-----------|
+| Source | Local filesystem | Remote API (Confluence, JIRA, Git) |
+| Trigger | File change event | Manual or scheduled sync |
+| Sync type | Real-time (event-driven) | Pull-based (full/incremental) |
+| Auth | Filesystem permissions | API tokens / SSH keys |
+| Content | Any supported format | HTML (Confluence), ADF JSON (JIRA), files (Git) |
+
+### Listing Available Connectors
+
+```bash
+python -m ingest.cli.main connectors list
+```
+
+Expected output:
+```
+Supported connector types:
+  confluence
+  jira
+  git
+```
+
+### Staging a Connector
+
+```bash
+python -m ingest.cli.main connectors stage \
+  --type confluence \
+  --source-key "engineering-wiki" \
+  --endpoint "https://confluence.example.com/rest/api"
+```
+
+This creates a staging area and fetches available documents. Staged documents are ready for standard ingestion.
+
+---
+
 ## Quick Start
 
 ### 1. Configure Watch Path
@@ -651,4 +707,4 @@ A: Check logs: `sudo journalctl -u kb-rag-watcher -f` and verify jobs are create
 
 ---
 
-*Last updated: 2026-05-25 for v1.3*
+*Last updated: 2026-06-11 for v1.3*

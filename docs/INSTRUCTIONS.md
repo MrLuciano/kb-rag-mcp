@@ -2,6 +2,7 @@
 
 > Reference document for project evolution via LLM-based code generation.
 > Describes current architecture, technical decisions, interface contracts, and improvement directions.
+> Last updated: 2026-06-11
 
 ---
 
@@ -74,21 +75,39 @@ kb-rag-mcp/
 │   ├── collections/       # Multi-collection routing (Phase 15)
 │   │   ├── manager.py     # CollectionManager — CRUD for Qdrant collections
 │   │   └── router.py      # CollectionRouter — resolve/ensure by parameter
-│   ├── cache/             # LRU cache + optional Redis
+│   ├── cache/             # LRU + optional Redis + request cache
+│   │   └── request_cache.py  # Retrieval cache (Phase 37)
 │   ├── retrieval/         # Hybrid search (BM25+dense RRF) + reranker
 │   ├── ui/                # FastAPI+HTMX Web UI
-│   └── telemetry/         # SQLite query logger
+│   ├── telemetry/         # SQLite query logger
+│   ├── auth.py            # Bearer token auth middleware (Phase 32)
+│   ├── auth_registry.py   # Auth key management (Phase 32)
+│   ├── rate_limiter.py    # Per-subject rate limiting (Phase 33)
+│   ├── circuit_breaker.py # Circuit breaker pattern (Phase 36)
+│   ├── provider_budget.py # Provider budget management (Phase 36)
+│   └── prompts.py         # MCP prompts support (Phase 31)
 ├── ingest/
 │   ├── ingest.py          # Ingestion pipeline — main CLI
 │   ├── classifier.py      # Product/doc_type inference via regex
 │   ├── registry.py        # State control (SQLite) — prevents re-ingestion
+│   ├── graph_builder.py   # Knowledge graph construction (Phase 30)
 │   ├── parsers/
 │   │   ├── legacy_office.py  # .doc, .xls, .ppt, .odt, .ods, .odp, .wpd
 │   │   └── zip_handler.py    # Recursive ZIP extraction
 │   ├── job/               # SQLite job system with priorities
 │   ├── worker/            # Async pool + token bucket rate limiter
 │   ├── validation/        # Format, size, content validators
-│   └── watcher/           # Watchdog file watcher for auto-ingestion
+│   ├── watcher/           # Watchdog file watcher for auto-ingestion
+│   ├── cli/
+│   │   ├── auth.py        # Auth management commands (Phase 32)
+│   │   └── quota.py       # Quota management commands (Phase 33)
+│   └── connectors/        # Enterprise connectors (Phase 29)
+│       ├── base.py        # Base connector interface
+│       ├── factory.py     # Connector factory
+│       ├── confluence.py  # Confluence connector
+│       ├── jira.py        # JIRA connector
+│       ├── git.py         # Git repository connector
+│       └── staging.py     # Staging area connector
 ├── qa/
 │   ├── run_qa.py          # QA evaluation pipeline
 │   ├── metrics.py         # Hit rate, MRR, p50_score
@@ -154,6 +173,13 @@ that reads `os.getenv()` — a critical pattern maintained in all entrypoints.
 | `DEFAULT_TOP_K` | `5` | Default result count per search |
 | `LOG_PATH` | `/tmp/kb-mcp.log` | Log file path |
 | `REGISTRY_DB` | `data/registry.db` | SQLite path for ingest state control |
+| `AUTH_ENABLED` | `false` | Enable Bearer token auth on SSE endpoint |
+| `AUTH_DB_PATH` | `data/auth.db` | Auth registry SQLite path |
+| `RATE_LIMIT_ENABLED` | `false` | Enable per-subject rate limiting |
+| `RATE_LIMIT_REQUESTS` | `100` | Max requests per window |
+| `RATE_LIMIT_WINDOW` | `60` | Window in seconds |
+| `CIRCUIT_BREAKER_THRESHOLD` | `5` | Consecutive failures before OPEN |
+| `CIRCUIT_BREAKER_COOLDOWN` | `30` | Initial cooldown in seconds |
 
 ### URL Normalization (embed_client.py)
 
@@ -176,12 +202,20 @@ Each backend then adds the correct path:
 Main semantic search. Parameters:
 
 | Parameter | Type | Required | Description |
-|---|---|---|---|---|
+|---|---|---|---|
 | `query` | string | ✓ | Question or term |
 | `top_k` | integer | — | Results (1–20, default: 5) |
 | `product` | string | — | Product filter (inferred by classifier) |
 | `doc_type` | string | — | Filter: see taxonomy below |
 | `filter_type` | string | — | File format: `pdf`, `docx`, `xlsx`, `pptx`, `txt`, `code` |
+| `hybrid` | boolean | — | Enable BM25+dense hybrid search (Phase 12) |
+| `rerank` | boolean | — | Enable cross-encoder reranking (Phase 12) |
+| `version` | string | — | Filter by product version (Phase 13) |
+| `vendor` | string | — | Filter by vendor (Phase 11.1) |
+| `subsystem` | string | — | Filter by subsystem (Phase 11.1) |
+| `module` | string | — | Filter by module (Phase 17) |
+| `collection` | string | — | Target Qdrant collection (Phase 15) |
+| `kb_ids` | array<string> | — | Multi-KB search (Phase 35) |
 
 **Returns:** list of chunks with `chunk_id`, `score`, `text`, `source_file`, `product`, `doc_type`, `file_type`, `page`.
 
@@ -198,6 +232,18 @@ Returns the full chunk with neighboring context.
 
 ### `kb_stats`
 KB statistics: total documents and chunks, breakdown by `doc_type` and file format.
+
+### `get_related_documents`
+Find documents related by knowledge graph connections.
+
+### `explore_topic`
+Explore the KB by topic labels for browsing.
+
+### `list_collections`
+List available Qdrant collections (Phase 15).
+
+### `list_filter_options`
+List available filter values for attributes like product, vendor, subsystem (Phase 17).
 
 ---
 
@@ -242,6 +288,8 @@ Products are also inferred from the file name when the file is in `varios/` or a
 ---
 
 ## 7. Ingestion Pipeline
+
+Enterprise connectors (Phase 29) allow ingesting from Confluence, JIRA, and Git repositories. See AUTO_INGESTION.md for connector setup.
 
 ### Per-file flow
 
@@ -346,7 +394,20 @@ python ingest/ingest.py --docs /path --workers 4
 python ingest/ingest.py --status
 python ingest/ingest.py --status --errors   # errors only
 python ingest/ingest.py --status --list     # list all
-```
+
+# Connector management
+python -m ingest.cli.main connectors list
+python -m ingest.cli.main connectors stage --type confluence
+
+# Auth management
+python -m ingest.cli.main auth create --scope global --description "my key"
+python -m ingest.cli.main auth list
+python -m ingest.cli.main auth revoke <prefix>
+
+# Quota management
+python -m ingest.cli.main quota show
+python -m ingest.cli.main quota set --max-files 1000
+python -m ingest.cli.main quota reset
 
 ---
 
@@ -499,444 +560,12 @@ Ingesting 7 GB takes approximately 3–6 hours on CPU only.
 
 ---
 
-## 11. Planned Improvements (backlog)
+## 11. Planned Improvements
 
-> **Note:** This backlog maps to Phase 11-16 in docs/PLAN.md.  
-> Each item contains sufficient technical detail for autonomous implementation.
+All backlog items from Phases 11-16 (reranking, hybrid search, payload indexing, version filter, _meta.json, inspection UI, usage metrics, multiple collections, registry export, Kubernetes, RAG evaluation, legacy formats, ZIP) have been implemented.
 
----
+All v1.4 features (Phases 29-37) are now delivered. See PLAN.md for scope.
 
-### High priority
-
-#### ✅ Legacy formats (Phase 11 — implemented)
-
-Full legacy format support implemented in `ingest/parsers/`:
-
-- `.doc` — docx2txt → python-docx fallback
-- `.xls` — xlrd (Excel 97-2003)
-- `.ppt` — python-pptx best-effort
-- `.odt`, `.ods`, `.odp` — odfpy (OpenDocument)
-- `.wpd` — heuristic latin-1 extraction
-- `.zip` — stdlib zipfile, recursive up to 2 levels, 500 MB/entry limit
-
-See [LEGACY_FORMATS.md](LEGACY_FORMATS.md) for full details.
-
----
-
-#### Reranking (Phase 12)
-**Problem:** Vector results include false positives (semantic similarity without 
-factual relevance). Top-5 may contain irrelevant documents.
-
-**Technical solution:**
-- Create `server/retrieval/reranker.py` with cross-encoder:
-  - Model: `cross-encoder/ms-marco-MiniLM-L-6-v2` via `sentence-transformers`
-  - Pipeline: `search_kb` returns top-20 → reranker → top-k to user
-  - Batch processing: groups of 20 pairs (query, chunk) at a time
-  - Async: do not block main thread
-- Add `rerank: bool = False` parameter to `search_kb` tool (opt-in)
-- Cache reranked results (key: hash(query + results))
-
-**Affected files:**
-- `requirements.in`: add `sentence-transformers>=2.2.0`
-- `server/retrieval/reranker.py`: new module
-- `server/mcp_server.py`: integrate reranker in `search_kb`
-- `server/cache/cache_manager.py`: add reranking cache
-- `tests/test_reranker.py`: unit tests
-- `tests/e2e/test_reranking_quality.py`: quality tests
-
-**Configuration:**
-```bash
-# .env
-RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
-RERANKER_BATCH_SIZE=20
-RERANKER_CACHE_TTL=3600  # 1 hour
-```
-
-**Tests:**
-- Golden query dataset with expected top doc
-- Metric: NDCG@5 before/after reranking
-- Performance test: p95 latency <500ms
-- Validation: result order changes correctly
-
-**Acceptance criteria:**
-- NDCG@5 improves >20% on test dataset
-- Additional latency <200ms (p95)
-- Opt-in does not break existing behavior
-
----
-
-#### Hybrid search (Phase 12)
-**Problem:** Pure vector search fails on specific technical terms 
-(product names, versions, codes). Example: "Archive Center 22.3" does not
-rank documents with that exact term at the top.
-
-**Technical solution:**
-- Qdrant `SparseVector` + BM25 via `fastembed`:
-  - Dense vector: current embedding (nomic-embed-text)
-  - Sparse vector: BM25 tokenization with fastembed
-  - Fusion: **RRF (Reciprocal Rank Fusion)** or weighted sum
-- Add `hybrid: bool = False` parameter to `search_kb` (opt-in)
-- Store sparse vector alongside dense on upsert
-
-**Affected files:**
-- `requirements.in`: add `fastembed>=0.2.0` (BM25 support)
-- `server/retrieval/hybrid_search.py`: new module
-- `ingest/core/document_processor.py`: generate sparse vector during chunking
-- `server/vector_store.py`: upsert with sparse vector
-- `server/mcp_server.py`: integrate hybrid search
-- `tests/test_hybrid_search.py`: unit tests
-- `tests/e2e/test_recall_improvement.py`: recall metrics
-
-**RRF implementation:**
-```python
-def rrf_fusion(dense_results, sparse_results, k=60):
-    """Reciprocal Rank Fusion."""
-    scores = {}
-    for rank, result in enumerate(dense_results):
-        scores[result.id] = scores.get(result.id, 0) + 1/(k + rank + 1)
-    for rank, result in enumerate(sparse_results):
-        scores[result.id] = scores.get(result.id, 0) + 1/(k + rank + 1)
-    return sorted(scores.items(), key=lambda x: -x[1])
-```
-
-**Configuration:**
-```bash
-# .env
-HYBRID_DENSE_WEIGHT=0.7
-HYBRID_SPARSE_WEIGHT=0.3
-HYBRID_RRF_K=60
-```
-
-**Tests:**
-- Queries with specific technical terms (versions, codes)
-- Metric: Recall@10 before/after
-- Validation: documents with exact match rank higher
-
-**Acceptance criteria:**
-- Recall@10 improves >15% on technical queries
-- Compatibility with existing filters (product, doc_type)
-- Performance: additional latency <100ms
-
----
-
-#### Payload indexing (Phase 12)
-**Problem:** Filtered queries (`product=X`, `doc_type=Y`) are slow on 
-large collections (>100k chunks) because Qdrant scans all payloads.
-
-**Technical solution:**
-- Create Qdrant indexes on `product` and `doc_type` fields:
-  ```python
-  client.create_payload_index(
-      collection_name="kb_docs",
-      field_name="product",
-      field_schema="keyword"  # index as exact string
-  )
-  ```
-- Migration script: `scripts/migrations/create_payload_indexes.py`
-  - Idempotent: checks if index already exists
-  - Progress bar for large collections
-  - Can run in production without downtime
-- Integrate index creation into `vector_store.py` when creating collection
-
-**Affected files:**
-- `scripts/migrations/create_payload_indexes.py`: new script
-- `server/vector_store.py`: add index creation to `create_collection()`
-- `docs/MIGRATIONS.md`: document migration
-- `tests/test_payload_indexes.py`: validate index creation
-
-**Migration script:**
-```python
-# scripts/migrations/create_payload_indexes.py
-import asyncio
-from qdrant_client import QdrantClient
-
-async def create_indexes():
-    client = QdrantClient(url=QDRANT_URL)
-    fields = ["product", "doc_type"]
-    
-    for field in fields:
-        # Check if index exists
-        collection_info = client.get_collection("kb_docs")
-        if field not in collection_info.config.params.index_fields:
-            print(f"Creating index on {field}...")
-            client.create_payload_index(
-                collection_name="kb_docs",
-                field_name=field,
-                field_schema="keyword"
-            )
-            print(f"✓ Index created on {field}")
-        else:
-            print(f"✓ Index already exists on {field}")
-
-if __name__ == "__main__":
-    asyncio.run(create_indexes())
-```
-
-**Tests:**
-- Benchmark: filter before/after creating indexes
-- Validation: filtered query returns correct results
-- Performance: filtered queries <50ms on 100k chunk collection
-
-**Acceptance criteria:**
-- Indexes created successfully in production
-- Filtered queries >10x faster
-- Script idempotent (can run multiple times)
-
----
-
-### Medium priority
-
-#### ✅ ZIP support (Phase 11 — implemented)
-
-Implemented in `ingest/parsers/zip_handler.py`. Recursive extraction up to 2 levels,
-500 MB per entry limit, `source_path` preserved in payload.
-See [LEGACY_FORMATS.md](LEGACY_FORMATS.md) for full rules.
-
----
-
-#### Version in payload (Phase 13)
-**Problem:** Documents from different versions of the same product are not 
-distinguishable. User cannot filter by specific version.
-
-**Technical solution:**
-- Version extractor: `ingest/core/version_extractor.py`
-  - Regex patterns:
-    - `(\d{2}\.\d+)` → "22.3", "16.2"
-    - `(CE \d{2}\.\d+)` → "CE 24.4"
-    - `(v\d+\.\d+\.\d+)` → "v3.2.1"
-    - `(\d{4}R\d)` → "2024R1" (SAP style)
-  - Search in: filename, parent directory, first paragraph of text
-  - Return first match or `None`
-- Add `version: str | None` field to Qdrant payload
-- `version` filter in `search_kb` tool
-
-**Affected files:**
-- `ingest/core/version_extractor.py`: new module
-- `ingest/core/metadata.py`: integrate version extraction
-- `server/mcp_server.py`: add `version` parameter to `search_kb`
-- `tests/test_version_extractor.py`: tests with various formats
-
-**Implementation:**
-```python
-import re
-
-class VersionExtractor:
-    PATTERNS = [
-        r'(\d{2}\.\d+(?:\.\d+)?)',  # 22.3, 16.2.1
-        r'(CE \d{2}\.\d+)',          # CE 24.4
-        r'(v\d+\.\d+(?:\.\d+)?)',    # v3.2.1, v2.0
-        r'(\d{4}R\d)',               # 2024R1
-    ]
-    
-    def extract(self, filename: str, parent_dir: str, 
-                text_preview: str) -> str | None:
-        """Extract version from filename, directory, or text."""
-        sources = [filename, parent_dir, text_preview[:500]]
-        
-        for source in sources:
-            for pattern in self.PATTERNS:
-                match = re.search(pattern, source)
-                if match:
-                    return match.group(1)
-        
-        return None
-```
-
-**Tests:**
-- `"ProductName_22.3_Admin_Guide.pdf"` → `"22.3"`
-- `"/docs/ecm/CE 24.4/manual.pdf"` → `"CE 24.4"`
-- `"Release Notes for version 16.2"` → `"16.2"`
-- File without version → `None`
-
-**Acceptance criteria:**
-- Correctly extracts version from 90% of test files
-- `version` field indexed in Qdrant
-- `version` filter works in search_kb
-
----
-
-#### `_meta.json` per folder (Phase 13)
-**Problem:** Automatic classification gets some files wrong. Moving files 
-to restructure folders is labor-intensive. Need targeted overrides.
-
-**Technical solution:**
-- `_meta.json` file per directory:
-  ```json
-  {
-    "product": "DefaultProductForDir",
-    "doc_type": "default_doc_type",
-    "files": {
-      "specific_file.pdf": {
-        "product": "OverrideProduct",
-        "doc_type": "api_guide"
-      },
-      "another_file.docx": {
-        "doc_type": "manual"
-      }
-    }
-  }
-  ```
-- Precedence: file-specific > directory-level > auto-inference
-- Validation: reject invalid `product`/`doc_type` (allowlist)
-- Load in `FileScanner` before classifying
-
-**Affected files:**
-- `ingest/core/meta_loader.py`: new module
-- `ingest/core/file_scanner.py`: integrate meta loader
-- `ingest/core/metadata.py`: use override if available
-- `tests/test_meta_loader.py`: precedence tests
-
-**Implementation:**
-```python
-import json
-from pathlib import Path
-
-class MetaLoader:
-    VALID_DOC_TYPES = [
-        "admin_guide", "install_guide", "api_guide", 
-        "release_notes", "manual", "training", "overview"
-    ]
-    
-    def load_meta(self, directory: Path) -> dict:
-        """Load _meta.json from directory."""
-        meta_file = directory / "_meta.json"
-        if not meta_file.exists():
-            return {}
-        
-        with open(meta_file) as f:
-            meta = json.load(f)
-        
-        # Validate
-        if "doc_type" in meta:
-            if meta["doc_type"] not in self.VALID_DOC_TYPES:
-                raise ValueError(f"Invalid doc_type: {meta['doc_type']}")
-        
-        if "files" in meta:
-            for file, overrides in meta["files"].items():
-                if "doc_type" in overrides:
-                    if overrides["doc_type"] not in self.VALID_DOC_TYPES:
-                        raise ValueError(
-                            f"Invalid doc_type for {file}: "
-                            f"{overrides['doc_type']}"
-                        )
-        
-        return meta
-    
-    def get_metadata(self, file_path: Path, meta: dict) -> dict:
-        """Get metadata for file considering precedence."""
-        filename = file_path.name
-        
-        # File-specific override
-        if "files" in meta and filename in meta["files"]:
-            file_meta = meta["files"][filename]
-            return {
-                "product": file_meta.get("product", meta.get("product")),
-                "doc_type": file_meta.get("doc_type", meta.get("doc_type"))
-            }
-        
-        # Directory-level default
-        return {
-            "product": meta.get("product"),
-            "doc_type": meta.get("doc_type")
-        }
-```
-
-**Tests:**
-- `_meta.json` with default → applied to all files
-- `_meta.json` with file-specific → override works
-- Precedence: file > dir > auto
-- Validation: invalid doc_type → error
-
-**Acceptance criteria:**
-- `_meta.json` loaded and validated correctly
-- Precedence works (file > dir > auto)
-- Validation rejects invalid values
-- Manual classification takes priority over automatic
-
----
-
-### Low priority
-
-#### Inspection UI (Phase 14)
-**Summary solution:**
-- FastAPI in `server/ui/` with HTMX
-- Routes: `/ui` (browse), `/ui/search` (tester), `/ui/doc/{id}` (detail)
-- Bootstrap 5 or Tailwind for styling
-- No authentication (internal only)
-- Pagination: 50 documents per page
-
-**Files:** `server/ui/{app.py, templates/, static/}`
-
----
-
-#### Usage metrics (Phase 14)
-**Summary solution:**
-- SQLite table `query_log`: query, results, scores, latency_ms, timestamp
-- Log after each `search_kb` invocation
-- Auto-rotation: keep 90 days, archive monthly
-- Stats queries: top queries, low-score queries
-
-**Files:** `server/telemetry/query_logger.py`
-
----
-
-#### ✅ Multiple collections (Phase 15 — implemented)
-**Implemented solution:**
-- `CollectionManager` in `kb_server/collections/manager.py` — CRUD (list/create/delete/exists)
-  - Mirrors HNSW config and payload indexes from VectorStore
-- `CollectionRouter` in `kb_server/collections/router.py`
-  - `resolve()` — strict, raises `CollectionNotFoundError` if collection doesn't exist (read paths)
-  - `ensure()` — creates automatically if it doesn't exist (ingest paths)
-- Optional `collection` parameter on `search_kb` and `list_documents`
-- New MCP tool: `list_collections` — lists all available collections
-- Backward compatible: without `collection` routes to `QDRANT_COLLECTION` (default `kb_docs`)
-
-**Files:** `kb_server/collections/{__init__.py, manager.py, router.py}`,
-              `kb_server/server.py` (modified), `kb_server/vector_store.py` (modified)
-**Tests:** `tests/test_collection_manager.py` (10 tests), `tests/test_collection_router.py` (7 tests)
-
----
-
-#### Registry export (Phase 14)
-**Summary solution:**
-- Command: `kb-rag registry export --format csv|json`
-- Filters: `--product`, `--doc_type`, `--status`
-- Streaming export (do not load everything into memory)
-
-**Files:** `ingest/cli/export.py`
-
----
-
-#### ✅ Kubernetes support (Phase 15 — implemented)
-**Implemented solution:**
-- Helm chart at `deployment/helm/kb-rag-mcp/`
-  - `Deployment` for kb-server with liveness/readiness probes
-  - `StatefulSet` for Qdrant + PVC (50 Gi default)
-  - `HorizontalPodAutoscaler` (2–10 replicas, 70% CPU target)
-  - `Services` for kb-server and Qdrant
-  - `ConfigMap` for env vars
-  - `_helpers.tpl` with label macros
-- `values.yaml` with configurable defaults (replicas, resources, optional Redis, Ingress)
-- `ServiceMonitor` support for Prometheus Operator
-
-**Files:** `deployment/helm/kb-rag-mcp/{Chart.yaml, values.yaml, templates/}`
-**Docs:** `docs/KUBERNETES.md`
-
----
-
-#### RAG performance and accuracy (Phase 16)
-**Summary solution:**
-- Golden dataset: 50+ (query, expected_answer, expected_docs)
-- RAGAS pipeline: context_precision, answer_relevancy, faithfulness
-- LLM-as-judge via local Ollama or OpenAI API
-- Query analyzer: identify patterns, low-score queries
-- Optimizations: chunk size, score thresholds, query expansion
-- Weekly CI evaluation job
-
-**Files:** `server/evaluation/{ragas_pipeline.py, dataset.py}`, 
-            `server/analytics/query_analyzer.py`
-
----
 ---
 
 ## 12. Operation Commands

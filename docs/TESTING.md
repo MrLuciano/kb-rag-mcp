@@ -9,6 +9,9 @@
   - `integration` — tests requiring live infrastructure (Qdrant, LM Studio, Redis); skipped via `pytest -m 'not integration'`
   - `fase12` — tests targeting Phase 12 features (hybrid search, reranking)
   - `cli` — CLI integration tests that exercise click commands end-to-end
+  - `fase29` — tests targeting Phase 29 features (enterprise connectors)
+  - `fase30` — tests targeting Phase 30 features (knowledge graph)
+  - `fase36` — tests targeting Phase 36 features (circuit breaker, provider budget)
 - All new features require tests for main success and common failure cases
 - Test names must describe scenario and expected result
 - Use fixtures via `conftest.py` for common test data/setup
@@ -23,9 +26,8 @@
 
 ## Test Count
 
-- **585** core unit tests (in `tests/`, excluding e2e and SSE handler)
-- **3** SSE handler tests (`tests/test_sse_handler.py`)
-- **51** end-to-end tests (`tests/e2e/`)
+- **1095** core unit tests (in `tests/`, excluding e2e and SSE handler)
+- **12** skipped (require Qdrant — integration/e2e)
 - Run all tests:
   ```bash
   pytest tests/ -v
@@ -86,4 +88,4 @@ python scripts/logging-audit.py
 
 ---
 
-*Last updated: 2026-05-25 for v1.3*
+*Last updated: 2026-06-11 for v1.4*

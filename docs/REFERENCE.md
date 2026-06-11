@@ -91,6 +91,14 @@ return ranked chunks
 | Integration checker | `scripts` | `check-integration-gaps.py` | CI gate: 3 integration gap checks (FASE 22) |
 | Grafana dashboard | `deployment/config` | `grafana-dashboard.json` | 18-panel dashboard: ingestion, workers, cache, embedding API |
 | Helm chart | `deployment/helm/kb-rag-mcp` | `Chart.yaml`, `values.yaml`, `templates/` | Kubernetes deployment (Deployment, StatefulSet, HPA, Services) |
+| Enterprise Connectors | `ingest/connectors` | `factory.py`, `confluence.py`, `jira.py`, `git.py` | Remote source ingest (Confluence, JIRA, Git) |
+| Knowledge Graph | `ingest` | `graph_builder.py` | Document graph metadata derivation |
+| MCP Prompts | `kb_server` | `prompts.py` | `extract_answer` + `summarize_documents` |
+| Auth | `kb_server` | `auth.py`, `auth_registry.py` | Optional Bearer token auth on SSE |
+| Rate Limiter | `kb_server` | `rate_limiter.py` | Per-subject token bucket for servers |
+| Circuit Breaker | `kb_server` | `circuit_breaker.py` | Provider resilience state machine |
+| Provider Budget | `kb_server` | `provider_budget.py` | Sliding window budget tracking |
+| Retrieval Cache | `kb_server/cache` | `request_cache.py` | Request-level search caching |
 
 ---
 
@@ -98,14 +106,21 @@ return ranked chunks
 
 | Tool | Description | Key Parameters |
 |---|---|---|
-| `search_kb` | Semantic search over the knowledge base | `query`, `top_k`, `product`, `doc_type`, `version`, `filter_type`, `hybrid`, `rerank`, `collection` |
+| `search_kb` | Semantic search over the knowledge base | `query`, `top_k`, `product`, `doc_type`, `version`, `filter_type`, `hybrid`, `rerank`, `collection`, `kb_ids` |
 | `list_documents` | List indexed documents with optional filters | `product`, `doc_type`, `filter_type`, `limit`, `collection` |
 | `get_chunk` | Return a specific chunk with context window | `chunk_id`, `context_window` |
 | `kb_stats` | Collection statistics (doc count, breakdown by product/type) | — |
 | `list_collections` | List all available Qdrant collections | — |
+| `get_related_documents` | Find documents related to a given doc or chunk | `chunk_id`, `collection` |
+| `explore_topic` | Discover documents by topic/cluster | `topic`, `collection` |
 
 The `collection` parameter on `search_kb` and `list_documents` is optional;
 omitting it routes to `QDRANT_COLLECTION` (default: `kb_docs`).
+
+The `kb_ids` parameter on `search_kb` enables multi-KB aggregated search: pass an
+array of Qdrant collection names to search across all of them simultaneously with
+RRF-fused results. Omitting `kb_ids` routes to the single `collection` (or
+`QDRANT_COLLECTION`) for backward compatibility.
 
 ---
 
@@ -209,6 +224,50 @@ root — it is loaded automatically before `kb_server` is imported.
 | `RECLASSIFY_BACKUP_RETENTION_DAYS` | `30` | Days to keep reclassification backups |
 | `SSE_HOST` | `0.0.0.0` | MCP SSE transport host |
 | `SSE_PORT` | `8765` | MCP SSE transport port |
+
+**Auth**
+
+| Variable | Default | Description |
+|---|---|---|
+| `AUTH_ENABLED` | `false` | Enable Bearer token authentication on SSE |
+| `AUTH_DB_PATH` | `./auth.db` | Path to auth SQLite database |
+
+**Rate Limiting**
+
+| Variable | Default | Description |
+|---|---|---|
+| `RATE_LIMIT_ENABLED` | `false` | Enable per-subject token bucket rate limiting |
+| `RATE_LIMIT_REQUESTS` | `100` | Maximum requests per window |
+| `RATE_LIMIT_WINDOW` | `60` | Rate limit window in seconds |
+
+**Upload Quotas**
+
+| Variable | Default | Description |
+|---|---|---|
+| `STORAGE_QUOTA_ENABLED` | `false` | Enable ingestion storage quotas |
+| `STORAGE_QUOTA_LIMIT_MB` | `1000` | Default per-collection quota (MB) |
+
+**Circuit Breaker**
+
+| Variable | Default | Description |
+|---|---|---|
+| `CIRCUIT_BREAKER_THRESHOLD` | `5` | Consecutive failures before opening circuit |
+| `CIRCUIT_BREAKER_COOLDOWN` | `30` | Seconds before attempting half-open recovery |
+
+**Provider Budget**
+
+| Variable | Default | Description |
+|---|---|---|
+| `PROVIDER_BUDGET_ENABLED` | `false` | Enable sliding-window budget tracking |
+| `PROVIDER_BUDGET_MAX_TOKENS` | `1000000` | Max tokens per window |
+| `PROVIDER_BUDGET_WINDOW_SECONDS` | `3600` | Budget window duration |
+
+**Retrieval Cache**
+
+| Variable | Default | Description |
+|---|---|---|
+| `RETRIEVAL_CACHE_ENABLED` | `true` | Enable request-level search caching |
+| `RETRIEVAL_CACHE_TTL` | `300` | Cache TTL in seconds |
 
 ---
 
@@ -334,7 +393,7 @@ bash scripts/kb-migrate.sh import ./backup-20260518.tar.gz
 
 ## QA Results
 
-Last run: 2026-05-18 against the ingested `kb_docs` collection.
+Last run: 2026-06-11 against the ingested `kb_docs` collection.
 
 | Metric | Result | Threshold | Status |
 |---|---|---|---|
@@ -367,7 +426,7 @@ PYTHONPATH=. pytest --cov=kb_server --cov=ingest --cov=qa --cov-report=term-miss
 PYTHONPATH=. pytest -m "not integration"
 ```
 
-**Current status:** 585 passing, 0 failing, 5 skipped  
+**Current status:** 1095 passing, 0 failing, 12 skipped  
 **Coverage target:** 90% branch, enforced on kb_server/ + ingest/  
 **Key test files:**
 
@@ -384,13 +443,25 @@ PYTHONPATH=. pytest -m "not integration"
 | `tests/test_legacy_parsers.py` | Legacy Office format extractors (.doc, .xls, .odt, etc.) |
 | `tests/test_zip_handler.py` | ZIP recursive extraction (depth, size limits) |
 | `tests/test_migration.py` | Migration export/import/validate (SHA256 manifests) |
+| `tests/test_confluence_connector.py` | Confluence remote source connector |
+| `tests/test_jira_connector.py` | JIRA remote source connector |
+| `tests/test_git_connector.py` | Git remote source connector |
+| `tests/test_knowledge_graph.py` | Knowledge graph metadata derivation |
+| `tests/test_server_graph_tools.py` | Graph-based MCP tools (get_related, explore_topic) |
+| `tests/test_server_prompts.py` | extract_answer and summarize_documents prompts |
+| `tests/test_auth_registry.py` | Auth registry CRUD and key management |
+| `tests/test_rate_limiter.py` | Token bucket rate limiter |
+| `tests/test_provider_budget.py` | Sliding window budget tracking |
+| `tests/test_circuit_breaker.py` | Circuit breaker state machine |
+| `tests/test_request_retrieval_cache.py` | Request-level retrieval cache |
+| `tests/test_cache_manager.py` | Cache manager with invalidation |
 | `tests/e2e/` | End-to-end deployment and health workflows |
 
 ---
 
 ## Roadmap Status
 
-Phases 1–22 (v1.3) are complete. Phase 23 (v1.4) is active. See [PLAN.md](PLAN.md) for full specifications.
+Phases 1–28 (v1.3–v1.4) are complete. See [PLAN.md](PLAN.md) for full specifications.
 
 | FASE | Title | Status | Key Deliverable |
 |---|---|---|---|
@@ -417,7 +488,21 @@ Phases 1–22 (v1.3) are complete. Phase 23 (v1.4) is active. See [PLAN.md](PLAN
 | 20 | Test Environment Fixes | ✅ Complete | LOG_PATH fix, fixture isolation, clean env |
 | 21 | Codebase Hygiene Sweep | ✅ Complete | Remove unused imports, resolve TODOs, dead code |
 | 22 | Integration Checker CI Gate | ✅ Complete | Gap checker script + CI job |
-| 23 | Documentation Overhaul | 🟡 Active | Deployment-mode navigation, README restructure, CHANGELOG/REFERENCE update |
+| 23 | Documentation Overhaul | ✅ Complete | Deployment-mode navigation, README restructure, CHANGELOG/REFERENCE update |
+| 24 | FastAPI & CLI Integration | ✅ Complete | Docling CLI, FastAPI status, CI stabilization |
+| 25 | Observability Phase 2 | ✅ Complete | Anomaly detection, host dashboard templates |
+| 26 | Capability Negotiation Phase 2 | ✅ Complete | Collection awareness refinement |
+| 27 | Embedding Provider Resilience | ✅ Complete | Auto-retry, circuit breaker, budget tracking |
+| 28 | Reclassification Phase 2 | ✅ Complete | Multi-doc reclass, bulk operations, curated list |
+| 29 | Enterprise Connectors | ✅ Complete | Confluence, JIRA, Git + factory |
+| 30 | Knowledge Graph | ✅ Complete | Graph metadata, get_related/explore_topic tools |
+| 31 | MCP Prompts | ✅ Complete | extract_answer, summarize_documents |
+| 32 | API Key Auth | ✅ Complete | Optional Bearer auth on SSE, CLI management |
+| 33 | Rate Limiting | ✅ Complete | Per-subject token bucket, HTTP 429 |
+| 34 | Upload Quotas | ✅ Complete | Quota CLI, schema v3→v4 |
+| 35 | Multi-KB Aggregated Search | ✅ Complete | kb_ids, resolve_multi, merge RRF |
+| 36 | Provider Budget & Circuit Breaker | ✅ Complete | Provider resilience, fallback chain |
+| 37 | Request-level Retrieval Cache | ✅ Complete | Request cache with invalidation |
 | QA | QA Evaluation Pipeline | ✅ Complete | End-to-end eval, Hit Rate 100%, MRR 0.78 |
 
 ---
@@ -445,13 +530,15 @@ importing `kb_server`. If you write new entry points, follow the same pattern.
 after construction has no effect. Always set the env var before instantiating
 the store.
 
-**Pre-existing test failures (non-critical)**  
-`test_reranker.py` requires model download; `test_payload_indexes.py` requires
-live Qdrant with data. These do not affect production behavior.
-
 **QA golden dataset has 3 queries**  
 For a more rigorous evaluation, add more queries with verified chunk IDs from the
 ingested collection to `qa/queries.json`.
 
-**No authentication by default**  
-The MCP server, web UI, and health endpoint have no auth. See [SECURITY.md](SECURITY.md).
+**Qdrant required for integration tests (12 skipped)**  
+Tests marked `integration` require a live Qdrant instance. Run `docker compose up -d`
+before `pytest -m integration`.
+
+**Authentication is optional (disabled by default)**  
+The MCP server, web UI, and health endpoint have no auth by default. Set
+`AUTH_ENABLED=true` and configure keys via `kb-ingest auth` CLI to enable Bearer
+auth on SSE. See [SECURITY.md](SECURITY.md).
