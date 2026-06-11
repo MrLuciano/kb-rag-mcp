@@ -1119,6 +1119,19 @@ async def main():
             Returns:
                 Response indicating disconnection.
             """
+            # PHASE 32: Optional API key auth
+            from kb_server.auth import is_auth_enabled, verify_request
+
+            if is_auth_enabled():
+                auth_header = request.headers.get("Authorization")
+                ok, err = verify_request(auth_header)
+                if not ok:
+                    return Response(
+                        content=f'{{"error":"{err}"}}',
+                        status_code=401,
+                        media_type="application/json",
+                    )
+
             async with sse.connect_sse(
                 request.scope, request.receive, request._send
             ) as streams:
