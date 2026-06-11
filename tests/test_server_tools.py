@@ -77,6 +77,17 @@ def mock_query_logger():
     return MagicMock()
 
 
+@pytest.fixture
+def mock_retrieval_cache():
+    """Fixture providing a RetrievalCache-like mock for cache testing."""
+    from unittest.mock import MagicMock
+
+    cache = MagicMock()
+    cache.enabled = True
+    cache.make_key.return_value = "test-cache-key-abc123"
+    return cache
+
+
 # ---------------------------------------------------------------------------
 # _search_kb
 # ---------------------------------------------------------------------------
@@ -290,6 +301,199 @@ async def test_search_kb_with_kb_ids_no_results(mock_store, mock_router):
 
     assert len(out) == 1
     assert "No results found" in out[0].text
+
+
+# ---------------------------------------------------------------------------
+# PHASE 37: Retrieval cache integration
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_search_kb_cache_hit_skips_embedding_and_search(
+    mock_store, mock_router,
+):
+    """Cache hit returns cached results without calling get_embedding or search."""
+    cached_results = [
+        {
+            "chunk_id": "cached-1", "score": 0.99,
+            "text": "cached result", "source_file": "cached.md",
+            "product": "test", "doc_type": "guide", "file_type": "txt",
+            "page": None,
+        },
+    ]
+    cache = MagicMock()
+    cache.enabled = True
+    cache.get.return_value = cached_results
+
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+    srv.retrieval_cache = cache
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock()) as mock_embed:
+        out = await srv._search_kb({"query": "cached test"})
+
+    mock_embed.assert_not_awaited()
+    mock_store.search.assert_not_awaited()
+    assert len(out) == 1
+    assert "cached result" in out[0].text
+
+
+@pytest.mark.asyncio
+async def test_search_kb_cache_miss_performs_full_search(
+    mock_store, mock_router,
+):
+    """Cache miss calls get_embedding and search normally."""
+    result = {
+        "chunk_id": "fresh-1", "score": 0.9,
+        "text": "fresh result", "source_file": "fresh.md",
+        "product": "test", "doc_type": "guide", "file_type": "txt",
+        "page": None,
+    }
+    mock_store.search.return_value = [result]
+
+    cache = MagicMock()
+    cache.enabled = True
+    cache.get.return_value = None  # miss
+
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+    srv.retrieval_cache = cache
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+        out = await srv._search_kb({"query": "fresh query"})
+
+    mock_store.search.assert_awaited_once()
+    assert len(out) == 1
+    assert "fresh result" in out[0].text
+
+
+@pytest.mark.asyncio
+async def test_search_kb_cache_hit_still_logs_query(mock_store, mock_router):
+    """Cache hit still calls query_logger.log_query for observability."""
+    cached_results = [
+        {
+            "chunk_id": "cached-1", "score": 0.99,
+            "text": "cached result", "source_file": "cached.md",
+            "product": "test", "doc_type": "guide", "file_type": "txt",
+            "page": None,
+        },
+    ]
+    cache = MagicMock()
+    cache.enabled = True
+    cache.get.return_value = cached_results
+
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = MagicMock()
+    srv.retrieval_cache = cache
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock()):
+        await srv._search_kb({"query": "cached query"})
+
+    srv.query_logger.log_query.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_search_kb_cache_disabled_does_not_check(
+    mock_store, mock_router,
+):
+    """When cache is disabled, retrieval_cache is not consulted."""
+    result = {
+        "chunk_id": "fresh-1", "score": 0.9,
+        "text": "fresh result", "source_file": "fresh.md",
+        "product": "test", "doc_type": "guide", "file_type": "txt",
+        "page": None,
+    }
+    mock_store.search.return_value = [result]
+
+    cache = MagicMock()
+    cache.enabled = False  # disabled
+
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+    srv.retrieval_cache = cache
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+        out = await srv._search_kb({"query": "no cache"})
+
+    mock_store.search.assert_awaited_once()
+    assert "fresh result" in out[0].text
+    cache.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_invalidate_retrieval_cache_clears_cache():
+    """invalidate_retrieval_cache() calls invalidate_all on the cache."""
+    cache = MagicMock()
+    srv.retrieval_cache = cache
+    srv.invalidate_retrieval_cache()
+
+    cache.invalidate_all.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_search_kb_cache_stores_results_after_miss(mock_store, mock_router):
+    """After a cache miss, results are stored in the cache."""
+    result = {
+        "chunk_id": "fresh-1", "score": 0.9,
+        "text": "fresh result", "source_file": "fresh.md",
+        "product": "test", "doc_type": "guide", "file_type": "txt",
+        "page": None,
+    }
+    mock_store.search.return_value = [result]
+
+    cache = MagicMock()
+    cache.enabled = True
+    cache.get.return_value = None  # miss
+
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+    srv.retrieval_cache = cache
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+        await srv._search_kb({"query": "store test"})
+
+    cache.put.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_search_kb_cache_key_includes_all_filters(mock_store, mock_router):
+    """Cache key is generated from all retrieval-affecting parameters."""
+    cache = MagicMock()
+    cache.enabled = True
+    cache.get.return_value = None  # miss
+
+    mock_store.search.return_value = []
+
+    srv.store = mock_store
+    srv.collection_router = mock_router
+    srv.query_logger = None
+    srv.retrieval_cache = cache
+
+    args = {
+        "query": "test",
+        "top_k": 10,
+        "product": "AppServer",
+        "vendor": "OpenText",
+        "hybrid": True,
+        "rerank": True,
+    }
+
+    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+        await srv._search_kb(args)
+
+    # Verify make_key was called (just checking the call happened,
+    # since unit-level key determinism is tested separately)
+    cache.make_key.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Existing tests continue below
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio

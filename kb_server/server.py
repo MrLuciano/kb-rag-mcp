@@ -38,6 +38,7 @@ from observability.metrics import (
     record_rate_limit_rejected,
     update_rate_limit_subjects,
 )
+from kb_server.cache.request_cache import RetrievalCache  # PHASE 37
 
 # ── Logging ───────────────────────────────────────────────────────
 _log_path = os.getenv("LOG_PATH", "/tmp/kb-mcp.log")
@@ -73,6 +74,13 @@ _current_transport: contextvars.ContextVar[str] = (
     contextvars.ContextVar("current_transport", default="stdio")
 )
 
+# PHASE 37: Retrieval cache configuration
+RLCACHE_ENABLED = os.getenv("RLCACHE_ENABLED", "true").lower() in (
+    "true", "1", "yes"
+)
+RLCACHE_TTL = int(os.getenv("RLCACHE_TTL", "300"))
+RLCACHE_MAX_ENTRIES = int(os.getenv("RLCACHE_MAX_ENTRIES", "1000"))
+
 # PHASE 14: Query logging configuration
 QUERY_LOG_ENABLED = os.getenv("QUERY_LOG_ENABLED", "true").lower() in (
     "true", "1", "yes"
@@ -94,6 +102,22 @@ filter_terms_cache: FilterTermsCache | None = None  # PHASE 17
 
 # PHASE 33: Initialize rate limiter (lazy, configured in main())
 rate_limiter = None
+
+# PHASE 37: Initialize retrieval cache if enabled
+retrieval_cache: RetrievalCache | None = None
+if RLCACHE_ENABLED:
+    try:
+        retrieval_cache = RetrievalCache(
+            max_entries=RLCACHE_MAX_ENTRIES,
+            ttl=RLCACHE_TTL,
+        )
+        log.info(
+            "Retrieval cache enabled: max_entries=%d ttl=%d",
+            RLCACHE_MAX_ENTRIES, RLCACHE_TTL,
+        )
+    except Exception as e:
+        log.error(f"Failed to initialise retrieval cache: {e}")
+        log.warning("Continuing without retrieval caching")
 
 # PHASE 14: Initialize query logger if enabled
 query_logger = None
@@ -638,24 +662,13 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         f"hybrid={hybrid} rerank={rerank} kb_ids={kb_ids}"
     )
 
-    vector = await get_embedding(query)
-    
-    # PHASE 12: Determine retrieve_k for reranking
-    retrieve_k = top_k
-    if rerank:
-        retrieve_k = min(top_k * 4, 20)
-        log.info(f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}")
-
-    # PHASE 35: Multi-KB aggregated search path
-    if multi_collections:
-        from kb_server.retrieval.hybrid_search import (
-            merge_multi_collection_results,
-        )
-
-        per_collection = await store.multi_search(
-            vector=vector,
-            collection_names=multi_collections,
-            top_k=retrieve_k,
+    # ── PHASE 37: Check retrieval cache ─────────────────────────────────
+    results = None
+    cache_key = None
+    if retrieval_cache is not None and retrieval_cache.enabled:
+        cache_key = retrieval_cache.make_key(
+            query=query,
+            top_k=top_k,
             filter_type=filter_type,
             product=product,
             doc_type=doc_type,
@@ -663,64 +676,108 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             vendor=vendor,
             subsystem=subsystem,
             module=module,
+            hybrid=hybrid,
+            rerank=rerank,
+            collection_param=collection_param,
+            kb_ids=kb_ids,
         )
-        results = merge_multi_collection_results(
-            per_collection, top_k=top_k
-        )
-        log.info(
-            "Multi-KB search: %d collections → %d results",
-            len(multi_collections), len(results),
-        )
-    # PHASE 12: Route to hybrid search if enabled
-    elif hybrid:
-        from kb_server.retrieval.hybrid_search import get_hybrid_searcher
-        
-        log.info("Using hybrid search (dense + sparse)")
-        hybrid_searcher = get_hybrid_searcher()
-        results = await hybrid_searcher.search(
-            vector_store=store,
-            query_vector=vector,
-            query_text=query,
-            top_k=retrieve_k,
-            filter_type=filter_type,
-            product=product,
-            doc_type=doc_type,
-            version=version,
-        )
-    else:
-        # Standard dense vector search
-        _search_kwargs: dict = dict(
-            vector=vector,
-            top_k=retrieve_k,
-            filter_type=filter_type,
-            product=product,
-            doc_type=doc_type,
-            version=version,  # PHASE 13
-            vendor=vendor,  # PHASE 11.1
-            subsystem=subsystem,  # PHASE 11.1
-            module=module,  # PHASE 17
-        )
-        if target_collection is not None:
-            _search_kwargs["collection_name"] = target_collection  # PHASE 15
-        results = await store.search(**_search_kwargs)
-    
-    # PHASE 12: Apply reranking if enabled (skip for multi-KB — already merged)
-    if rerank and results and not multi_collections:
-        from kb_server.retrieval.reranker import get_reranker
-        
-        log.info(f"Applying cross-encoder reranking to {len(results)} results")
-        reranker = get_reranker()
-        try:
-            results = await reranker.rerank(
-                query=query,
-                results=results,
-                top_k=top_k,
+        cached_results = retrieval_cache.get(cache_key)
+        if cached_results is not None:
+            results = cached_results
+            log.info(
+                "Retrieval cache hit: key=%s query='%s' results=%d",
+                cache_key[:16], query, len(results),
             )
-            log.info(f"Reranking complete: {len(results)} results returned")
-        except Exception as e:
-            log.error(f"Reranking failed: {e}", exc_info=True)
-            log.warning("Falling back to original results")
-            results = results[:top_k]
+
+    if results is None:
+        # ── Full search pipeline (cache miss) ─────────────────────
+        vector = await get_embedding(query)
+
+        # PHASE 12: Determine retrieve_k for reranking
+        retrieve_k = top_k
+        if rerank:
+            retrieve_k = min(top_k * 4, 20)
+            log.info(f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}")
+
+        # PHASE 35: Multi-KB aggregated search path
+        if multi_collections:
+            from kb_server.retrieval.hybrid_search import (
+                merge_multi_collection_results,
+            )
+
+            per_collection = await store.multi_search(
+                vector=vector,
+                collection_names=multi_collections,
+                top_k=retrieve_k,
+                filter_type=filter_type,
+                product=product,
+                doc_type=doc_type,
+                version=version,
+                vendor=vendor,
+                subsystem=subsystem,
+                module=module,
+            )
+            results = merge_multi_collection_results(
+                per_collection, top_k=top_k
+            )
+            log.info(
+                "Multi-KB search: %d collections → %d results",
+                len(multi_collections), len(results),
+            )
+        # PHASE 12: Route to hybrid search if enabled
+        elif hybrid:
+            from kb_server.retrieval.hybrid_search import get_hybrid_searcher
+
+            log.info("Using hybrid search (dense + sparse)")
+            hybrid_searcher = get_hybrid_searcher()
+            results = await hybrid_searcher.search(
+                vector_store=store,
+                query_vector=vector,
+                query_text=query,
+                top_k=retrieve_k,
+                filter_type=filter_type,
+                product=product,
+                doc_type=doc_type,
+                version=version,
+            )
+        else:
+            # Standard dense vector search
+            _search_kwargs: dict = dict(
+                vector=vector,
+                top_k=retrieve_k,
+                filter_type=filter_type,
+                product=product,
+                doc_type=doc_type,
+                version=version,  # PHASE 13
+                vendor=vendor,  # PHASE 11.1
+                subsystem=subsystem,  # PHASE 11.1
+                module=module,  # PHASE 17
+            )
+            if target_collection is not None:
+                _search_kwargs["collection_name"] = target_collection  # PHASE 15
+            results = await store.search(**_search_kwargs)
+
+        # PHASE 12: Apply reranking if enabled (skip for multi-KB — already merged)
+        if rerank and results and not multi_collections:
+            from kb_server.retrieval.reranker import get_reranker
+
+            log.info(f"Applying cross-encoder reranking to {len(results)} results")
+            reranker = get_reranker()
+            try:
+                results = await reranker.rerank(
+                    query=query,
+                    results=results,
+                    top_k=top_k,
+                )
+                log.info(f"Reranking complete: {len(results)} results returned")
+            except Exception as e:
+                log.error(f"Reranking failed: {e}", exc_info=True)
+                log.warning("Falling back to original results")
+                results = results[:top_k]
+
+    # ── PHASE 37: Store results in retrieval cache ────────────────
+    if cache_key is not None and retrieval_cache is not None:
+        retrieval_cache.put(cache_key, results)
 
     if not results:
         latency_ms = (time.time() - start_time) * 1000
@@ -1174,6 +1231,22 @@ async def _schedule_log_cleanup() -> None:
                 log.error(f"Query log cleanup failed: {e}", exc_info=True)
 
 
+# ── PHASE 37: Cache invalidation hook ────────────────────────────────────
+
+
+def invalidate_retrieval_cache() -> None:
+    """Clear the retrieval cache on retrieval-affecting state changes.
+
+    Call this function after ingest, reclassification, or any other
+    operation that changes the underlying data so subsequent searches
+    reflect the new state.
+    """
+    global retrieval_cache
+    if retrieval_cache is not None:
+        retrieval_cache.invalidate_all()
+        log.info("Retrieval cache invalidated by external signal")
+
+
 async def main():
     """Main entry point — connect to Qdrant, initialize routing, start server.
 
@@ -1182,7 +1255,7 @@ async def main():
     the MCP server on either stdio or SSE transport based on the
     MCP_TRANSPORT environment variable.
     """
-    global collection_manager, collection_router, rate_limiter
+    global collection_manager, collection_router, rate_limiter, retrieval_cache
     log.info(f"KB RAG MCP Server starting (transport={TRANSPORT})")
     await store.connect()
 
