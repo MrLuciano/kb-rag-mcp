@@ -181,4 +181,4 @@ Plans:
 - [x] 25-01-PLAN.md — Core infrastructure: config, metric_computer, result_store
 - [x] 25-02-PLAN.md — Chunking experiments: fixed, recursive, semantic strategies
 - [x] 25-03-PLAN.md — Scoring experiments: dense, hybrid, reranked variants
-- [ ] 25-04-PLAN.md — Experiment runner + CLI: `kb-rag optimize` command
+- [x] 25-04-PLAN.md — Experiment runner + CLI: `kb-rag optimize` command
