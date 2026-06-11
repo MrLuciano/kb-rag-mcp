@@ -78,14 +78,13 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 - [x] Phase 26: KB Content Discoverability — Dynamic content-summary tool descriptions + `kb://overview` MCP Resource — completed 2026-06-03
 - [x] Phase 27: Knowledge Base Registry — SQLite-backed KB registry with public/agent_private scopes, stable `kb_<id>` collection names — completed 2026-06-03
 - [x] Phase 28: MCP Streamable HTTP Transport — `/mcp` HTTP endpoint alongside stdio/SSE — completed 2026-06-03
+- [x] Phase 25: Optimization Experiments — 4 plans (chunking experiments, scoring experiments, metric computation, CLI runner) — completed 2026-06-11
 
 **Deferred (low priority):**
 
 - [ ] Phase 24: RAGAS Evaluation Pipeline — 3 plans created, execution deferred
 
 **In Progress (planned, not started):**
-
-- [ ] Phase 25: Optimization Experiments — 4 plans (chunking experiments, scoring experiments, metric computation, CLI runner) — planned 2026-06-11
 
 - [ ] Phase 29: Enterprise Data Source Connectors — Confluence (Cloud + Data Center), JIRA (Cloud + Data Center), Git repositories
 - [ ] Phase 30: Cross-Document Knowledge Graph — similarity clustering, entity extraction, topic modeling
@@ -97,7 +96,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 - [ ] Phase 36: Provider Budget & Circuit Breaker — per-provider budgets, failure thresholds, automatic fallback
 - [ ] Phase 37: Request-level Retrieval Cache — in-memory LRU cache for identical queries
 
-**Delivered so far:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports). Competitive intelligence from mcp-rag, qdrant-loader, local_faiss_mcp informed phases 29–37.
+**Delivered so far:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports) + Optimization Experiments framework (chunking strategies, scoring variants, IR metrics, `kb-rag optimize` CLI). Competitive intelligence from mcp-rag, qdrant-loader, local_faiss_mcp informed phases 29–37.
 
 </details>
 

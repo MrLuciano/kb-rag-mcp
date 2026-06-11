@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Platform, Analytics & Enterprise
-status: executing
-last_updated: "2026-06-11T14:45:21.496Z"
-last_activity: 2026-06-11 -- Phase 25 execution resumed (wave continue)
+status: idle
+last_updated: "2026-06-11T00:00:00.000Z"
+last_activity: 2026-06-11 -- Phase 25 complete (all 4 plans, 56 tests, verifier 12/12)
 progress:
-  total_phases: 2
-  completed_phases: 0
+  total_phases: 6
+  completed_phases: 5
   total_plans: 4
-  completed_plans: 0
-  percent: 0
+  completed_plans: 4
+  percent: 83
 ---
 
 # Project State
@@ -20,14 +20,75 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 25 — Optimization Experiments
+**Current focus:** Phase 25 complete — next phase TBD
 
 ## Current Position
 
-Phase: 25 (Optimization Experiments) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 25
-Last activity: 2026-06-11 -- Phase 25 execution resumed (wave continue)
+Phase: 25 (Optimization Experiments) — COMPLETE
+Plan: 4 of 4
+Status: Idle — Phase 25 verified and closed
+Last activity: 2026-06-11 -- Phase 25 complete (all 4 plans, 56 tests, verifier 12/12)
+
+## Phase 25 Outcomes
+
+### Status
+
+- **Phase:** 25 (optimization-experiments)
+- **Status:** Complete — 4 plans, 56 tests, verifier 12/12
+- **Completed:** 2026-06-11
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 25-01 | Core infrastructure: config, metric_computer, result_store | 3 | Complete |
+| 25-02 | Chunking experiments: fixed, recursive, semantic strategies | 3 | Complete |
+| 25-03 | Scoring experiments: dense, hybrid, reranked variants | 3 | Complete |
+| 25-04 | Experiment runner + CLI: `kb-rag optimize` command | 3 | Complete |
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| ExperimentConfig + strategy/variant registries | ✅ | `kb_server/optimization/config.py` — ExperimentConfig, CHUNK_STRATEGIES, SCORING_VARIANTS |
+| IR metrics: Recall@K, MRR, NDCG@K | ✅ | `metric_computer.py` — sklearn-backed, 12 deterministic unit tests |
+| Results persisted to CSV/JSON | ✅ | `result_store.py` — ExperimentResultStore.save(), to_csv(), compare() |
+| Chunking strategies (fixed, recursive, semantic) | ✅ | `chunking_experiments.py` — 3 strategy classes + ChunkingEngine |
+| Scoring variants (dense, hybrid, reranked) | ✅ | `scoring_experiments.py` — 3 variant classes + ScoringEngine |
+| ExperimentRunner orchestrator | ✅ | `experiment_runner.py` — end-to-end pipeline |
+| `kb-rag optimize` CLI with 4 subcommands | ✅ | `ingest/cli/optimize.py` — chunk, scoring, compare, list |
+
+### Key Changes
+
+1. **`kb_server/optimization/`** — New package: config, metric_computer, result_store, chunking_experiments, scoring_experiments, experiment_runner
+2. **`ingest/cli/optimize.py`** — `kb-rag optimize` CLI with chunk/scoring/compare/list subcommands
+3. **`tests/test_metric_computer.py`** — 12 tests for IR metrics (Recall@K, MRR, NDCG@K)
+4. **`tests/test_chunking_experiments.py`** — Tests for 3 chunking strategies + ChunkingEngine
+5. **`tests/test_scoring_experiments.py`** — Tests for 3 scoring variants + ScoringEngine
+6. **`tests/test_optimization.py`** — Integration tests for ExperimentRunner + CLI
+
+### Commits (12)
+
+1. `b44544f` feat(25-01): add ExperimentConfig, MetricComputer stubs (config + metric_computer)
+2. `735692e` feat(25-01): add ExperimentResultStore + load_results
+3. `3911dd1` chore(25-01): add 25-01-SUMMARY.md
+4. `b1dd946` feat(25-02): add chunking strategy classes + ChunkingEngine
+5. `8de5c45` test(25-02): add chunking experiment tests
+6. `70f535c` chore(25-02): add 25-02-SUMMARY.md
+7. `0ae08d0` feat(25-03): add scoring variant classes + ScoringEngine
+8. `3fce64e` test(25-03): add scoring experiment tests
+9. `6daaac7` chore(25-03): add 25-03-SUMMARY.md
+10. `7341950` feat(25-04): add ExperimentRunner + kb-rag optimize CLI
+11. `9babf41` test(25-04): add optimization runner + CLI tests
+12. `a00d86c` chore(25-04): add 25-04-SUMMARY.md
+
+### Verification
+
+- 56/56 Phase 25 tests pass
+- `kb-rag optimize --help` shows chunk, scoring, compare, list subcommands
+- gsd-verifier score: 12/12 must-haves
+- Full suite: 1165 passed, 2 pre-existing failures (test_cli_reclassify.py — needs Qdrant), 1 skipped
+
 
 ## Phase 23 Outcomes
 
