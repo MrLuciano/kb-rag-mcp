@@ -103,8 +103,8 @@ def test_query_logger_init_failure_continues(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_list_tools_returns_five_tools():
-    """list_tools() returns exactly 5 Tool objects with correct names."""
+async def test_list_tools_returns_eight_tools():
+    """list_tools() returns exactly 8 Tool objects with correct names."""
     tools = await srv.list_tools()
     names = [t.name for t in tools]
     assert set(names) == {
@@ -114,6 +114,8 @@ async def test_list_tools_returns_five_tools():
         "kb_stats",
         "list_collections",
         "list_filter_options",
+        "get_related_documents",
+        "explore_topic",
     }
 
 

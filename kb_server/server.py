@@ -367,6 +367,78 @@ async def list_tools() -> list[types.Tool]:
                 "required": [],
             },
         ),
+        types.Tool(
+            name="get_related_documents",
+            description=(
+                "PHASE 30: Find all chunks belonging to a specific document "
+                "by its graph ID. Use to retrieve the full content of a "
+                "document that appeared in search results."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "doc_graph_id": {
+                        "type": "string",
+                        "description": (
+                            "Graph document ID (returned in search results "
+                            "as doc_graph_id field)"
+                        ),
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum chunks to return (default: 20)",
+                        "default": 20,
+                        "minimum": 1,
+                        "maximum": 100,
+                    },
+                    "collection": {
+                        "type": "string",
+                        "description": (
+                            "Qdrant collection name. Omit to use the "
+                            "default collection."
+                        ),
+                    },
+                },
+                "required": ["doc_graph_id"],
+            },
+        ),
+        types.Tool(
+            name="explore_topic",
+            description=(
+                "PHASE 30: Search for documents by topic label. Topics "
+                "are derived from product, doc_type, vendor, subsystem, "
+                "and module classification metadata. Use to discover "
+                "documents related to a specific topic or area."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": (
+                            "Topic label to search for. Examples: "
+                            "AppServer, Install Guide, REST, API, "
+                            "OpenText, DataSync"
+                        ),
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum chunks to return (default: 20)",
+                        "default": 20,
+                        "minimum": 1,
+                        "maximum": 100,
+                    },
+                    "collection": {
+                        "type": "string",
+                        "description": (
+                            "Qdrant collection name. Omit to use the "
+                            "default collection."
+                        ),
+                    },
+                },
+                "required": ["topic"],
+            },
+        ),
     ]
 
 
@@ -401,6 +473,10 @@ async def call_tool(
             result = await _list_collections()
         elif name == "list_filter_options":
             result = await _list_filter_options(arguments)
+        elif name == "get_related_documents":
+            result = await _get_related_documents(arguments)
+        elif name == "explore_topic":
+            result = await _explore_topic(arguments)
         else:
             result = [
                 types.TextContent(
@@ -797,6 +873,119 @@ async def _list_filter_options(args: dict) -> list[types.TextContent]:
             )
         lines.append("")
 
+    return [types.TextContent(type="text", text="\n".join(lines))]
+
+
+async def _get_related_documents(
+    args: dict,
+) -> list[types.TextContent]:
+    """PHASE 30: Find chunks by doc_graph_id."""
+    doc_graph_id = args["doc_graph_id"]
+    limit = min(args.get("limit", 20), 100)
+    collection_param = args.get("collection")
+
+    target = getattr(store, "collection", None)
+    if collection_router is not None and collection_param:
+        try:
+            target = await collection_router.resolve(collection_param)
+        except CollectionNotFoundError as exc:
+            return [types.TextContent(type="text", text=str(exc))]
+
+    chunks = await store.list_documents_by_graph_id(
+        doc_graph_id=doc_graph_id,
+        limit=limit,
+        collection_name=target,
+    )
+    if not chunks:
+        return [
+            types.TextContent(
+                type="text",
+                text=f"No documents found for graph ID `{doc_graph_id}`.",
+            )
+        ]
+
+    lines = [
+        f"## Related documents for `{doc_graph_id}` "
+        f"({len(chunks)} chunks)\n"
+    ]
+    for c in chunks:
+        lines.append(
+            f"**{c.get('source_file', '?')}** "
+            f"— chunk {c.get('chunk_index', '?')} "
+            f"[{c.get('product', '?')}]"
+        )
+        text = c.get("text", "")
+        if len(text) > 200:
+            text = text[:200] + "..."
+        lines.append(text)
+        lines.append("")
+
+    return [types.TextContent(type="text", text="\n".join(lines))]
+
+
+async def _explore_topic(
+    args: dict,
+) -> list[types.TextContent]:
+    """PHASE 30: Search for documents by topic label."""
+    topic = args["topic"]
+    limit = min(args.get("limit", 20), 100)
+    collection_param = args.get("collection")
+
+    target = getattr(store, "collection", None)
+    if collection_router is not None and collection_param:
+        try:
+            target = await collection_router.resolve(collection_param)
+        except CollectionNotFoundError as exc:
+            return [types.TextContent(type="text", text=str(exc))]
+
+    from qdrant_client.models import (
+        FieldCondition,
+        Filter,
+        MatchValue,
+    )
+
+    query_filter = Filter(
+        must=[
+            FieldCondition(
+                key="graph_topics",
+                match=MatchValue(value=topic),
+            )
+        ]
+    )
+    results, _ = await store.client.scroll(
+        collection_name=target or store.collection,
+        scroll_filter=query_filter,
+        limit=limit,
+        with_payload=True,
+        with_vectors=False,
+    )
+    if not results:
+        return [
+            types.TextContent(
+                type="text",
+                text=f"No documents found for topic `{topic}`.",
+            )
+        ]
+
+    lines = [
+        f"## Documents for topic `{topic}` "
+        f"({len(results)} chunks)\n"
+    ]
+    seen: set[str] = set()
+    for r in results:
+        sf = r.payload.get("source_file", "")
+        if sf not in seen:
+            seen.add(sf)
+            lines.append(
+                f"- **{sf}**  "
+                f"[{r.payload.get('product', '?')}] — "
+                f"{r.payload.get('doc_type', '?')}"
+            )
+
+    lines.append(
+        f"\n*Total: {len(seen)} unique documents, "
+        f"{len(results)} chunks*"
+    )
     return [types.TextContent(type="text", text="\n".join(lines))]
 
 
