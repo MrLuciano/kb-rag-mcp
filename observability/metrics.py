@@ -60,15 +60,23 @@ class MetricsCollector:
         self.batch_upsert_duration = batch_upsert_duration
         self.http_pool_connections = http_pool_connections
         self.batch_processing_throughput = batch_processing_throughput
-    
-    def increment(self, metric_name: str, value: int = 1, **labels) -> None:
-        """Helper to increment counter metrics."""
+        # PHASE 36: Provider resilience metrics
+        self.provider_requests_total = provider_requests_total
+        self.provider_errors_total = provider_errors_total
+        self.provider_circuit_state = provider_circuit_state
+        self.provider_fallbacks_total = provider_fallbacks_total
+        self.provider_skipped_circuit_open = provider_skipped_circuit_open
+        self.provider_skipped_budget_exhausted = provider_skipped_budget_exhausted
+        self.provider_circuit_opened = provider_circuit_opened
+
+    def set_gauge(self, metric_name: str, value: float, **labels) -> None:
+        """Set a gauge metric to a specific value."""
         metric = getattr(self, metric_name, None)
         if metric and hasattr(metric, "labels"):
             if labels:
-                metric.labels(**labels).inc(value)
+                metric.labels(**labels).set(value)
             else:
-                metric.inc(value)
+                metric.set(value)
 
 
 # ── Job Metrics ──────────────────────────────────────────────────
@@ -540,3 +548,66 @@ def update_batch_throughput(chunks_per_sec: float) -> None:
         chunks_per_sec: Current throughput in chunks/second
     """
     batch_processing_throughput.set(chunks_per_sec)
+
+
+# ── PHASE 36: Provider Resilience Metrics ───────────────────────────
+
+
+provider_requests_total = Counter(
+    "kb_provider_requests_total",
+    "Total number of provider request attempts",
+    ["provider"],  # openai-compat, ollama, lmstudio-rest, etc.
+)
+
+provider_errors_total = Counter(
+    "kb_provider_errors_total",
+    "Total number of provider request failures",
+    ["provider"],
+)
+
+provider_circuit_state = Gauge(
+    "kb_provider_circuit_state",
+    "Current circuit breaker state by provider (1=CLOSED, 2=OPEN, "
+    "3=HALF_OPEN)",
+    ["provider", "state"],
+)
+
+provider_fallbacks_total = Counter(
+    "kb_provider_fallbacks_total",
+    "Total number of provider fallback events",
+    ["from_provider", "to_provider"],
+)
+
+provider_skipped_circuit_open = Counter(
+    "kb_provider_skipped_circuit_open_total",
+    "Total requests skipped because circuit was OPEN",
+    ["provider"],
+)
+
+provider_skipped_budget_exhausted = Counter(
+    "kb_provider_skipped_budget_exhausted_total",
+    "Total requests skipped because budget was exhausted",
+    ["provider"],
+)
+
+provider_circuit_opened = Counter(
+    "kb_provider_circuit_opened_total",
+    "Total number of circuit breaker OPEN transitions",
+    ["provider"],
+)
+
+
+def record_provider_circuit_state(
+    provider: str, state: str, value: float
+) -> None:
+    """
+    Record provider circuit breaker state as a gauge.
+
+    Args:
+        provider: Provider name.
+        state: Circuit state value (closed, open, half_open).
+        value: 1.0 if currently in this state, 0.0 otherwise.
+    """
+    provider_circuit_state.labels(
+        provider=provider, state=state
+    ).set(value)
