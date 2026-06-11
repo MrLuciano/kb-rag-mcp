@@ -6,7 +6,7 @@
 - ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v1.1-ROADMAP.md)
 - ✅ **v1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v1.2-ROADMAP.md)
 - ✅ **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v1.3-ROADMAP.md)
-- ✅ **v1.4 Platform, Analytics & Enterprise** — Phases 23–37 (shipped 2026-06-11) — [archive](milestones/v1.4-ROADMAP.md)
+- ◆ **v1.4 Platform, Analytics & Enterprise** — Phases 23–37 (active)
 
 ## Phases
 
@@ -67,26 +67,34 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
-<details>
-<summary>✅ v1.4 Platform, Analytics & Enterprise (Phases 23–37) — SHIPPED 2026-06-11</summary>
+<details open>
+<summary>◆ v1.4 Platform, Analytics & Enterprise (Phases 23–37) — ACTIVE</summary>
 
-- [x] Phase 23: Documentation Overhaul (3/3 plans) — completed 2026-05-27
-- [ ] Phase 24: RAGAS Evaluation Pipeline (0/3 plans) — DEFERRED
-- [ ] Phase 25: Optimization Experiments (0/2 plans) — DEFERRED
-- [x] Phase 26: KB Content Discoverability (1/1 plan) — completed 2026-06-03
-- [x] Phase 27: Knowledge Base Registry (3/3 plans) — completed 2026-06-03
-- [x] Phase 28: MCP Streamable HTTP Transport (1/1 plan) — completed 2026-06-03
-- [x] Phase 29: Enterprise Data Source Connectors (4/4 plans) — completed 2026-06-10
-- [x] Phase 30: Cross-Document Knowledge Graph (2/2 plans) — completed 2026-06-10
-- [x] Phase 31: MCP Prompt Templates (1/1 plan) — completed 2026-06-10
-- [x] Phase 32: API Key Authentication (1/1 plan) — completed 2026-06-10
-- [x] Phase 33: Request Rate Limiting (1/1 plan) — completed 2026-06-10
-- [x] Phase 34: Upload and Index Quotas (1/1 plan) — completed 2026-06-10
-- [x] Phase 35: Multi-KB Aggregated Search (1/1 plan) — completed 2026-06-11
-- [x] Phase 36: Provider Budget & Circuit Breaker (1/1 plan) — completed 2026-06-11
-- [x] Phase 37: Request-level Retrieval Cache (1/1 plan) — completed 2026-06-11
+**Completed:**
 
-**Delivered:** Documentation restructured by deployment mode, dynamic KB content discoverability, KB Registry with SQLite scope, MCP Streamable HTTP transport, enterprise data source connectors (Confluence/JIRA/Git via factory pattern), cross-document knowledge graph (get_related_documents/explore_topic), MCP prompt templates (extract_answer/summarize_documents), API key authentication (SHA-256 hashed keys, CLI create/list/revoke), request rate limiting (token bucket, Prometheus metrics), upload/index quotas (6 fields, CLI management), multi-KB aggregated search (kb_ids, RRF fusion), provider budget & circuit breaker (resilience fallback chain), request-level retrieval cache (LRU, deterministic keys). 1095 tests passing, 12 skipped, 0 failures. 8 MCP tools, 2 MCP prompts.
+- [x] Phase 23: Documentation Overhaul — 3 plans (doc reorganization, README restructuring, CHANGELOG/REFERENCE update) — completed 2026-05-27
+- [x] Phase 26: KB Content Discoverability — Dynamic content-summary tool descriptions + `kb://overview` MCP Resource — completed 2026-06-03
+- [x] Phase 27: Knowledge Base Registry — SQLite-backed KB registry with public/agent_private scopes, stable `kb_<id>` collection names — completed 2026-06-03
+- [x] Phase 28: MCP Streamable HTTP Transport — `/mcp` HTTP endpoint alongside stdio/SSE — completed 2026-06-03
+
+**Deferred (low priority):**
+
+- [ ] Phase 24: RAGAS Evaluation Pipeline — 3 plans created, execution deferred
+- [ ] Phase 25: Optimization Experiments — Chunking and scoring experiments
+
+**In Progress (planned, not started):**
+
+- [ ] Phase 29: Enterprise Data Source Connectors — Confluence (Cloud + Data Center), JIRA (Cloud + Data Center), Git repositories
+- [ ] Phase 30: Cross-Document Knowledge Graph — similarity clustering, entity extraction, topic modeling
+- [ ] Phase 31: MCP Prompt Templates — extract_answer and summarize_documents prompts
+- [ ] Phase 32: API Key Authentication — global and per-KB API keys with enabled/allow_anonymous flags
+- [ ] Phase 33: Request Rate Limiting — token bucket rate limiter per subject (requests/window + burst)
+- [ ] Phase 34: Upload and Index Quotas — configurable limits per KB (files, bytes, chunks, chars)
+- [ ] Phase 35: Multi-KB Aggregated Search — kb_ids parameter to search across multiple KBs in one query
+- [ ] Phase 36: Provider Budget & Circuit Breaker — per-provider budgets, failure thresholds, automatic fallback
+- [ ] Phase 37: Request-level Retrieval Cache — in-memory LRU cache for identical queries
+
+**Delivered so far:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports). Competitive intelligence from mcp-rag, qdrant-loader, local_faiss_mcp informed phases 29–37.
 
 </details>
 
@@ -118,22 +126,22 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 21. Codebase Hygiene Sweep | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
 | 23. Documentation Overhaul | v1.4 | 3/3 | Complete | 2026-05-27 |
-| 24. RAGAS Evaluation Pipeline | v1.4 | 0/3 | Deferred | — |
-| 25. Optimization Experiments | v1.4 | 0/2 | Deferred | — |
+| 24. RAGAS Evaluation Pipeline | v1.4 | 0/0 | Deferred | — |
+| 25. Optimization Experiments | v1.4 | 0/0 | Deferred | — |
 | 26. KB Content Discoverability | v1.4 | 1/1 | Complete | 2026-06-03 |
 | 27. Knowledge Base Registry | v1.4 | 3/3 | Complete | 2026-06-03 |
 | 28. MCP Streamable HTTP | v1.4 | 1/1 | Complete | 2026-06-03 |
-| 29. Enterprise Data Source Connectors | v1.4 | 4/4 | Complete | 2026-06-10 |
-| 30. Cross-Document Knowledge Graph | v1.4 | 2/2 | Complete | 2026-06-10 |
-| 31. MCP Prompt Templates | v1.4 | 1/1 | Complete | 2026-06-10 |
-| 32. API Key Authentication | v1.4 | 1/1 | Complete | 2026-06-10 |
-| 33. Request Rate Limiting | v1.4 | 1/1 | Complete | 2026-06-10 |
-| 34. Upload and Index Quotas | v1.4 | 1/1 | Complete | 2026-06-10 |
-| 35. Multi-KB Aggregated Search | v1.4 | 1/1 | Complete | 2026-06-11 |
-| 36. Provider Budget & Circuit Breaker | v1.4 | 1/1 | Complete | 2026-06-11 |
-| 37. Request-level Retrieval Cache | v1.4 | 1/1 | Complete | 2026-06-11 |
+| 29. Enterprise Data Source Connectors | v1.4 | 0/1 | Planned | — |
+| 30. Cross-Document Knowledge Graph | v1.4 | 0/1 | Planned | — |
+| 31. MCP Prompt Templates | v1.4 | 0/1 | Planned | — |
+| 32. API Key Authentication | v1.4 | 0/1 | Planned | — |
+| 33. Request Rate Limiting | v1.4 | 0/1 | Planned | — |
+| 34. Upload and Index Quotas | v1.4 | 0/1 | Planned | — |
+| 35. Multi-KB Aggregated Search | v1.4 | 0/1 | Planned | — |
+| 36. Provider Budget & Circuit Breaker | v1.4 | 1/1 | Complete   | 2026-06-11 |
+| 37. Request-level Retrieval Cache | v1.4 | 0/1 | Planned | — |
 
-*Earlier milestones (v1.0–v1.4): see archived roadmaps in [milestones/](milestones/).*
+*Earlier milestones (v1.0–v1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
