@@ -442,6 +442,42 @@ async def list_tools() -> list[types.Tool]:
     ]
 
 
+# ── PHASE 31: Prompt templates ────────────────────────────────────────
+
+
+@app.list_prompts()
+async def list_prompts() -> list[types.Prompt]:
+    """List all available MCP prompt templates.
+
+    Returns definitions for extract_answer and summarize_documents
+    prompts, each with their argument schemas.
+    """
+    from kb_server.prompts import PROMPT_DEFINITIONS
+
+    return list(PROMPT_DEFINITIONS.values())
+
+
+@app.get_prompt()
+async def get_prompt(
+    name: str, arguments: dict[str, str] | None
+) -> types.GetPromptResult:
+    """Return rendered prompt content for a named prompt.
+
+    Args:
+        name: Prompt name (must be registered in PROMPT_DEFINITIONS).
+        arguments: String-keyed arguments for prompt rendering.
+
+    Returns:
+        GetPromptResult with rendered messages and description.
+
+    Raises:
+        ValueError: If the prompt name is unknown.
+    """
+    from kb_server.prompts import render_prompt
+
+    return render_prompt(name, arguments)
+
+
 @app.call_tool()
 async def call_tool(
     name: str, arguments: dict[str, Any]
