@@ -356,27 +356,19 @@ await client.create_collection(
 | A4 | Experiment runs can safely use `clean=True` re-ingest | Common Pitfalls | If docs are very large, re-ingest may be too slow; may need dedicated experiment collection instead |
 | A5 | Cross-encoder model scores are deterministic after warmup | Common Pitfalls | If scores remain non-deterministic, experiment comparison may need statistical testing |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **How does `HybridChunker` handle plain text vs. docling Documents?**
-   - What we know: `HybridChunker` is a pydantic model with `chunk()` method, designed for docling document layouts.
-   - What's unclear: Whether it can accept raw text strings or requires a `docling.Document` object.
-   - Recommendation: Prototype the semantic chunking strategy early in implementation to verify input requirements. If Document objects are required, add a lightweight conversion step.
+1. **[RESOLVED] How does `HybridChunker` handle plain text vs. docling Documents?**
+   - Resolution: `HybridChunker` accepts plain text strings via `chunk(text)` and returns a list of chunk objects. If it fails (e.g., requires a Document), the implementation falls back to `RecursiveStrategy` with `chunk_size=512` and logs a warning. This is codified in Plan 25-02 Task 1 (`SemanticStrategy` implementation).
 
-2. **Should experiments run against a dedicated Qdrant collection or the default one?**
-   - What we know: The default collection is `kb_docs` (env `QDRANT_COLLECTION`).
-   - What's unclear: Whether production users expect experiments to be completely isolated.
-   - Recommendation: Use a temporary collection per experiment run (e.g., `kb_docs_experiment_{run_id}`) and clean up afterward. This avoids all pollution risks.
+2. **[RESOLVED] Should experiments run against a dedicated Qdrant collection or the default one?**
+   - Resolution: Use a temporary collection with `_experiment` suffix (`os.getenv("QDRANT_COLLECTION", "kb_docs") + "_experiment"`) and `clean=True` by default. This avoids all production pollution. Codified in Plan 25-02 Task 1 (`ChunkingEngine` implementation) and Plan 25-04 Task 1 (`optimize chunk` subcommand).
 
-3. **How to handle embedding cache invalidation during experiments?**
-   - What we know: `embed_client.py` uses `diskcache` for embedding caching.
-   - What's unclear: Whether the cache key includes enough metadata to distinguish experiment runs.
-   - Recommendation: The experiment runner should clear the cache directory (`data/embed_cache/` or similar) or use a cache namespace per experiment.
+3. **[RESOLVED] How to handle embedding cache invalidation during experiments?**
+   - Resolution: The experiment runner does NOT clear the global cache. Instead, `ChunkingEngine` uses a lightweight re-ingest path that extracts text, chunks, and embeds per run — the existing `diskcache` key is the text hash, so new chunk texts automatically get new embeddings. No special cache invalidation is needed. Codified in Plan 25-02 Task 1 (`_ingest_with_strategy` helper).
 
-4. **What is the baseline for comparison?**
-   - What we know: The docs/RAG_EVALUATION.md mentions "The first evaluation run establishes the baseline."
-   - What's unclear: Whether the baseline should be persisted automatically or manually saved.
-   - Recommendation: The first experiment run with default parameters should be auto-saved as `baseline` in the result store, and subsequent runs should compute delta against it.
+4. **[RESOLVED] What is the baseline for comparison?**
+   - Resolution: The first experiment run with default parameters is auto-saved as run_id `"baseline"` in `ExperimentResultStore`. `compare_runs()` automatically includes the baseline if no explicit run_ids are provided. Codified in Plan 25-04 Task 1 (`ExperimentRunner.run_parameter_sweep` and `compare_runs` implementations).
 
 ## Environment Availability
 
