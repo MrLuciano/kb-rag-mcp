@@ -52,7 +52,11 @@ def reset_server_globals():
     original_store = srv.store
     original_router = srv.collection_router
     original_logger = srv.query_logger
+    original_cache = srv.retrieval_cache
+    # Disable retrieval cache by default to prevent cross-test pollution
+    srv.retrieval_cache = None
     yield
+    srv.retrieval_cache = original_cache
     srv.store = original_store
     srv.collection_router = original_router
     srv.query_logger = original_logger
