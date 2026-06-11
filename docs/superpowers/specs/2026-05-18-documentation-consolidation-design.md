@@ -5,9 +5,9 @@
 
 ## Problem
 
-After 16 FASEs + QA pipeline, documentation is scattered across 30+ files:
-FASE*_COMPLETION.md, FASE*_PLAN.md, topic docs, and two stale index files
-(PLAN.md roadmap progress and INDEX.md both stopped at FASE 5). There is no
+After 16 PHASEs + QA pipeline, documentation is scattered across 30+ files:
+PHASE*_COMPLETION.md, PHASE*_PLAN.md, topic docs, and two stale index files
+(PLAN.md roadmap progress and INDEX.md both stopped at PHASE 5). There is no
 single place to understand the current state of the system.
 
 ## Goals
@@ -15,7 +15,7 @@ single place to understand the current state of the system.
 - One living reference doc for both developers and onboarders
 - PLAN.md remains the authoritative roadmap
 - INDEX.md remains the navigation entry point
-- Historical FASE lifecycle docs archived, not deleted
+- Historical PHASE lifecycle docs archived, not deleted
 - Topic docs (SEARCH_QUALITY.md, OPERATIONS.md, etc.) remain in place
 
 ## Non-Goals
@@ -29,7 +29,7 @@ single place to understand the current state of the system.
 ```
 docs/
   REFERENCE.md          NEW — living ops+architecture reference
-  PLAN.md               UPDATED — all 16 FASEs + QA marked complete
+  PLAN.md               UPDATED — all 16 PHASEs + QA marked complete
   INDEX.md              UPDATED — links REFERENCE.md, correct counts
   TESTING.md            unchanged
   INSTRUCTIONS.md       unchanged
@@ -44,25 +44,25 @@ docs/
   VERSION_FILTERING.md  unchanged
   METADATA_OVERRIDES.md unchanged
   archive/
-    FASE1_COMPLETION.md
-    FASE2_COMPLETION.md
-    FASE3_COMPLETION.md
-    FASE4_COMPLETION.md
-    FASE5_COMPLETION.md
-    FASE7_COMPLETION.md
-    FASE8_COMPLETION.md
-    FASE9_COMPLETION.md
-    FASE10_COMPLETION.md
-    FASE12_COMPLETION.md
-    FASE13_COMPLETION.md
-    FASE14_COMPLETION.md
-    FASE16_COMPLETION.md
-    FASE3_PLAN.md
-    FASE4_PLAN.md
-    FASE12_PLAN.md
-    FASE13_PLAN.md
-    FASE14_PLAN.md
-    FASE16_PLAN.md
+    PHASE1_COMPLETION.md
+    PHASE2_COMPLETION.md
+    PHASE3_COMPLETION.md
+    PHASE4_COMPLETION.md
+    PHASE5_COMPLETION.md
+    PHASE7_COMPLETION.md
+    PHASE8_COMPLETION.md
+    PHASE9_COMPLETION.md
+    PHASE10_COMPLETION.md
+    PHASE12_COMPLETION.md
+    PHASE13_COMPLETION.md
+    PHASE14_COMPLETION.md
+    PHASE16_COMPLETION.md
+    PHASE3_PLAN.md
+    PHASE4_PLAN.md
+    PHASE12_PLAN.md
+    PHASE13_PLAN.md
+    PHASE14_PLAN.md
+    PHASE16_PLAN.md
     HYGIENE_STATUS.md
 ```
 
@@ -75,18 +75,18 @@ docs/
 5. **Running the System** — prerequisites, start services, ingest, MCP server, QA pipeline
 6. **QA Results** — current OTCS results, how to re-run
 7. **Test Suite** — how to run, coverage, key files
-8. **Roadmap Status** — compact table all 16 FASEs + QA, links to PLAN.md
+8. **Roadmap Status** — compact table all 16 PHASEs + QA, links to PLAN.md
 9. **Known Issues & Constraints** — sharp edges
 
 ## PLAN.md Updates
 
-- Mark FASEs 1–16 complete in the timeline section
+- Mark PHASEs 1–16 complete in the timeline section
 - Add QA Pipeline as completed milestone
 - Update "Priority Execution Order" — everything shipped, no pending phases
 
 ## INDEX.md Updates
 
-- FASE completion list: all 16 shown as complete
+- PHASE completion list: all 16 shown as complete
 - Add REFERENCE.md under Getting Started as primary entry point
 - Update statistics table: 252 tests, 16+QA phases complete
 - Add archive/ link for historical docs

@@ -1,6 +1,6 @@
 """Deterministic IR metric computation for optimization experiments.
 
-FASE 25: Optimization Experiments
+PHASE 25: Optimization Experiments
 
 Provides recall@K, MRR, and NDCG via sklearn.  All metrics are
 pure-Python and require no external services (Qdrant, LLM, etc.).

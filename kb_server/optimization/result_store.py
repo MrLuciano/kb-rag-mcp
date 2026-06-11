@@ -1,6 +1,6 @@
 """Experiment result persistence and comparison.
 
-FASE 25: Optimization Experiments
+PHASE 25: Optimization Experiments
 
 Stores experiment runs as JSON files and supports CSV export,
 run listing, and metric comparison across runs.

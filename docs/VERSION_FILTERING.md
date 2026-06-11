@@ -1,6 +1,6 @@
 # Version Filtering in Search
 
-**FASE 13 Feature**
+**PHASE 13 Feature**
 
 Search and filter documentation by extracted version numbers.
 
@@ -22,7 +22,7 @@ The version filtering system automatically extracts version information from doc
 - **Priority extraction**: Filename > parent directory > grandparent directory
 - **Search filtering**: Filter results by exact version match
 - **Payload indexing**: Fast version-filtered queries
-- **Backward compatible**: Works with documents ingested before FASE 13
+- **Backward compatible**: Works with documents ingested before PHASE 13
 
 ---
 
@@ -211,7 +211,7 @@ def search_kb(
     query: str,
     product: str | None = None,
     doc_type: str | None = None,
-    version: str | None = None,  # NEW in FASE 13
+    version: str | None = None,  # NEW in PHASE 13
     limit: int = 5
 ) -> dict
 ```
@@ -252,7 +252,7 @@ def search(
     limit: int = 5,
     product: str | None = None,
     doc_type: str | None = None,
-    version: str | None = None  # NEW in FASE 13
+    version: str | None = None  # NEW in PHASE 13
 ) -> list[ScoredPoint]
 ```
 
@@ -291,7 +291,7 @@ def hybrid_search(
 # filters dict can include version
 filters = {
     "product": "AppServer",
-    "version": "22.3"  # NEW in FASE 13
+    "version": "22.3"  # NEW in PHASE 13
 }
 ```
 
@@ -519,7 +519,7 @@ Version information is stored in the payload:
     "file": "/docs/22.3/manual.pdf",
     "product": "AppServer",
     "doc_type": "admin_guide",
-    "version": "22.3",  # NEW in FASE 13
+    "version": "22.3",  # NEW in PHASE 13
     "chunk_index": 0,
     "total_chunks": 10,
     "metadata": {...}
@@ -689,11 +689,11 @@ results = search(
   guide_22.3.pdf  → "22.3"
 ```
 
-### Migration from Pre-FASE 13
+### Migration from Pre-PHASE 13
 
 **Symptom:** Old documents don't have version field
 
-**Explanation:** Documents ingested before FASE 13 don't have version
+**Explanation:** Documents ingested before PHASE 13 don't have version
 
 **Fix:** Re-ingest with version extraction:
 
@@ -821,7 +821,7 @@ print(version)  # "v23.1" (filename priority)
 
 ---
 
-## Migration from FASE 12
+## Migration from PHASE 12
 
 ### Breaking Changes
 
@@ -886,4 +886,4 @@ A: Yes, combine product and version filters to disambiguate.
 
 ---
 
-**FASE 13 Feature** | Last Updated: 2026-05-16 | [Report Issues](https://github.com/MrLuciano/kb-rag-mcp/issues)
+**PHASE 13 Feature** | Last Updated: 2026-05-16 | [Report Issues](https://github.com/MrLuciano/kb-rag-mcp/issues)

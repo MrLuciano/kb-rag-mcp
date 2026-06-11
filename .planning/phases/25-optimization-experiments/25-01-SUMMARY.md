@@ -36,7 +36,7 @@ key-files:
     - kb_server/optimization/result_store.py
     - tests/test_metric_computer.py
   modified:
-    - pyproject.toml (added fase25 pytest marker)
+    - pyproject.toml (added PHASE25 pytest marker)
 
 key-decisions:
   - "Use sklearn.metrics.ndcg_score instead of manual NDCG implementation"
@@ -81,7 +81,7 @@ completed: 2026-06-11
 - Standalone module-level metric functions for direct testability
 - ExperimentResultStore with save, load, list_runs, compare, to_csv, baseline methods
 - 12 passing unit tests covering all metric functions and edge cases
-- pytest fase25 marker registered in pyproject.toml
+- pytest PHASE25 marker registered in pyproject.toml
 
 ## Task Commits
 
@@ -94,7 +94,7 @@ completed: 2026-06-11
 - `kb_server/optimization/metric_computer.py` — MetricComputer class and standalone metric functions
 - `kb_server/optimization/result_store.py` — ExperimentResultStore with JSON/CSV persistence
 - `tests/test_metric_computer.py` — 12 unit tests for recall@K, MRR, NDCG, compute_all
-- `pyproject.toml` — Added `fase25` pytest marker
+- `pyproject.toml` — Added `PHASE25` pytest marker
 
 ## Decisions Made
 

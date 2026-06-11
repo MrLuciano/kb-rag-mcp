@@ -104,7 +104,7 @@
 
 **Sparse Search Is Stubbed Out (Not Implemented)**
 - Problem: The hybrid search feature advertised in documentation (`docs/SEARCH_QUALITY.md`) is not actually performing sparse vector search. Sparse search code is commented out in `kb_server/retrieval/hybrid_search.py`.
-- Blocks: True BM25/hybrid RAG quality; claimed FASE features are incomplete.
+- Blocks: True BM25/hybrid RAG quality; claimed PHASE features are incomplete.
 
 **RAGAS Evaluation Pipeline Is Not Implemented**
 - Problem: `kb_server/evaluation/ragas_pipeline.py:47-53` contains a TODO and `raise NotImplementedError`. The `docs/RAG_EVALUATION.md` references this pipeline.

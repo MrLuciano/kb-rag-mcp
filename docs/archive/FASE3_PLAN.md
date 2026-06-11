@@ -1,4 +1,4 @@
-# FASE 3: Worker Pool and Rate Limiter - Implementation Plan
+# PHASE 3: Worker Pool and Rate Limiter - Implementation Plan
 
 **Date**: 2026-05-15  
 **Status**: 🔄 IN PROGRESS

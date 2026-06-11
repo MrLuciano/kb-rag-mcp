@@ -1,6 +1,6 @@
 """Experiment configuration defaults and parameter validation.
 
-FASE 25: Optimization Experiments
+PHASE 25: Optimization Experiments
 """
 import logging
 import os

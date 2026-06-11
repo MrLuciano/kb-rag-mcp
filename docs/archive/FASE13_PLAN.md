@@ -1,4 +1,4 @@
-# FASE 13: Ingestion Automation - Implementation Plan
+# PHASE 13: Ingestion Automation - Implementation Plan
 
 **Status:** In Progress  
 **Duration:** 7 days (Days 106-112)  
@@ -9,7 +9,7 @@
 
 ## Overview
 
-FASE 13 introduces automated ingestion workflows to eliminate manual 
+PHASE 13 introduces automated ingestion workflows to eliminate manual 
 intervention when documents are added or updated. This phase implements 
 three key features:
 
@@ -1273,7 +1273,7 @@ EOF
 ### Day 7: QA & Release
 - E2E testing with real documents
 - Performance validation
-- Create `FASE13_COMPLETION.md`
+- Create `PHASE13_COMPLETION.md`
 - Tag v0.11.0-dev
 - Update CHANGELOG
 
@@ -1332,9 +1332,9 @@ EOF
 
 ---
 
-## Future Enhancements (Post-FASE 13)
+## Future Enhancements (Post-PHASE 13)
 
-### FASE 14+
+### PHASE 14+
 - Delete handling (remove from Qdrant when file deleted)
 - Move detection (avoid re-processing on renames)
 - Batch validation for all _meta.json files
@@ -1368,8 +1368,8 @@ kb-rag-mcp/
 │   └── e2e/
 │       └── test_auto_ingestion.py   # NEW: E2E watcher test
 ├── docs/
-│   ├── FASE13_PLAN.md               # THIS FILE
-│   ├── FASE13_COMPLETION.md         # Created at end
+│   ├── PHASE13_PLAN.md               # THIS FILE
+│   ├── PHASE13_COMPLETION.md         # Created at end
 │   ├── AUTO_INGESTION.md            # NEW: User guide
 │   ├── METADATA_OVERRIDES.md        # NEW: _meta.json guide
 │   └── VERSION_FILTERING.md         # NEW: Version search guide
@@ -1384,7 +1384,7 @@ kb-rag-mcp/
 
 ## Conclusion
 
-FASE 13 delivers automated ingestion workflows that significantly reduce 
+PHASE 13 delivers automated ingestion workflows that significantly reduce 
 manual intervention. The three features (watcher, version extraction, 
 metadata overrides) work together seamlessly while maintaining full 
 backward compatibility.

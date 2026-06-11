@@ -250,7 +250,7 @@ Potential improvements:
 ## Related Documentation
 
 - [QUERY_ANALYSIS.md](QUERY_ANALYSIS.md) - Query logging guide
-- [FASE14_PLAN.md](FASE14_PLAN.md) - Implementation details
+- [PHASE14_PLAN.md](PHASE14_PLAN.md) - Implementation details
 - [OPERATIONS.md](OPERATIONS.md) - Deployment guide
 
 ## Support
@@ -258,4 +258,4 @@ Potential improvements:
 For issues or questions:
 - Check logs: `sudo journalctl -u kb-rag-ui -f`
 - Verify config: `systemctl show kb-rag-ui`
-- Review plan: `docs/FASE14_PLAN.md`
+- Review plan: `docs/PHASE14_PLAN.md`

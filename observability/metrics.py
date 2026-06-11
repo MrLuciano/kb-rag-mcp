@@ -51,7 +51,7 @@ class MetricsCollector:
         # Query metrics
         self.query_duration = query_duration
         self.query_errors = query_errors
-        # FASE 8: Batch metrics
+        # PHASE 8: Batch metrics
         self.batch_embeddings_total = batch_embeddings_total
         self.batch_embedding_texts = batch_embedding_texts
         self.batch_embedding_duration = batch_embedding_duration
@@ -441,7 +441,7 @@ def get_metrics() -> tuple[bytes, str]:
     return generate_latest(), CONTENT_TYPE_LATEST
 
 
-# ── FASE 8: Batch Processing Metrics ────────────────────────────────
+# ── PHASE 8: Batch Processing Metrics ────────────────────────────────
 
 
 batch_embeddings_total = Counter(

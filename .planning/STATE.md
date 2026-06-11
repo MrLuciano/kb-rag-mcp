@@ -525,7 +525,7 @@ Last activity: 2026-06-11 -- Phase 25 complete (all 4 plans, 56 tests, verifier 
 
 ### Plans Executed
 
-- **06-01**: Mock infrastructure (3 session fixtures in conftest.py) + pytest marker registration (integration, fase12, cli)
+- **06-01**: Mock infrastructure (3 session fixtures in conftest.py) + pytest marker registration (integration, PHASE12, cli)
 - **06-02**: 26-unit test_classifier.py + kb_server integration audit (no tags needed — all mock-isolated)
 - **06-03**: Ingest integration audit (no tags needed) + full isolation verification
 

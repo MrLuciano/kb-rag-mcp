@@ -2,7 +2,7 @@
 
 ## Overview
 
-FASE 16 implements RAG evaluation using the [RAGAS](https://docs.ragas.io/) framework. The goal is to measure and improve retrieval and answer quality based on real usage data from FASE 14 query logs.
+PHASE 16 implements RAG evaluation using the [RAGAS](https://docs.ragas.io/) framework. The goal is to measure and improve retrieval and answer quality based on real usage data from PHASE 14 query logs.
 
 ## Architecture
 
@@ -56,7 +56,7 @@ export OPENAI_API_KEY='sk-...'
 ## Running Query Analysis
 
 ```bash
-# Analyze query patterns from FASE 14 logs
+# Analyze query patterns from PHASE 14 logs
 python3 -c "
 from server.analytics.query_analyzer import QueryAnalyzer
 qa = QueryAnalyzer()

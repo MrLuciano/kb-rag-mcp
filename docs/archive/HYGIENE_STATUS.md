@@ -1,4 +1,4 @@
-# FASE 1 - Code Hygiene Status
+# PHASE 1 - Code Hygiene Status
 
 **Date**: 2026-05-15  
 **Status**: Core modules completed and verified
@@ -99,9 +99,9 @@ These are expected for dynamic JSON/API responses and don't affect runtime corre
 | Config | 2/2 | ✅ Done | black, isort, flake8, mypy |
 | Tests | 2/2 | ✅ Pass | Infrastructure verified |
 
-## 🎯 Next Steps for FASE 1
+## 🎯 Next Steps for PHASE 1
 
-According to docs/PLAN.md, FASE 1 includes:
+According to docs/PLAN.md, PHASE 1 includes:
 
 - [x] Test infrastructure (pytest, conftest.py)
 - [x] Type annotations and mypy checks
@@ -120,4 +120,4 @@ The core ingestion pipeline and embedding client are production-ready:
 - ✅ Formatting tools operational
 - ✅ Requirements management in place
 
-The remaining E501 issues in server/ are cosmetic (docstrings) and don't block progression to FASE 2.
+The remaining E501 issues in server/ are cosmetic (docstrings) and don't block progression to PHASE 2.

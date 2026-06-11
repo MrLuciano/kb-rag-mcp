@@ -31,26 +31,26 @@ TDD and includes a migration toolset.
 ## Timeline
 Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 
-- ✅ FASE 1: Foundation and Testing Infrastructure (Days 1-10)
-- ✅ FASE 1.5: Migration Tools (Days 11-12)
-- ✅ FASE 2: Job Management and Scheduler (Days 13-24)
-- ✅ FASE 3: Worker Pool and Rate Limiter (Days 25-35)
-- ✅ FASE 4: Progress Tracking and Observability (Days 36-42)
-- ✅ FASE 5: Cache System (Days 43-49)
-- ✅ FASE 6: CLI Refactor and Job Control (Days 50-56)
-- ✅ FASE 7: Document Validators and Quality (Days 57-63)
-- ✅ FASE 8: Connection Pooling and Batch Optimization (Days 64-70)
-- ✅ FASE 9: Production Hardening (Days 71-81)
-- ✅ FASE 10: Documentation and Final QA (Days 82-88)
-- ✅ FASE 11: Expanded Ingestion (Days 89-95)
-- ✅ FASE 12: Search Quality Enhancement (Days 96-105)
-- ✅ FASE 13: Ingestion Automation (Days 106-112)
-- ✅ FASE 14: Observability and Audit (Days 113-122)
-- ✅ FASE 15: Advanced Infrastructure (Days 123-136)
-- ✅ FASE 16: RAG Performance and Accuracy (Days 137-150)
+- ✅ PHASE 1: Foundation and Testing Infrastructure (Days 1-10)
+- ✅ PHASE 1.5: Migration Tools (Days 11-12)
+- ✅ PHASE 2: Job Management and Scheduler (Days 13-24)
+- ✅ PHASE 3: Worker Pool and Rate Limiter (Days 25-35)
+- ✅ PHASE 4: Progress Tracking and Observability (Days 36-42)
+- ✅ PHASE 5: Cache System (Days 43-49)
+- ✅ PHASE 6: CLI Refactor and Job Control (Days 50-56)
+- ✅ PHASE 7: Document Validators and Quality (Days 57-63)
+- ✅ PHASE 8: Connection Pooling and Batch Optimization (Days 64-70)
+- ✅ PHASE 9: Production Hardening (Days 71-81)
+- ✅ PHASE 10: Documentation and Final QA (Days 82-88)
+- ✅ PHASE 11: Expanded Ingestion (Days 89-95)
+- ✅ PHASE 12: Search Quality Enhancement (Days 96-105)
+- ✅ PHASE 13: Ingestion Automation (Days 106-112)
+- ✅ PHASE 14: Observability and Audit (Days 113-122)
+- ✅ PHASE 15: Advanced Infrastructure (Days 123-136)
+- ✅ PHASE 16: RAG Performance and Accuracy (Days 137-150)
 - ✅ QA Pipeline: QA evaluation (Hit Rate 100%, MRR 0.78)
 
-## FASE 1: Foundation and Testing Infrastructure
+## PHASE 1: Foundation and Testing Infrastructure
 Goals:
 - Establish testing framework and fixtures.
 - Introduce pip-tools dependency workflow.
@@ -66,7 +66,7 @@ Acceptance:
 - pytest runs successfully.
 - Coverage >70% for touched modules.
 
-## FASE 1.5: Migration Tools (Offline)
+## PHASE 1.5: Migration Tools (Offline)
 Goals:
 - Export and import complete KB state to .tar.gz package.
 - Validate integrity with SHA256 manifest.
@@ -82,7 +82,7 @@ Acceptance:
 - Export creates valid package.
 - Import validates and restores KB state.
 
-## FASE 2: Job Management and Scheduler
+## PHASE 2: Job Management and Scheduler
 Goals:
 - SQLite-backed job queue with lifecycle management.
 - Priority scheduling and job persistence.
@@ -96,7 +96,7 @@ Acceptance:
 - Jobs can be created, listed, paused, resumed, cancelled.
 - Scheduler respects priority and concurrency limits.
 
-## FASE 3: Worker Pool and Rate Limiter
+## PHASE 3: Worker Pool and Rate Limiter
 Goals:
 - Async worker pool for parallel file processing.
 - Global rate limiter to protect embedding API.
@@ -109,7 +109,7 @@ Acceptance:
 - Worker pool processes files in parallel.
 - Rate limiter enforces requests per minute.
 
-## FASE 4: Progress Tracking and Observability
+## PHASE 4: Progress Tracking and Observability
 Goals:
 - Real-time progress updates with configurable interval.
 - Structured logging and Prometheus metrics.
@@ -122,7 +122,7 @@ Acceptance:
 - job progress --follow works with default 2s interval.
 - Metrics exposed on /metrics endpoint.
 
-## FASE 5: Cache System (LRU + Redis)
+## PHASE 5: Cache System (LRU + Redis)
 Goals:
 - In-memory LRU cache for embeddings.
 - Optional Redis fallback with promotion.
@@ -134,7 +134,7 @@ Deliverables:
 Acceptance:
 - Cache hit rate >80% for repeated queries.
 
-## FASE 6: CLI Refactor and Job Control
+## PHASE 6: CLI Refactor and Job Control
 Goals:
 - New Click-based CLI with job commands.
 - Legacy CLI wrapper with deprecation warnings.
@@ -146,7 +146,7 @@ Deliverables:
 Acceptance:
 - Job commands work and legacy CLI remains functional.
 
-## FASE 7: Document Validators and Quality
+## PHASE 7: Document Validators and Quality
 Goals:
 - Validate format, size, and content quality before processing.
 
@@ -157,7 +157,7 @@ Deliverables:
 Acceptance:
 - Invalid files are skipped and logged with reasons.
 
-## FASE 8: Connection Pooling and Batch Optimization
+## PHASE 8: Connection Pooling and Batch Optimization
 Goals:
 - Connection pooling for embedding API and Qdrant.
 - Batch embeddings and batch inserts.
@@ -170,7 +170,7 @@ Deliverables:
 Acceptance:
 - Batch path is >3x faster than sequential.
 
-## FASE 9: Production Hardening
+## PHASE 9: Production Hardening
 Goals:
 - systemd services for server and scheduler.
 - Health checks and log rotation.
@@ -184,7 +184,7 @@ Deliverables:
 Acceptance:
 - Services restart on failure and pass health checks.
 
-## FASE 10: Documentation and Final QA
+## PHASE 10: Documentation and Final QA
 Goals:
 - Complete documentation and E2E tests.
 - Performance benchmarks and security review.
@@ -201,7 +201,7 @@ Acceptance:
 
 ## Future Phases: Enhancements and Advanced Features
 
-### FASE 11: Expanded Ingestion (High + Medium Priority)
+### PHASE 11: Expanded Ingestion (High + Medium Priority)
 **Duration:** 7 days (Days 89-95)
 
 Goals:
@@ -234,7 +234,7 @@ Acceptance:
 
 ---
 
-### FASE 12: Search Quality Enhancement (High Priority)
+### PHASE 12: Search Quality Enhancement (High Priority)
 **Duration:** 10 days (Days 96-105)
 
 Goals:
@@ -274,7 +274,7 @@ Acceptance:
 
 ---
 
-### FASE 13: Ingestion Automation (Medium Priority)
+### PHASE 13: Ingestion Automation (Medium Priority)
 **Duration:** 7 days (Days 106-112)
 
 Goals:
@@ -325,7 +325,7 @@ Acceptance:
 
 ---
 
-### FASE 14: Observability and Audit (Low Priority)
+### PHASE 14: Observability and Audit (Low Priority)
 **Duration:** 10 days (Days 113-122)
 
 Goals:
@@ -368,7 +368,7 @@ Acceptance:
 
 ---
 
-### FASE 15: Advanced Infrastructure (Low Priority)
+### PHASE 15: Advanced Infrastructure (Low Priority)
 **Duration:** 14 days (Days 123-136)
 
 Goals:
@@ -413,7 +413,7 @@ Acceptance:
 
 ---
 
-### FASE 16: RAG Performance and Accuracy (Low Priority)
+### PHASE 16: RAG Performance and Accuracy (Low Priority)
 **Duration:** 14 days (Days 137-150)
 
 Goals:
@@ -424,7 +424,7 @@ Goals:
 
 Deliverables:
 - `server/analytics/query_analyzer.py`:
-  * Load query_log from FASE 14
+  * Load query_log from PHASE 14
   * Identify patterns: most common queries, low-score queries
   * Cluster similar queries (embeddings + k-means)
   * Generate report: query_analysis.json
@@ -467,25 +467,25 @@ Acceptance:
 Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 
 **Completed Phases (Days 1-150):**
-- FASE 1-10: Foundation through Documentation (88 days)
-- FASE 11: Expanded Ingestion (7 days)
-- FASE 12: Search Quality Enhancement (10 days)
-- FASE 13: Ingestion Automation (7 days)
-- FASE 14: Observability and Audit (10 days)
-- FASE 15: Advanced Infrastructure (14 days)
-- FASE 16: RAG Performance and Accuracy (14 days)
+- PHASE 1-10: Foundation through Documentation (88 days)
+- PHASE 11: Expanded Ingestion (7 days)
+- PHASE 12: Search Quality Enhancement (10 days)
+- PHASE 13: Ingestion Automation (7 days)
+- PHASE 14: Observability and Audit (10 days)
+- PHASE 15: Advanced Infrastructure (14 days)
+- PHASE 16: RAG Performance and Accuracy (14 days)
 - QA Pipeline: QA evaluation — Hit Rate 100%, MRR 0.78 ✅
 
-**v1.4 (FASEs 29-37): Platform, Analytics & Enterprise (Phases scheduled: 2026-05-27 to 2026-06-11):**
-- FASE 29: Enterprise Data Source Connectors — Confluence, JIRA, Git remote ingestion
-- FASE 30: Cross-Doc Knowledge Graph — Graph metadata derivation, related doc discovery
-- FASE 31: MCP Prompt Templates — extract_answer + summarize_documents prompts
-- FASE 32: API Key Authentication — Optional Bearer token auth on SSE
-- FASE 33: Request Rate Limiting — Per-subject token bucket server enforcement
-- FASE 34: Upload Index Quotas — Per-KB upload limits, schema v3→v4
-- FASE 35: Multi-KB Aggregated Search — kb_ids parameter, RRF multi-collection merge
-- FASE 36: Provider Budget & Circuit Breaker — Provider resilience, fallback chain
-- FASE 37: Request-level Retrieval Cache — Query result cache with invalidation
+**v1.4 (PHASEs 29-37): Platform, Analytics & Enterprise (Phases scheduled: 2026-05-27 to 2026-06-11):**
+- PHASE 29: Enterprise Data Source Connectors — Confluence, JIRA, Git remote ingestion
+- PHASE 30: Cross-Doc Knowledge Graph — Graph metadata derivation, related doc discovery
+- PHASE 31: MCP Prompt Templates — extract_answer + summarize_documents prompts
+- PHASE 32: API Key Authentication — Optional Bearer token auth on SSE
+- PHASE 33: Request Rate Limiting — Per-subject token bucket server enforcement
+- PHASE 34: Upload Index Quotas — Per-KB upload limits, schema v3→v4
+- PHASE 35: Multi-KB Aggregated Search — kb_ids parameter, RRF multi-collection merge
+- PHASE 36: Provider Budget & Circuit Breaker — Provider resilience, fallback chain
+- PHASE 37: Request-level Retrieval Cache — Query result cache with invalidation
 
 **Total:** ~8.5 months for complete feature set — **DELIVERED**
 
@@ -495,12 +495,12 @@ Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 
 All phases shipped. No pending phases.
 
-**v1.0 (FASEs 1-10):** Foundation, job system, worker pool, cache, CLI, validators, batching, production hardening, documentation.
+**v1.0 (PHASEs 1-10):** Foundation, job system, worker pool, cache, CLI, validators, batching, production hardening, documentation.
 
-**v1.1.0 (FASEs 11-12):** Expanded ingestion (legacy Office, ZIP), search quality (hybrid BM25+dense, reranker).
+**v1.1.0 (PHASEs 11-12):** Expanded ingestion (legacy Office, ZIP), search quality (hybrid BM25+dense, reranker).
 
-**v1.2.0 (FASEs 13-14):** Ingestion automation (file watcher, version extractor), observability (query logger, web UI).
+**v1.2.0 (PHASEs 13-14):** Ingestion automation (file watcher, version extractor), observability (query logger, web UI).
 
-**v1.3.0 (FASEs 15-16 + QA):** Advanced infrastructure (multi-collection, Kubernetes), RAG accuracy (RAGAS pipeline, golden dataset), QA pipeline validated.
+**v1.3.0 (PHASEs 15-16 + QA):** Advanced infrastructure (multi-collection, Kubernetes), RAG accuracy (RAGAS pipeline, golden dataset), QA pipeline validated.
 
-**v1.4.0 (FASEs 29-37):** Platform, Analytics & Enterprise — Connectors, knowledge graph, MCP prompts, auth, rate limiting, quotas, multi-KB search, circuit breaker, retrieval cache.
+**v1.4.0 (PHASEs 29-37):** Platform, Analytics & Enterprise — Connectors, knowledge graph, MCP prompts, auth, rate limiting, quotas, multi-KB search, circuit breaker, retrieval cache.

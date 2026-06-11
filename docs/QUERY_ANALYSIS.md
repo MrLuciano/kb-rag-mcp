@@ -49,7 +49,7 @@ ORDER BY timestamp DESC;
 
 ### Filters Applied
 - **filters**: JSON object with product, doc_type, file_type
-- **version_filter**: Version constraint (FASE 13)
+- **version_filter**: Version constraint (PHASE 13)
 
 ### Results
 - **result_count**: Number of results returned
@@ -432,7 +432,7 @@ ORDER BY date;
 ## Related Documentation
 
 - [WEB_UI.md](WEB_UI.md) - Web UI for browsing queries
-- [FASE14_PLAN.md](FASE14_PLAN.md) - Implementation details
+- [PHASE14_PLAN.md](PHASE14_PLAN.md) - Implementation details
 - [OPERATIONS.md](OPERATIONS.md) - Deployment guide
 
 ## Future Enhancements

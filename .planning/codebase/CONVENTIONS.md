@@ -61,7 +61,7 @@
 """
 Hybrid Search - Combine dense vector search with BM25 sparse retrieval.
 
-FASE 12: Search Quality Enhancement
+PHASE 12: Search Quality Enhancement
 ...
 """
 ```
@@ -165,12 +165,12 @@ class ValidationResult:
 
 - Factory class methods (`@classmethod`) for common construction: `ValidationResult.success()`, `ValidationResult.failure()`
 
-## FASE Comments
+## PHASE Comments
 
 **Convention:** Development phases tagged in code and docstrings:
-- Module docstrings include phase tag: `FASE 12: Search Quality Enhancement`
-- Inline comments mark phase-specific features: `# FASE 14: Query logging configuration`
-- Test files marked with `pytestmark = pytest.mark.fase12`
+- Module docstrings include phase tag: `PHASE 12: Search Quality Enhancement`
+- Inline comments mark phase-specific features: `# PHASE 14: Query logging configuration`
+- Test files marked with `pytestmark = pytest.mark.PHASE12`
 
 ---
 

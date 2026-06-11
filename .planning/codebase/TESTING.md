@@ -20,7 +20,7 @@
 ```bash
 pytest tests/                    # Run all tests
 pytest tests/ -k "test_health"   # Run specific tests
-pytest tests/ -m fase12          # Run by marker
+pytest tests/ -m PHASE12          # Run by marker
 pytest tests/e2e/                # E2E tests only
 pytest tests/ --co -q            # Collect/list tests
 ```
@@ -202,7 +202,7 @@ async def test_rate_limiter_basic():
 
 **Custom markers used:**
 - `@pytest.mark.asyncio` — async tests
-- `pytest.mark.fase12` — tests for FASE 12 features (set via `pytestmark`)
+- `pytest.mark.PHASE12` — tests for PHASE 12 features (set via `pytestmark`)
 - `@pytest.mark.integration` — integration tests requiring external services
 - `@pytest.mark.cli` — CLI-focused tests
 - `@pytest.mark.skip(reason="...")` — expensive tests (e.g., LLM API calls)
@@ -210,7 +210,7 @@ async def test_rate_limiter_basic():
 
 **Module-level marker assignment:**
 ```python
-pytestmark = pytest.mark.fase12
+pytestmark = pytest.mark.PHASE12
 ```
 
 ## E2E Tests

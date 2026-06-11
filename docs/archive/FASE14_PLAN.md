@@ -1,10 +1,10 @@
-# FASE 14: Observability and Audit - Implementation Plan
+# PHASE 14: Observability and Audit - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add comprehensive observability with query logging, registry export, and web UI for document inspection and testing.
 
-**Architecture:** SQLite-based query logging with auto-rotation, streaming CSV/JSON export, FastAPI+HTMX web UI for zero-JS document browsing and search testing. All features integrate with FASE 13 version filtering.
+**Architecture:** SQLite-based query logging with auto-rotation, streaming CSV/JSON export, FastAPI+HTMX web UI for zero-JS document browsing and search testing. All features integrate with PHASE 13 version filtering.
 
 **Tech Stack:** SQLite, FastAPI, HTMX, Bootstrap 5, pytest
 
@@ -37,7 +37,7 @@
 **Documentation:**
 - `docs/QUERY_ANALYSIS.md` - Query logging guide
 - `docs/WEB_UI.md` - Web UI usage guide
-- `docs/FASE14_COMPLETION.md` - Completion report
+- `docs/PHASE14_COMPLETION.md` - Completion report
 
 ### Modified Files
 
@@ -45,7 +45,7 @@
 - `ingest/cli/main.py` - Add export command group
 - `requirements.in` - Add fastapi, htmx dependencies
 - `deployment/config/kb-rag.env.template` - Add UI config
-- `CHANGELOG.md` - FASE 14 entry
+- `CHANGELOG.md` - PHASE 14 entry
 - `README.md` - Web UI section
 
 ---
@@ -532,7 +532,7 @@ Expected: PASS
 
 ```bash
 git add server/telemetry/ tests/test_query_logger.py
-git commit -m "feat(fase14): add query logger with auto-rotation
+git commit -m "feat(PHASE14): add query logger with auto-rotation
 
 - SQLite-based query logging
 - Schema with version_filter support
@@ -723,7 +723,7 @@ Expected: PASS
 
 ```bash
 git add server/server.py tests/test_query_logger.py
-git commit -m "feat(fase14): integrate query logging into search_kb
+git commit -m "feat(PHASE14): integrate query logging into search_kb
 
 - Log all queries with filters and results
 - Track latency and avg score
@@ -1101,7 +1101,7 @@ Expected: PASS (already implemented in Step 2)
 
 ```bash
 git add ingest/cli/export.py ingest/cli/main.py tests/test_export.py
-git commit -m "feat(fase14): add registry export CLI
+git commit -m "feat(PHASE14): add registry export CLI
 
 - Export to JSON or CSV format
 - Filter by product, version, doc_type, status
@@ -1127,7 +1127,7 @@ git commit -m "feat(fase14): add registry export CLI
 ```python
 # requirements.in (add at end)
 
-# Web UI (FASE 14)
+# Web UI (PHASE 14)
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 jinja2>=3.1.3
@@ -1251,7 +1251,7 @@ Expected: PASS
 
 ```bash
 git add server/ui/ tests/test_ui.py requirements.in requirements.txt
-git commit -m "feat(fase14): add web UI foundation
+git commit -m "feat(PHASE14): add web UI foundation
 
 - FastAPI app with health endpoint
 - Root redirect to /ui
@@ -1616,7 +1616,7 @@ git commit -m "feat(fase14): add web UI foundation
 
 ```bash
 git add server/ui/templates/ server/ui/static/
-git commit -m "feat(fase14): add web UI templates
+git commit -m "feat(PHASE14): add web UI templates
 
 - Base template with Bootstrap 5 and HTMX
 - Browse documents page with filters
@@ -2125,7 +2125,7 @@ Expected: PASS
 
 ```bash
 git add server/ui/routes.py server/ui/app.py tests/test_ui.py
-git commit -m "feat(fase14): implement web UI routes
+git commit -m "feat(PHASE14): implement web UI routes
 
 - Browse documents with filters (product, version, doc_type)
 - Search tester with HTMX real-time results
@@ -2151,7 +2151,7 @@ git commit -m "feat(fase14): implement web UI routes
 ```bash
 # deployment/config/kb-rag.env.template (add at end)
 
-# Web UI Configuration (FASE 14)
+# Web UI Configuration (PHASE 14)
 UI_ENABLED=true
 UI_HOST=0.0.0.0
 UI_PORT=8001
@@ -2264,7 +2264,7 @@ Expected: Health returns 200, browse returns HTML
 
 ```bash
 git add deployment/config/kb-rag.env.template deployment/systemd/ scripts/run_ui.py
-git commit -m "feat(fase14): add web UI deployment configuration
+git commit -m "feat(PHASE14): add web UI deployment configuration
 
 - systemd service: kb-rag-ui.service
 - UI configuration in environment template
@@ -2290,7 +2290,7 @@ git commit -m "feat(fase14): add web UI deployment configuration
 ```markdown
 # Query Analysis Guide
 
-**FASE 14 Feature**
+**PHASE 14 Feature**
 
 Analyze search queries to improve RAG performance and understand user patterns.
 
@@ -2406,7 +2406,7 @@ logger.rotate_old_queries()
 ## See Also
 
 - [Web UI](WEB_UI.md) - Browse queries in web interface
-- [RAG Evaluation](RAG_EVALUATION.md) - Use query logs for evaluation (FASE 16)
+- [RAG Evaluation](RAG_EVALUATION.md) - Use query logs for evaluation (PHASE 16)
 ```
 
 ### Step 2: Create web UI guide
@@ -2416,7 +2416,7 @@ logger.rotate_old_queries()
 ```markdown
 # Web UI Guide
 
-**FASE 14 Feature**
+**PHASE 14 Feature**
 
 Web interface for browsing documents and testing searches.
 
@@ -2646,11 +2646,11 @@ python scripts/run_ui.py
 ```markdown
 # Add at top of Unreleased section
 
-### Added - FASE 14: Observability and Audit (2026-05-16)
+### Added - PHASE 14: Observability and Audit (2026-05-16)
 
 - **Query Logging System**
   - SQLite-based logging of all search queries
-  - Schema with version_filter support (FASE 13 integration)
+  - Schema with version_filter support (PHASE 13 integration)
   - Auto-rotation: 90-day retention with configurable window
   - Query statistics: top queries, low-score queries, avg latency
   - <5ms overhead per query
@@ -2688,7 +2688,7 @@ python scripts/run_ui.py
   - `docs/WEB_UI.md` - Web UI usage guide
   - Updated `README.md` with Web UI section
 
-### Changed - FASE 14
+### Changed - PHASE 14
 
 - **MCP Server (`server/server.py`)**
   - Integrated query logging in `search_kb`
@@ -2699,7 +2699,7 @@ python scripts/run_ui.py
   - Added `registry` command group
   - Export subcommand with JSON/CSV formats
 
-### Migration Guide - FASE 14
+### Migration Guide - PHASE 14
 
 No breaking changes. All features are additive.
 
@@ -2746,7 +2746,7 @@ kb-rag registry export --format csv --output filtered.csv \
 
 ```bash
 git add docs/QUERY_ANALYSIS.md docs/WEB_UI.md README.md CHANGELOG.md
-git commit -m "docs(fase14): add comprehensive FASE 14 documentation
+git commit -m "docs(PHASE14): add comprehensive PHASE 14 documentation
 
 - Query analysis guide with examples
 - Web UI usage guide with troubleshooting
@@ -2765,7 +2765,7 @@ git commit -m "docs(fase14): add comprehensive FASE 14 documentation
 
 ### Step 1: Run full test suite
 
-- [ ] **Execute all FASE 14 tests**
+- [ ] **Execute all PHASE 14 tests**
 
 ```bash
 # Run all new tests
@@ -2903,7 +2903,7 @@ Expected: <5ms overhead
 - [ ] **Create test report**
 
 ```markdown
-# FASE 14 Test Report
+# PHASE 14 Test Report
 
 ## Unit Tests
 - Query Logger: 4/4 passing
@@ -2935,15 +2935,15 @@ Expected: <5ms overhead
 ## Task 10: Release and Completion
 
 **Files:**
-- Create: `docs/FASE14_COMPLETION.md`
+- Create: `docs/PHASE14_COMPLETION.md`
 - Final commit and tag
 
 ### Step 1: Create completion report
 
-- [ ] **Create FASE14_COMPLETION.md**
+- [ ] **Create PHASE14_COMPLETION.md**
 
 ```markdown
-# FASE 14 Completion Report: Observability and Audit
+# PHASE 14 Completion Report: Observability and Audit
 
 **Status:** ✅ Implementation Complete  
 **Duration:** Days 113-122 (10 days)  
@@ -2953,13 +2953,13 @@ Expected: <5ms overhead
 
 ## Executive Summary
 
-FASE 14 successfully implements comprehensive observability with three key features:
+PHASE 14 successfully implements comprehensive observability with three key features:
 
 1. **Query Logging** - Track all searches with <5ms overhead
 2. **Registry Export** - Audit file registry in JSON/CSV
 3. **Web UI** - Browse documents and test searches
 
-All features integrate seamlessly with FASE 13 version filtering.
+All features integrate seamlessly with PHASE 13 version filtering.
 
 ---
 
@@ -3030,7 +3030,7 @@ All features integrate seamlessly with FASE 13 version filtering.
 | QUERY_ANALYSIS.md | 200 | Query logging guide |
 | WEB_UI.md | 250 | Web UI usage guide |
 | README updates | 50 | Feature additions |
-| CHANGELOG | 100 | FASE 14 entry |
+| CHANGELOG | 100 | PHASE 14 entry |
 | **Total** | **600** | |
 
 ---
@@ -3058,18 +3058,18 @@ All features integrate seamlessly with FASE 13 version filtering.
 
 ## Next Steps
 
-With FASE 14 complete, the system now has:
+With PHASE 14 complete, the system now has:
 - Comprehensive observability
 - Production audit capabilities
 - User-friendly testing interface
 
-**Ready for FASE 16: RAG Performance and Accuracy**
+**Ready for PHASE 16: RAG Performance and Accuracy**
 
 ---
 
 **Report Date:** 2026-05-16  
 **Version:** v0.12.0-dev  
-**Next Phase:** FASE 16 (RAG Evaluation)
+**Next Phase:** PHASE 16 (RAG Evaluation)
 ```
 
 ### Step 2: Final commit
@@ -3077,8 +3077,8 @@ With FASE 14 complete, the system now has:
 - [ ] **Commit completion report**
 
 ```bash
-git add docs/FASE14_COMPLETION.md
-git commit -m "docs(fase14): add completion report
+git add docs/PHASE14_COMPLETION.md
+git commit -m "docs(PHASE14): add completion report
 
 - Implementation summary
 - Code statistics
@@ -3093,7 +3093,7 @@ git commit -m "docs(fase14): add completion report
 
 ```bash
 # Create annotated tag
-git tag -a v0.12.0-dev -m "Release v0.12.0-dev: FASE 14 - Observability and Audit
+git tag -a v0.12.0-dev -m "Release v0.12.0-dev: PHASE 14 - Observability and Audit
 
 Features:
 - Query logging with auto-rotation
@@ -3107,7 +3107,7 @@ Statistics:
 - 600 lines documentation
 - <5ms query logging overhead
 
-See docs/FASE14_COMPLETION.md for details."
+See docs/PHASE14_COMPLETION.md for details."
 
 # Push commit and tag
 git push origin master
@@ -3148,7 +3148,7 @@ Expected: All services healthy, UI accessible
 
 ## Execution Options
 
-Plan complete and saved to `docs/FASE14_PLAN.md`.
+Plan complete and saved to `docs/PHASE14_PLAN.md`.
 
 **Two execution options:**
 

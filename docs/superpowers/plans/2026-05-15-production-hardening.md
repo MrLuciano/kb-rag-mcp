@@ -1,4 +1,4 @@
-# Production Hardening Implementation Plan (FASE 9)
+# Production Hardening Implementation Plan (PHASE 9)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -41,7 +41,7 @@
 - `docs/DEPLOYMENT.md` - Deployment guide
 - `docs/MONITORING.md` - Monitoring and alerting guide
 - `docs/OPERATIONS.md` - Day-to-day operations guide
-- `docs/FASE9_COMPLETION.md` - Completion report
+- `docs/PHASE9_COMPLETION.md` - Completion report
 
 ---
 
@@ -928,7 +928,7 @@ CACHE_BACKEND=lru
 CACHE_MAX_SIZE_MB=512
 CACHE_TTL=3600
 
-# Batch Processing (FASE 8)
+# Batch Processing (PHASE 8)
 EMBED_BATCH_SIZE=32
 FILE_BATCH_SIZE=50
 QDRANT_BATCH_SIZE=100
@@ -1543,12 +1543,12 @@ QDRANT_GRPC=false
 QDRANT_GRPC_PORT=6334
 QDRANT_TIMEOUT=60.0
 
-# Batch configuration (FASE 8)
+# Batch configuration (PHASE 8)
 QDRANT_BATCH_SIZE=100
 QDRANT_PARALLEL_BATCHES=3
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Cache System (FASE 5)
+# Cache System (PHASE 5)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 # Backend: lru (local) or redis (distributed)
@@ -1564,7 +1564,7 @@ CACHE_TTL=3600
 # REDIS_URL=redis://localhost:6379/0
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Batch Processing (FASE 8)
+# Batch Processing (PHASE 8)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 # Embedding batch size (texts per API call)

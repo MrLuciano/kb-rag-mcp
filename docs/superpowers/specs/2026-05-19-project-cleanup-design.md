@@ -7,7 +7,7 @@
 
 ## Goal
 
-Remove all personal/environment-specific identifiers from the project and replace FASE completion/plan archive files with a single canonical `FEATURES.md`. The result should be a project anyone can clone and use without seeing references to a specific person's hardware, employer, or local network.
+Remove all personal/environment-specific identifiers from the project and replace PHASE completion/plan archive files with a single canonical `FEATURES.md`. The result should be a project anyone can clone and use without seeing references to a specific person's hardware, employer, or local network.
 
 ---
 
@@ -47,8 +47,8 @@ Remove all personal/environment-specific identifiers from the project and replac
 
 | Path | Reason |
 |---|---|
-| `docs/archive/FASE*` | Historical record — keep as-is |
-| `CHANGELOG.md` | Historical record — FASE naming is intentional there |
+| `docs/archive/PHASE*` | Historical record — keep as-is |
+| `CHANGELOG.md` | Historical record — PHASE naming is intentional there |
 | `docs/superpowers/plans/` (other plans) | Internal planning artifacts |
 
 ---
@@ -155,7 +155,7 @@ Add `FEATURES.md` entry at the top of the file list with description "Complete f
 ## Constraints
 
 - No changes to `docs/archive/` — historical record
-- No changes to `CHANGELOG.md` — historical record uses FASE naming intentionally
+- No changes to `CHANGELOG.md` — historical record uses PHASE naming intentionally
 - CLI interfaces, env variable names, and MCP tool names are **not** changed
 - `kb_server/` module paths and Python imports are **not** changed
 - Commit atomically per logical group (terminology, golden_dataset, FEATURES.md, docs)

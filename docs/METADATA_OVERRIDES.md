@@ -1,6 +1,6 @@
 # Metadata Overrides with _meta.json
 
-**FASE 13 Feature**
+**PHASE 13 Feature**
 
 Override automatic classification with per-directory and per-file metadata.
 
@@ -775,7 +775,7 @@ for dir_path, meta in all_meta.items():
 
 ---
 
-## Migration from FASE 12
+## Migration from PHASE 12
 
 ### Breaking Changes
 
@@ -862,4 +862,4 @@ A: No, filenames must be exact matches (case-sensitive).
 
 ---
 
-**FASE 13 Feature** | Last Updated: 2026-05-16 | [Report Issues](https://github.com/MrLuciano/kb-rag-mcp/issues)
+**PHASE 13 Feature** | Last Updated: 2026-05-16 | [Report Issues](https://github.com/MrLuciano/kb-rag-mcp/issues)

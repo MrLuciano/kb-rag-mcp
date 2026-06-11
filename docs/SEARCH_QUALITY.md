@@ -1,6 +1,6 @@
 # Search Quality Features Guide
 
-Guide to FASE 12 search quality enhancements: payload indexing, hybrid search, and cross-encoder reranking.
+Guide to PHASE 12 search quality enhancements: payload indexing, hybrid search, and cross-encoder reranking.
 
 ---
 
@@ -235,7 +235,7 @@ python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cross-e
 
 ### Hybrid search not improving results
 **Cause:** Sparse vectors not yet stored  
-**Status:** Awaiting collection migration (FASE 13)  
+**Status:** Awaiting collection migration (PHASE 13)  
 **Workaround:** Reranking alone may help
 
 ### Slow queries despite indexes
@@ -380,17 +380,17 @@ A: Model downloads on first use (~80MB). Subsequent queries are faster. Pre-down
 A: Not for payload indexing or reranking. Hybrid search (full version) will require re-ingestion in future.
 
 **Q: Can I use these features via REST API?**  
-A: Currently MCP only. REST API support planned for FASE 14.
+A: Currently MCP only. REST API support planned for PHASE 14.
 
 **Q: How do I benchmark improvement?**  
-A: Create golden queries with expected docs, measure NDCG@5 and MRR before/after. Benchmark suite in FASE 14.
+A: Create golden queries with expected docs, measure NDCG@5 and MRR before/after. Benchmark suite in PHASE 14.
 
 ---
 
 ## Additional Resources
 
-- Implementation Plan: `docs/FASE12_PLAN.md`
-- Completion Report: `docs/FASE12_COMPLETION.md`
+- Implementation Plan: `docs/PHASE12_PLAN.md`
+- Completion Report: `docs/PHASE12_COMPLETION.md`
 - Migration Script: `scripts/migrations/create_payload_indexes.py`
 - Source Code: `server/retrieval/`
 

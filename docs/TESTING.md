@@ -7,11 +7,11 @@
 - Async tests use `@pytest.mark.asyncio` with strict mode (`asyncio_mode = "strict"` in `pyproject.toml`)
 - Pytest markers are defined in `pyproject.toml`:
   - `integration` — tests requiring live infrastructure (Qdrant, LM Studio, Redis); skipped via `pytest -m 'not integration'`
-  - `fase12` — tests targeting Phase 12 features (hybrid search, reranking)
+  - `PHASE12` — tests targeting Phase 12 features (hybrid search, reranking)
   - `cli` — CLI integration tests that exercise click commands end-to-end
-  - `fase29` — tests targeting Phase 29 features (enterprise connectors)
-  - `fase30` — tests targeting Phase 30 features (knowledge graph)
-  - `fase36` — tests targeting Phase 36 features (circuit breaker, provider budget)
+  - `PHASE29` — tests targeting Phase 29 features (enterprise connectors)
+  - `PHASE30` — tests targeting Phase 30 features (knowledge graph)
+  - `PHASE36` — tests targeting Phase 36 features (circuit breaker, provider budget)
 - All new features require tests for main success and common failure cases
 - Test names must describe scenario and expected result
 - Use fixtures via `conftest.py` for common test data/setup

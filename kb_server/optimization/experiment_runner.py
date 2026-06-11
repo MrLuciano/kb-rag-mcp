@@ -1,6 +1,6 @@
 """Experiment orchestration and parameter sweep for optimization.
 
-FASE 25: Optimization Experiments
+PHASE 25: Optimization Experiments
 
 Provides :class:`ExperimentRunner` which ties chunking experiments,
 scoring experiments, and result comparison into a single user-facing

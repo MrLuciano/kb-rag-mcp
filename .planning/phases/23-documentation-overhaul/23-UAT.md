@@ -48,7 +48,7 @@ result: pass
 ### 9. CHANGELOG Milestones v1.3/v1.4
 expected: Opening CHANGELOG.md shows ## [1.3] 2026-05-27 with all 11 v1.3 phases (12-22) listed per-plan, followed by ## [1.4] section with Phase 23 entries.
 result: pass
-note: "Fixed during Phase 23 execution — FASE→Phase (12 replacements), chronological reordering (newest-first), stale sections removed"
+note: "Fixed during Phase 23 execution — PHASE→Phase (12 replacements), chronological reordering (newest-first), stale sections removed"
 
 ### 10. REFERENCE.md Updates
 expected: Opening docs/REFERENCE.md shows (a) a Deployment Modes subsection listing 4 modes with start commands, (b) Roadmap Status table updated through Phase 23, (c) Component Map entries for Reclassification, FilterTermsCache, and Integration checker.
@@ -79,14 +79,14 @@ blocked: 0
   missing: []
   debug_session: ""
 
-- truth: "CHANGELOG.md should be chronologically ordered with PHASE instead of FASE, no undelivered items shown as delivered"
+- truth: "CHANGELOG.md should be chronologically ordered with PHASE instead of PHASE, no undelivered items shown as delivered"
   status: resolved
-  reason: "Fixed during Phase 23 execution — 12 FASE→Phase replacements, chronological reordering (newest-first), stale Summary Statistics/Migration Notes/Known Issues sections from Phase 7 era removed."
+  reason: "Fixed during Phase 23 execution — 12 PHASE→Phase replacements, chronological reordering (newest-first), stale Summary Statistics/Migration Notes/Known Issues sections from Phase 7 era removed."
   severity: major
   test: 9
-  root_cause: "CHANGELOG.md had three structural problems: (1) 12 occurrences of 'FASE' in section headers; (2) chronological order broken; (3) stale 'Summary Statistics' section claiming Phase 7 is current."
+  root_cause: "CHANGELOG.md had three structural problems: (1) 12 occurrences of 'PHASE' in section headers; (2) chronological order broken; (3) stale 'Summary Statistics' section claiming Phase 7 is current."
   artifacts:
     - path: "CHANGELOG.md"
-      issue: "Fixed — all FASE→Phase, chronologically ordered, stale sections removed"
+      issue: "Fixed — all PHASE→Phase, chronologically ordered, stale sections removed"
   missing: []
   debug_session: ""

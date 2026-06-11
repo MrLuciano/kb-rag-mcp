@@ -1,6 +1,6 @@
-# FASE 15 — Kubernetes + Multi-Collection Plan
+# PHASE 15 — Kubernetes + Multi-Collection Plan
 
-> **Status:** PLAN ONLY — Not yet implemented. Implement after all other FASEs are complete.
+> **Status:** PLAN ONLY — Not yet implemented. Implement after all other PHASEs are complete.
 
 **Goal:** Add Kubernetes deployment support (Helm chart) and multi-collection routing to serve different knowledge domains from a single cluster without index collision.
 
@@ -10,7 +10,7 @@
 
 ### Multi-Collection Routing
 
-Currently all documents share one Qdrant collection (`kb_docs`). FASE 15 adds:
+Currently all documents share one Qdrant collection (`kb_docs`). PHASE 15 adds:
 
 - `CollectionManager` — creates/lists/deletes collections; mirrors Qdrant API
 - `CollectionRouter` — routes MCP tool calls to the correct collection based on `collection` parameter
@@ -209,7 +209,7 @@ No new Python packages required. Kubernetes tooling:
 
 ## Constraints
 
-- This FASE is deliberately last — it depends on all other FASEs being stable
+- This PHASE is deliberately last — it depends on all other PHASEs being stable
 - Helm chart should be validated with `helm lint` before merging
 - Multi-collection must not break existing single-collection deployments
 - `QDRANT_COLLECTION` env var remains the escape hatch for the default collection

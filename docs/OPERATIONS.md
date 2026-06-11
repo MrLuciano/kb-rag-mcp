@@ -1559,7 +1559,7 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 
 - **Detailed Troubleshooting:** [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 - **Complete Setup Guide:** [README.md](../README.md)
-- **Deployment Details:** [archive/FASE9_COMPLETION.md](archive/FASE9_COMPLETION.md)
+- **Deployment Details:** [archive/PHASE9_COMPLETION.md](archive/PHASE9_COMPLETION.md)
 - **GitHub Issues:** https://github.com/MrLuciano/kb-rag-mcp/issues
 
 ---

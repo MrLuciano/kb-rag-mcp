@@ -1,6 +1,6 @@
 """Scoring and reranking experiments with configurable distance metrics.
 
-FASE 25: Optimization Experiments
+PHASE 25: Optimization Experiments
 
 Provides strategy abstractions for comparing dense-only, hybrid, and
 reranked retrieval variants.  The ``ScoringEngine`` runs experiments

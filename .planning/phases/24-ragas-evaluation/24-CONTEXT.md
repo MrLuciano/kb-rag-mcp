@@ -110,7 +110,7 @@ query,faithfulness,answer_relevancy,context_precision,context_recall,timestamp
 - Real-time A/B testing in production (out of scope per REQUIREMENTS.md)
 - RAGAS metrics beyond 4 core (out of scope)
 - Weekly CI automation (mentioned in docs/RAG_EVALUATION.md but not in v1.4 requirements)
-- QueryAnalyzer integration (FASE 14 logs → golden dataset generation)
+- QueryAnalyzer integration (PHASE 14 logs → golden dataset generation)
 
 ---
 

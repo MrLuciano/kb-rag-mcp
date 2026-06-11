@@ -1,4 +1,4 @@
-# FASE 12: Search Quality Enhancement - Implementation Plan
+# PHASE 12: Search Quality Enhancement - Implementation Plan
 
 ## Overview
 Enhance search quality through three complementary techniques:
@@ -190,7 +190,7 @@ Add: `sentence-transformers>=2.2.0` (includes cross-encoders)
 - Compare: baseline vs hybrid vs hybrid+rerank
 
 #### 4.2 Integration tests
-**File:** `tests/e2e/test_fase12_integration.py`
+**File:** `tests/e2e/test_PHASE12_integration.py`
 - End-to-end flow: ingest → search with all features
 - Test all parameter combinations
 - Validate filter compatibility
@@ -210,7 +210,7 @@ Add: `sentence-transformers>=2.2.0` (includes cross-encoders)
 - Add search quality features to main docs
 
 #### 4.4 Completion report
-**File:** `docs/FASE12_COMPLETION.md`
+**File:** `docs/PHASE12_COMPLETION.md`
 - Summary of implementation
 - Benchmark results
 - Known limitations
@@ -264,7 +264,7 @@ For existing deployments:
 
 ## Success Metrics
 
-Baseline (current v0.9.0) vs FASE 12:
+Baseline (current v0.9.0) vs PHASE 12:
 - Recall@10: +15% improvement target
 - NDCG@5: +20% improvement target
 - Filtered query latency: >10x faster (with indexes)

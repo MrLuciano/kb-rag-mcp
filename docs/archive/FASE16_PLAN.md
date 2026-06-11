@@ -1,10 +1,10 @@
-# FASE 16: RAG Performance and Accuracy - Implementation Plan
+# PHASE 16: RAG Performance and Accuracy - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Establish RAG evaluation methodology with metrics, analyze query patterns from production logs, implement continuous improvement pipeline, and optimize RAG based on real usage data.
 
-**Architecture:** RAGAS-based evaluation framework with golden dataset, query pattern analysis from FASE 14 logs, optimization experiments on chunking/scoring/reranking, and CI integration for regression detection.
+**Architecture:** RAGAS-based evaluation framework with golden dataset, query pattern analysis from PHASE 14 logs, optimization experiments on chunking/scoring/reranking, and CI integration for regression detection.
 
 **Tech Stack:** RAGAS, scikit-learn (k-means), matplotlib, pytest, LLM-as-judge (Ollama or OpenAI)
 
@@ -12,9 +12,9 @@
 
 ## Overview
 
-FASE 16 focuses on **data-driven RAG optimization**:
+PHASE 16 focuses on **data-driven RAG optimization**:
 
-1. **Query Analyzer** - Analyze FASE 14 query logs to find patterns
+1. **Query Analyzer** - Analyze PHASE 14 query logs to find patterns
 2. **Golden Dataset** - Create evaluation dataset from real queries
 3. **RAGAS Pipeline** - Evaluate RAG quality with standard metrics
 4. **Optimization Experiments** - Test improvements (chunking, scoring, reranking)
@@ -53,12 +53,12 @@ FASE 16 focuses on **data-driven RAG optimization**:
 
 **Documentation:**
 - `docs/RAG_EVALUATION.md` - Evaluation methodology guide
-- `docs/FASE16_COMPLETION.md` - Completion report
+- `docs/PHASE16_COMPLETION.md` - Completion report
 
 ### Modified Files
 
 - `requirements.in` - Add ragas, scikit-learn, matplotlib
-- `CHANGELOG.md` - FASE 16 entry
+- `CHANGELOG.md` - PHASE 16 entry
 - `README.md` - Evaluation section
 
 ---
@@ -70,7 +70,7 @@ FASE 16 focuses on **data-driven RAG optimization**:
 - Create: `server/analytics/query_analyzer.py`
 - Create: `tests/test_query_analyzer.py`
 
-**Goal:** Analyze FASE 14 query logs to identify patterns, common queries, low-score queries, and cluster similar queries.
+**Goal:** Analyze PHASE 14 query logs to identify patterns, common queries, low-score queries, and cluster similar queries.
 
 ### Step 1: Write test for query log loading
 
@@ -165,7 +165,7 @@ class QueryAnalyzer:
     """
     Analyzes query logs to identify patterns and optimization opportunities.
     
-    Loads queries from FASE 14 query_log table and provides methods to:
+    Loads queries from PHASE 14 query_log table and provides methods to:
     - Identify most common queries
     - Find low-score queries (quality issues)
     - Detect zero-result queries (content gaps)
@@ -802,7 +802,7 @@ class RAGASEvaluator:
 
 ## Overview
 
-FASE 16 implements RAG evaluation using the RAGAS framework.
+PHASE 16 implements RAG evaluation using the RAGAS framework.
 
 ## Setup
 
@@ -872,7 +872,7 @@ Target improvements: +10% in at least one metric.
 
 ### Stub Implementation (Time-boxed)
 
-Given FASE 16 scope and RAGAS setup complexity, we'll create **stub implementations** for optimization experiments with TODOs for future work.
+Given PHASE 16 scope and RAGAS setup complexity, we'll create **stub implementations** for optimization experiments with TODOs for future work.
 
 - [ ] **Create optimization package**
 
@@ -920,8 +920,8 @@ def experiment_score_thresholds():
 
 **Files:**
 - Create: `docs/RAG_EVALUATION.md` (complete guide)
-- Create: `docs/FASE16_COMPLETION.md` (completion report)
-- Modify: `CHANGELOG.md` (FASE 16 entry)
+- Create: `docs/PHASE16_COMPLETION.md` (completion report)
+- Modify: `CHANGELOG.md` (PHASE 16 entry)
 - Modify: `README.md` (evaluation section)
 
 ### Step 1: Complete RAG_EVALUATION.md
@@ -936,7 +936,7 @@ def experiment_score_thresholds():
 
 ### Step 2: Create completion report
 
-- [ ] **Write FASE16_COMPLETION.md**
+- [ ] **Write PHASE16_COMPLETION.md**
   - Deliverables summary
   - What's complete vs. TODO
   - Test results
@@ -945,13 +945,13 @@ def experiment_score_thresholds():
 
 ### Step 3: Update CHANGELOG
 
-- [ ] **Add FASE 16 section**
+- [ ] **Add PHASE 16 section**
 
 ```markdown
-### Added - FASE 16: RAG Performance and Accuracy (2026-05-16)
+### Added - PHASE 16: RAG Performance and Accuracy (2026-05-16)
 
 - **Query Pattern Analyzer**
-  - Analyze FASE 14 query logs for patterns
+  - Analyze PHASE 14 query logs for patterns
   - Identify most common queries, low-score queries, zero-result queries
   - Foundation for data-driven optimization
   - New module: `server/analytics/query_analyzer.py`
@@ -979,7 +979,7 @@ def experiment_score_thresholds():
 
 - **Documentation**
   - RAG evaluation guide: `docs/RAG_EVALUATION.md`
-  - Completion report: `docs/FASE16_COMPLETION.md`
+  - Completion report: `docs/PHASE16_COMPLETION.md`
   - Setup instructions for Ollama/OpenAI
 
 ### Dependencies
@@ -1002,9 +1002,9 @@ pytest tests/test_query_analyzer.py \
 - [ ] **Commit changes**
 ```bash
 git add -A
-git commit -m "feat(fase16): add RAG evaluation framework
+git commit -m "feat(PHASE16): add RAG evaluation framework
 
-FASE 16 Implementation:
+PHASE 16 Implementation:
 - Query pattern analyzer for log analysis
 - Golden dataset framework with 10 examples
 - RAGAS pipeline stub (requires LLM setup)
@@ -1018,7 +1018,7 @@ Components:
 - server/optimization/: Experiment stubs
 
 Tests: 8 passing (query analyzer + dataset)
-Docs: RAG_EVALUATION.md, FASE16_COMPLETION.md
+Docs: RAG_EVALUATION.md, PHASE16_COMPLETION.md
 
 Version: v0.13.0-dev"
 ```
@@ -1035,7 +1035,7 @@ git push origin master --tags
 
 **Core Requirements:**
 - [x] Golden dataset created with 10+ labeled examples (expandable to 50+)
-- [x] Query analyzer extracts patterns from FASE 14 logs
+- [x] Query analyzer extracts patterns from PHASE 14 logs
 - [x] RAGAS pipeline stub with setup documentation
 - [ ] At least 2 optimization experiments designed (stubs OK)
 - [x] Documentation complete
@@ -1075,7 +1075,7 @@ git push origin master --tags
 
 **Pragmatic Approach:**
 
-FASE 16 original scope is ambitious (14 days). This plan takes a **pragmatic, phased approach**:
+PHASE 16 original scope is ambitious (14 days). This plan takes a **pragmatic, phased approach**:
 
 **Phase 1 (This Implementation - 6-8 hours):**
 - ✅ Query analyzer (production-ready)
@@ -1115,6 +1115,6 @@ Recommend: Start with #1, evaluate value, then decide on #2.
 
 ## Related Documentation
 
-- [QUERY_ANALYSIS.md](QUERY_ANALYSIS.md) - Query logging (FASE 14)
-- [FASE12_COMPLETION.md](FASE12_COMPLETION.md) - Search quality features
+- [QUERY_ANALYSIS.md](QUERY_ANALYSIS.md) - Query logging (PHASE 14)
+- [PHASE12_COMPLETION.md](PHASE12_COMPLETION.md) - Search quality features
 - [PLAN.md](PLAN.md) - Overall project plan

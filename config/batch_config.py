@@ -1,5 +1,5 @@
 """
-FASE 8: Batch processing configuration and tuning.
+PHASE 8: Batch processing configuration and tuning.
 
 Centralizes all batch-related configuration with auto-tuning
 based on available resources.
@@ -122,7 +122,7 @@ def print_config() -> None:
     config = get_config_summary()
     
     print("=" * 60)
-    print("FASE 8: Batch Processing Configuration")
+    print("PHASE 8: Batch Processing Configuration")
     print("=" * 60)
     
     print("\nSystem Resources:")

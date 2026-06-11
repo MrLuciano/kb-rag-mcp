@@ -38,7 +38,7 @@ QA evaluation pipeline.
          ▼                                   │
   ┌─────────────┐    CollectionManager       │
   │   Qdrant    │◄── multi-collection        │
-  │  vector DB  │    routing (FASE 15)       │
+  │  vector DB  │    routing (PHASE 15)       │
   └──────┬──────┘                            │
          │ search                            │
          ▼                                   │
@@ -68,7 +68,7 @@ return ranked chunks
 | Component | Package | Key Files | Purpose |
 |---|---|---|---|
 | MCP server | `kb_server` | `server.py` | Exposes `search_kb`, `list_documents`, `get_chunk`, `kb_stats`, `list_collections` MCP tools |
-| Collection routing | `kb_server/collections` | `manager.py`, `router.py` | CollectionManager (CRUD) + CollectionRouter (resolve/ensure), FASE 15 |
+| Collection routing | `kb_server/collections` | `manager.py`, `router.py` | CollectionManager (CRUD) + CollectionRouter (resolve/ensure), PHASE 15 |
 | Vector store | `kb_server` | `vector_store.py` | Qdrant async client, search, batch insert, payload indexes, collection_name override |
 | Embed client | `kb_server` | `embed_client.py` | LM Studio / Ollama / OpenAI-compat embedding, batch, cache |
 | LRU cache | `kb_server/cache` | `lru.py`, `manager.py`, `redis.py` | In-memory LRU with optional Redis fallback |
@@ -86,9 +86,9 @@ return ranked chunks
 | Migration tools | `scripts/migrate` | `export.py`, `import_.py`, `validate.py` | Export/import/validate Qdrant snapshots + env |
 | QA pipeline | `qa` | `run_qa.py`, `metrics.py`, `embedder.py`, `report.py` | End-to-end retrieval quality evaluation |
 | Evaluation | `kb_server/evaluation` | `dataset.py`, `golden_dataset.json` | Golden dataset management |
-| Reclassification engine | `ingest` | `reclassify_engine.py`, `cli/reclassify.py` | Detect, backup, and rollback reclassification (FASE 16) |
-| FilterTermsCache | `kb_server` | `filter_terms_cache.py` | Dynamic top-20 filter values with cache (FASE 17) |
-| Integration checker | `scripts` | `check-integration-gaps.py` | CI gate: 3 integration gap checks (FASE 22) |
+| Reclassification engine | `ingest` | `reclassify_engine.py`, `cli/reclassify.py` | Detect, backup, and rollback reclassification (PHASE 16) |
+| FilterTermsCache | `kb_server` | `filter_terms_cache.py` | Dynamic top-20 filter values with cache (PHASE 17) |
+| Integration checker | `scripts` | `check-integration-gaps.py` | CI gate: 3 integration gap checks (PHASE 22) |
 | Grafana dashboard | `deployment/config` | `grafana-dashboard.json` | 18-panel dashboard: ingestion, workers, cache, embedding API |
 | Helm chart | `deployment/helm/kb-rag-mcp` | `Chart.yaml`, `values.yaml`, `templates/` | Kubernetes deployment (Deployment, StatefulSet, HPA, Services) |
 | Enterprise Connectors | `ingest/connectors` | `factory.py`, `confluence.py`, `jira.py`, `git.py` | Remote source ingest (Confluence, JIRA, Git) |
@@ -328,7 +328,7 @@ docker run -d -p 6333:6333 -p 6334:6334 \
 # Ingest a directory tree
 PYTHONPATH=. python -m ingest.cli.main ingest --path /path/to/docs --product MyProduct
 
-# Ingest into a named collection (multi-collection, FASE 15)
+# Ingest into a named collection (multi-collection, PHASE 15)
 PYTHONPATH=. python -m ingest.cli.main ingest --path /path/to/docs --product MyProduct \
   --collection custom_kb
 ```
@@ -436,8 +436,8 @@ PYTHONPATH=. pytest -m "not integration"
 | `tests/test_vector_store.py` | VectorStore search and upsert |
 | `tests/test_hybrid_search.py` | Hybrid search RRF fusion |
 | `tests/test_reranker.py` | Cross-encoder reranking |
-| `tests/test_collection_manager.py` | CollectionManager CRUD (FASE 15) |
-| `tests/test_collection_router.py` | CollectionRouter resolve/ensure (FASE 15) |
+| `tests/test_collection_manager.py` | CollectionManager CRUD (PHASE 15) |
+| `tests/test_collection_router.py` | CollectionRouter resolve/ensure (PHASE 15) |
 | `tests/test_qa_metrics.py` | QA pipeline metrics (hit rate, MRR) |
 | `tests/test_job_system.py` | Job queue lifecycle |
 | `tests/test_legacy_parsers.py` | Legacy Office format extractors (.doc, .xls, .odt, etc.) |
@@ -463,7 +463,7 @@ PYTHONPATH=. pytest -m "not integration"
 
 Phases 1–28 (v1.3–v1.4) are complete. See [PLAN.md](PLAN.md) for full specifications.
 
-| FASE | Title | Status | Key Deliverable |
+| PHASE | Title | Status | Key Deliverable |
 |---|---|---|---|
 | 1 | Foundation & Testing Infrastructure | ✅ Complete | pytest setup, pip-tools, type hints |
 | 1.5 | Migration Tools | ✅ Complete | export/import .tar.gz, SHA256 manifest, kb-migrate.sh |

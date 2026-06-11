@@ -1,6 +1,6 @@
 """Chunking parameter optimization experiments.
 
-FASE 25: Optimization Experiments
+PHASE 25: Optimization Experiments
 
 Provides strategy abstractions for fixed, recursive, and semantic
 chunking, plus a ChunkingEngine that orchestrates re-ingest and

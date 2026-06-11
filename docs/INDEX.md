@@ -21,14 +21,14 @@ Choose your deployment mode:
 - [FEATURES.md](../FEATURES.md) — Complete feature reference — all 16 implemented features
 - [REFERENCE.md](REFERENCE.md) — **Living reference: architecture, components, config, ops, QA results**
 - [TESTING.md](TESTING.md) — Testing strategy and guidelines
-- [CHANGELOG.md](CHANGELOG.md) — Release history and per-FASE change log
+- [CHANGELOG.md](CHANGELOG.md) — Release history and per-PHASE change log
 - [logging-audit.md](logging-audit.md) — Logging coverage report
 
 ## Technical Reference
 
 - [INSTRUCTIONS.md](INSTRUCTIONS.md) — Complete technical instructions (EN)
 - [INSTRUCTIONS.pt-BR.md](INSTRUCTIONS.pt-BR.md) — Instruções técnicas completas (PT-BR)
-- [PLAN.md](PLAN.md) — Implementation roadmap (all 16 FASEs + QA pipeline)
+- [PLAN.md](PLAN.md) — Implementation roadmap (all 16 PHASEs + QA pipeline)
 
 ## Topic Guides
 
@@ -48,14 +48,14 @@ Choose your deployment mode:
 
 ## Historical Archive
 
-FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
+PHASE lifecycle docs (completion reports, per-PHASE plans) are preserved in
 [archive/](archive/) for historical reference.
 
 ---
 
 ## Roadmap Progress
 
-| FASE | Title | Status |
+| PHASE | Title | Status |
 |---|---|---|
 | 1 | Foundation & Testing Infrastructure | ✅ Complete |
 | 1.5 | Migration Tools | ✅ Complete |
@@ -108,6 +108,6 @@ FASE lifecycle docs (completion reports, per-FASE plans) are preserved in
 3. Run tests: `PYTHONPATH=. pytest`
 
 **Understanding a past decision?**
-1. Check [PLAN.md](PLAN.md) for the FASE spec
+1. Check [PLAN.md](PLAN.md) for the PHASE spec
 2. Check [archive/](archive/) for the completion report
 3. Check [CHANGELOG.md](CHANGELOG.md) for the commit history

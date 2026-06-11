@@ -28,13 +28,13 @@ Restructure README/OPERATIONS/TROUBLESHOOTING/INSTRUCTIONS/INDEX with deployment
 - `docs/INSTRUCTIONS.md` — translated Portuguese→English (1029 lines)
 - `docs/INSTRUCTIONS.pt-BR.md` — confirmed as Portuguese copy
 - `docs/INDEX.md` — Deployment Modes navigation section
-- `CHANGELOG.md` — v1.3/v1.4 sections, FASE→Phase, newest-first order, stale sections removed
+- `CHANGELOG.md` — v1.3/v1.4 sections, PHASE→Phase, newest-first order, stale sections removed
 - `docs/REFERENCE.md` — Component Map, Deployment Modes, Roadmap Status
 
 ## Gaps Closed
 
 1. INSTRUCTIONS.md entirely in Portuguese → translated to English (Plan 23-04 Task 1)
-2. CHANGELOG.md structural problems (FASE→Phase, chronological order, stale sections) → fixed (Plan 23-04 Task 2)
+2. CHANGELOG.md structural problems (PHASE→Phase, chronological order, stale sections) → fixed (Plan 23-04 Task 2)
 
 ## Artifacts
 

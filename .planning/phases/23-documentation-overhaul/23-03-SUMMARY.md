@@ -13,4 +13,4 @@
 ### docs/REFERENCE.md
 - **Component Map**: Added 3 new entries (Reclassification engine, FilterTermsCache, Integration checker)
 - **Deployment Modes**: Added new subsection after Running the System with all 4 modes (Docker Compose, Helm, Systemd, Manual) and cross-references
-- **Roadmap Status**: Extended table with FASE 16–23 entries; updated status line to "Phases 1–22 (v1.3) are complete. Phase 23 (v1.4) is active."
+- **Roadmap Status**: Extended table with PHASE 16–23 entries; updated status line to "Phases 1–22 (v1.3) are complete. Phase 23 (v1.4) is active."

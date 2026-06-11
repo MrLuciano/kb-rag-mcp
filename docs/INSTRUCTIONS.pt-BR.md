@@ -16,10 +16,10 @@
 5. [Ferramentas MCP](#ferramentas-mcp)
 6. [Taxonomia de Conteúdo](#taxonomia-de-conteúdo)
 7. [Pipeline de Ingestão](#pipeline-de-ingestão)
-8. [Sistema de Jobs (FASE 2)](#sistema-de-jobs-fase-2)
-9. [Pool de Workers (FASE 3)](#pool-de-workers-fase-3)
-10. [Observabilidade (FASE 4)](#observabilidade-fase-4)
-11. [Sistema de Cache (FASE 5)](#sistema-de-cache-fase-5)
+8. [Sistema de Jobs (PHASE 2)](#sistema-de-jobs-PHASE-2)
+9. [Pool de Workers (PHASE 3)](#pool-de-workers-PHASE-3)
+10. [Observabilidade (PHASE 4)](#observabilidade-PHASE-4)
+11. [Sistema de Cache (PHASE 5)](#sistema-de-cache-PHASE-5)
 12. [Configuração de Clientes MCP](#configuração-de-clientes-mcp)
 13. [Dependências](#dependências)
 14. [Decisões Técnicas](#decisões-técnicas)
@@ -45,8 +45,8 @@ Documentos locais (PDF, DOCX, XLSX, PPTX, TXT, código)
     ▼ ingest/ingest.py
 Extração de texto → Chunking → Classificação (product/doc_type)
     │
-    ▼ Job System (FASE 2) → Worker Pool (FASE 3)
-Embedding (LM Studio / Ollama) + Cache (FASE 5)
+    ▼ Job System (PHASE 2) → Worker Pool (PHASE 3)
+Embedding (LM Studio / Ollama) + Cache (PHASE 5)
     │
     ▼
 Qdrant (vector store local)
@@ -54,7 +54,7 @@ Qdrant (vector store local)
     ▼ server/server.py [protocolo MCP]
 Claude Code / OpenCode
     │
-    ▼ Observability (FASE 4)
+    ▼ Observability (PHASE 4)
 Métricas Prometheus + Logging Estruturado
 \`\`\`
 
@@ -89,20 +89,20 @@ kb-rag-mcp/
 │   ├── server.py          # Entrypoint MCP — registra tools, roteia chamadas
 │   ├── embed_client.py    # Abstração multi-backend de embedding
 │   ├── vector_store.py    # Wrapper do Qdrant (search, upsert, list, stats)
-│   ├── collections/       # Roteamento multi-coleção (FASE 15)
+│   ├── collections/       # Roteamento multi-coleção (PHASE 15)
 │   │   ├── manager.py     # CollectionManager — CRUD de coleções Qdrant
 │   │   └── router.py      # CollectionRouter — resolve/ensure por parâmetro
-│   ├── auth.py            # Autenticação opcional via Bearer token (FASE 32)
-│   ├── auth_registry.py   # Registry de chaves SHA-256 (FASE 32)
-│   ├── rate_limiter.py    # Rate limiting por assunto (FASE 33)
-│   ├── circuit_breaker.py # State machine CLOSED/OPEN/HALF_OPEN (FASE 36)
-│   ├── provider_budget.py # Orçamento por provider com sliding window (FASE 36)
-│   ├── prompts.py         # Templates de prompt MCP (FASE 31)
+│   ├── auth.py            # Autenticação opcional via Bearer token (PHASE 32)
+│   ├── auth_registry.py   # Registry de chaves SHA-256 (PHASE 32)
+│   ├── rate_limiter.py    # Rate limiting por assunto (PHASE 33)
+│   ├── circuit_breaker.py # State machine CLOSED/OPEN/HALF_OPEN (PHASE 36)
+│   ├── provider_budget.py # Orçamento por provider com sliding window (PHASE 36)
+│   ├── prompts.py         # Templates de prompt MCP (PHASE 31)
 │   ├── cache/             # Sistema de cache (LRU + Redis opcional)
 │   │   ├── lru.py         # Cache LRU com auto-tune de RAM
 │   │   ├── redis.py       # Backend Redis opcional
 │   │   ├── manager.py     # Interface unificada
-│   │   └── request_cache.py # Cache de busca em nível de requisição (FASE 37)
+│   │   └── request_cache.py # Cache de busca em nível de requisição (PHASE 37)
 │   ├── retrieval/         # Busca híbrida (BM25+dense RRF) + reranker
 │   ├── ui/                # Web UI FastAPI+HTMX
 │   └── telemetry/         # Query logger SQLite (90 dias de retenção)
@@ -113,14 +113,14 @@ kb-rag-mcp/
 │   ├── parsers/
 │   │   ├── legacy_office.py  # .doc, .xls, .ppt, .odt, .ods, .odp, .wpd
 │   │   └── zip_handler.py    # Extração recursiva de arquivos ZIP
-│   ├── connectors/        # Conectores empresariais (FASE 29)
+│   ├── connectors/        # Conectores empresariais (PHASE 29)
 │   │   ├── factory.py     # Registry + create_connector
 │   │   ├── base.py        # ConnectorBase ABC
 │   │   ├── confluence.py  # Conector Confluence (Cloud + Server/DC)
 │   │   ├── jira.py        # Conector JIRA (Cloud + Data Center)
 │   │   ├── git.py         # Conector Git (clone/pull, incremental)
 │   │   └── staging.py     # Stage de documentos remotos
-│   ├── graph_builder.py   # Metadados de grafo de conhecimento (FASE 30)
+│   ├── graph_builder.py   # Metadados de grafo de conhecimento (PHASE 30)
 │   ├── core/
 │   │   └── metadata.py    # Schema v4 (jobs, job_progress, files, quotas)
 │   ├── job/               # Sistema de jobs SQLite com prioridades
@@ -145,7 +145,7 @@ kb-rag-mcp/
 │   ├── .env.lxc           # Variáveis para LXC Server
 │   └── mcp-clients.json   # Configs para Claude Code e OpenCode
 ├── scripts/
-│   ├── migrate/           # Ferramentas de migração (FASE 1.5)
+│   ├── migrate/           # Ferramentas de migração (PHASE 1.5)
 │   │   ├── export.py      # Exporta snapshot Qdrant + env sanitizado
 │   │   ├── import_.py     # Importa com validação SHA256
 │   │   └── validate.py    # Valida manifesto SHA256
@@ -158,7 +158,7 @@ kb-rag-mcp/
 │   ├── config/
 │   │   ├── grafana-dashboard.json       # Dashboard Grafana 18 painéis
 │   │   └── grafana-provisioning/        # Datasource + dashboard YAML
-│   └── helm/kb-rag-mcp/  # Helm chart Kubernetes (FASE 15)
+│   └── helm/kb-rag-mcp/  # Helm chart Kubernetes (PHASE 15)
 │       ├── Chart.yaml
 │       ├── values.yaml
 │       └── templates/     # Deployment, StatefulSet, HPA, Services, ConfigMap
@@ -170,7 +170,7 @@ kb-rag-mcp/
 ├── docs/
 │   ├── REFERENCE.md       # Referência técnica principal
 │   ├── LEGACY_FORMATS.md  # Formatos legados e regras ZIP
-│   ├── PLAN.md            # Roadmap de 16+ fases
+│   ├── PLAN.md            # Roadmap de 16+ PHASEs
 │   └── INSTRUCTIONS.pt-BR.md  # Este documento
 ├── data/
 │   └── kb_metadata.db     # SQLite v2 (jobs + files)
@@ -209,14 +209,14 @@ que leia `os.getenv()` — padrão crítico mantido em todos os entrypoints.
 | `LOG_PATH` | `/tmp/kb-mcp.log` | Caminho do arquivo de log |
 | `REGISTRY_DB` | `data/registry.db` | SQLite v1 (legado) |
 | `METADATA_DB` | `data/kb_metadata.db` | SQLite v2 (jobs + files) |
-| `AUTH_ENABLED` | `false` | Habilita autenticação Bearer token no SSE (FASE 32) |
+| `AUTH_ENABLED` | `false` | Habilita autenticação Bearer token no SSE (PHASE 32) |
 | `AUTH_DB_PATH` | `data/auth.db` | Caminho do SQLite de chaves de API |
-| `RATE_LIMIT_ENABLED` | `false` | Habilita rate limiting por assunto (FASE 33) |
+| `RATE_LIMIT_ENABLED` | `false` | Habilita rate limiting por assunto (PHASE 33) |
 | `RATE_LIMIT_REQUESTS` | `100` | Máx. requisições por janela de tempo |
 | `RATE_LIMIT_WINDOW` | `60` | Janela de tempo em segundos |
-| `CIRCUIT_BREAKER_THRESHOLD` | `5` | Falhas consecutivas antes de OPEN (FASE 36) |
+| `CIRCUIT_BREAKER_THRESHOLD` | `5` | Falhas consecutivas antes de OPEN (PHASE 36) |
 | `CIRCUIT_BREAKER_COOLDOWN` | `30` | Cooldown inicial em segundos |
-| `RETRIEVAL_CACHE_TTL` | `300` | TTL do cache de busca em segundos (FASE 37) |
+| `RETRIEVAL_CACHE_TTL` | `300` | TTL do cache de busca em segundos (PHASE 37) |
 
 ### Normalização de URL (embed_client.py)
 
@@ -245,14 +245,14 @@ Cada backend adiciona o path correto:
 | `product` | string | — | Filtro de produto |
 | `doc_type` | string | — | Filtro de tipo de documento |
 | `filter_type` | string | — | Formato: `pdf`, `docx`, `xlsx`, `pptx`, `txt`, `code` |
-| `version` | string | — | Filtro por versão do produto (FASE 13) |
-| `vendor` | string | — | Filtro por fornecedor (FASE 11.1) |
-| `subsystem` | string | — | Filtro por subsistema (FASE 11.1) |
-| `module` | string | — | Filtro por módulo (FASE 17) |
-| `hybrid` | boolean | — | Busca híbrida dense + BM25 sparse (FASE 12) |
-| `rerank` | boolean | — | Re-ranking com cross-encoder (FASE 12) |
-| `collection` | string | — | Coleção Qdrant alvo (FASE 15) |
-| `kb_ids` | string[] | — | Busca multi-KB agregada (FASE 35) |
+| `version` | string | — | Filtro por versão do produto (PHASE 13) |
+| `vendor` | string | — | Filtro por fornecedor (PHASE 11.1) |
+| `subsystem` | string | — | Filtro por subsistema (PHASE 11.1) |
+| `module` | string | — | Filtro por módulo (PHASE 17) |
+| `hybrid` | boolean | — | Busca híbrida dense + BM25 sparse (PHASE 12) |
+| `rerank` | boolean | — | Re-ranking com cross-encoder (PHASE 12) |
+| `collection` | string | — | Coleção Qdrant alvo (PHASE 15) |
+| `kb_ids` | string[] | — | Busca multi-KB agregada (PHASE 35) |
 
 **Retorno:** Lista de chunks com `chunk_id`, `score`, `text`, `source_file`,
 `product`, `doc_type`, `file_type`, `page`.
@@ -273,23 +273,23 @@ Retorna documentos agrupados por `doc_type`.
 
 Estatísticas da KB: total de documentos, chunks, breakdown por `doc_type` e formato.
 
-### `list_collections` — Listar Coleções (FASE 15)
+### `list_collections` — Listar Coleções (PHASE 15)
 
 Lista todas as coleções Qdrant disponíveis.
 
-### `list_filter_options` — Listar Opções de Filtro (FASE 17)
+### `list_filter_options` — Listar Opções de Filtro (PHASE 17)
 
 Lista valores disponíveis para atributos (product, vendor, doc_type, etc.).
 
-### `get_related_documents` — Documentos Relacionados (FASE 30)
+### `get_related_documents` — Documentos Relacionados (PHASE 30)
 
 Retorna chunks de documentos relacionados por grafo de conhecimento.
 
-### `explore_topic` — Explorar Tópico (FASE 30)
+### `explore_topic` — Explorar Tópico (PHASE 30)
 
 Busca documentos por tópicos do grafo de conhecimento.
 
-### Prompts MCP (FASE 31)
+### Prompts MCP (PHASE 31)
 
 - **`extract_answer`** — Prompt para extrair resposta fundamentada de resultados de busca
 - **`summarize_documents`** — Prompt para resumir documentos com seções
@@ -329,7 +329,7 @@ Inferida automaticamente por `ingest/classifier.py` via regex no nome do arquivo
 3. EXTRACTOR[file_type](file_path) → [{text, page}]
 4. chunk_text(text, file_type) → [chunks]
 5. embed_client.get_embeddings_batch(chunks) → [vectors]
-   └─ Cache check (FASE 5): hit = skip API call
+   └─ Cache check (PHASE 5): hit = skip API call
 6. store.delete_document(source_file)
 7. store.upsert_chunks(chunks + vectors + metadata)
 8. registry.mark_ok(...) → salva SHA256 + timestamp + doc_type
@@ -358,7 +358,7 @@ Inferida automaticamente por `ingest/classifier.py` via regex no nome do arquivo
 
 Veja [LEGACY_FORMATS.md](LEGACY_FORMATS.md) para detalhes sobre formatos legados e extração ZIP.
 
-**Conectores empresariais (FASE 29):** Também é possível ingerir de fontes remotas como Confluence, JIRA e Git. Consulte [AUTO_INGESTION.md](AUTO_INGESTION.md) para configuração de conectores.
+**Conectores empresariais (PHASE 29):** Também é possível ingerir de fontes remotas como Confluence, JIRA e Git. Consulte [AUTO_INGESTION.md](AUTO_INGESTION.md) para configuração de conectores.
 
 ### Configurações de Chunking
 
@@ -375,7 +375,7 @@ Implementado com `RecursiveCharacterTextSplitter` do LangChain.
 
 ---
 
-## 8. Sistema de Jobs (FASE 2)
+## 8. Sistema de Jobs (PHASE 2)
 
 ### Schema v2 (ingest/core/metadata.py)
 
@@ -448,7 +448,7 @@ CREATE TABLE files (
 
 ---
 
-## 9. Pool de Workers (FASE 3)
+## 9. Pool de Workers (PHASE 3)
 
 ### Rate Limiter (ingest/worker/limiter.py)
 
@@ -493,7 +493,7 @@ CREATE TABLE files (
 
 ---
 
-## 10. Observabilidade (FASE 4)
+## 10. Observabilidade (PHASE 4)
 
 ### Logging Estruturado (observability/logging.py)
 
@@ -541,12 +541,12 @@ CREATE TABLE files (
 - `kb_ingest_api_requests_total` (Counter, labels: endpoint, status)
 - `kb_ingest_api_latency_seconds` (Histogram, labels: endpoint)
 
-**Cache (FASE 5):**
+**Cache (PHASE 5):**
 - `kb_rag_cache_hits_total` / `kb_rag_cache_misses_total` (Counter, labels: backend)
 - `kb_rag_cache_evictions_total` (Counter, labels: backend, reason)
 - `kb_rag_cache_size_bytes` / `kb_rag_cache_entries` (Gauge, labels: backend)
 
-**Provider Resilience (FASE 36):**
+**Provider Resilience (PHASE 36):**
 - `kb_provider_requests_total{provider}` — Total de requisições por provider
 - `kb_provider_errors_total{provider}` — Total de erros por provider
 - `kb_provider_circuit_state{provider,state}` — Estado do circuit breaker (1=CLOSED, 2=OPEN, 3=HALF_OPEN)
@@ -555,7 +555,7 @@ CREATE TABLE files (
 - `kb_provider_skipped_budget_exhausted_total{provider}` — Requisições ignoradas por orçamento esgotado
 - `kb_provider_circuit_opened_total{provider}` — Transições para estado OPEN
 
-**Retrieval Cache (FASE 37):**
+**Retrieval Cache (PHASE 37):**
 - `kb_retrieval_cache_hits_total` — Cache hit no cache de busca
 - `kb_retrieval_cache_misses_total` — Cache miss no cache de busca
 
@@ -585,7 +585,7 @@ CREATE TABLE files (
 
 ---
 
-## 11. Sistema de Cache (FASE 5)
+## 11. Sistema de Cache (PHASE 5)
 
 ### LRU Cache (server/cache/lru.py)
 
@@ -770,11 +770,11 @@ from kb_server.embed_client import get_embedding
 
 ## 15. Melhorias Planejadas
 
-Todas as fases v1.3 (FASEs 1-16) e v1.4 (FASEs 29-37) foram implementadas.
+Todas as PHASEs v1.3 (PHASEs 1-16) e v1.4 (PHASEs 29-37) foram implementadas.
 
-### v1.4 — Platform, Analytics & Enterprise (FASEs 29-37)
+### v1.4 — Platform, Analytics & Enterprise (PHASEs 29-37)
 
-| FASE | Título | Entregas |
+| PHASE | Título | Entregas |
 |------|--------|----------|
 | 29 | Conectores Enterprise | Confluence, JIRA, Git via factory pattern |
 | 30 | Grafo de Conhecimento | Metadados de grafo, get_related_documents, explore_topic |
@@ -800,16 +800,16 @@ source .venv/bin/activate
 python ingest/ingest.py --docs /caminho/docs
 python ingest/ingest.py --status --list
 
-# Ingestão via conectores empresariais (FASE 29)
+# Ingestão via conectores empresariais (PHASE 29)
 python -m ingest.cli.main connectors list
 python -m ingest.cli.main connectors stage --type confluence --source-key wiki
 
-# Gerenciamento de chaves de API (FASE 32)
+# Gerenciamento de chaves de API (PHASE 32)
 python -m ingest.cli.main auth create --scope global --description "minha-chave"
 python -m ingest.cli.main auth list
 python -m ingest.cli.main auth revoke <prefixo>
 
-# Gerenciamento de cotas (FASE 34)
+# Gerenciamento de cotas (PHASE 34)
 python -m ingest.cli.main quota show
 python -m ingest.cli.main quota set --max-files 50000
 python -m ingest.cli.main quota reset
@@ -924,4 +924,4 @@ para acelerar o trabalho.
 ---
 
 **Última atualização:** 2026-06-11  
-**Versão:** 4.0 (v1.4 completo — FASEs 1-37)
+**Versão:** 4.0 (v1.4 completo — PHASEs 1-37)

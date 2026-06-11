@@ -35,7 +35,7 @@ AI assistants stop hallucinating about closed-source products — every answer i
 - ✓ MCP server exposing `search_kb`, `list_documents`, `get_chunk`, `kb_stats` tools — existing
 - ✓ Async ingest pipeline (PDF, markdown, text) with metadata extraction — existing
 - ✓ Hybrid search (dense + sparse BM25 RRF fusion) — validated v1.0
-- ✓ Cross-encoder reranking — existing (FASE 12)
+- ✓ Cross-encoder reranking — existing (PHASE 12)
 - ✓ Multi-collection routing via `CollectionRouter` and `CollectionManager` — validated v1.0
 - ✓ Product/version metadata filtering — existing
 - ✓ Query logging and analytics — existing
