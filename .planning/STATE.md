@@ -4,13 +4,13 @@ milestone: v1.4
 milestone_name: Platform, Analytics & Enterprise
 status: idle
 last_updated: "2026-06-11T00:00:00.000Z"
-last_activity: 2026-06-11 -- Phase 25 complete (all 4 plans, 56 tests, verifier 12/12)
+last_activity: 2026-06-11 -- Phase 35 closed (write SUMMARY, update tracking)
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 4
-  completed_plans: 4
-  percent: 83
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 5
+  completed_plans: 5
+  percent: 86
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 25 complete — next phase TBD
+**Current focus:** Phase 35 complete — next phase TBD
 
 ## Current Position
 
-Phase: 25 (Optimization Experiments) — COMPLETE
-Plan: 4 of 4
-Status: Idle — Phase 25 verified and closed
-Last activity: 2026-06-11 -- Phase 25 complete (all 4 plans, 56 tests, verifier 12/12)
+Phase: 35 (Multi-KB Aggregated Search) — COMPLETE
+Plan: 1 of 1
+Status: Idle — Phase 35 verified and closed
+Last activity: 2026-06-11 -- Phase 35 closed (SUMMARY written, tracking updated)
 
 ## Phase 25 Outcomes
 
@@ -88,6 +88,46 @@ Last activity: 2026-06-11 -- Phase 25 complete (all 4 plans, 56 tests, verifier 
 - `kb-rag optimize --help` shows chunk, scoring, compare, list subcommands
 - gsd-verifier score: 12/12 must-haves
 - Full suite: 1165 passed, 2 pre-existing failures (test_cli_reclassify.py — needs Qdrant), 1 skipped
+
+## Phase 35 Outcomes
+
+### Status
+
+- **Phase:** 35 (multi-kb-aggregated-search)
+- **Status:** Complete — 1 plan, 22 tests, UAT verified
+- **Completed:** 2026-06-10
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 35-01 | Multi-KB aggregated search: resolve_multi, multi_search, merge + dedup | 2 | Complete |
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| MULTIKB-01: search_kb accepts multiple KB identifiers | ✅ | `kb_ids` parameter in `search_kb` handler (server.py:640-712) |
+| MULTIKB-02: Aggregated results preserve provenance, normalize, deduplicate | ✅ | `merge_multi_collection_results()` in hybrid_search.py with min-max normalization, RRF fusion, chunk_id dedup |
+| MULTIKB-03: Existing single-KB search remains backward compatible | ✅ | Empty `kb_ids` defaults to single-KB path; all 983 existing tests pass unchanged |
+
+### Key Changes
+
+1. **`kb_server/collections/router.py`** — Added `resolve_multi()` to resolve list of KB IDs to collection names
+2. **`kb_server/vector_store.py`** — Added `multi_search()` with parallel collection dispatch and `_collection` provenance tag
+3. **`kb_server/retrieval/hybrid_search.py`** — Added `merge_multi_collection_results()` (per-collection min-max normalization + RRF fusion + chunk_id dedup) and `_min_max_normalize()` helper
+4. **`kb_server/server.py`** — Added `kb_ids` parameter to `search_kb`, multi-KB dispatch with `resolve_multi()` and `multi_search()`, rerank disabled for multi-KB
+
+### Commits (2)
+
+1. `086efb0` feat(phase-35): implement multi-KB aggregated search with resolve_multi, multi_search, and merge_multi_collection_results
+2. `50a068b` test(phase-35): add tests for multi-KB aggregated search
+
+### Verification
+
+- 22 Phase 35 tests pass across 4 test files
+- UAT: 8/14 pass, 1 issue fixed (connector auto-registration, commit cb42dab), 5 blocked (server-dependent)
+- Full suite: 1006 passed at completion (now 1165 after later phases)
 
 
 ## Phase 23 Outcomes

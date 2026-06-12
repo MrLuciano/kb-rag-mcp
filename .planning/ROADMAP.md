@@ -79,6 +79,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 - [x] Phase 27: Knowledge Base Registry — SQLite-backed KB registry with public/agent_private scopes, stable `kb_<id>` collection names — completed 2026-06-03
 - [x] Phase 28: MCP Streamable HTTP Transport — `/mcp` HTTP endpoint alongside stdio/SSE — completed 2026-06-03
 - [x] Phase 25: Optimization Experiments — 4 plans (chunking experiments, scoring experiments, metric computation, CLI runner) — completed 2026-06-11
+- [x] Phase 35: Multi-KB Aggregated Search — 1 plan (multi-KB search with resolve_multi, multi_search, merge + dedup) — completed 2026-06-10
 
 **Deferred (low priority):**
 
@@ -92,11 +93,10 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 - [ ] Phase 32: API Key Authentication — global and per-KB API keys with enabled/allow_anonymous flags
 - [ ] Phase 33: Request Rate Limiting — token bucket rate limiter per subject (requests/window + burst)
 - [ ] Phase 34: Upload and Index Quotas — configurable limits per KB (files, bytes, chunks, chars)
-- [ ] Phase 35: Multi-KB Aggregated Search — kb_ids parameter to search across multiple KBs in one query
 - [ ] Phase 36: Provider Budget & Circuit Breaker — per-provider budgets, failure thresholds, automatic fallback
 - [ ] Phase 37: Request-level Retrieval Cache — in-memory LRU cache for identical queries
 
-**Delivered so far:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports) + Optimization Experiments framework (chunking strategies, scoring variants, IR metrics, `kb-rag optimize` CLI). Competitive intelligence from mcp-rag, qdrant-loader, local_faiss_mcp informed phases 29–37.
+**Delivered so far:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports) + Optimization Experiments framework (chunking strategies, scoring variants, IR metrics, `kb-rag optimize` CLI) + Multi-KB Aggregated Search (`search_kb(kb_ids=[...])` with parallel collection dispatch, score normalization, RRF fusion, dedup). Competitive intelligence from mcp-rag, qdrant-loader, local_faiss_mcp informed phases 29–37.
 
 </details>
 
@@ -139,22 +139,13 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 32. API Key Authentication | v1.4 | 0/1 | Planned | — |
 | 33. Request Rate Limiting | v1.4 | 0/1 | Planned | — |
 | 34. Upload and Index Quotas | v1.4 | 0/1 | Planned | — |
-| 35. Multi-KB Aggregated Search | v1.4 | 0/1 | Planned | — |
+| 35. Multi-KB Aggregated Search | v1.4 | 1/1 | Complete | 2026-06-10 |
 | 36. Provider Budget & Circuit Breaker | v1.4 | 1/1 | Complete   | 2026-06-11 |
 | 37. Request-level Retrieval Cache | v1.4 | 0/1 | Planned | — |
 
 *Earlier milestones (v1.0–v1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
-
-### Phase 999.1: Follow-up — Phase 35 incomplete summary (BACKLOG)
-
-**Goal:** Create SUMMARY.md for Phase 35 (multi-kb-aggregated-search) which was executed without one
-**Source phase:** 35
-**Deferred at:** 2026-06-11 during /gsd-next advancement to Phase 37
-**Plans:**
-
-- [ ] 35-01: multi-kb-aggregated-search (ran, no SUMMARY.md)
 
 Items derived from competitive analysis and future planning. Each item is a candidate for v1.5 or later.
 
