@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1.4
 milestone_name: Platform, Analytics & Enterprise
 status: idle
-last_updated: "2026-06-11T00:00:00.000Z"
-last_activity: 2026-06-11 -- Phase 35 closed (write SUMMARY, update tracking)
+last_updated: "2026-06-12T00:00:00.000Z"
+last_activity: 2026-06-12 -- v0.1.4 milestone complete (all 15 phases 23-37)
 progress:
-  total_phases: 7
-  completed_phases: 6
-  total_plans: 5
-  completed_plans: 5
-  percent: 86
+  total_phases: 15
+  completed_phases: 15
+  total_plans: 28
+  completed_plans: 28
+  percent: 100
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 35 complete — next phase TBD
+**Current focus:** v0.1.4 milestone finalized
 
 ## Current Position
 
-Phase: 35 (Multi-KB Aggregated Search) — COMPLETE
-Plan: 1 of 1
-Status: Idle — Phase 35 verified and closed
-Last activity: 2026-06-11 -- Phase 35 closed (SUMMARY written, tracking updated)
+Milestone: v0.1.4 (Platform, Analytics & Enterprise) — SHIPPED 2026-06-11
+Phase: All 15 phases (23-37) complete
+Status: Idle — v0.1.4 milestone finalized
+Last activity: 2026-06-12 -- v0.1.4 milestone finalized (ROADMAP/STATE updated, tag created)
 
 ## Phase 25 Outcomes
 
@@ -89,6 +89,47 @@ Last activity: 2026-06-11 -- Phase 35 closed (SUMMARY written, tracking updated)
 - gsd-verifier score: 12/12 must-haves
 - Full suite: 1165 passed, 2 pre-existing failures (test_cli_reclassify.py — needs Qdrant), 1 skipped
 
+## Phase 24 Outcomes
+
+### Status
+
+- **Phase:** 24 (ragas-evaluation-pipeline)
+- **Status:** Complete — 4 plans, 57 tests, VERIFICATION.md confirmed
+- **Completed:** 2026-06-11
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 24-01 | Core evaluator — 4 custom metrics (faithfulness, answer_relevancy, context_precision, context_recall) | 3 | Complete |
+| 24-02 | Dataset loading — CSV/JSON golden dataset loader with auto-delimiter detection | 3 | Complete |
+| 24-03 | CLI + exporter — `kb-rag evaluate` CLI, CSV/JSON/console output, rich tables | 4 | Complete |
+| 24-04 | LLM wrappers — 4 backend wrappers (LM Studio REST, OpenAI-compat, Ollama, SDK) + RAGAS adapter | 3 | Complete |
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| EVAL-01: 4 custom RAGAS metrics | ✅ | `kb_server/evaluation/metrics.py` — Faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall |
+| EVAL-02: Dataset loading from CSV/JSON | ✅ | `kb_server/evaluation/csv_loader.py` — auto-delimiter detection, golden format validation |
+| EVAL-03: CLI evaluation runner | ✅ | `ingest/cli/evaluate.py` — `kb-rag evaluate` with dataset, single-query, and batch modes |
+| EVAL-04: LLM backend abstraction | ✅ | `kb_server/evaluation/llm_wrapper.py` — 4 backends + RAGAS adapter for ragas.metrics |
+
+### Key Files Created
+
+1. **`kb_server/evaluation/metrics.py`** — 4 custom RAGAS metrics
+2. **`kb_server/evaluation/csv_loader.py`** — CSV/JSON dataset loader
+3. **`kb_server/evaluation/dataset.py`** — Dataset model
+4. **`kb_server/evaluation/exporter.py`** — Results exporter (CSV, JSON, console)
+5. **`ingest/cli/evaluate.py`** — `kb-rag evaluate` CLI
+6. **`kb_server/evaluation/llm_wrapper.py`** — 4 LLM backends + RAGAS adapter
+
+### Verification
+
+- 57 Phase 24 tests pass
+- VERIFICATION.md: 10/10 must-haves satisfied
+- Full suite: 1165 passed, 2 pre-existing failures, 12 skipped
+
 ## Phase 35 Outcomes
 
 ### Status
@@ -129,6 +170,27 @@ Last activity: 2026-06-11 -- Phase 35 closed (SUMMARY written, tracking updated)
 - UAT: 8/14 pass, 1 issue fixed (connector auto-registration, commit cb42dab), 5 blocked (server-dependent)
 - Full suite: 1006 passed at completion (now 1165 after later phases)
 
+
+## Phase 29-34, 36-37 Outcomes
+
+### Summary
+
+All remaining v0.1.4 phases executed and verified. Features span enterprise connectivity, knowledge graph, prompt templates, authentication, rate limiting, quotas, resilience, and caching.
+
+| Phase | Plans | Key Deliverables | Completed |
+|-------|-------|-----------------|-----------|
+| 29. Enterprise Data Source Connectors | 4 | ConnectorBase ABC, Confluence connector (Cloud + DC), JIRA connector, Git connector, CLI staging, SQLite connector_state | 2026-06-10 |
+| 30. Cross-Document Knowledge Graph | 2 | Graph metadata derivation (doc_graph_id, entities, topics, related), MCP tools (get_related_documents, explore_topic), payload indexes | 2026-06-10 |
+| 31. MCP Prompt Templates | 1 | `extract_answer` and `summarize_documents` prompts, PROMPT_DEFINITIONS registry, list_prompts/get_prompt | 2026-06-10 |
+| 32. API Key Authentication | 1 | SQLite key registry (SHA-256 hashed), SSE Bearer token middleware, CLI create/list/revoke | 2026-06-10 |
+| 33. Request Rate Limiting | 1 | Token bucket per subject, HTTP 429 SSE rejection, tool-level error, prometheus metrics | 2026-06-10 |
+| 34. Upload and Index Quotas | 1 | 6 quota fields, quota_config/quota_usage tables, CLI show/set/reset, ingest enforcement | 2026-06-10 |
+| 36. Provider Budget & Circuit Breaker | 1 | Circuit breaker state machine, sliding window budget, embed client fallback chain, 7 prometheus metrics | 2026-06-11 |
+| 37. Request-level Retrieval Cache | 1 | LRU cache wrapping CacheManager, deterministic SHA-256 keys, TTL expiry, invalidation hooks | 2026-06-11 |
+
+### Milestone Summary
+
+All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete with 28 plans, 200+ tests, and zero regressions. The milestone transforms kb-rag-mcp from a single-collection RAG server into a multi-tenant, enterprise-ready platform with streaming HTTP transport, knowledge graph, authentication, rate limiting, quotas, circuit breakers, and retrieval caching.
 
 ## Phase 23 Outcomes
 
