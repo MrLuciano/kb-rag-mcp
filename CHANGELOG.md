@@ -7,14 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.1.4]
+
 ### Changed
 - **Version retag**: Renamed 11 git tags (v0.7.0–v1.3 → v0.0.7–v0.1.3) at same commits;
   renamed 17 planning files with `v1.x` → `v0.1.x` in filenames;
   updated version strings (`setup.py: 1.0.0 → 0.1.0`, `cli: 0.10.0-dev → 0.0.10-dev`);
   replaced ~350 `v1.x` content references across 50 files
-
-## [0.1.4]
-
+  
 ### Added
 
 - **Phase 23: Documentation Overhaul** (2026-05-27)
