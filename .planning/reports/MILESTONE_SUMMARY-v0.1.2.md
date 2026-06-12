@@ -1,4 +1,4 @@
-# Milestone v1.2 — Project Summary
+# Milestone v0.1.2 — Project Summary
 
 **Generated:** 2026-05-27
 **Purpose:** Team onboarding and project review
@@ -16,9 +16,9 @@ kb-rag-mcp is a production-grade RAG (Retrieval-Augmented Generation) MCP server
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-### Milestone v1.2 Goal
+### Milestone v0.1.2 Goal
 
-Resolve accumulated technical debt from v1.0/v1.1 while adding automated document classification with Vendor/Product/Subsystem/Version extraction. This milestone focused on operational reliability (startup health checks, lazy loading, CI hardening) and intelligent document metadata extraction without LLM dependencies.
+Resolve accumulated technical debt from v0.1.0/v0.1.1 while adding automated document classification with Vendor/Product/Subsystem/Version extraction. This milestone focused on operational reliability (startup health checks, lazy loading, CI hardening) and intelligent document metadata extraction without LLM dependencies.
 
 ### Completion Status
 
@@ -59,7 +59,7 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
   - **Pattern:** `scripts/logging-audit.py --fail-under 40` on PR-to-master
 
 - **Decision:** Heuristics-first classification (no LLM dependency)
-  - **Why:** Fast, deterministic, zero API costs; LLM-assisted classification deferred to post-v1.2
+  - **Why:** Fast, deterministic, zero API costs; LLM-assisted classification deferred to post-v0.1.2
   - **Phase:** 11 — Auto-Classification
   - **Pattern:** Filename → VENDOR_MAP → directory hierarchy → document metadata (lowest precedence)
 
@@ -75,7 +75,7 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
 
 ### Tech Stack Evolution
 
-**Added in v1.2:**
+**Added in v0.1.2:**
 - `click.testing.CliRunner` — CLI command testing pattern
 - `azure/setup-helm@v4` — CI Helm chart validation
 - `argparse` — `--fail-under` flag in logging-audit.py
@@ -100,7 +100,7 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
 
 ## 4. Requirements Coverage
 
-### All 9 v1.2 Requirements Met
+### All 9 v0.1.2 Requirements Met
 
 **Startup Reliability (Phase 9):**
 - ✅ **DEBT-01**: Cross-encoder lazy loading — server starts without loading model, first inference triggers load (~500MB saved, ~10s faster startup)
@@ -159,7 +159,7 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
 
 ## 6. Tech Debt & Deferred Items
 
-### Tech Debt Resolved in v1.2
+### Tech Debt Resolved in v0.1.2
 
 - ✅ **DEBT-01**: Cross-encoder lazy loading — hardened with 4 regression tests
 - ✅ **DEBT-02**: Helm chart validation — automated in CI
@@ -170,7 +170,7 @@ Resolve accumulated technical debt from v1.0/v1.1 while adding automated documen
 
 ### Deferred to Future Milestones
 
-- **LLM-assisted classification** — heuristics-first approach works well; LLM enhancement for ambiguous documents deferred to post-v1.2
+- **LLM-assisted classification** — heuristics-first approach works well; LLM enhancement for ambiguous documents deferred to post-v0.1.2
 - **Higher logging coverage threshold** — 40% baseline is conservative; aspirational target (70%+) deferred to avoid blocking development
 - **Integration tests for main()** — source-level verification chosen instead; full integration tests for server startup deferred
 
@@ -290,8 +290,8 @@ pytest --cov=kb_server --cov=ingest --cov-report=html
 - **Plans:** 8/8 complete (3+3+2)
 - **Commits:** 17 feature commits
 - **Files changed:** 28 files (+3,409 insertions / -171 deletions)
-- **Tests:** 585 passing, 5 skipped, 0 failures (zero regressions from v1.1)
-- **Coverage:** 90% branch on kb_server/ + ingest/ (maintained from v1.1)
+- **Tests:** 585 passing, 5 skipped, 0 failures (zero regressions from v0.1.1)
+- **Coverage:** 90% branch on kb_server/ + ingest/ (maintained from v0.1.1)
 - **Contributors:** 1 (Luciano Marinho)
 
 ### Phase Breakdown
@@ -306,13 +306,13 @@ pytest --cov=kb_server --cov=ingest --cov-report=html
 
 - **DEBT-01 through DEBT-06:** 6/6 resolved
 - **CLASSIFY-01 through CLASSIFY-03:** 3/3 complete
-- **Total:** 9/9 v1.2 requirements satisfied
+- **Total:** 9/9 v0.1.2 requirements satisfied
 
 ---
 
 ## What's Next
 
-**Milestone v1.3** (already shipped 2026-05-26):
+**Milestone v0.1.3** (already shipped 2026-05-26):
 - English-only codebase enforcement
 - Multilingual README (Spanish)
 - Health dashboard UI

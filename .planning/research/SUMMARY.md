@@ -1,4 +1,4 @@
-# Research Summary: v1.4 Evaluations & Docs
+# Research Summary: v0.1.4 Evaluations & Docs
 
 ## Documentation Organization
 

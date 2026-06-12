@@ -75,10 +75,10 @@ PHASE lifecycle docs (completion reports, per-PHASE plans) are preserved in
 | 15 | Advanced Infrastructure | ✅ Complete |
 | 16 | RAG Performance & Accuracy | ✅ Complete |
 | QA | QA Evaluation Pipeline | ✅ Complete |
-| v1.1-5 | CI Matrix & SSE Fixes | ✅ Complete |
-| v1.1-6 | Test Isolation & Fixtures | ✅ Complete |
-| v1.1-7 | Quality Gate & Logging Coverage | ✅ Complete |
-| v1.1-8 | Ingest Improvements & Documentation | ✅ Wave 1 (OTCS tagging + Status CLI), Wave 2 (Docstrings + Docs refresh)
+| v0.1.1-5 | CI Matrix & SSE Fixes | ✅ Complete |
+| v0.1.1-6 | Test Isolation & Fixtures | ✅ Complete |
+| v0.1.1-7 | Quality Gate & Logging Coverage | ✅ Complete |
+| v0.1.1-8 | Ingest Improvements & Documentation | ✅ Wave 1 (OTCS tagging + Status CLI), Wave 2 (Docstrings + Docs refresh)
 
 ---
 
@@ -89,7 +89,7 @@ PHASE lifecycle docs (completion reports, per-PHASE plans) are preserved in
 | **Tests passing** | 1095 |
 | **Tests failing** | 0 (12 skipped — require Qdrant) |
 | **Coverage target** | 90% branch (kb_server/ + ingest/) |
-| **Phases completed** | 26 (v1.0 through v1.4) |
+| **Phases completed** | 26 (v0.1.0 through v0.1.4) |
 | **QA Hit Rate** | 100% |
 | **QA MRR** | 0.78 |
 

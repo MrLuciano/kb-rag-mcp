@@ -377,12 +377,12 @@ curl -X POST http://localhost:11434/api/pull \
 curl http://localhost:11434/api/tags
 ```
 
-## v1.4 Environment Variables
+## v0.1.4 Environment Variables
 
-When deploying v1.4 features, you may need to add these env vars:
+When deploying v0.1.4 features, you may need to add these env vars:
 
 ```yaml
-# values-v1.4.yaml
+# values-v0.1.4.yaml
 extraEnv:
   # Auth (Phase 32) — optional, default false
   - name: AUTH_ENABLED
@@ -424,4 +424,4 @@ extraEnv:
 
 ---
 
-*Last updated: 2026-06-11 for v1.4*
+*Last updated: 2026-06-11 for v0.1.4*

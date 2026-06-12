@@ -1,4 +1,4 @@
-# Milestone v1.0 — Release-Readiness
+# Milestone v0.1.0 — Release-Readiness
 
 **Generated:** 2026-05-23
 **Purpose:** Team onboarding and project review
@@ -195,7 +195,7 @@ python -m kb_server.server
 ```
 kb_server/          # Canonical server package (vector store, embed, retrieval, MCP server)
 ingest/             # Ingest pipeline (extraction, chunking, embedding, CLI)
-tests/              # Test suite (491 tests at v1.0)
+tests/              # Test suite (491 tests at v0.1.0)
 scripts/            # Utility scripts (quickstart, health check)
 docs/               # Documentation (22 docs + archive/)
 deployment/         # Dockerfile, Kubernetes manifests, configs
@@ -215,9 +215,9 @@ pytest --cov=kb_server --cov-report=term-missing
 
 - **`kb_server/server.py`** — MCP tool registration and dispatch; main entry point
 - **`kb_server/vector_store.py`** — Qdrant CRUD abstraction; core of the retrieval pipeline
-- **`kb_server/retrieval/hybrid_search.py`** — BM25+dense RRF fusion (fixed in v1.0)
+- **`kb_server/retrieval/hybrid_search.py`** — BM25+dense RRF fusion (fixed in v0.1.0)
 - **`ingest/core/metadata.py`** — `IngestRegistry`; SQLite-backed ingest tracking
-- **`config/bootstrap_env.py`** — Single env-loading entry point (created in v1.0)
+- **`config/bootstrap_env.py`** — Single env-loading entry point (created in v0.1.0)
 - **`tests/test_vector_store_unit.py`** — Reference for `sys.modules` stubbing pattern
 - **`CONTRIBUTING.md`** — Secret remediation guide; onboarding for new contributors
 

@@ -1,4 +1,4 @@
-# Milestone v1.3 — Project Summary
+# Milestone v0.1.3 — Project Summary
 
 **Generated:** 2026-05-27
 **Purpose:** Team onboarding and project review
@@ -16,9 +16,9 @@ kb-rag-mcp is a production-grade RAG (Retrieval-Augmented Generation) MCP server
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-### Milestone v1.3 Goal
+### Milestone v0.1.3 Goal
 
-Complete the v1.3 Post-Ship Polish & Infrastructure cycle: deliver English-only codebase enforcement, multilingual README (Spanish), Grafana health dashboard, PowerShell Windows LAN access script, document reclassification capability, capability negotiation for MCP attribute advertising, fix Grafana datasource error, backfill process debt (VERIFICATION.md), resolve test environment issues, codebase hygiene sweep, and wire integration checker CI gate.
+Complete the v0.1.3 Post-Ship Polish & Infrastructure cycle: deliver English-only codebase enforcement, multilingual README (Spanish), Grafana health dashboard, PowerShell Windows LAN access script, document reclassification capability, capability negotiation for MCP attribute advertising, fix Grafana datasource error, backfill process debt (VERIFICATION.md), resolve test environment issues, codebase hygiene sweep, and wire integration checker CI gate.
 
 ### Completion Status
 
@@ -78,7 +78,7 @@ Complete the v1.3 Post-Ship Polish & Infrastructure cycle: deliver English-only 
 
 ### Tech Stack Evolution
 
-**Added in v1.3:**
+**Added in v0.1.3:**
 - `unittest.mock` fixtures — `mock_objects` fixture pattern for test isolation (Phase 20)
 - `FilterTermsCache` — cache-bust marker file pattern (Phase 17)
 - `scripts/check-integration-gaps.py` — Python CI gate with Rich + JSON (Phase 22)
@@ -120,7 +120,7 @@ Complete the v1.3 Post-Ship Polish & Infrastructure cycle: deliver English-only 
 
 ## 4. Requirements Coverage
 
-### All v1.3 Requirements Met (26 total)
+### All v0.1.3 Requirements Met (26 total)
 
 **English Comments & Docstrings (Phase 12):**
 - ✅ Goal: All Python source files in English — 0 accented Portuguese characters, 0 Portuguese phrase matches
@@ -278,7 +278,7 @@ Complete the v1.3 Post-Ship Polish & Infrastructure cycle: deliver English-only 
 
 ## 6. Tech Debt & Deferred Items
 
-### Tech Debt Resolved in v1.3
+### Tech Debt Resolved in v0.1.3
 
 - ✅ **Portuguese comments/dockstrings** — all translated; CI gate prevents regression
 - ✅ **Stale docs** — AUTO_INGESTION, TROUBLESHOOTING, TESTING, KUBERNETES refreshed
@@ -446,7 +446,7 @@ python3 scripts/check-integration-gaps.py
 - **Commits:** ~187 feature commits across all phases
 - **Files changed:** 331 files
 - **Tests:** 656 passing, 9 pre-existing failures unchanged
-- **Coverage:** 90% branch on kb_server/ + ingest/ (maintained from v1.2)
+- **Coverage:** 90% branch on kb_server/ + ingest/ (maintained from v0.1.2)
 - **Contributors:** 1 (Luciano Marinho)
 
 ### Phase Breakdown
@@ -484,7 +484,7 @@ python3 scripts/check-integration-gaps.py
 
 ## What's Next
 
-**Milestone v1.3 is the final planned milestone.** The core product is feature-complete for its target use case (RAG MCP server for closed-source product docs). Future work focuses on:
+**Milestone v0.1.3 is the final planned milestone.** The core product is feature-complete for its target use case (RAG MCP server for closed-source product docs). Future work focuses on:
 
 - **Higher logging coverage threshold** (70%+ aspirational target)
 - **SSE handler test process merge** — refactor `test_smoke.py` for single-process test execution

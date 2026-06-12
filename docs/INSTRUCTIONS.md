@@ -564,7 +564,7 @@ Ingesting 7 GB takes approximately 3–6 hours on CPU only.
 
 All backlog items from Phases 11-16 (reranking, hybrid search, payload indexing, version filter, _meta.json, inspection UI, usage metrics, multiple collections, registry export, Kubernetes, RAG evaluation, legacy formats, ZIP) have been implemented.
 
-All v1.4 features (Phases 29-37) are now delivered. See PLAN.md for scope.
+All v0.1.4 features (Phases 29-37) are now delivered. See PLAN.md for scope.
 
 ---
 

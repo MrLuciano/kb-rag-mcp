@@ -32,7 +32,7 @@ from ingest.cli.optimize import optimize  # noqa: E402
 
 
 @click.group()
-@click.version_option(version="0.10.0-dev", prog_name="kb-rag")
+@click.version_option(version="0.0.10-dev", prog_name="kb-rag")
 @click.option(
     "--db",
     type=click.Path(exists=False, dir_okay=False, path_type=Path),

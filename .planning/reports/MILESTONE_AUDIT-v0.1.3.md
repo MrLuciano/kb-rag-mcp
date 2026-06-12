@@ -1,4 +1,4 @@
-# Milestone Audit: v1.3 Post-Ship Polish & Infrastructure
+# Milestone Audit: v0.1.3 Post-Ship Polish & Infrastructure
 
 **Audit Date:** 2026-05-27
 **Status:** ✅ PASS — All criteria satisfied
@@ -79,7 +79,7 @@
 
 | Job | Phase Added | Needs | Status |
 |-----|------------|-------|--------|
-| `test` | v1.0 | — | ✅ |
+| `test` | v0.1.0 | — | ✅ |
 | `english-audit` | 12 | — | ✅ |
 | `integration-check` | 22 | test | ✅ |
 | `helm-lint` | 10 | — | ✅ |
@@ -90,7 +90,7 @@
 
 ## 6. Tech Debt & Gaps
 
-### Resolved in v1.3
+### Resolved in v0.1.3
 
 | Item | Source | Resolution |
 |------|--------|------------|
@@ -190,4 +190,4 @@ git push → test (python matrix 3.11/3.12/3.13)
 | Decisions implemented | ✅ 12/12 documented |
 | End-to-end flows | ✅ 3 core flows verified |
 
-**Final Verdict:** ✅ **v1.3 milestone PASSES audit. All definitions of done satisfied.**
+**Final Verdict:** ✅ **v0.1.3 milestone PASSES audit. All definitions of done satisfied.**

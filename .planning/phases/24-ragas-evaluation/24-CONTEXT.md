@@ -27,8 +27,8 @@ This phase delivers a complete RAGAS evaluation pipeline that measures RAG quali
 - **Async pattern**: Wrap sync RAGAS metrics in `asyncio.to_thread()` to avoid blocking the async event loop; VectorStore.search() remains async
 - **RAGAS version**: Pin `ragas==0.2.14` — verified compatible with pydantic v2 (used by project)
 - **Dataset ground_truth**: Require ground_truth for all datasets; skip metrics silently if ground_truth missing per-example rather than failing entire run
-- **LLM judge backend**: Use same `EMBED_BACKEND` configuration as the main app (no separate `EVAL_BACKEND` for v1.4 simplicity)
-- **Result persistence**: CSV + console table only for v1.4; SQLite trend storage deferred to future phase
+- **LLM judge backend**: Use same `EMBED_BACKEND` configuration as the main app (no separate `EVAL_BACKEND` for v0.1.4 simplicity)
+- **Result persistence**: CSV + console table only for v0.1.4; SQLite trend storage deferred to future phase
 
 ### the agent's Discretion
 - Exact CSV column names and delimiter detection thresholds
@@ -109,7 +109,7 @@ query,faithfulness,answer_relevancy,context_precision,context_recall,timestamp
 
 - Real-time A/B testing in production (out of scope per REQUIREMENTS.md)
 - RAGAS metrics beyond 4 core (out of scope)
-- Weekly CI automation (mentioned in docs/RAG_EVALUATION.md but not in v1.4 requirements)
+- Weekly CI automation (mentioned in docs/RAG_EVALUATION.md but not in v0.1.4 requirements)
 - QueryAnalyzer integration (PHASE 14 logs → golden dataset generation)
 
 ---

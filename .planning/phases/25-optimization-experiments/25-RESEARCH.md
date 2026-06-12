@@ -60,7 +60,7 @@ No CONTEXT.md exists for this phase. Decisions are derived from REQUIREMENTS.md 
 |------------|-----------|----------|
 | `docling.chunking.HybridChunker` | Custom semantic chunker with sentence-transformers | HybridChunker is already installed and designed for document layouts; custom solution is unnecessary complexity |
 | `sklearn.metrics.ndcg_score` | Custom NDCG implementation | sklearn is already installed and well-tested; custom implementation risks bugs |
-| CSV result storage | SQLite trend storage | SQLite deferred per Phase 24 context; CSV is sufficient for v1.4 |
+| CSV result storage | SQLite trend storage | SQLite deferred per Phase 24 context; CSV is sufficient for v0.1.4 |
 
 **Installation:** No new packages required — all dependencies are already in `requirements.txt` and `.venv/`.
 

@@ -461,7 +461,7 @@ PYTHONPATH=. pytest -m "not integration"
 
 ## Roadmap Status
 
-Phases 1–28 (v1.3–v1.4) are complete. See [PLAN.md](PLAN.md) for full specifications.
+Phases 1–28 (v0.1.3–v0.1.4) are complete. See [PLAN.md](PLAN.md) for full specifications.
 
 | PHASE | Title | Status | Key Deliverable |
 |---|---|---|---|

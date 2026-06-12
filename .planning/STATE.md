@@ -1,6 +1,6 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
+milestone: v0.1.4
 milestone_name: Platform, Analytics & Enterprise
 status: idle
 last_updated: "2026-06-11T00:00:00.000Z"
@@ -144,7 +144,7 @@ Last activity: 2026-06-11 -- Phase 35 closed (SUMMARY written, tracking updated)
 |------|-------------|-------|--------|
 | 23-01 | Deployment-mode sections in OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md, INDEX.md | DOCS-01, DOCS-02 | Complete |
 | 23-02 | Restructure README.md, README.pt-BR.md, README.es.md (two-tier format) | DOCS-01, DOCS-02 | Complete |
-| 23-03 | Update CHANGELOG with v1.3/v1.4 sections; audit/update REFERENCE.md | DOCS-03, DOCS-04 | Complete |
+| 23-03 | Update CHANGELOG with v0.1.3/v0.1.4 sections; audit/update REFERENCE.md | DOCS-03, DOCS-04 | Complete |
 
 ### Requirements Satisfied
 
@@ -152,8 +152,8 @@ Last activity: 2026-06-11 -- Phase 35 closed (SUMMARY written, tracking updated)
 |-------------|--------|----------|
 | DOCS-01: Deployment-mode navigation sections | ✅ | OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md have Common + Docker Compose/Helm/Systemd/Manual H2 sections |
 | DOCS-02: Per-mode source of truth in INDEX.md | ✅ | INDEX.md has Deployment Modes section with file-level links per mode |
-| DOCS-03: CHANGELOG update | ✅ | `## [1.3] 2026-05-27` and `## [1.4]` sections with per-plan bullet points for all v1.3/v1.4 phases |
-| DOCS-04: REFERENCE update | ✅ | Audit applied (stale entries corrected); v1.3/v1.4 components documented; Deployment Modes subsection added |
+| DOCS-03: CHANGELOG update | ✅ | `## [1.3] 2026-05-27` and `## [1.4]` sections with per-plan bullet points for all v0.1.3/v0.1.4 phases |
+| DOCS-04: REFERENCE update | ✅ | Audit applied (stale entries corrected); v0.1.3/v0.1.4 components documented; Deployment Modes subsection added |
 
 ### Key Changes
 
@@ -165,18 +165,18 @@ Last activity: 2026-06-11 -- Phase 35 closed (SUMMARY written, tracking updated)
 6. **README.pt-BR.md** — Restructured standalone file from 1551 to ~60 lines with same two-tier format (DOCS-01)
 7. **README.es.md** — Restructured standalone file from 1551 to ~60 lines with same two-tier format (DOCS-01)
 8. **CHANGELOG.md** — Added `## [1.3] 2026-05-27` with all 11 phases (12-22) per-plan + `## [1.4]` with Phase 23 (DOCS-03)
-9. **docs/REFERENCE.md** — Added 3 Component Map entries (Reclassification, FilterTermsCache, Integration checker), Deployment Modes subsection, updated Roadmap Status with v1.3/v1.4 phases (DOCS-04)
+9. **docs/REFERENCE.md** — Added 3 Component Map entries (Reclassification, FilterTermsCache, Integration checker), Deployment Modes subsection, updated Roadmap Status with v0.1.3/v0.1.4 phases (DOCS-04)
 
 ### Commits (3)
 
 1. `e77d9d6` docs(23): add deployment-mode sections to OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md, INDEX.md (DOCS-01, DOCS-02)
 2. `0f2f245` docs(23): restructure README.md, README.pt-BR.md, README.es.md to two-tier format (DOCS-01)
-3. *(pending)* docs(23): update CHANGELOG with v1.3/v1.4 milestones and audit REFERENCE.md (DOCS-03, DOCS-04)
+3. *(pending)* docs(23): update CHANGELOG with v0.1.3/v0.1.4 milestones and audit REFERENCE.md (DOCS-03, DOCS-04)
 
 ### Verification
 
-- CHANGELOG.md: `## [1.3]` present, `## [1.4]` present, all 11 v1.3 phases listed with per-plan detail
-- REFERENCE.md: Reclassification engine referenced, Deployment Modes subsection present, v1.3/v1.4 entries in Roadmap Status
+- CHANGELOG.md: `## [1.3]` present, `## [1.4]` present, all 11 v0.1.3 phases listed with per-plan detail
+- REFERENCE.md: Reclassification engine referenced, Deployment Modes subsection present, v0.1.3/v0.1.4 entries in Roadmap Status
 - 3 README files restructured with deployment-mode quickstart tables and docs/ link sections
 
 ## Phase 22 Outcomes
@@ -724,7 +724,7 @@ Last activity: 2026-06-11 -- Phase 35 closed (SUMMARY written, tracking updated)
 
 ## Accumulated Context
 
-### Key Decisions (v1.0)
+### Key Decisions (v0.1.0)
 
 - `kb_server/` is single canonical module; `server/` deleted
 - `bootstrap_env()` in `config/` — single env-loading entry point

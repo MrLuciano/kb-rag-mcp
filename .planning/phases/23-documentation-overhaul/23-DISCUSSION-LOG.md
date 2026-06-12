@@ -95,7 +95,7 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Append-only: new entries | Add sections for v1.3/v1.4 only | |
+| Append-only: new entries | Add sections for v0.1.3/v0.1.4 only | |
 | Full audit + update | Audit every entry for accuracy then add | ✓ |
 
 **User's choice:** Full audit + update

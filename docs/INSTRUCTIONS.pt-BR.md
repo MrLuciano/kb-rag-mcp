@@ -514,7 +514,7 @@ CREATE TABLE files (
 
 ### Métricas Prometheus (observability/metrics.py)
 
-**28+ métricas (v1.4):**
+**28+ métricas (v0.1.4):**
 
 **Jobs:**
 - `kb_ingest_jobs_created_total` (Counter, labels: priority)
@@ -770,9 +770,9 @@ from kb_server.embed_client import get_embedding
 
 ## 15. Melhorias Planejadas
 
-Todas as PHASEs v1.3 (PHASEs 1-16) e v1.4 (PHASEs 29-37) foram implementadas.
+Todas as PHASEs v0.1.3 (PHASEs 1-16) e v0.1.4 (PHASEs 29-37) foram implementadas.
 
-### v1.4 — Platform, Analytics & Enterprise (PHASEs 29-37)
+### v0.1.4 — Platform, Analytics & Enterprise (PHASEs 29-37)
 
 | PHASE | Título | Entregas |
 |------|--------|----------|
@@ -924,4 +924,4 @@ para acelerar o trabalho.
 ---
 
 **Última atualização:** 2026-06-11  
-**Versão:** 4.0 (v1.4 completo — PHASEs 1-37)
+**Versão:** 4.0 (v0.1.4 completo — PHASEs 1-37)

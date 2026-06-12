@@ -1,4 +1,4 @@
-# Milestone v1.1 — Quality & Operational Excellence
+# Milestone v0.1.1 — Quality & Operational Excellence
 
 **Generated:** 2026-05-23
 **Purpose:** Team onboarding and project review
@@ -11,7 +11,7 @@
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-**Milestone goal:** Harden the server for real-world remote deployment (Python 3.13, starlette 1.0.0), expand test coverage with proper isolation mocking, enforce a quality gate in CI, improve ingest with OTCS product auto-tagging and a status CLI, and refresh documentation for v1.1.
+**Milestone goal:** Harden the server for real-world remote deployment (Python 3.13, starlette 1.0.0), expand test coverage with proper isolation mocking, enforce a quality gate in CI, improve ingest with OTCS product auto-tagging and a status CLI, and refresh documentation for v0.1.1.
 
 **Target users:** Internal teams deploying the server on bare metal, Docker Compose, or Kubernetes — no authentication layer (trusted network only).
 
@@ -49,7 +49,7 @@ All 4 phases complete. 9 plans executed across 3 days (2026-05-21 → 2026-05-23
 
 - **Decision:** `asyncio_mode = STRICT` in `pyproject.toml`
   - **Why:** Enforce explicit async test marking; prevents silent sync execution of async tests
-  - **Phase:** 6 (inherited from v1.0)
+  - **Phase:** 6 (inherited from v0.1.0)
 
 ### Quality & Coverage
 - **Decision:** Quality gate applies to both `kb_server/` AND `ingest/` at 90% branch coverage
@@ -127,7 +127,7 @@ All 4 phases complete. 9 plans executed across 3 days (2026-05-21 → 2026-05-23
 
 ### Documentation
 - ✅ **DOC-01**: All public functions and classes in `kb_server/` and `ingest/` have English Google-style docstrings; audit reports 0 gaps and 0 Portuguese entries
-- ✅ **DOC-02**: `docs/` updated for v1.1: architecture diagram (Mermaid), ingest workflow, remote deployment guide for acemagic/LXC
+- ✅ **DOC-02**: `docs/` updated for v0.1.1: architecture diagram (Mermaid), ingest workflow, remote deployment guide for acemagic/LXC
 
 ---
 
@@ -166,7 +166,7 @@ All 4 phases complete. 9 plans executed across 3 days (2026-05-21 → 2026-05-23
 - **Backlog 999.3:** System health dashboard single-page
 - **Backlog 999.5:** Automatic document classification — Vendor/Product/Subsystem/Version
 
-### Lessons Learned (from v1.0 retrospective, still relevant)
+### Lessons Learned (from v0.1.0 retrospective, still relevant)
 1. Stub at the lowest level possible — `sys.modules` patching affects all downstream imports
 2. Set test baseline explicitly before starting
 3. Coverage thresholds belong in CI, not just local runs
@@ -242,7 +242,7 @@ python scripts/logging-audit.py
 - **`kb_server/vector_store.py`** — Qdrant CRUD abstraction; core of the retrieval pipeline
 - **`ingest/classifier.py`** — Document classification (product, doc type); OTCS auto-tagging
 - **`ingest/core/metadata.py`** — `IngestRegistry`; SQLite-backed ingest tracking
-- **`ingest/cli/main.py`** — CLI entry point; `kb-ingest status` added in v1.1
+- **`ingest/cli/main.py`** — CLI entry point; `kb-ingest status` added in v0.1.1
 - **`tests/conftest.py`** — Shared mock fixtures (qdrant, embed, redis)
 - **`scripts/logging-audit.py`**, **`scripts/docstring-audit.py`** — AST-based coverage scanners
 
@@ -271,7 +271,7 @@ python scripts/logging-audit.py
 
 | Stage | Tests | Delta |
 |-------|-------|-------|
-| v1.0 baseline | 491 | — |
+| v0.1.0 baseline | 491 | — |
 | After Phase 5 (SSE) | 495 | +4 |
 | After Phase 6 (classifier) | 525 | +30 |
 | After Phase 7-8 (logging + ingest) | 585 | +60 |

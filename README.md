@@ -949,7 +949,7 @@ Update process:
 **Update to Specific Version:**
 
 ```bash
-sudo ./deployment/scripts/update.sh v1.3
+sudo ./deployment/scripts/update.sh v0.1.3
 ```
 
 #### Maintenance Tasks

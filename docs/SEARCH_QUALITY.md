@@ -397,4 +397,4 @@ A: Create golden queries with expected docs, measure NDCG@5 and MRR before/after
 ---
 
 **Last Updated:** 2026-06-11  
-**Version:** v1.4.0
+**Version:** v0.1.4.0

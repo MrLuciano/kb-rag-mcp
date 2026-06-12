@@ -476,7 +476,7 @@ Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 - PHASE 16: RAG Performance and Accuracy (14 days)
 - QA Pipeline: QA evaluation — Hit Rate 100%, MRR 0.78 ✅
 
-**v1.4 (PHASEs 29-37): Platform, Analytics & Enterprise (Phases scheduled: 2026-05-27 to 2026-06-11):**
+**v0.1.4 (PHASEs 29-37): Platform, Analytics & Enterprise (Phases scheduled: 2026-05-27 to 2026-06-11):**
 - PHASE 29: Enterprise Data Source Connectors — Confluence, JIRA, Git remote ingestion
 - PHASE 30: Cross-Doc Knowledge Graph — Graph metadata derivation, related doc discovery
 - PHASE 31: MCP Prompt Templates — extract_answer + summarize_documents prompts
@@ -495,12 +495,12 @@ Total duration: 24.6 weeks (172 days) — **ALL PHASES COMPLETE**
 
 All phases shipped. No pending phases.
 
-**v1.0 (PHASEs 1-10):** Foundation, job system, worker pool, cache, CLI, validators, batching, production hardening, documentation.
+**v0.1.0 (PHASEs 1-10):** Foundation, job system, worker pool, cache, CLI, validators, batching, production hardening, documentation.
 
-**v1.1.0 (PHASEs 11-12):** Expanded ingestion (legacy Office, ZIP), search quality (hybrid BM25+dense, reranker).
+**v0.1.1.0 (PHASEs 11-12):** Expanded ingestion (legacy Office, ZIP), search quality (hybrid BM25+dense, reranker).
 
-**v1.2.0 (PHASEs 13-14):** Ingestion automation (file watcher, version extractor), observability (query logger, web UI).
+**v0.1.2.0 (PHASEs 13-14):** Ingestion automation (file watcher, version extractor), observability (query logger, web UI).
 
-**v1.3.0 (PHASEs 15-16 + QA):** Advanced infrastructure (multi-collection, Kubernetes), RAG accuracy (RAGAS pipeline, golden dataset), QA pipeline validated.
+**v0.1.3.0 (PHASEs 15-16 + QA):** Advanced infrastructure (multi-collection, Kubernetes), RAG accuracy (RAGAS pipeline, golden dataset), QA pipeline validated.
 
-**v1.4.0 (PHASEs 29-37):** Platform, Analytics & Enterprise — Connectors, knowledge graph, MCP prompts, auth, rate limiting, quotas, multi-KB search, circuit breaker, retrieval cache.
+**v0.1.4.0 (PHASEs 29-37):** Platform, Analytics & Enterprise — Connectors, knowledge graph, MCP prompts, auth, rate limiting, quotas, multi-KB search, circuit breaker, retrieval cache.

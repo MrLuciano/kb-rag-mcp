@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Reorganize project documentation by deployment mode (Docker Compose, Helm, Systemd, Manual), update CHANGELOG with v1.3/v1.4 changes, and audit/update REFERENCE.md for accuracy. Existing monolithic topic-based files (OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md) stay intact but gain deployment-mode section headers; a new navigation layer in INDEX.md enables mode-first discovery.
+Reorganize project documentation by deployment mode (Docker Compose, Helm, Systemd, Manual), update CHANGELOG with v0.1.3/v0.1.4 changes, and audit/update REFERENCE.md for accuracy. Existing monolithic topic-based files (OPERATIONS.md, TROUBLESHOOTING.md, INSTRUCTIONS.md) stay intact but gain deployment-mode section headers; a new navigation layer in INDEX.md enables mode-first discovery.
 
 </domain>
 
@@ -30,7 +30,7 @@ Reorganize project documentation by deployment mode (Docker Compose, Helm, Syste
 - **D-10:** Plan-level detail within milestones — One bullet per plan within each phase (e.g., `- 22-01: Create integration gap checker script`).
 
 ### REFERENCE.md
-- **D-11:** Full audit + update — Audit every existing entry for accuracy, update stale descriptions, then add v1.3/v1.4 entries. Not append-only.
+- **D-11:** Full audit + update — Audit every existing entry for accuracy, update stale descriptions, then add v0.1.3/v0.1.4 entries. Not append-only.
 
 </decisions>
 
@@ -47,10 +47,10 @@ Reorganize project documentation by deployment mode (Docker Compose, Helm, Syste
 - `docs/OPERATIONS.md` — Add Common + per-mode H2 sections, see-also footers
 - `docs/TROUBLESHOOTING.md` — Add Common + per-mode H2 sections, see-also footers
 - `docs/INSTRUCTIONS.md` — Add Common + per-mode H2 sections, see-also footers
-- `docs/REFERENCE.md` — Full audit + update for accuracy and v1.3/v1.4 additions
+- `docs/REFERENCE.md` — Full audit + update for accuracy and v0.1.3/v0.1.4 additions
 
 ### Docs to Restructure
-- `CHANGELOG.md` — Update with per-milestone (v1.3, v1.4) + per-plan entries
+- `CHANGELOG.md` — Update with per-milestone (v0.1.3, v0.1.4) + per-plan entries
 - `README.md` — Two-tier: quickstart at top, detailed content to docs/
 - `README.pt-BR.md` — Same two-tier restructuring
 - `README.es.md` — Same two-tier restructuring
@@ -66,7 +66,7 @@ Reorganize project documentation by deployment mode (Docker Compose, Helm, Syste
 - `docs/INSTRUCTIONS.md` (34K) — Setup and configuration instructions
 - `docs/INDEX.md` (4K) — Existing table of contents; will add deployment-mode section
 - `docs/REFERENCE.md` (17K) — Quick-reference lookup; needs audit
-- `CHANGELOG.md` (30K) — Release history; needs v1.3/v1.4 entries
+- `CHANGELOG.md` (30K) — Release history; needs v0.1.3/v0.1.4 entries
 - `README.md` (50K) / `README.pt-BR.md` (44K) / `README.es.md` (44K) — English + translations
 
 ### Established Patterns

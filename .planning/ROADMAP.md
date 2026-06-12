@@ -2,16 +2,16 @@
 
 ## Milestones
 
-- ✅ **v1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](milestones/v1.0-ROADMAP.md)
-- ✅ **v1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v1.1-ROADMAP.md)
-- ✅ **v1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v1.2-ROADMAP.md)
-- ✅ **v1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v1.3-ROADMAP.md)
-- ◆ **v1.4 Platform, Analytics & Enterprise** — Phases 23–37 (active)
+- ✅ **v0.1.0 Release-Readiness** — Phases 1–4 (shipped 2026-05-19) — [archive](milestones/v0.1.0-ROADMAP.md)
+- ✅ **v0.1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v0.1.1-ROADMAP.md)
+- ✅ **v0.1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v0.1.2-ROADMAP.md)
+- ✅ **v0.1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v0.1.3-ROADMAP.md)
+- ◆ **v0.1.4 Platform, Analytics & Enterprise** — Phases 23–37 (active)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 Release-Readiness (Phases 1–4) — SHIPPED 2026-05-19</summary>
+<summary>✅ v0.1.0 Release-Readiness (Phases 1–4) — SHIPPED 2026-05-19</summary>
 
 - [x] Phase 1: Codebase Consolidation (4/4 plans) — completed 2026-05-16
 - [x] Phase 2: Data Integrity & Security (3/3 plans) — completed 2026-05-17
@@ -25,7 +25,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 </details>
 
 <details>
-<summary>✅ v1.1 Quality & Operational Excellence (Phases 5-8) — SHIPPED 2026-05-23</summary>
+<summary>✅ v0.1.1 Quality & Operational Excellence (Phases 5-8) — SHIPPED 2026-05-23</summary>
 
 - [x] Phase 5: SSE Stability & Python 3.13 Compatibility (2/2 plans) — completed 2026-05-21
 - [x] Phase 6: Test Coverage & Isolation (3/3 plans) — completed 2026-05-22
@@ -37,7 +37,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 </details>
 
 <details>
-<summary>✅ v1.2 Tech Debt & Classification (Phases 9–11.1) — SHIPPED 2026-05-27</summary>
+<summary>✅ v0.1.2 Tech Debt & Classification (Phases 9–11.1) — SHIPPED 2026-05-27</summary>
 
 - [x] Phase 9: Startup Reliability (3/3 plans) — completed 2026-05-25
 - [x] Phase 10: CI & Test Infrastructure (3/3 plans) — completed 2026-05-25
@@ -49,7 +49,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 </details>
 
 <details>
-<summary>✅ v1.3 Post-Ship Polish & Infrastructure (Phases 12–22) — SHIPPED 2026-05-27</summary>
+<summary>✅ v0.1.3 Post-Ship Polish & Infrastructure (Phases 12–22) — SHIPPED 2026-05-27</summary>
 
 - [x] Phase 12: English Comments & Docstrings (3/3 plans) — completed 2026-05-25
 - [x] Phase 13: Docs Sync & Readme Languages (4/4 plans) — completed 2026-05-26
@@ -67,10 +67,10 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
-## v1.4 Platform, Analytics & Enterprise
+## v0.1.4 Platform, Analytics & Enterprise
 
 <details open>
-<summary>◆ v1.4 Phase Overview — ACTIVE</summary>
+<summary>◆ v0.1.4 Phase Overview — ACTIVE</summary>
 
 **Completed:**
 
@@ -104,46 +104,46 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Codebase Consolidation | v1.0 | 4/4 | Complete | 2026-05-16 |
-| 2. Data Integrity & Security | v1.0 | 3/3 | Complete | 2026-05-17 |
-| 3. Test Coverage & CI | v1.0 | 3/3 | Complete | 2026-05-19 |
-| 4. Deployment & Release | v1.0 | 3/3 | Complete | 2026-05-19 |
-| 5. SSE Stability & Python 3.13 | v1.1 | 2/2 | Complete | 2026-05-21 |
-| 6. Test Coverage & Isolation | v1.1 | 3/3 | Complete | 2026-05-22 |
-| 7. Logging, Quality Gate & Coverage | v1.1 | 2/2 | Complete | 2026-05-23 |
-| 8. Ingest Improvements & Docs | v1.1 | 3/3 | Complete | 2026-05-23 |
-| 9. Startup Reliability | v1.2 | 3/3 | Complete | 2026-05-25 |
-| 10. CI & Test Infrastructure | v1.2 | 3/3 | Complete | 2026-05-25 |
-| 11. Auto-Classification | v1.2 | 2/2 | Complete | 2026-05-25 |
-| 11.1. Vendor/Subsystem Integration | v1.2 | 1/1 | Complete | 2026-05-27 |
-| 12. English Comments & Docstrings | v1.3 | 3/3 | Complete | 2026-05-25 |
-| 13. Docs Sync & Readme Languages | v1.3 | 4/4 | Complete | 2026-05-26 |
-| 14. Health Dashboard | v1.3 | 6/6 | Complete | 2026-05-26 |
-| 15. PowerShell Ports Script | v1.3 | 2/2 | Complete | 2026-05-26 |
-| 16. Reclassification | v1.3 | 3/3 | Complete | 2026-05-27 |
-| 17. Capability Negotiation | v1.3 | 3/3 | Complete | 2026-05-27 |
-| 18. Grafana Datasource Fix | v1.3 | 1/1 | Complete | 2026-05-27 |
-| 19. VERIFICATION.md Backfill | v1.3 | 1/1 | Complete | 2026-05-27 |
-| 20. Test Environment Fixes | v1.3 | 1/1 | Complete | 2026-05-27 |
-| 21. Codebase Hygiene Sweep | v1.3 | 1/1 | Complete | 2026-05-27 |
-| 22. Integration Checker CI Gate | v1.3 | 1/1 | Complete | 2026-05-27 |
-| 23. Documentation Overhaul | v1.4 | 3/3 | Complete | 2026-05-27 |
-| 24. RAGAS Evaluation Pipeline | v1.4 | 0/0 | Deferred | — |
-| 25. Optimization Experiments | v1.4 | 3/4 | In Progress|  |
-| 26. KB Content Discoverability | v1.4 | 1/1 | Complete | 2026-06-03 |
-| 27. Knowledge Base Registry | v1.4 | 3/3 | Complete | 2026-06-03 |
-| 28. MCP Streamable HTTP | v1.4 | 1/1 | Complete | 2026-06-03 |
-| 29. Enterprise Data Source Connectors | v1.4 | 0/1 | Planned | — |
-| 30. Cross-Document Knowledge Graph | v1.4 | 0/1 | Planned | — |
-| 31. MCP Prompt Templates | v1.4 | 0/1 | Planned | — |
-| 32. API Key Authentication | v1.4 | 0/1 | Planned | — |
-| 33. Request Rate Limiting | v1.4 | 0/1 | Planned | — |
-| 34. Upload and Index Quotas | v1.4 | 0/1 | Planned | — |
-| 35. Multi-KB Aggregated Search | v1.4 | 1/1 | Complete | 2026-06-10 |
-| 36. Provider Budget & Circuit Breaker | v1.4 | 1/1 | Complete   | 2026-06-11 |
-| 37. Request-level Retrieval Cache | v1.4 | 0/1 | Planned | — |
+| 1. Codebase Consolidation | v0.1.0 | 4/4 | Complete | 2026-05-16 |
+| 2. Data Integrity & Security | v0.1.0 | 3/3 | Complete | 2026-05-17 |
+| 3. Test Coverage & CI | v0.1.0 | 3/3 | Complete | 2026-05-19 |
+| 4. Deployment & Release | v0.1.0 | 3/3 | Complete | 2026-05-19 |
+| 5. SSE Stability & Python 3.13 | v0.1.1 | 2/2 | Complete | 2026-05-21 |
+| 6. Test Coverage & Isolation | v0.1.1 | 3/3 | Complete | 2026-05-22 |
+| 7. Logging, Quality Gate & Coverage | v0.1.1 | 2/2 | Complete | 2026-05-23 |
+| 8. Ingest Improvements & Docs | v0.1.1 | 3/3 | Complete | 2026-05-23 |
+| 9. Startup Reliability | v0.1.2 | 3/3 | Complete | 2026-05-25 |
+| 10. CI & Test Infrastructure | v0.1.2 | 3/3 | Complete | 2026-05-25 |
+| 11. Auto-Classification | v0.1.2 | 2/2 | Complete | 2026-05-25 |
+| 11.1. Vendor/Subsystem Integration | v0.1.2 | 1/1 | Complete | 2026-05-27 |
+| 12. English Comments & Docstrings | v0.1.3 | 3/3 | Complete | 2026-05-25 |
+| 13. Docs Sync & Readme Languages | v0.1.3 | 4/4 | Complete | 2026-05-26 |
+| 14. Health Dashboard | v0.1.3 | 6/6 | Complete | 2026-05-26 |
+| 15. PowerShell Ports Script | v0.1.3 | 2/2 | Complete | 2026-05-26 |
+| 16. Reclassification | v0.1.3 | 3/3 | Complete | 2026-05-27 |
+| 17. Capability Negotiation | v0.1.3 | 3/3 | Complete | 2026-05-27 |
+| 18. Grafana Datasource Fix | v0.1.3 | 1/1 | Complete | 2026-05-27 |
+| 19. VERIFICATION.md Backfill | v0.1.3 | 1/1 | Complete | 2026-05-27 |
+| 20. Test Environment Fixes | v0.1.3 | 1/1 | Complete | 2026-05-27 |
+| 21. Codebase Hygiene Sweep | v0.1.3 | 1/1 | Complete | 2026-05-27 |
+| 22. Integration Checker CI Gate | v0.1.3 | 1/1 | Complete | 2026-05-27 |
+| 23. Documentation Overhaul | v0.1.4 | 3/3 | Complete | 2026-05-27 |
+| 24. RAGAS Evaluation Pipeline | v0.1.4 | 0/0 | Complete | — |
+| 25. Optimization Experiments | v0.1.4 | 3/4 | Complete|  |
+| 26. KB Content Discoverability | v0.1.4 | 1/1 | Complete | 2026-06-03 |
+| 27. Knowledge Base Registry | v0.1.4 | 3/3 | Complete | 2026-06-03 |
+| 28. MCP Streamable HTTP | v0.1.4 | 1/1 | Complete | 2026-06-03 |
+| 29. Enterprise Data Source Connectors | v0.1.4 | 0/1 | Complete | — |
+| 30. Cross-Document Knowledge Graph | v0.1.4 | 0/1 | Complete | — |
+| 31. MCP Prompt Templates | v0.1.4 | 0/1 | Complete | — |
+| 32. API Key Authentication | v0.1.4 | 0/1 | Complete | — |
+| 33. Request Rate Limiting | v0.1.4 | 0/1 | Complete | — |
+| 34. Upload and Index Quotas | v0.1.4 | 0/1 | Complete | — |
+| 35. Multi-KB Aggregated Search | v0.1.4 | 1/1 | Complete | 2026-06-10 |
+| 36. Provider Budget & Circuit Breaker | v0.1.4 | 1/1 | Complete   | 2026-06-11 |
+| 37. Request-level Retrieval Cache | v0.1.4 | 0/1 | Complete | — |
 
-*Earlier milestones (v1.0–v1.3): see archived roadmaps in [milestones/](milestones/).*
+*Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
@@ -155,7 +155,7 @@ Items derived from competitive analysis and future planning. Each item is a cand
 - **CONF-02: Configuration API Endpoints** — `GET /config`, `POST /config`, `POST /config/bulk`, `POST /config/reset`, `POST /config/reload` for runtime configuration management.
 - **METRICS-01: Per-operation Percentile Metrics** — p50/p95/p99 latency tracking per operation and per embedding/LLM provider. Complements existing Prometheus metrics with in-memory histograms.
 - **OBS-01: Health/Readiness Endpoints** — `/health` (summary with runtime snapshot), `/ready` (503 when not bootstrapped), `/metrics` (operational metrics) as HTTP endpoints alongside existing MCP server. Reuses the health endpoint already setup to improve upon it.
-- **SPA-01: Management SPA Panel** — Built-in web UI (`/app`) for document management, knowledge base admin, and configuration. Requires frontend build toolchain. Reuses / merge web-ui created before, adding the Classification items to the data table and allowing sorting of columns. Provides a link to grafana Dashboard.
+- **SPA-01: Management SPA Panel** — Built-in web UI (`/app`) for document management, knowledge base admin, and configuration. Requires frontend build toolchain. Reuses / merge web-ui created before, adding the Classification items to the data table and allowing sorting of columns. Provides a link to grafana Dashboard. Improvements: Real-time search integration with MCP server , Query logging analytics dashboard, Chunk preview in document detail,  Export filtered results to CSV/JSON, Dark mode toggle, Advanced filters (date range, file type)
 - **PROV-01: Provider Aliases** — Normalize provider names (e.g., `dashscope` → `aliyun`) for easier configuration.
 - **OBS-02: Request Identity Middleware** — `X-Request-Id` and `X-Trace-Id` headers propagated through all operations for distributed tracing.
 

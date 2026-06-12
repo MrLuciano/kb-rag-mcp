@@ -88,4 +88,4 @@ python scripts/logging-audit.py
 
 ---
 
-*Last updated: 2026-06-11 for v1.4*
+*Last updated: 2026-06-11 for v0.1.4*

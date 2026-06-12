@@ -1,6 +1,6 @@
 # Milestones
 
-## v1.0 — Release-Readiness
+## v0.1.0 — Release-Readiness
 
 **Shipped:** 2026-05-19
 **Phases:** 4 | **Plans:** 13 | **Tests:** 491 passing
@@ -26,11 +26,11 @@ Made kb-rag-mcp safe to release publicly: deleted legacy `server/` module, fixed
 
 ### Git Tag
 
-`v1.0`
+`v0.1.0`
 
 ---
 
-## v1.2 — Tech Debt & Classification
+## v0.1.2 — Tech Debt & Classification
 
 **Shipped:** 2026-05-27
 **Phases:** 4 (9, 10, 11, 11.1) | **Plans:** 9 | **Tests:** 585 passing
@@ -50,16 +50,16 @@ Established operational reliability and auto-classification maturity: lazy cross
 
 - Timeline: 2026-05-14 → 2026-05-27 (13 days, including Phase 11.1 remediation)
 - Files changed: 30 | Commits: 19 feature commits
-- Requirements: 9/9 v1.2 requirements met
+- Requirements: 9/9 v0.1.2 requirements met
 - Phase 11.1 was a decimal-phase insertion to remediate critical integration gap found by milestone audit
 
 ### Git Tag
 
-`v1.2`
+`v0.1.2`
 
 ---
 
-## v1.1 — Quality & Operational Excellence
+## v0.1.1 — Quality & Operational Excellence
 
 **Shipped:** 2026-05-23
 **Phases:** 4 (5-8) | **Plans:** 10 | **Tests:** 576 passing
@@ -81,16 +81,16 @@ Established operational maturity and code quality foundations: SSE stability wit
 
 - Timeline: 2026-05-14 → 2026-05-23 (8 days)
 - Files changed: 75 | +4,980 insertions, -3,106 deletions | Python LOC: 13,457
-- Requirements: 15/15 v1.1 requirements met
+- Requirements: 15/15 v0.1.1 requirements met
 - Commits: 16 feature commits
 
 ### Git Tag
 
-`v1.1`
+`v0.1.1`
 
 ---
 
-## v1.3 — Post-Ship Polish & Infrastructure
+## v0.1.3 — Post-Ship Polish & Infrastructure
 
 **Shipped:** 2026-05-27
 **Phases:** 11 (12-22) | **Plans:** 27 | **Tests:** 656 passing
@@ -112,9 +112,9 @@ English-only codebase with CI enforcement, multilingual README (EN/PT-BR/ES), Gr
 
 - Timeline: 2026-05-25 → 2026-05-27 (3 days)
 - Files changed: 331 | Commits: ~187 feature commits
-- Requirements: 26/26 v1.3 requirements met (1 cancelled with rationale)
+- Requirements: 26/26 v0.1.3 requirements met (1 cancelled with rationale)
 - Final planned milestone — product is feature-complete for target use case
 
 ### Git Tag
 
-`v1.3`
+`v0.1.3`

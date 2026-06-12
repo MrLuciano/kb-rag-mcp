@@ -1564,5 +1564,5 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 
 ---
 
-*Quick reference for KB-RAG-MCP v1.1 operations*  
+*Quick reference for KB-RAG-MCP v0.1.1 operations*  
 *Last updated: 2026-06-11*

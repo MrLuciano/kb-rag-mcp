@@ -45,8 +45,8 @@ note: "Fixed during Phase 23 execution — INSTRUCTIONS.md translated from Portu
 expected: Opening docs/INDEX.md shows a ## Deployment Modes section listing all 4 modes with file-level links to mode-specific documentation.
 result: pass
 
-### 9. CHANGELOG Milestones v1.3/v1.4
-expected: Opening CHANGELOG.md shows ## [1.3] 2026-05-27 with all 11 v1.3 phases (12-22) listed per-plan, followed by ## [1.4] section with Phase 23 entries.
+### 9. CHANGELOG Milestones v0.1.3/v0.1.4
+expected: Opening CHANGELOG.md shows ## [1.3] 2026-05-27 with all 11 v0.1.3 phases (12-22) listed per-plan, followed by ## [1.4] section with Phase 23 entries.
 result: pass
 note: "Fixed during Phase 23 execution — PHASE→Phase (12 replacements), chronological reordering (newest-first), stale sections removed"
 

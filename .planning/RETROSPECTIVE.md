@@ -2,7 +2,7 @@
 
 ---
 
-## Milestone: v1.0 — Release-Readiness
+## Milestone: v0.1.0 — Release-Readiness
 
 **Shipped:** 2026-05-19
 **Phases:** 4 | **Plans:** 13
@@ -58,4 +58,4 @@
 
 | Milestone | Phases | Tests | Coverage | Duration |
 |-----------|--------|-------|----------|----------|
-| v1.0 | 4 | 491 | 88% | 5 days |
+| v0.1.0 | 4 | 491 | 88% | 5 days |

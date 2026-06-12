@@ -1,6 +1,6 @@
 # Logging Coverage Audit
 
-Generated: 2026-06-11 | Phase 7, Plan 07-02 (updated for v1.4)
+Generated: 2026-06-11 | Phase 7, Plan 07-02 (updated for v0.1.4)
 
 ## Scope
 
@@ -17,7 +17,7 @@ or `logger.*` equivalents).
 | Coverage | 42.1% |
 | Functions without logs | 221 |
 
-Coverage decreased from 50.6% (v1.3) due to new v1.4 modules (auth, connectors,
+Coverage decreased from 50.6% (v0.1.3) due to new v0.1.4 modules (auth, connectors,
 circuit breaker, provider budget, request cache, knowledge graph) that lack
 logging instrumentation.
 
@@ -78,7 +78,7 @@ logging instrumentation.
 | `ingest/validation/pipeline.py` | 0% | 0/9 |
 | `ingest/validation/size.py` | 0% | 0/2 |
 
-## New v1.4 Modules (added since v1.3)
+## New v0.1.4 Modules (added since v0.1.3)
 
 | Module | Coverage | Status |
 |--------|----------|--------|
@@ -101,4 +101,4 @@ logging instrumentation.
 ---
 
 *Re-run with `python scripts/logging-audit.py` to regenerate.*
-*Last updated: 2026-06-11 for v1.4*
+*Last updated: 2026-06-11 for v0.1.4*
