@@ -19,20 +19,19 @@
     {"id": 8, "name": "REQUIREMENTS.md written with all phase requirements", "status": "done", "commit": "3576821"},
     {"id": 9, "name": "ROADMAP.md updated with v0.1.5 phases (28/reopened, 28b, 28c, 38-41)", "status": "done", "commit": "3576821"},
     {"id": 10, "name": "4 parallel codebase explorers completed (UI structure, ingestion pipeline, RAGAS evaluation, health/metrics)", "status": "done"},
-    {"id": 11, "name": "Brainstorming skill loaded, visual companion offered (declined)", "status": "done"}
+    {"id": 11, "name": "Brainstorming skill loaded, visual companion offered and accepted to be continued", "status": "done"}
   ],
   "remaining_tasks": [
     {"id": 12, "name": "Decompose scope into sub-projects (scope too large for single spec)", "status": "not_started"},
     {"id": 13, "name": "Brainstorming: ask clarifying questions one at a time about new features", "status": "not_started"},
-    {"id": 14, "name": "Propose 2-3 architectural approaches for admin panel + tabs", "status": "not_started"},
-    {"id": 15, "name": "Present design sections and get approval", "status": "not_started"},
+    {"id": 14, "name": "Propose 2-3 architectural approaches for sub-projects", "status": "not_started"},
+    {"id": 15, "name": "Present design sections with visual companion (browser mockups)", "status": "not_started"},
     {"id": 16, "name": "Write design spec to docs/superpowers/specs/", "status": "not_started"},
     {"id": 17, "name": "Create implementation plans via writing-plans skill", "status": "not_started"},
     {"id": 18, "name": "Execute Phase 28 (Streamable HTTP), Phase 28b (Auth API), Phase 28c (Admin SPA), Phases 38-41", "status": "not_started"}
   ],
   "blockers": [
-    {"description": "Scope is very large (7+ subsystems) — needs decomposition before any design can proceed", "type": "technical", "workaround": "Decompose into sub-projects, brainstorm first sub-project first"},
-    {"description": "Visual companion declined — all UI mockup/design work must be text-only", "type": "human_action", "workaround": "Use text descriptions and code snippets for UI designs instead of browser mockups"}
+    {"description": "Scope is very large (7+ subsystems) — needs decomposition before any design can proceed", "type": "technical", "workaround": "Decompose into sub-projects, brainstorm first sub-project first"}
   ],
   "human_actions_pending": [
     {"action": "User needs to answer clarifying questions about new features (admin config, monitor lights, ingestion tab, RAGAS tab, browser cleanup) once brainstorming resumes", "context": "User had not yet answered any clarifying questions before pause was requested", "blocking": true}
@@ -49,5 +48,5 @@
     ".planning/phases/* (deletions from archive move, unstaged)"
   ],
   "next_action": "Load brainstorming skill context, then ask first clarifying question about feature priorities and scope decomposition",
-  "context_notes": "Session was interrupted during brainstorming step 3 (asking clarifying questions). The scope expanded significantly from the original v0.1.5 plan. The user added 5 new major features after the initial milestone was planned. Need to decompose scope into sub-projects before continuing design work. The brainstorming skill's HARD-GATE prevents any implementation until design is approved. Visual companion was offered and declined — all UI work must be text-only."
+  "context_notes": "Session was interrupted during brainstorming step 3 (asking clarifying questions). The scope expanded significantly from the original v0.1.5 plan. The user added 5 new major features after the initial milestone was planned. Need to decompose scope into sub-projects before continuing design work. The brainstorming skill's HARD-GATE prevents any implementation until design is approved. Visual companion was offered and accepted to be continued — browser mockups available for UI design work when resuming."
 }
