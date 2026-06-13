@@ -7,6 +7,7 @@
 - ✅ **v0.1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v0.1.2-ROADMAP.md)
 - ✅ **v0.1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v0.1.3-ROADMAP.md)
 - ✅ **v0.1.4 Platform, Analytics & Enterprise** — Phases 23–37 (shipped 2026-06-11)
+- 🔄 **v0.1.5 Streamable HTTP & Management Platform** — Phases 28 (reopened), 28b, 28c, 38, 39, 40, 41 (active)
 
 ## Phases
 
@@ -96,6 +97,23 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
+## v0.1.5 Streamable HTTP & Management Platform
+
+<details open>
+<summary>🔄 v0.1.5 Phase Overview — PLANNING</summary>
+
+**Target features:**
+
+- [ ] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware
+- [ ] Phase 28b: Auth & User Management API — SQLAlchemy User/ApiKey/AuditLog models, CRUD REST endpoints, role-based access, GDPR erasure workflow
+- [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, Grafana embed tab
+- [ ] Phase 38: Grafana Dashboard Embedding — iframe embed helper, CSP config, time range selector, OPERATIONS.md docs
+- [ ] Phase 39: Observability Backlog — OBS-01 (health/readiness), OBS-02 (request identity), METRICS-01 (percentile metrics)
+- [ ] Phase 40: Configuration Backlog — CONF-01 (hot-reload), CONF-02 (config API endpoints)
+- [ ] Phase 41: Provider Alias — PROV-01 (provider name normalization)
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -139,21 +157,26 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 36. Provider Budget & Circuit Breaker | v0.1.4 | 1/1 | Complete   | 2026-06-11 |
 | 37. Request-level Retrieval Cache | v0.1.4 | 1/1 | Complete | 2026-06-11 |
 
+| 38. MCP Streamable HTTP (reopened) | v0.1.5 | 0/0 | Planning | — |
+| 39. Auth & User Management API | v0.1.5 | 0/0 | Planning | — |
+| 40. Admin SPA Panel | v0.1.5 | 0/0 | Planning | — |
+| 41. Grafana Dashboard Embedding | v0.1.5 | 0/0 | Planning | — |
+| 42. Observability Backlog | v0.1.5 | 0/0 | Planning | — |
+| 43. Configuration Backlog | v0.1.5 | 0/0 | Planning | — |
+| 44. Provider Alias | v0.1.5 | 0/0 | Planning | — |
+
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
-Items derived from competitive analysis and future planning. Each item is a candidate for v1.5 or later.
+Items for future milestones (v0.1.6+).
 
 ### Low Priority
 
-- **CONF-01: Hot-reload Configuration** — JSON/env config changes take effect without restart. `reload_if_changed()` polling on config file mtime.
-- **CONF-02: Configuration API Endpoints** — `GET /config`, `POST /config`, `POST /config/bulk`, `POST /config/reset`, `POST /config/reload` for runtime configuration management.
-- **METRICS-01: Per-operation Percentile Metrics** — p50/p95/p99 latency tracking per operation and per embedding/LLM provider. Complements existing Prometheus metrics with in-memory histograms.
-- **OBS-01: Health/Readiness Endpoints** — `/health` (summary with runtime snapshot), `/ready` (503 when not bootstrapped), `/metrics` (operational metrics) as HTTP endpoints alongside existing MCP server. Reuses the health endpoint already setup to improve upon it.
-- **SPA-01: Management SPA Panel** — Built-in web UI (`/app`) for document management, knowledge base admin, and configuration. Requires frontend build toolchain. Reuses / merge web-ui created before, adding the Classification items to the data table and allowing sorting of columns. Provides a link to grafana Dashboard. Improvements: Real-time search integration with MCP server , Query logging analytics dashboard, Chunk preview in document detail,  Export filtered results to CSV/JSON, Dark mode toggle, Advanced filters (date range, file type)
-- **PROV-01: Provider Aliases** — Normalize provider names (e.g., `dashscope` → `aliyun`) for easier configuration.
-- **OBS-02: Request Identity Middleware** — `X-Request-Id` and `X-Trace-Id` headers propagated through all operations for distributed tracing.
+- **SPA-02: Query Logging Analytics Dashboard** — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution)
+- **SPA-03: Chunk Preview in Document Detail** — Inline chunk viewer with highlight for matched terms
+- **SPA-04: Export Filtered Results** — Export document search results to CSV/JSON from the SPA
+- **SPA-05: Advanced Filters** — Date range, file type, vendor filters in document browse
 
 ### Phase 25: Optimization Experiments
 

@@ -1,154 +1,73 @@
-# Requirements: kb-rag-mcp
+# v0.1.5 Requirements — Streamable HTTP & Management Platform
 
-**Defined:** 2026-05-27
-**Core Value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
+## Phase 28: MCP Streamable HTTP Transport
+- [ ] R28-01: Add `MCP_TRANSPORT = streamable-http` branch in `server.py:main()`
+- [ ] R28-02: Wire `StreamableHTTPSessionManager` around existing `mcp.server.Server` instance
+- [ ] R28-03: Single `/mcp` endpoint handling GET/POST/DELETE/OPTIONS
+- [ ] R28-04: CORS middleware for browser access (allow all origins, restrict in production)
+- [ ] R28-05: Auth header validation middleware (from existing `auth.py`)
+- [ ] R28-06: Rate limiting integration (existing module)
+- [ ] R28-07: Observable: set `_current_subject`, `_current_transport`, metrics records
+- [ ] R28-08: Env vars: `MCP_HOST`, `MCP_PORT`, `MCP_ENDPOINT`, `MCP_JSON_RESPONSE`, `MCP_STATELESS`, `MCP_SESSION_TIMEOUT`
+- [ ] R28-09: Docs: update REFERENCE.md, INSTRUCTIONS.md with Streamable HTTP config
+- [ ] R28-10: Tests: `test_server_streamable_http.py` covering init, tool call, auth rejection
 
-## v1 Requirements
+## Phase 28b: Auth & User Management API (REST)
+- [ ] R28b-01: SQLAlchemy `User` model: id (UUID), username (unique), role (admin/user), is_active, created_at, updated_at
+- [ ] R28b-02: SQLAlchemy `ApiKey` model: id, user_id (FK), key_hash (SHA-256), prefix, description, is_revoked, last_used_at, created_at
+- [ ] R28b-03: SQLAlchemy `AuditLog` model: id, timestamp, actor_id (UUID), action, resource_type, resource_id, details
+- [ ] R28b-04: FastAPI `get_current_user` dependency via `X-API-Key` header
+- [ ] R28b-05: FastAPI `require_admin` / `require_auth` dependency guards
+- [ ] R28b-06: `POST /api/v1/auth/session` — exchange API key for JWT session cookie
+- [ ] R28b-07: `POST /api/v1/users` — admin creates user
+- [ ] R28b-08: `GET /api/v1/users` — admin lists users (paginated, no PII)
+- [ ] R28b-09: `GET /api/v1/users/me` — current user profile (Art 15 access)
+- [ ] R28b-10: `DELETE /api/v1/users/{id}` — admin deletes user (tombstone/erasure)
+- [ ] R28b-11: `POST /api/v1/users/{id}/erasure-request` — user or admin requests erasure (GDPR Art 17)
+- [ ] R28b-12: `POST /api/v1/admin/erasure-requests/{id}/approve` — DPO/admin approves erasure
+- [ ] R28b-13: `POST /api/v1/users/{id}/export` — data portability export (Art 20)
+- [ ] R28b-14: `POST /api/v1/api-keys` — create new API key (shown once)
+- [ ] R28b-15: `GET /api/v1/api-keys` — list own keys (prefix + meta, never raw key)
+- [ ] R28b-16: `DELETE /api/v1/api-keys/{id}` — revoke key
+- [ ] R28b-17: Audit logging on all user/data access events
+- [ ] R28b-18: 90-day audit log auto-prune
+- [ ] R28b-19: Data inventory document (`docs/DATA_INVENTORY.md`) for breach notification readiness
 
-### Documentation
+## Phase 28c: Admin SPA Panel (Web UI)
+- [ ] R28c-01: Add Alpine.js CDN to `base.html`
+- [ ] R28c-02: SPA shell template at `/admin/` with sidebar + tab container
+- [ ] R28c-03: Tab: Documents — HTMX loads document browse/search partials
+- [ ] R28c-04: Tab: Monitoring — Grafana dashboard iframe embed
+- [ ] R28c-05: Tab: Admin — user management (create/list/delete users, manage API keys)
+- [ ] R28c-06: Tab: Profile — personal API keys, usage stats, data export, erasure request
+- [ ] R28c-07: Login modal — enter API key → stored in localStorage → Bearer header on all requests
+- [ ] R28c-08: Role-based tab visibility (admin tab only for admin role)
+- [ ] R28c-09: 401 interception → show re-login modal
+- [ ] R28c-10: Logout → clear localStorage, reset to login modal
 
-- [ ] **DOCS-01**: User can find docs organized by deployment mode (Docker Compose, Helm, systemd, manual) from README/OPERATIONS/TROUBLESHOOTING
-- [ ] **DOCS-02**: Each deployment path has a dedicated doc file as single source of truth
-- [ ] **DOCS-03**: CHANGELOG updated with all v0.1.3/v0.1.4 changes
-- [ ] **DOCS-04**: REFERENCE.md updated with all v0.1.3/v0.1.4 changes
+## Phase 38: Grafana Dashboard Embedding
+- [ ] R38-01: FastAPI helper function `build_grafana_embed_url()` for generating iframe URLs
+- [ ] R38-02: FastAPI helper function `grafana_embed_html()` for complete iframe HTML snippet
+- [ ] R38-03: CSP middleware adding `frame-src` for Grafana origin
+- [ ] R38-04: Monitoring tab in SPA renders iframe with Grafana dashboard
+- [ ] R38-05: Grafana configuration docs in OPERATIONS.md (`allow_embedding = true`, anonymous Viewer, CSP)
+- [ ] R38-06: Time range selector UI above iframe (last 1h, 6h, 24h, 7d)
 
-### RAGAS Evaluation
+## Phase 39: Observability Backlog
+- [ ] R39-01: OBS-01: Health/Readiness liveness + readiness endpoints
+- [ ] R39-02: OBS-02: Request Identity Middleware (request_id per operation)
+- [ ] R39-03: METRICS-01: Per-operation percentile metrics (p50, p95, p99 latency)
 
-- [ ] **EVAL-01**: User can run RAGAS evaluation with 4 core metrics (faithfulness, answer_relevancy, context_precision, context_recall)
-- [ ] **EVAL-02**: User can load golden Q&A dataset from CSV/JSON for evaluation
-- [ ] **EVAL-03**: RAGAS evaluation reuses existing LM Studio/Ollama backend for LLM-as-judge scoring
-- [ ] **EVAL-04**: User can export evaluation results as CSV with console summary table
+## Phase 40: Configuration Backlog
+- [ ] R40-01: CONF-01: Hot-reload configuration (watch `.env` for changes, live update)
+- [ ] R40-02: CONF-02: Configuration API endpoint (`GET /api/v1/config`, `PUT /api/v1/config`)
 
-### Optimization Experiments
+## Phase 41: MCP Provider Alias
+- [ ] R41-01: PROV-01: Provider aliases via env/config (`MCP_TOOL_ALIAS_*`)
 
-- [ ] **OPT-01**: User can run chunking experiments with configurable strategies (fixed, recursive, semantic)
-- [ ] **OPT-02**: User can run scoring/reranking experiments comparing cross-encoder to other strategies
-- [ ] **OPT-03**: User can view comparison metrics (recall@K, MRR) across experiment runs
-
-## Active Requirements (v0.1.4)
-
-### Enterprise Data Source Connectors (Phase 29)
-
-- [ ] **ENT-01**: User can ingest documents from Confluence, JIRA, and Git sources without exporting files manually
-- [ ] **ENT-02**: Connector sync tracks stable remote identities and incremental changes using source-specific checkpoints
-- [ ] **ENT-03**: Connector-fetched content reuses the existing parsing, chunking, embedding, and registry pipeline through staged local artifacts
-- [ ] **ENT-04**: CLI exposes connector registration and sync commands without breaking existing local-file ingest flows
-
-### Cross-Document Knowledge Graph (Phase 30)
-
-- [ ] **GRAPH-01**: Ingest pipeline derives graph metadata linking related documents, entities, or topics within a KB
-- [ ] **GRAPH-02**: MCP surface exposes graph-aware discovery for related documents and graph summaries without regressing existing search tools
-- [ ] **GRAPH-03**: Vector store and metadata persistence support graph fields and indexes with backward-compatible behavior for existing collections
-
-### MCP Prompt Templates (Phase 31)
-
-- [ ] **MCPPROMPTS-01**: MCP server exposes prompt discovery via `prompts/list` for at least grounded-answer and summarize-documents prompts
-- [ ] **MCPPROMPTS-02**: MCP server renders prompt content via `get_prompt` using current KB semantics and citation conventions
-- [ ] **MCPPROMPTS-03**: Prompt support is additive only — existing tools, resources, and transports remain unchanged
-
-### API Key Authentication (Phase 32)
-
-- [ ] **AUTH-01**: HTTP-facing MCP transports require optional API key authentication while stdio transport remains unchanged
-- [ ] **AUTH-02**: API keys are stored hashed with revocation metadata and can be scoped globally or to a specific KB
-- [ ] **AUTH-03**: CLI/admin flows can create, list, and revoke API keys without exposing plaintext keys after creation
-
-### Request Rate Limiting (Phase 33)
-
-- [ ] **RATE-01**: Server enforces token-bucket rate limiting per subject on MCP HTTP requests and MCP tool invocations
-- [ ] **RATE-02**: Rate limiter emits Prometheus metrics for allowed, delayed, and rejected requests
-- [ ] **RATE-03**: Rate limiting degrades appropriately by transport (HTTP 429 for HTTP transports, MCP error payload for stdio)
-
-### Upload and Index Quotas (Phase 34)
-
-- [ ] **QUOTA-01**: Durable quota limits exist for files, bytes, chunks, documents, and characters at ingest/job boundaries
-- [ ] **QUOTA-02**: Quota enforcement covers both direct ingest and worker/job execution paths so no ingest path bypasses limits
-- [ ] **QUOTA-03**: Operators can inspect or change quota settings through CLI/admin surfaces with usage tracking persisted in metadata storage
-
-### Multi-KB Aggregated Search (Phase 35)
-
-- [ ] **MULTIKB-01**: `search_kb` accepts multiple KB identifiers and fans out queries across their mapped collections
-- [ ] **MULTIKB-02**: Aggregated results preserve provenance, normalize ranking, and deduplicate equivalent hits across KBs
-- [ ] **MULTIKB-03**: Existing single-KB collection and `kb_id` search behavior remains backward compatible
-
-### Provider Budget & Circuit Breaker (Phase 36)
-
-- [x] **PROVBUD-01**: Embedding provider calls enforce configurable request budgets and failure thresholds per backend
-- [x] **PROVBUD-02**: Circuit breaker state supports closed, open, and half-open transitions with cooldown and fallback behavior
-- [x] **PROVBUD-03**: Provider resilience emits operational metrics without regressing existing embed client APIs
-
-### Request-level Retrieval Cache (Phase 37)
-
-- [ ] **RLCACHE-01**: Search requests can be served from an in-memory request-result cache keyed by query, KB scope, filters, and retrieval options
-- [ ] **RLCACHE-02**: Retrieval cache invalidates on TTL expiry and on retrieval-affecting state changes such as ingest or reclassification
-- [ ] **RLCACHE-03**: Cached search responses still integrate with existing logging and observability paths
-
-## Out of Scope
-
-| Feature | Reason |
-|---------|--------|
-| Real-time A/B testing in production | Experiments are offline/analysis only |
-| Agentic chunking | Too experimental for this milestone |
-| RAGAS metrics beyond 4 core | Keep evaluation focused; add later if needed |
-
-## Traceability
-
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| DOCS-01 | Phase 23 | ✅ Complete |
-| DOCS-02 | Phase 23 | ✅ Complete |
-| DOCS-03 | Phase 23 | ✅ Complete |
-| DOCS-04 | Phase 23 | ✅ Complete |
-| EVAL-01 | Phase 24 | Deferred |
-| EVAL-02 | Phase 24 | Deferred |
-| EVAL-03 | Phase 24 | Deferred |
-| EVAL-04 | Phase 24 | Deferred |
-| OPT-01 | Phase 25 | Deferred |
-| OPT-02 | Phase 25 | Deferred |
-| OPT-03 | Phase 25 | Deferred |
-| DISC-01 | Phase 26 | ✅ Complete |
-| DISC-02 | Phase 26 | ✅ Complete |
-| DISC-03 | Phase 26 | ✅ Complete |
-| DISC-04 | Phase 26 | ✅ Complete |
-| DISC-05 | Phase 26 | ✅ Complete |
-| DISC-06 | Phase 26 | ✅ Complete |
-| KBREG-01 | Phase 27 | ✅ Complete |
-| KBREG-02 | Phase 27 | ✅ Complete |
-| MCPHTTP-01 | Phase 28 | Pending |
-| ENT-01 | Phase 29 | Pending |
-| ENT-02 | Phase 29 | Pending |
-| ENT-03 | Phase 29 | Pending |
-| ENT-04 | Phase 29 | Pending |
-| GRAPH-01 | Phase 30 | Pending |
-| GRAPH-02 | Phase 30 | Pending |
-| GRAPH-03 | Phase 30 | Pending |
-| MCPPROMPTS-01 | Phase 31 | Pending |
-| MCPPROMPTS-02 | Phase 31 | Pending |
-| MCPPROMPTS-03 | Phase 31 | Pending |
-| AUTH-01 | Phase 32 | Pending |
-| AUTH-02 | Phase 32 | Pending |
-| AUTH-03 | Phase 32 | Pending |
-| RATE-01 | Phase 33 | Pending |
-| RATE-02 | Phase 33 | Pending |
-| RATE-03 | Phase 33 | Pending |
-| QUOTA-01 | Phase 34 | Pending |
-| QUOTA-02 | Phase 34 | Pending |
-| QUOTA-03 | Phase 34 | Pending |
-| MULTIKB-01 | Phase 35 | Pending |
-| MULTIKB-02 | Phase 35 | Pending |
-| MULTIKB-03 | Phase 35 | Pending |
-| PROVBUD-01 | Phase 36 | Complete |
-| PROVBUD-02 | Phase 36 | Complete |
-| PROVBUD-03 | Phase 36 | Complete |
-| RLCACHE-01 | Phase 37 | Pending |
-| RLCACHE-02 | Phase 37 | Pending |
-| RLCACHE-03 | Phase 37 | Pending |
-
-**Coverage:**
-- v1 requirements: 36 total
-- Mapped to phases: 36
-- Unmapped: 0 ✓
-
----
-
-*Requirements defined: 2026-05-27*
-*Last updated: 2026-06-03 after v0.1.4 planning update (phases 29–37)*
+## Integration & Non-Functional
+- [ ] R-INT-01: Backward compatible — existing stdio and SSE transports unchanged
+- [ ] R-INT-02: Auth API keys remain compatible with existing `ingest.cli.main auth` CLI
+- [ ] R-INT-03: All existing tests continue to pass (1165 passed baseline)
+- [ ] R-INT-04: No new npm/Node.js dependencies — zero-build frontend
+- [ ] R-INT-05: GDPR compliance documentation (`docs/PRIVACY.md`)
