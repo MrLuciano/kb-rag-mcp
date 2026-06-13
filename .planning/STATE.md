@@ -1,33 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1.4
-milestone_name: Platform, Analytics & Enterprise
-status: idle
+milestone: v0.1.5
+milestone_name: Streamable HTTP & Management Platform
+status: active
 last_updated: "2026-06-12T00:00:00.000Z"
-last_activity: 2026-06-12 -- v0.1.4 milestone complete (all 15 phases 23-37)
+last_activity: 2026-06-12 -- v0.1.5 milestone started
 progress:
-  total_phases: 15
-  completed_phases: 15
-  total_plans: 28
-  completed_plans: 28
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-19)
+See: .planning/PROJECT.md (updated 2026-06-12)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** v0.1.4 milestone finalized
+**Current focus:** v0.1.5 milestone planning
 
 ## Current Position
 
-Milestone: v0.1.4 (Platform, Analytics & Enterprise) — SHIPPED 2026-06-11
-Phase: All 15 phases (23-37) complete
-Status: Idle — v0.1.4 milestone finalized
-Last activity: 2026-06-12 -- v0.1.4 milestone finalized (ROADMAP/STATE updated, tag created)
+Milestone: v0.1.5 (Streamable HTTP & Management Platform) — PLANNING
+Phase: None yet — milestone initiated
+Status: Planning — gathering requirements and creating roadmap
+Next: Research → Requirements → Roadmap → Execution
 
 ## Phase 25 Outcomes
 

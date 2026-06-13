@@ -8,17 +8,22 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-## Current Milestone: v0.1.4 Evaluations & Docs
+## Current Milestone: v0.1.5 Streamable HTTP & Management Platform
 
-**Goal:** Deliver documentation reorganization, RAGAS evaluation pipeline, and optimization experiments — pulling all 3 backlog items into active development.
+**Goal:** Implement MCP Streamable HTTP transport, build the Management SPA with auth, user management, admin panel, and Grafana dashboard embedding.
 
 **Target features:**
-- Organize README, INSTRUCTIONS, OPERATIONS, TROUBLESHOOTING by deployment mode
-- Update CHANGELOG, REFERENCE.md with recent changes
-- Implement RAGAS evaluation pipeline in `kb_server/evaluation/`
-- Implement chunking and scoring optimization experiments in `kb_server/optimization/`
+- Phase 28: MCP Streamable HTTP Transport — browser-compatible `/mcp` endpoint
+- SPA-01: Management SPA Panel — full web UI with document browse, Grafana embed, admin panel, personal area
+- Auth/User CRUD API — REST endpoints for users and API keys
+- User roles — admin vs regular users with controlled access
+- OBS-01: Health/Readiness Endpoints
+- CONF-01: Hot-reload Configuration
+- METRICS-01: Per-operation Percentile Metrics
+- PROV-01: Provider Aliases
+- OBS-02: Request Identity Middleware
 
-## Current State (v0.1.4 — active)
+## Current State (v0.1.5 — planning)
 
 - **Tests:** 656 passing, 9 pre-existing failures unchanged
 - **Coverage:** 90% branch target enforced (kb_server/ + ingest/)
