@@ -1,5 +1,6 @@
 """Web UI routes for document browsing and search testing."""
 
+import logging
 import os
 import sqlite3
 from pathlib import Path
@@ -7,6 +8,8 @@ from typing import Optional, List, Dict, Any
 from fastapi import Request, Query
 from fastapi.responses import HTMLResponse
 from kb_server.ui.app import app, templates
+
+log = logging.getLogger("kb-mcp.ui")
 
 # Database path configuration
 DB_PATH = Path(os.getenv("KB_METADATA_DB", "data/kb_metadata.db"))
@@ -185,7 +188,11 @@ async def search_tester(request: Request):
 
 
 @app.get("/ui/document/{doc_id}", response_class=HTMLResponse)
-async def document_detail(request: Request, doc_id: int):
+async def document_detail(
+    request: Request,
+    doc_id: int,
+    q: Optional[str] = Query(None),
+):
     """Document detail page showing metadata and chunks."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -207,6 +214,125 @@ async def document_detail(request: Request, doc_id: int):
     document = _map_document(row)
     conn.close()
 
+    # Query Qdrant for chunks
+    chunks: list[dict] = []
+    if (
+        document.get("chunks_stored", 0) > 0
+        and document.get("status") != "failed"
+    ):
+        try:
+            from kb_server.vector_store import VectorStore
+
+            store = VectorStore()
+            await store.connect()
+            try:
+                source_file = row["path"]
+                results, _ = await store.client.scroll(
+                    collection_name=store.collection,
+                    scroll_filter=Filter(
+                        must=[
+                            FieldCondition(
+                                key="source_file",
+                                match=MatchValue(value=source_file),
+                            )
+                        ]
+                    ),
+                    limit=500,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+                chunks = [
+                    {
+                        "chunk_id": str(r.id),
+                        "text": r.payload.get("text", ""),
+                        "chunk_index": int(r.payload.get("chunk_index", 0)),
+                    }
+                    for r in results
+                ]
+                chunks.sort(key=lambda c: c["chunk_index"])
+            except Exception as e:
+                log.error("Failed to load chunks for doc %s: %s", doc_id, e)
+            finally:
+                await store.close()
+        except Exception as e:
+            log.error("VectorStore error for doc %s: %s", doc_id, e)
+
     return templates.TemplateResponse(
-        request, "document.html", {"request": request, "document": document}
+        request,
+        "document.html",
+        {
+            "request": request,
+            "document": document,
+            "chunks": chunks,
+            "search_query": q,
+        },
+    )
+
+
+@app.get("/ui/document/{doc_id}/chunks", response_class=HTMLResponse)
+async def document_chunks(
+    request: Request,
+    doc_id: int,
+    offset: int = Query(0, ge=0),
+    q: Optional[str] = Query(None),
+):
+    """HTMX partial — returns next page of chunks starting at offset."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return HTMLResponse("")
+
+    try:
+        from kb_server.vector_store import VectorStore
+
+        store = VectorStore()
+        await store.connect()
+        try:
+            source_file = row["path"]
+            results, _ = await store.client.scroll(
+                collection_name=store.collection,
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="source_file",
+                            match=MatchValue(value=source_file),
+                        )
+                    ]
+                ),
+                limit=500,
+                with_payload=True,
+                with_vectors=False,
+            )
+            all_chunks = [
+                {
+                    "chunk_id": str(r.id),
+                    "text": r.payload.get("text", ""),
+                    "chunk_index": int(r.payload.get("chunk_index", 0)),
+                }
+                for r in results
+            ]
+            all_chunks.sort(key=lambda c: c["chunk_index"])
+        finally:
+            await store.close()
+    except Exception as e:
+        log.error("Failed to load chunks for doc %s: %s", doc_id, e)
+        return HTMLResponse("")
+
+    page = all_chunks[offset : offset + 10]
+    total = len(all_chunks)
+    return templates.TemplateResponse(
+        request,
+        "document_chunks.html",
+        {
+            "request": request,
+            "chunks": page,
+            "search_query": q,
+            "offset": offset,
+            "total": total,
+            "doc_id": doc_id,
+        },
     )

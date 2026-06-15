@@ -2,11 +2,11 @@
 
 Uses FastAPI TestClient with mocked SQLite to avoid live DB dependency.
 """
+
 import sys
 from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ---------------------------------------------------------------------------
 # Ensure kb_server.ui is the real package before test_smoke.py stubs it.
@@ -66,6 +66,7 @@ class TestGetDocuments:
         mock_conn.cursor.return_value.fetchall.return_value = []
         with patch("sqlite3.connect", return_value=mock_conn):
             from kb_server.ui.routes import get_documents
+
             docs, total = get_documents()
         assert docs == []
         assert total == 0
@@ -86,19 +87,25 @@ class TestGetDocuments:
             # Patch conn.row_factory assignment (no-op in mock)
             mock_conn.row_factory = None
             from kb_server.ui.routes import get_documents
+
             # cursor.fetchall returns dicts; dict(row) on a dict = dict
             # Use sqlite3.Row-like objects (not plain dicts) since routes uses dict(row)
             class FakeRow:
                 def __init__(self, data):
                     self._data = data
+
                 def __iter__(self):
                     return iter(self._data.items())
+
                 def keys(self):
                     return self._data.keys()
+
                 def __getitem__(self, key):
                     return self._data[key]
+
                 def get(self, key, default=None):
                     return self._data.get(key, default)
+
             mock_cursor.fetchall.return_value = [FakeRow(fake)]
             docs, total = get_documents(product="testproduct")
         assert total == 1
@@ -120,6 +127,7 @@ class TestGetDocuments:
 
         with patch("sqlite3.connect", return_value=mock_conn):
             from kb_server.ui.routes import get_documents
+
             get_documents(
                 product="prod",
                 doc_type="guide",
@@ -142,6 +150,7 @@ class TestGetDocuments:
 def _html_response(text: str = "<html>ok</html>", status_code: int = 200):
     """Return a minimal HTMLResponse for template mocking."""
     from fastapi.responses import HTMLResponse
+
     return HTMLResponse(content=text, status_code=status_code)
 
 
@@ -184,9 +193,12 @@ class TestUIEndpoints:
         assert resp.status_code == 200
 
     def test_browse_with_filters_passes_params(self):
-        with patch(
-            "kb_server.ui.routes.get_documents", return_value=([], 0)
-        ) as mock_gd, _mock_template_response():
+        with (
+            patch(
+                "kb_server.ui.routes.get_documents", return_value=([], 0)
+            ) as mock_gd,
+            _mock_template_response(),
+        ):
             client.get("/ui/browse?product=myproduct&doc_type=guide")
         mock_gd.assert_called_once()
         _, kwargs = mock_gd.call_args
@@ -194,8 +206,10 @@ class TestUIEndpoints:
         assert kwargs.get("doc_type") == "guide"
 
     def test_browse_empty_results_200(self):
-        with self._mock_get_documents(docs=[], total=0), \
-                _mock_template_response():
+        with (
+            self._mock_get_documents(docs=[], total=0),
+            _mock_template_response(),
+        ):
             resp = client.get("/ui/browse")
         assert resp.status_code == 200
 
@@ -210,8 +224,10 @@ class TestUIEndpoints:
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
 
-        with patch("sqlite3.connect", return_value=mock_conn), \
-                _not_found_template_response():
+        with (
+            patch("sqlite3.connect", return_value=mock_conn),
+            _not_found_template_response(),
+        ):
             resp = client.get("/ui/document/9999")
         assert resp.status_code == 404
 
@@ -222,8 +238,10 @@ class TestUIEndpoints:
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
 
-        with patch("sqlite3.connect", return_value=mock_conn), \
-                _mock_template_response():
+        with (
+            patch("sqlite3.connect", return_value=mock_conn),
+            _mock_template_response(),
+        ):
             resp = client.get("/ui/document/42")
         assert resp.status_code == 200
 
@@ -231,14 +249,53 @@ class TestUIEndpoints:
 # ---------------------------------------------------------------------------
 # run_ui.py — importability smoke test
 # ---------------------------------------------------------------------------
+class TestChunkPreview:
+    def test_document_detail_accepts_q_param(self):
+        from kb_server.ui.routes import document_detail
+        import inspect
+
+        sig = inspect.signature(document_detail)
+        assert "q" in sig.parameters
+
+    def test_highlight_term_registered(self):
+        from kb_server.ui.app import templates
+
+        assert "highlight_term" in templates.env.globals
+
+    def test_highlight_term_wraps_matches(self):
+        from kb_server.ui.app import highlight_term
+
+        result = highlight_term("The quick brown fox", "quick")
+        assert "<mark>quick</mark>" in result
+
+    def test_highlight_term_no_query(self):
+        from kb_server.ui.app import highlight_term
+
+        result = highlight_term("hello world", None)
+        assert result == "hello world"
+
+    def test_highlight_term_empty_text(self):
+        from kb_server.ui.app import highlight_term
+
+        assert highlight_term("", "test") == ""
+        assert highlight_term("", None) == ""
+
+    def test_chunk_template_exists(self):
+        import os
+
+        assert os.path.exists("kb_server/ui/templates/document_chunks.html")
+
+
 class TestRunUiModule:
     def test_run_ui_imports_without_error(self):
         """run_ui.py should be importable without starting uvicorn."""
         import importlib
         import kb_server.ui.run_ui as run_ui_mod
+
         # The module-level code (sys.path insert, imports) ran without error
         assert run_ui_mod is not None
 
     def test_run_ui_exposes_app(self):
         from kb_server.ui.run_ui import app as run_app
+
         assert run_app is not None
