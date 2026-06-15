@@ -200,7 +200,7 @@ Add advanced filter capabilities to the Documents tab: date range filter (create
         vendor: Optional[str] = Query(None),
         page: int = Query(1, ge=1)
     ):
-        limit = 20
+        limit = 25  # per D-09: 25 results per page
         offset = (page - 1) * limit
         documents, total = get_documents(
             product=product, doc_type=doc_type, version=version,

@@ -61,14 +61,13 @@ Bootstrap 5 default type scale. No custom fonts, no build step — all sizing vi
 | Role | Size | Weight | Line Height | Bootstrap Element/Class | Usage |
 |------|------|--------|-------------|------------------------|-------|
 | Body | 16px (1rem) | 400 (Regular) | 1.5 | Default `<body>`, `<p>`, `<td>`, `<div>` | All primary content text |
-| Small / Label | 14px (0.875rem) | 500 (Medium) | 1.4 | `<small>`, `.form-label`, `.text-muted`, `.badge` | Form labels, helper text, metadata, tab labels, sidebar items, monitor light component names |
+| Small / Label | 14px (0.875rem) | 600 (Semibold) | 1.4 | `<small>`, `.form-label`, `.text-muted`, `.badge` | Form labels, helper text, metadata, tab labels, sidebar items, monitor light component names |
 | Heading | 20px (1.25rem) | 600 (Semibold) | 1.2 | `<h5>`, `.h5` — `.card-title` | Card titles, tab panel headings, section headers |
 | Display | 24-28px (1.5-1.75rem) | 600 (Semibold) | 1.2 | `<h3>`, `<h4>` | Page-level headings (tab title "Documents", "Monitoring") |
 
 **Weight mapping:**
 - 400 (Regular): Body text, table content, description text
-- 600 (Semibold): All headings, tab labels, sidebar items, button text, active state indicators, `<th>` table headers
-- 700 (Bold): Reserved for modal titles, alert headings, destructive action emphasis — use sparingly
+- 600 (Semibold): All headings, tab labels, sidebar items, button text, active state indicators, `<th>` table headers, modal titles, alert headings, destructive action emphasis
 
 **Line height rules:**
 - Body content: `1.5` for readability
@@ -107,6 +106,8 @@ Bootstrap 5 default palette via CDN. No custom CSS variables — all color via B
 ---
 
 ## Layout Architecture
+
+**Focal point:** Pre-auth — the login modal (centered overlay, `modal-dialog modal-sm`) is the sole visual anchor. Post-auth — the active tab title (`h3`) and the monitor lights status bar form the primary top-to-bottom scanning hierarchy.
 
 ### Shell Layout (admin/shell.html)
 
@@ -387,11 +388,11 @@ Bootstrap 5 default palette via CDN. No custom CSS variables — all color via B
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS (fixed — consolidated 3 weights → 2: 400, 600)
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved

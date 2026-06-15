@@ -223,7 +223,7 @@ Create the Admin SPA shell at `/admin/` with Alpine.js-powered auth flow (API ke
             "default-src 'self'; "
             "script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://unpkg.com; "
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "frame-src 'self' https://*; "
+            "frame-src 'self' https:; "
             "img-src 'self' data:; "
             "connect-src 'self'"
         )

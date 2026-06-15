@@ -181,6 +181,29 @@ class ConfigLoader:
         self._notify_observers("*", None)
         return deleted
 
+    async def get_aliases(self) -> dict[str, str]:
+        self._refresh_cache()
+        try:
+            entries = await self.get_all(group_name="provider_alias")
+            aliases: dict[str, str] = {}
+            prefix = "provider_alias."
+            for entry in entries:
+                key: str = entry["key"]
+                if key.startswith(prefix):
+                    alias_name = key[len(prefix) :]
+                    aliases[alias_name] = str(entry["value"])
+            return aliases
+        except Exception:
+            log.warning("ConfigLoader.get_aliases failed")
+            return {}
+
+    async def resolve_alias(self, alias_name: str) -> Optional[str]:
+        full_key = f"provider_alias.{alias_name}"
+        entry = await self.get_item(full_key)
+        if entry is None:
+            return None
+        return str(entry["value"])
+
     def on_change(
         self, key_or_pattern: str, callback: Callable[[str, Any], None]
     ) -> None:
@@ -189,6 +212,15 @@ class ConfigLoader:
     def _notify_observers(self, key: str, value: Any) -> None:
         for pattern, callback in self._observers:
             if pattern == "*" or pattern == key:
+                try:
+                    callback(key, value)
+                except Exception:
+                    log.warning(
+                        "ConfigLoader observer hook failed: %s/%s",
+                        pattern,
+                        key,
+                    )
+            elif pattern.endswith(".*") and key.startswith(pattern[:-2]):
                 try:
                     callback(key, value)
                 except Exception:

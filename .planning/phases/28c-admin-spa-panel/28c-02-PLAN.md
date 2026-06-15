@@ -10,6 +10,7 @@ depends_on:
   - 40-config-backlog
 files_modified:
   - kb_server/ui/routes_admin.py
+  - kb_server/ui/routes.py
   - kb_server/ui/templates/admin/tab_monitoring.html
   - kb_server/ui/templates/admin/tab_admin.html
   - kb_server/ui/templates/admin/tab_profile.html
@@ -31,6 +32,7 @@ must_haves:
     - Profile tab shows user info, API key management (create/list/revoke), GDPR export and erasure buttons
     - Document browse has checkbox selection with cleanup toolbar (Delete, Re-ingest, Delete Failed)
     - Per-document Actions dropdown includes View, Delete, Re-ingest
+    - Column headers in document browse table are clickable and sortable (name, file type, vendor, product, date, status) per D-08
   artifacts:
     - path: "kb_server/ui/templates/admin/_monitor_lights.html"
       provides: "Health card display for 7 components"
@@ -48,6 +50,10 @@ must_haves:
       provides: "Tab content endpoints (monitor-lights, config-table, profile-content) and document cleanup API"
       contains: "admin_tab_monitor_lights, delete_document, reingest_document"
       min_lines: 120
+    - path: "kb_server/ui/routes.py"
+      provides: "get_documents() extended with sort_by/sort_order params for sortable columns (per D-08)"
+      contains: "sort_by, sort_order, ORDER BY"
+      min_lines: 10
   key_links:
     - from: "kb_server/ui/templates/admin/_monitor_lights.html"
       to: "kb_server/health.py"
@@ -61,14 +67,18 @@ must_haves:
       to: "kb_server/ui/routes_admin.py"
       via: "DELETE /api/v1/documents/{source_file}"
       pattern: "api/v1/documents"
+    - from: "kb_server/ui/templates/browse.html"
+      to: "kb_server/ui/routes.py"
+      via: "sortable column headers with sort_by/sort_order query params"
+      pattern: "sort_by|sort_order"
 ---
 
 <objective>
-Implement the four tab content panels that provide actual admin functionality: Monitor Lights bar (7 health components with auto-refresh), Admin Config page (inline editing with Alpine.js), Profile tab (API key management, GDPR export/erasure), and Document browse cleanup (checkbox selection, delete/re-ingest per document).
+Implement the four tab content panels that provide actual admin functionality: Monitor Lights bar (7 health components with auto-refresh), Admin Config page (inline editing with Alpine.js), Profile tab (API key management, GDPR export/erasure), and Document browse cleanup (checkbox selection, delete/re-ingest per document) with sortable column headers.
 
 **Purpose:** These four tab panels transform the SPA shell from a static UI into a functional admin panel. The monitor lights give ops teams real-time system health visibility. The config page enables runtime configuration changes without file editing. The profile tab puts API key management and GDPR compliance tools in users' hands. The browse cleanup adds document lifecycle management to the existing browse view.
 
-**Output:** `_monitor_lights.html` with 7 health cards, `_config_table.html` with Alpine.js inline editing, `_profile_content.html` with Alpine.js key management, enhanced `browse.html` with checkbox selection and cleanup toolbar, extended `routes_admin.py` with tab content endpoints and document cleanup API, and test coverage.
+**Output:** `_monitor_lights.html` with 7 health cards, `_config_table.html` with Alpine.js inline editing, `_profile_content.html` with Alpine.js key management, enhanced `browse.html` with checkbox selection, cleanup toolbar, and sortable column headers, `routes.py` extended with sort_by/sort_order params, extended `routes_admin.py` with tab content endpoints and document cleanup API, and test coverage.
 
 **Artifacts this plan produces:**
 
@@ -83,6 +93,8 @@ Implement the four tab content panels that provide actual admin functionality: M
 | `profilePage()` | Alpine.js component | `kb_server/ui/templates/admin/_profile_content.html` |
 | `selectAll()` | JS function | `kb_server/ui/templates/browse.html` |
 | `updateToolbar()` | JS function | `kb_server/ui/templates/browse.html` |
+| `sort_by`, `sort_order` | Query params | `kb_server/ui/routes.py` |
+| `sortColumn()`, `toggleSort()` | JS functions | `kb_server/ui/templates/browse.html` |
 </objective>
 
 <execution_context>
@@ -369,9 +381,9 @@ Implement the four tab content panels that provide actual admin functionality: M
 </task>
 
 <task type="auto" tdd="true">
-  <name>Profile tab + Browse cleanup (per SPA-07, SPA-09)</name>
-  <files>kb_server/ui/routes_admin.py, kb_server/ui/templates/admin/tab_profile.html, kb_server/ui/templates/admin/_profile_content.html, kb_server/ui/templates/browse.html, tests/test_admin_ui.py</files>
-  <read_first>kb_server/auth/router.py, kb_server/ui/templates/browse.html, kb_server/ui/routes_admin.py</read_first>
+  <name>Profile tab — account info, API key management, GDPR features (per SPA-07)</name>
+  <files>kb_server/ui/routes_admin.py, kb_server/ui/templates/admin/tab_profile.html, kb_server/ui/templates/admin/_profile_content.html, tests/test_admin_ui.py</files>
+  <read_first>kb_server/auth/router.py, kb_server/ui/routes_admin.py</read_first>
   <action>
     Step 1 — Write failing tests in TestProfileTab class:
     `test_profile_content_returns_200` — GET /admin/tabs/profile-content returns 200
@@ -628,50 +640,183 @@ Implement the four tab content panels that provide actual admin functionality: M
     </div>
     ```
 
-    Step 5 — Add browse cleanup controls to `kb_server/ui/templates/browse.html`:
+    Step 5 — Run all profile-related tests.
+  </action>
+  <verify>
+    <automated>cd /home/admin/kb-rag-mcp && python -m pytest tests/test_admin_ui.py::TestProfileTab -x -v 2>&1 | tail -10</automated>
+  </verify>
+  <acceptance_criteria>
+    - GET /admin/tabs/profile-content returns 200 with profile content
+    - Profile template shows account info (username, role, created) via Alpine.js
+    - API keys table loads via fetch(/api/v1/api-keys) with Bearer token
+    - Generate New Key sends POST /api/v1/api-keys, displays raw_key once
+    - Revoke sends DELETE /api/v1/api-keys/{id} with confirmation
+    - GDPR Export downloads JSON via blob URL
+    - Erasure request sends POST to /api/v1/users/{id}/erasure-request
+  </acceptance_criteria>
+  <done>Profile tab with API key/GDPR features implemented and tested.</done>
+</task>
 
-    Add cleanup toolbar div after the filters card (line ~64, before "Results count"):
+<task type="auto" tdd="true">
+  <name>Document browse cleanup controls + sortable column headers (per D-08, SPA-09)</name>
+  <files>kb_server/ui/routes_admin.py, kb_server/ui/routes.py, kb_server/ui/templates/browse.html, tests/test_admin_ui.py</files>
+  <read_first>kb_server/ui/routes.py, kb_server/ui/templates/browse.html, kb_server/ui/routes_admin.py</read_first>
+  <action>
+    Step 1 — Write failing tests:
+    - `test_get_documents_sort_by` — verifies that sort_by=name&sort_order=asc are passed through to SQL
+    - `test_get_documents_sort_order_desc` — verifies sort_order=desc produces DESC in SQL
+    - `test_browse_documents_sortable_headers` — GET /ui/browse?sort_by=name&sort_order=asc returns 200
+    - `test_cleanup_delete_document` — DELETE /api/v1/documents/{source_file} returns {"status": "deleted"}
+    - `test_cleanup_reingest_document` — POST /api/v1/documents/{source_file}/re-ingest returns 200
+    - `test_cleanup_delete_failed` — POST /api/v1/documents/delete-failed returns 200
+    - `test_browse_html_sort_indicators` — read browse.html, confirm column headers have sort event handlers
 
-    ```html
-    <!-- Batch cleanup toolbar (appears when docs selected) -->
-    <div id="cleanup-toolbar" class="mb-3" style="display: none;">
-        <div class="d-flex align-items-center gap-2">
-            <span class="fw-semibold" id="selected-count">0 selected</span>
-            <button class="btn btn-danger btn-sm" id="delete-selected-btn"
-                    hx-confirm="Delete selected documents? This cannot be undone.">Delete</button>
-            <button class="btn btn-warning btn-sm" id="reingest-selected-btn">Re-ingest</button>
-            <button class="btn btn-outline-danger btn-sm" id="delete-failed-btn"
-                    hx-post="/api/v1/documents/delete-failed"
-                    hx-confirm="Delete all failed documents?"
-                    hx-target="#cleanup-toolbar">Delete Failed</button>
-        </div>
-    </div>
+    Step 2 — Read `kb_server/ui/routes.py` to understand `get_documents()` signature (likely has product, doc_type, version, status, limit, offset params) and `browse_documents()` route handler.
+
+    Step 3 — Add `sort_by` and `sort_order` params to `get_documents()`:
+
+    ```python
+    def get_documents(
+        product: Optional[str] = None,
+        doc_type: Optional[str] = None,
+        version: Optional[str] = None,
+        status: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        file_type: Optional[str] = None,
+        vendor: Optional[str] = None,
+        sort_by: Optional[str] = None,       # column name: name, doc_type, vendor, product, indexed_at, status
+        sort_order: Optional[str] = "desc",  # "asc" or "desc"
+        limit: int = 25,                     # per D-09
+        offset: int = 0
+    ) -> tuple[List[Dict[str, Any]], int]:
     ```
 
-    Modify the `<thead>` to add checkbox column:
+    After building the WHERE clause, add ORDER BY logic:
+
+    ```python
+    # Sortable columns mapping (D-08: name, file type, vendor, product, date, status)
+    sort_columns = {
+        "name": "source_file",
+        "file_type": "doc_type",
+        "vendor": "vendor",
+        "product": "product",
+        "date": "indexed_at",
+        "status": "status",
+    }
+    if sort_by and sort_by in sort_columns:
+        col = sort_columns[sort_by]
+        order = "ASC" if sort_order and sort_order.upper() == "ASC" else "DESC"
+        sql += f" ORDER BY {col} {order}"
+    else:
+        sql += " ORDER BY indexed_at DESC"  # default sort
+    ```
+
+    Step 4 — Update `browse_documents` endpoint to accept and forward `sort_by` and `sort_order` params:
+
+    ```python
+    @app.get("/ui/browse", response_class=HTMLResponse)
+    async def browse_documents(
+        request: Request,
+        product: Optional[str] = Query(None),
+        doc_type: Optional[str] = Query(None),
+        version: Optional[str] = Query(None),
+        status: Optional[str] = Query(None),
+        date_from: Optional[str] = Query(None),
+        date_to: Optional[str] = Query(None),
+        file_type: Optional[str] = Query(None),
+        vendor: Optional[str] = Query(None),
+        sort_by: Optional[str] = Query(None),
+        sort_order: Optional[str] = Query("desc"),
+        page: int = Query(1, ge=1)
+    ):
+        limit = 25  # per D-09
+        offset = (page - 1) * limit
+        documents, total = get_documents(
+            product=product, doc_type=doc_type, version=version,
+            status=status, date_from=date_from, date_to=date_to,
+            file_type=file_type, vendor=vendor,
+            sort_by=sort_by, sort_order=sort_order,
+            limit=limit, offset=offset,
+        )
+        # ... pass sort_by/sort_order in template context for sort indicator ...
+    ```
+
+    Step 5 — Add document cleanup API endpoints to `kb_server/ui/routes_admin.py`:
+
+    ```python
+    @app.delete("/api/v1/documents/{source_file:path}")
+    async def delete_document(source_file: str):
+        """Delete a document from Qdrant and mark deleted in registry."""
+        import sqlite3
+        from pathlib import Path
+        from kb_server.vector_store import VectorStore
+        store = VectorStore()
+        await store.connect()
+        try:
+            await store.delete_by_source(source_file)
+        finally:
+            await store.close()
+        db_path = Path("data/kb_metadata.db")
+        if db_path.exists():
+            conn = sqlite3.connect(str(db_path))
+            conn.execute(
+                "UPDATE files SET status = 'deleted' WHERE path = ?",
+                (source_file,),
+            )
+            conn.commit()
+            conn.close()
+        return {"status": "deleted", "source_file": source_file}
+
+
+    @app.post("/api/v1/documents/{source_file:path}/re-ingest")
+    async def reingest_document(source_file: str):
+        """Re-ingest a document."""
+        from ingest.ingest import process_file
+        result = await process_file(source_file)
+        return {"status": "re-ingested", "source_file": source_file, "result": str(result)}
+
+
+    @app.post("/api/v1/documents/delete-failed")
+    async def delete_failed_documents():
+        """Delete all documents with 'failed' status from registry."""
+        import sqlite3
+        from pathlib import Path
+        db_path = Path("data/kb_metadata.db")
+        if not db_path.exists():
+            return {"status": "ok", "deleted": 0}
+        conn = sqlite3.connect(str(db_path))
+        cur = conn.execute("DELETE FROM files WHERE status = 'failed'")
+        deleted = cur.rowcount
+        conn.commit()
+        conn.close()
+        return {"status": "ok", "deleted": deleted}
+    ```
+
+    Step 6 — Add sortable column headers and cleanup controls to `kb_server/ui/templates/browse.html`:
+
+    Make column headers clickable with sort toggle. Replace the existing `<thead>` content (Step 6a: add checkbox + sortable headers):
 
     ```html
                 <tr>
                     <th><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"></th>
-                    <th>ID</th>
-                    <th>Source File</th>
-                    <th>Product</th>
-                    <th>Type</th>
-                    <th>Version</th>
-                    <th>Status</th>
+                    <th><a href="#" onclick="toggleSort('name'); return false;" class="sort-link">Name</a></th>
+                    <th><a href="#" onclick="toggleSort('file_type'); return false;" class="sort-link">Type</a></th>
+                    <th><a href="#" onclick="toggleSort('vendor'); return false;" class="sort-link">Vendor</a></th>
+                    <th><a href="#" onclick="toggleSort('product'); return false;" class="sort-link">Product</a></th>
+                    <th><a href="#" onclick="toggleSort('date'); return false;" class="sort-link">Date</a></th>
+                    <th><a href="#" onclick="toggleSort('status'); return false;" class="sort-link">Status</a></th>
                     <th>Chunks</th>
                     <th>Actions</th>
                 </tr>
     ```
 
-    Add checkbox to each `<tr>` in the documents loop (after `<tr>` line, first `<td>`):
-
+    Step 6b: Add checkbox to each data row (first `<td>` after `<tr>`):
     ```html
                     <td><input type="checkbox" class="doc-checkbox" value="{{ doc.source_file }}" onchange="updateToolbar()"></td>
     ```
 
-    Replace the Actions column `<td>` content (the single "View" button) with dropdown:
-
+    Step 6c: Replace the Actions column (`<td>` after Chunks) with a dropdown (View, Delete, Re-ingest):
     ```html
                     <td>
                         <div class="dropdown">
@@ -694,8 +839,26 @@ Implement the four tab content panels that provide actual admin functionality: M
                     </td>
     ```
 
-    Add the cleanup JavaScript in an extra_scripts block:
+    Step 6d: Add cleanup toolbar after the filters card:
+    ```html
+    <!-- Batch cleanup toolbar (appears when docs selected) -->
+    <div id="cleanup-toolbar" class="mb-3" style="display: none;">
+        <div class="d-flex align-items-center gap-2">
+            <span class="fw-semibold" id="selected-count">0 selected</span>
+            <button class="btn btn-danger btn-sm" id="delete-selected-btn"
+                    hx-confirm="Delete selected documents? This cannot be undone."
+                    hx-target="#browse-content"
+                    hx-swap="innerHTML">Delete</button>
+            <button class="btn btn-warning btn-sm" id="reingest-selected-btn">Re-ingest</button>
+            <button class="btn btn-outline-danger btn-sm" id="delete-failed-btn"
+                    hx-post="/api/v1/documents/delete-failed"
+                    hx-confirm="Delete all failed documents?"
+                    hx-target="#cleanup-toolbar">Delete Failed</button>
+        </div>
+    </div>
+    ```
 
+    Step 6e: Add the cleanup and sort JavaScript in an `extra_scripts` block:
     ```html
     {% block extra_scripts %}
     {{ super() }}
@@ -715,30 +878,53 @@ Implement the four tab content panels that provide actual admin functionality: M
             toolbar.style.display = 'none';
         }
     }
+    function toggleSort(column) {
+        // Get current sort state from URL params
+        const params = new URLSearchParams(window.location.search);
+        const currentSort = params.get('sort_by');
+        const currentOrder = params.get('sort_order') || 'desc';
+        let newOrder = 'asc';
+        if (currentSort === column && currentOrder === 'asc') {
+            newOrder = 'desc';
+        }
+        params.set('sort_by', column);
+        params.set('sort_order', newOrder);
+        window.location.search = params.toString();
+    }
+    function getSortIndicator(column) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('sort_by') === column) {
+            return params.get('sort_order') === 'asc' ? ' ▲' : ' ▼';
+        }
+        return '';
+    }
     </script>
     {% endblock %}
     ```
+    After loading, call `getSortIndicator()` on each sort-link header to append ▲/▼ based on current sort.
 
-    Step 6 — Run all admin UI tests.
+    Step 7 — Run all admin UI tests:
+    ```bash
+    cd /home/admin/kb-rag-mcp && python -m pytest tests/test_admin_ui.py -x -v 2>&1 | tail -20
+    ```
   </action>
   <verify>
-    <automated>cd /home/admin/kb-rag-mcp && python -m pytest tests/test_admin_ui.py -x -v 2>&1 | tail -20</automated>
+    <automated>cd /home/admin/kb-rag-mcp && python -m pytest tests/test_admin_ui.py::TestBrowseCleanup -x -v 2>&1 | tail -15</automated>
   </verify>
   <acceptance_criteria>
-    - GET /admin/tabs/profile-content returns 200 with profile content
-    - Profile template shows account info (username, role, created) via Alpine.js
-    - API keys table loads via fetch(/api/v1/api-keys) with Bearer token
-    - Generate New Key sends POST /api/v1/api-keys, displays raw_key once
-    - Revoke sends DELETE /api/v1/api-keys/{id} with confirmation
-    - GDPR Export downloads JSON via blob URL
-    - Erasure request sends POST to /api/v1/users/{id}/erasure-request
-    - DELETE /api/v1/documents/{source_file} deletes from Qdrant + marks deleted in registry
+    - get_documents() accepts sort_by and sort_order params; maps column names to DB fields (name→source_file, file_type→doc_type, vendor→vendor, product→product, date→indexed_at, status→status)
+    - Invalid sort_by column falls back to default ORDER BY indexed_at DESC
+    - browse_documents endpoint forwards sort_by/sort_order to get_documents()
+    - browse.html has clickable column header links for Name, Type, Vendor, Product, Date, Status
+    - Clicking a header toggles sort: first click asc, second click desc
+    - ▲/▼ indicators show active sort column and direction
+    - DELETE /api/v1/documents/{source_file} deletes from Qdrant and marks deleted in registry
     - POST /api/v1/documents/{source_file}/re-ingest calls process_file
-    - browse.html has checkbox column, select-all header checkbox
-    - Cleanup toolbar appears when checkboxes checked (Delete, Re-ingest, Delete Failed)
+    - POST /api/v1/documents/delete-failed removes all failed status entries
+    - browse.html has checkbox column, select-all checkbox, cleanup toolbar (Delete, Re-ingest, Delete Failed)
     - Per-document Actions dropdown with View, Delete, Re-ingest
   </acceptance_criteria>
-  <done>Profile tab with API key/GDPR features and document browse cleanup implemented and tested.</done>
+  <done>Browse cleanup controls (checkbox selection, delete/re-ingest/delete-failed) and sortable column headers (name, file type, vendor, product, date, status) implemented and tested.</done>
 </task>
 
 </tasks>

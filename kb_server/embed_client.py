@@ -26,14 +26,17 @@ import logging
 import os
 import re
 import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import httpx
 
-from observability.metrics import MetricsCollector, record_batch_embedding
 from kb_server.cache.manager import CacheManager
 from kb_server.circuit_breaker import CircuitBreaker, CircuitState
 from kb_server.provider_budget import ProviderBudget
+from observability.metrics import MetricsCollector, record_batch_embedding
+
+if TYPE_CHECKING:
+    from kb_server.config.loader import ConfigLoader
 
 log = logging.getLogger("kb-mcp.embed")
 
@@ -48,9 +51,7 @@ OLLAMA_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 # Fallback chain: semicolon-separated provider names in priority order.
 # If the primary provider fails (circuit open, budget exhausted, or error),
 # the client falls back to the next provider in the chain.
-PROVIDER_CHAIN = [
-    p.strip() for p in BACKEND.split(";") if p.strip()
-]
+PROVIDER_CHAIN = [p.strip() for p in BACKEND.split(";") if p.strip()]
 PRIMARY_BACKEND = PROVIDER_CHAIN[0] if PROVIDER_CHAIN else BACKEND
 
 # Circuit breaker config
@@ -108,6 +109,7 @@ BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", "32"))
 _http_client: httpx.AsyncClient | None = None
 _embed_cache: Optional[CacheManager] = None
 _metrics: Optional[MetricsCollector] = None
+_config_loader: Optional["ConfigLoader"] = None
 
 
 def init_cache(
@@ -141,7 +143,7 @@ def init_cache(
 async def _http() -> httpx.AsyncClient:
     """
     Get or create HTTP client with connection pooling.
-    
+
     PHASE 8: Enhanced with connection pooling for better throughput.
     Limits configured via HTTP_POOL_* environment variables.
     """
@@ -241,31 +243,34 @@ async def _embed_openai_compat_batch(
 ) -> list[list[float]]:
     """
     PHASE 8: Native batch embedding via OpenAI-compatible API.
-    
+
     Sends multiple texts in a single API call for better throughput.
-    
+
     Args:
         texts: List of texts to embed
-        
+
     Returns:
         List of embedding vectors in same order as input
     """
     if not texts:
         return []
-    
+
     client = await _http()
     url = f"{LMS_BASE_URL}/v1/embeddings"
     log.debug(
-        "openai-compat BATCH → POST %s model=%s texts=%d", url, MODEL, len(texts)
+        "openai-compat BATCH → POST %s model=%s texts=%d",
+        url,
+        MODEL,
+        len(texts),
     )
-    
+
     resp = await client.post(
         url,
         headers={"Authorization": "Bearer lm-studio"},
         json={"model": MODEL, "input": texts},
     )
     resp.raise_for_status()
-    
+
     data = resp.json()["data"]
     # Sort by index to ensure correct order
     sorted_data = sorted(data, key=lambda x: x.get("index", 0))
@@ -286,22 +291,20 @@ async def _embed_ollama(text: str) -> list[float]:
 async def _embed_ollama_batch(texts: list[str]) -> list[list[float]]:
     """
     PHASE 8: Batch embedding for Ollama.
-    
+
     Ollama doesn't have native batch API, so we use parallel requests.
-    
+
     Args:
         texts: List of texts to embed
-        
+
     Returns:
         List of embedding vectors
     """
     if not texts:
         return []
-    
+
     # Ollama doesn't support batch API, use parallel requests
-    results = await asyncio.gather(
-        *[_embed_ollama(text) for text in texts]
-    )
+    results = await asyncio.gather(*[_embed_ollama(text) for text in texts])
     return list(results)
 
 
@@ -318,9 +321,7 @@ _BACKENDS = {
 # ── Provider resilience helpers (PHASE 36)
 
 
-async def _try_provider(
-    provider: str, text: str
-) -> Optional[list[float]]:
+async def _try_provider(provider: str, text: str) -> Optional[list[float]]:
     """
     Attempt to embed text using a single provider.
 
@@ -334,7 +335,13 @@ async def _try_provider(
     Returns:
         Embedding vector or None on failure.
     """
-    fn = _BACKENDS.get(provider)
+    resolved_provider = provider
+    if provider not in _BACKENDS:
+        alias = await _resolve_alias(provider)
+        if alias is not None:
+            resolved_provider = alias
+
+    fn = _BACKENDS.get(resolved_provider)
     if fn is None:
         log.warning("Unknown provider '%s' — not in _BACKENDS", provider)
         return None
@@ -351,9 +358,7 @@ async def _try_provider(
 
     # Budget check
     if not _provider_budget.check_budget(provider):
-        log.warning(
-            "Budget exhausted for provider '%s' — skipping", provider
-        )
+        log.warning("Budget exhausted for provider '%s' — skipping", provider)
         if _metrics:
             _metrics.increment(
                 "provider_skipped_budget_exhausted", 1, provider=provider
@@ -367,9 +372,7 @@ async def _try_provider(
         _provider_budget.record_request(provider)
         _circuit_breaker.record_success(provider)
         if _metrics:
-            _metrics.increment(
-                "provider_requests_total", 1, provider=provider
-            )
+            _metrics.increment("provider_requests_total", 1, provider=provider)
         return vector
     except Exception as e:
         log.warning(
@@ -380,9 +383,7 @@ async def _try_provider(
         )
         new_state = _circuit_breaker.record_failure(provider)
         if _metrics:
-            _metrics.increment(
-                "provider_errors_total", 1, provider=provider
-            )
+            _metrics.increment("provider_errors_total", 1, provider=provider)
             if new_state == CircuitState.OPEN:
                 _metrics.increment(
                     "provider_circuit_opened", 1, provider=provider
@@ -419,7 +420,8 @@ async def _dispatch_with_resilience(
             if last_error is not None and _metrics:
                 # Record fallback event
                 _metrics.increment(
-                    "provider_fallbacks_total", 1,
+                    "provider_fallbacks_total",
+                    1,
                     from_provider=last_error,
                     to_provider=provider,
                 )
@@ -437,14 +439,57 @@ def validate_providers() -> None:
     Validate that all providers in the chain are known.
 
     Raises ValueError if any provider in the chain is not registered
-    in _BACKENDS.
+    in _BACKENDS. Aliased provider names are accepted without
+    validation since they are resolved lazily at runtime.
     """
     for provider in PROVIDER_CHAIN:
         if provider not in _BACKENDS:
+            if _config_loader is not None:
+                import asyncio
+
+                resolved = asyncio.run(_config_loader.resolve_alias(provider))
+                if resolved is not None:
+                    continue
             raise ValueError(
                 f"Invalid provider: '{provider}'. "
                 f"Options: {list(_BACKENDS)}"
             )
+
+
+def init_alias_resolution(
+    loader: "ConfigLoader",
+) -> None:
+    """Initialize provider alias resolution from ConfigLoader."""
+    global _config_loader
+    _config_loader = loader
+    loader.on_change("provider_alias.*", _on_alias_changed)
+
+
+def _on_alias_changed(key: str, value: object) -> None:
+    log.debug("Provider alias changed: %s = %s", key, value)
+
+
+async def _resolve_alias(alias_name: str) -> Optional[str]:
+    """
+    Resolve a provider alias to its canonical name.
+
+    Returns None if alias resolution is not configured or the alias
+    does not exist.
+    """
+    if _config_loader is None:
+        return None
+    try:
+        resolved = await _config_loader.resolve_alias(alias_name)
+        if resolved is not None:
+            log.debug(
+                "Provider alias resolved: %s -> %s", alias_name, resolved
+            )
+        else:
+            log.debug("Provider alias not found: %s", alias_name)
+        return resolved
+    except Exception:
+        log.debug("Provider alias resolution failed: %s", alias_name)
+        return None
 
 
 async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
@@ -466,7 +511,9 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
     """
     # Check cache first
     if use_cache and _embed_cache is not None:
-        cache_key = _embed_cache.hash_key("embed", PRIMARY_BACKEND, MODEL, text)
+        cache_key = _embed_cache.hash_key(
+            "embed", PRIMARY_BACKEND, MODEL, text
+        )
         cached = _embed_cache.get(cache_key)
         if cached is not None:
             log.debug("Cache hit for text (len=%d)", len(text))
@@ -476,9 +523,7 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
 
     try:
         vector = await _dispatch_with_resilience(text)
-        log.debug(
-            "Embedding generated: %d dims", len(vector)
-        )
+        log.debug("Embedding generated: %d dims", len(vector))
 
         # Cache the result
         if use_cache and _embed_cache is not None:
@@ -500,22 +545,22 @@ async def get_embeddings_batch(
 ) -> list[list[float]]:
     """
     PHASE 8: Optimized batch embedding with native API support and caching.
-    
+
     Uses native batch APIs when available (openai-compat) for 3-5x speedup.
     Falls back to parallel requests for backends without batch support.
-    
+
     Process flow:
     1. Check cache for all texts
     2. Group uncached texts into batches
     3. Process batches via native API or parallel requests
     4. Cache new results
     5. Return all vectors in original order
-    
+
     Args:
         texts: List of texts to embed
         batch_size: Batch size (default: BATCH_SIZE env var or 32)
         use_cache: Whether to use cache (default True)
-        
+
     Returns:
         List of embedding vectors in same order as input texts
     """
@@ -713,7 +758,7 @@ def get_cache_stats() -> dict:
 async def close() -> None:
     """
     PHASE 8: Cleanup resources (HTTP client, connections).
-    
+
     Call this on server shutdown to gracefully close connections.
     """
     global _http_client

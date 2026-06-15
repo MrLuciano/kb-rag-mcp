@@ -16,11 +16,13 @@ Used by:
 
 import asyncio
 import logging
+import os
 import shutil
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
 log = logging.getLogger("kb-mcp.health")
 
@@ -328,6 +330,52 @@ async def check_filesystem() -> HealthStatus:
         )
 
 
+async def check_grafana() -> HealthStatus:
+    """
+    Check Grafana connectivity via TCP connection to GRAFANA_URL.
+
+    Returns:
+        HealthStatus for Grafana connectivity
+    """
+    start = time.time()
+    grafana_url = os.getenv("GRAFANA_URL", "")
+
+    if not grafana_url:
+        return HealthStatus(
+            name="grafana",
+            healthy=True,
+            message="Not configured",
+            latency_ms=(time.time() - start) * 1000,
+        )
+
+    try:
+        parsed = urlparse(grafana_url)
+        host = parsed.hostname or "localhost"
+        port = parsed.port or 80
+
+        reader, writer = await asyncio.open_connection(host, port)
+        writer.close()
+        await writer.wait_closed()
+
+        latency = (time.time() - start) * 1000
+        return HealthStatus(
+            name="grafana",
+            healthy=True,
+            message=f"Connected to {host}:{port}",
+            latency_ms=latency,
+            details={"host": host, "port": port},
+        )
+    except Exception as e:
+        latency = (time.time() - start) * 1000
+        log.error(f"Grafana health check failed: {e}")
+        return HealthStatus(
+            name="grafana",
+            healthy=False,
+            message=str(e),
+            latency_ms=latency,
+        )
+
+
 async def check_all_components() -> Dict[str, HealthStatus]:
     """
     Check all system components in parallel.
@@ -341,6 +389,7 @@ async def check_all_components() -> Dict[str, HealthStatus]:
         check_cache(),
         check_database(),
         check_filesystem(),
+        check_grafana(),
     ]
 
     results = await asyncio.gather(*checks, return_exceptions=True)
