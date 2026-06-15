@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1.5
 milestone_name: Streamable HTTP & Management Platform
 status: active
-last_updated: "2026-06-15T00:00:00.000Z"
-last_activity: 2026-06-15 -- v0.1.5 milestone formalized
+last_updated: "2026-06-15T12:00:00.000Z"
+last_activity: 2026-06-15 -- ROADMAP.md updated: SPA-04/SPA-05 integrated into Phase 28c; phase details and success criteria added
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 8
+  total_plans: 10
   completed_plans: 1
-  percent: 12
+  percent: 10
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-15)
 
 Milestone: v0.1.5 (Streamable HTTP & Management Platform) — ACTIVE
 Phase: 28 (MCP Streamable HTTP Transport) — Plan 28-01 complete
-Status: Defining requirements and updating roadmap
-Next: Requirements → Roadmap → Phase 28b execution
+Status: Roadmap updated — 7 phases, 10 plans, 59 requirements mapped
+Next: Phase 40 (Config) + Phase 28 execution → Phase 28b (Auth) → Phase 41 + Phase 39 → Phase 28c (Admin SPA) → Phase 38 (Grafana)
 
 ## Phase 25 Outcomes
 

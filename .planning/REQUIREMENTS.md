@@ -130,14 +130,14 @@ Deferred to future release. Tracked but not in current roadmap.
 | OBS-01 through OBS-04 | Phase 39 | Pending |
 | GRAF-01 through GRAF-04 | Phase 38 | Pending |
 | PROV-01 through PROV-02 | Phase 41 | Pending |
-| FILT-01 through FILT-05 | SPA-05 | Pending |
-| EXPT-01 through EXPT-04 | SPA-04 | Pending |
+| FILT-01 through FILT-05 | Phase 28c | Pending |
+| EXPT-01 through EXPT-04 | Phase 28c | Pending |
 
 **Coverage:**
-- v1 requirements: 47 total
-- Mapped to phases: 47
+- v1 requirements: 59 total
+- Mapped to phases: 59
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-15*
-*Last updated: 2026-06-15 after v0.1.5 milestone initialization*
+*Last updated: 2026-06-15 — FILT/EXPT requirements mapped to Phase 28c; coverage count corrected to 59*

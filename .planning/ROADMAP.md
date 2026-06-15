@@ -108,8 +108,8 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks
 - [ ] Phase 28b: Auth & User Management API — SQLAlchemy User/ApiKey/AuditLog models, CRUD REST endpoints, role-based access, GDPR erasure workflow
   - Plans: [28b-01-PLAN.md](phases/28b-auth-api/28b-01-PLAN.md) — 7 tasks
-- [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, tab content (config, monitoring, ingestion, RAGAS, browser cleanup, profile)
-  - Plans: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 2 tasks (shell), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 6 tasks (tab content)
+- [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, tab content (config, monitoring, ingestion, RAGAS, browser cleanup, profile), advanced filters (date range, file type, vendor, product), document export (CSV/JSON)
+  - Plans: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 2 tasks (shell), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 6 tasks (tab content), [28c-03-PLAN.md](phases/28c-admin-spa-panel/28c-03-PLAN.md) — TBD (advanced filters), [28c-04-PLAN.md](phases/28c-admin-spa-panel/28c-04-PLAN.md) — TBD (document export)
 - [ ] Phase 38: Grafana Dashboard Embedding — iframe embed helper, time range selector, Jinja2 globals
   - Plans: [38-01-PLAN.md](phases/38-grafana-embed/38-01-PLAN.md) — 1 task
 - [ ] Phase 39: Observability Backlog — OBS-01 (Grafana health check), OBS-02 (request ID middleware), METRICS-01 (percentile metrics)
@@ -120,6 +120,90 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks
 
 </details>
+
+## Phase Details
+
+### Phase 28: MCP Streamable HTTP Transport (Reopened)
+**Goal**: Browser-compatible MCP transport via a single `/mcp` HTTP endpoint supporting GET (SSE stream), POST (JSON-RPC), DELETE (session terminate), and OPTIONS (CORS preflight)
+**Depends on**: Nothing (parallel with Phase 40)
+**Requirements**: SH-01, SH-02, SH-03, SH-04, SH-05
+**Success Criteria** (what must be TRUE):
+  1. Server starts Streamable HTTP transport when `MCP_TRANSPORT=streamable-http` is set
+  2. Browser-based MCP clients can connect via GET (SSE stream), POST (JSON-RPC), and DELETE (session terminate) on `/mcp`
+  3. Auth middleware applies to ALL HTTP methods on `/mcp` including the GET SSE stream
+  4. Sessions are automatically cleaned up after idle timeout (300s default) with configurable session count limit
+  5. Prometheus metrics track allowed/rejected requests per transport type
+**Plans**: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks
+
+### Phase 28b: Auth & User Management API
+**Goal**: User authentication, role-based access control, API key management, and GDPR-compliant data management
+**Depends on**: Phase 40 (JWT secret from config), Phase 28 (for WAL migration prereq)
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09, AUTH-10, AUTH-11, AUTH-12, AUTH-13, AUTH-14, AUTH-15
+**Success Criteria** (what must be TRUE):
+  1. Admin can create users and list them (paginated, no PII exposed)
+  2. User can exchange API key for JWT session cookie via `POST /api/v1/auth/session` (HttpOnly, SameSite=Lax, 8h)
+  3. User can view own profile (GDPR Article 15), manage API keys (create/list/revoke), and request GDPR erasure
+  4. Admin can delete users (tombstone: anonymize username, clear hash, keep UUID) and manage GDPR erasure state machine
+  5. All SQLite connections use WAL mode via `db_utils.py` helper; audit log auto-prunes after 90 days
+**Plans**: [28b-01-PLAN.md](phases/28b-auth-api/28b-01-PLAN.md) — 7 tasks
+
+### Phase 28c: Admin SPA Panel
+**Goal**: Full browser-based admin panel with login, tabbed interface, role gating, document management, advanced filters, and document export
+**Depends on**: Phase 28b (auth endpoints), Phase 40 (config REST API), Phase 38 (Grafana embed for monitoring tab), Phase 39 (health checks for monitor lights)
+**Requirements**: SPA-01, SPA-02, SPA-03, SPA-04, SPA-05, SPA-06, SPA-07, SPA-08, SPA-09, SPA-10, SPA-11, SPA-12, FILT-01, FILT-02, FILT-03, FILT-04, FILT-05, EXPT-01, EXPT-02, EXPT-03, EXPT-04
+**Success Criteria** (what must be TRUE):
+  1. User can log in at `/admin/` with API key via login modal and receive JWT session cookie; logout clears cookie and resets auth state
+  2. Tabbed interface shows Documents, Monitoring, Ingestion, Admin, and Profile tabs, role-gated (Admin tab admin-only)
+  3. Admin can edit config values inline with inline editing, search, and reset-all; monitor lights bar auto-refreshes every 30s
+  4. User can browse documents with advanced filters (date range, file type, vendor, product) with filter state reflected in URL query params
+  5. User can export filtered document results as CSV or JSON; large exports run as background jobs with progress indicator
+  6. CSP middleware uses Alpine.js CSP build with nonce-based script-src and `frame-src` for Grafana; all CDN scripts have SRI integrity hashes
+**Plans**: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 2 tasks (shell), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 6 tasks (tab content), 28c-03-PLAN.md — TBD (advanced filters), 28c-04-PLAN.md — TBD (document export)
+**UI hint**: yes
+
+### Phase 38: Grafana Dashboard Embedding
+**Goal**: Embed the existing Grafana monitoring dashboard inside the admin SPA Monitoring tab with configurable time ranges
+**Depends on**: Phase 28c (admin shell with Monitoring tab template)
+**Requirements**: GRAF-01, GRAF-02, GRAF-03, GRAF-04
+**Success Criteria** (what must be TRUE):
+  1. Grafana dashboard renders inside the Monitoring tab via iframe
+  2. Time range selector (1h/6h/24h/7d) updates iframe `from`/`to` URL parameters
+  3. CSP `frame-src` directive is configurable via `GRAFANA_URL` config entry
+  4. Grafana is configured with `allow_embedding=true` and anonymous Viewer role
+**Plans**: [38-01-PLAN.md](phases/38-grafana-embed/38-01-PLAN.md) — 1 task
+
+### Phase 39: Observability Backlog
+**Goal**: Request tracing, percentile latency metrics, and health endpoint with Grafana connectivity check for operational insight
+**Depends on**: Nothing (parallel with Phase 28b, Phase 41)
+**Requirements**: OBS-01, OBS-02, OBS-03, OBS-04
+**Success Criteria** (what must be TRUE):
+  1. Every HTTP request gets a unique `X-Request-Id` (UUID) header that propagates via context var and appears as response header
+  2. P50/P95/P99 latency metrics are exposed for `search_kb`, `list_documents`, `get_chunk`, `kb_stats` operations
+  3. Health API endpoint `GET /api/v1/health` includes Grafana connectivity check
+  4. Percentile metrics use bounded-memory storage (sorted-list or ring buffer) and reset every scrape interval
+**Plans**: [39-01-PLAN.md](phases/39-observability/39-01-PLAN.md) — 4 tasks
+
+### Phase 40: Configuration Backlog
+**Goal**: Database-backed configuration with layered loading, REST API, and hot-reload event bus
+**Depends on**: Nothing (parallel with Phase 28)
+**Requirements**: CONF-01, CONF-02, CONF-03, CONF-04, CONF-05, CONF-06, CONF-07, CONF-08
+**Success Criteria** (what must be TRUE):
+  1. Config values stored in SQLite `config` table with key (TEXT PK), value, type, group, description, updated_at, updated_by
+  2. Admin can view all config grouped by category, get single value, update value with type validation, and reset all to env defaults via REST API
+  3. Config loader resolves values via chain: SQLite → `.env` file → `os.getenv` defaults
+  4. Hot-reload event bus with version-based change detection notifies components via synchronous `reload_if_changed()` hooks
+  5. System falls back gracefully if SQLite unavailable (→ `.env` → hardcoded defaults)
+**Plans**: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks
+
+### Phase 41: Provider Alias
+**Goal**: Configurable provider name aliases for multi-backend embedding resolution with hot-reload
+**Depends on**: Phase 40 (config table entries for provider alias storage)
+**Requirements**: PROV-01, PROV-02
+**Success Criteria** (what must be TRUE):
+  1. Admin can define provider aliases via config entries with group `provider_alias` and key pattern `provider_alias.<canonical_name>`
+  2. `EmbedClient` reads aliases from config layer on resolution; falls back to value-as-is if no alias found
+  3. Alias changes trigger hot-reload via the config event bus without server restart
+**Plans**: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks
 
 ## Progress
 
@@ -166,7 +250,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 | 28. MCP Streamable HTTP (reopened) | v0.1.5 | 1/1 | Planned | — |
 | 28b. Auth & User Management API | v0.1.5 | 1/1 | Planned | — |
-| 28c. Admin SPA Panel | v0.1.5 | 2/2 | Planned | — |
+| 28c. Admin SPA Panel | v0.1.5 | 4/4 | Planned | — |
 | 38. Grafana Dashboard Embedding | v0.1.5 | 1/1 | Planned | — |
 | 39. Observability Backlog | v0.1.5 | 1/1 | Planned | — |
 | 40. Configuration Backlog | v0.1.5 | 1/1 | Planned | — |
@@ -182,8 +266,6 @@ Items for future milestones (v0.1.6+).
 
 - **SPA-02: Query Logging Analytics Dashboard** — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution)
 - **SPA-03: Chunk Preview in Document Detail** — Inline chunk viewer with highlight for matched terms
-- **SPA-04: Export Filtered Results** — Export document search results to CSV/JSON from the SPA
-- **SPA-05: Advanced Filters** — Date range, file type, vendor filters in document browse
 
 ### Phase 25: Optimization Experiments
 
