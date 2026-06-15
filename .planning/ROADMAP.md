@@ -117,8 +117,8 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [39-01-PLAN.md](phases/39-observability/39-01-PLAN.md) — 4 tasks
 - [ ] Phase 40: Configuration Backlog — CONF-01 (config table + ConfigLoader), CONF-02 (config REST API)
   - Plans: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks
-- [ ] Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload)
-  - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks
+- [-] Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload)
+  - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks (ConfigLoader alias methods + EmbedClient integration)
 
 </details>
 
