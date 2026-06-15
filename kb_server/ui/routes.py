@@ -48,71 +48,66 @@ def get_documents(
     Returns:
         Tuple of (documents list, total count)
     """
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-    # Build query with filters
-    where_clauses = []
-    params = []
+        where_clauses = []
+        params = []
 
-    if product:
-        where_clauses.append("product = ?")
-        params.append(product)
-    if doc_type:
-        where_clauses.append("doc_type = ?")
-        params.append(doc_type)
-    if version:
-        where_clauses.append("version = ?")
-        params.append(version)
-    if status:
-        where_clauses.append("status = ?")
-        params.append(status)
-    if date_from:
-        where_clauses.append("indexed_at >= ?")
-        params.append(date_from)
-    if date_to:
-        where_clauses.append("indexed_at <= ?")
-        params.append(date_to)
-    if file_type:
-        where_clauses.append("file_type = ?")
-        params.append(file_type)
-    if vendor:
-        where_clauses.append("vendor = ?")
-        params.append(vendor)
+        if product:
+            where_clauses.append("product = ?")
+            params.append(product)
+        if doc_type:
+            where_clauses.append("doc_type = ?")
+            params.append(doc_type)
+        if version:
+            where_clauses.append("version = ?")
+            params.append(version)
+        if status:
+            where_clauses.append("status = ?")
+            params.append(status)
+        if date_from:
+            where_clauses.append("indexed_at >= ?")
+            params.append(date_from)
+        if date_to:
+            where_clauses.append("indexed_at <= ?")
+            params.append(date_to)
+        if file_type:
+            where_clauses.append("file_type = ?")
+            params.append(file_type)
+        if vendor:
+            where_clauses.append("vendor = ?")
+            params.append(vendor)
 
-    where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
 
-    # Get total count
-    count_query = f"SELECT COUNT(*) FROM files WHERE {where_sql}"
-    cursor.execute(count_query, params)
-    total = cursor.fetchone()[0]
+        count_query = f"SELECT COUNT(*) FROM files WHERE {where_sql}"
+        cursor.execute(count_query, params)
+        total = cursor.fetchone()[0]
 
-    # Sortable columns mapping (D-08)
-    sort_columns = {
-        "name": "source_file",
-        "file_type": "doc_type",
-        "vendor": "vendor",
-        "product": "product",
-        "date": "indexed_at",
-        "status": "status",
-    }
-    order_clause = "ORDER BY indexed_at DESC"
-    if sort_by and sort_by in sort_columns:
-        col = sort_columns[sort_by]
-        order = "ASC" if sort_order and sort_order.upper() == "ASC" else "DESC"
-        order_clause = f"ORDER BY {col} {order}"
+        sort_columns = {
+            "name": "source_file",
+            "file_type": "doc_type",
+            "vendor": "vendor",
+            "product": "product",
+            "date": "indexed_at",
+            "status": "status",
+        }
+        order_clause = "ORDER BY indexed_at DESC"
+        if sort_by and sort_by in sort_columns:
+            col = sort_columns[sort_by]
+            order = "ASC" if sort_order and sort_order.upper() == "ASC" else "DESC"
+            order_clause = f"ORDER BY {col} {order}"
 
-    # Get paginated results
-    query = f"""
-        SELECT rowid, * FROM files
-        WHERE {where_sql}
-        {order_clause}
-        LIMIT ? OFFSET ?
-    """
-    cursor.execute(query, params + [limit, offset])
-    rows = cursor.fetchall()
-    conn.close()
+        query = f"""
+            SELECT rowid, * FROM files
+            WHERE {where_sql}
+            {order_clause}
+            LIMIT ? OFFSET ?
+        """
+        cursor.execute(query, params + [limit, offset])
+        rows = cursor.fetchall()
 
     documents = [_map_document(row) for row in rows]
     return documents, total
@@ -194,25 +189,23 @@ async def document_detail(
     q: Optional[str] = Query(None),
 ):
     """Document detail page showing metadata and chunks."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    # Get document metadata
-    cursor.execute("SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,))
-    row = cursor.fetchone()
-
-    if not row:
-        conn.close()
-        return templates.TemplateResponse(
-            request,
-            "error.html",
-            {"request": request, "error": "Document not found"},
-            status_code=404,
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,)
         )
+        row = cursor.fetchone()
 
-    document = _map_document(row)
-    conn.close()
+        if not row:
+            return templates.TemplateResponse(
+                request,
+                "error.html",
+                {"request": request, "error": "Document not found"},
+                status_code=404,
+            )
+
+        document = _map_document(row)
 
     # Query Qdrant for chunks
     chunks: list[dict] = []
@@ -277,12 +270,13 @@ async def document_chunks(
     q: Optional[str] = Query(None),
 ):
     """HTMX partial — returns next page of chunks starting at offset."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,))
-    row = cursor.fetchone()
-    conn.close()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,)
+        )
+        row = cursor.fetchone()
     if not row:
         return HTMLResponse("")
 

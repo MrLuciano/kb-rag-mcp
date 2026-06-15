@@ -36,6 +36,7 @@ class AuthRegistry:
     def _conn(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self._db_path))
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys=ON")
         return conn
 
     def _init_db(self) -> None:
@@ -55,6 +56,10 @@ class AuthRegistry:
                     revoked_at  TEXT
                 )
                 """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_api_keys_prefix "
+                "ON api_keys(prefix)"
             )
             conn.commit()
             conn.close()

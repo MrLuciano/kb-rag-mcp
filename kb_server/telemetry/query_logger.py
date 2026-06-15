@@ -41,6 +41,10 @@ class QueryLogger:
                     latency_ms REAL
                 )
             """)
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_query_log_timestamp "
+                "ON query_log(timestamp)"
+            )
     
     def log_query(
         self,

@@ -152,13 +152,12 @@ async def delete_document(
         await store.close()
     db_path = Path("data/kb_metadata.db")
     if db_path.exists():
-        conn = sqlite3.connect(str(db_path))
-        conn.execute(
-            "UPDATE files SET status = 'deleted' WHERE path = ?",
-            (source_file,),
-        )
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute(
+                "UPDATE files SET status = 'deleted' WHERE path = ?",
+                (source_file,),
+            )
+            conn.commit()
     return {"status": "deleted", "source_file": source_file}
 
 
@@ -189,12 +188,11 @@ async def delete_failed_documents(
 
     db_path = Path("data/kb_metadata.db")
     if not db_path.exists():
-        return {"status": "ok", "deleted": 0, "source_file": ""}
-    conn = sqlite3.connect(str(db_path))
-    cur = conn.execute("DELETE FROM files WHERE status = 'failed'")
-    deleted = cur.rowcount
-    conn.commit()
-    conn.close()
+        return {"status": "ok", "deleted": 0}
+    with sqlite3.connect(str(db_path)) as conn:
+        cur = conn.execute("DELETE FROM files WHERE status = 'failed'")
+        deleted = cur.rowcount
+        conn.commit()
     return {"status": "ok", "deleted": deleted}
 
 
