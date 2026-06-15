@@ -104,8 +104,9 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 **Target features:**
 
-- [ ] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware
-  - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks
+- [ ] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics
+  - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
+  - [28-02-PLAN.md](phases/28-mcp-streamable-http/28-02-PLAN.md) — 2 tasks (session limit, metrics, sweep)
 - [ ] Phase 28b: Auth & User Management API — SQLAlchemy User/ApiKey/AuditLog models, CRUD REST endpoints, role-based access, GDPR erasure workflow
   - Plans: [28b-01-PLAN.md](phases/28b-auth-api/28b-01-PLAN.md) — 7 tasks
 - [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, tab content (config, monitoring, ingestion, RAGAS, browser cleanup, profile), advanced filters (date range, file type, vendor, product), document export (CSV/JSON)
@@ -133,7 +134,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   3. Auth middleware applies to ALL HTTP methods on `/mcp` including the GET SSE stream
   4. Sessions are automatically cleaned up after idle timeout (300s default) with configurable session count limit
   5. Prometheus metrics track allowed/rejected requests per transport type
-**Plans**: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks
+**Plans**: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs), [28-02-PLAN.md](phases/28-mcp-streamable-http/28-02-PLAN.md) — 2 tasks (session limit, metrics, sweep)
 
 ### Phase 28b: Auth & User Management API
 **Goal**: User authentication, role-based access control, API key management, and GDPR-compliant data management
@@ -248,7 +249,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 36. Provider Budget & Circuit Breaker | v0.1.4 | 1/1 | Complete   | 2026-06-11 |
 | 37. Request-level Retrieval Cache | v0.1.4 | 1/1 | Complete | 2026-06-11 |
 
-| 28. MCP Streamable HTTP (reopened) | v0.1.5 | 1/1 | Planned | — |
+| 28. MCP Streamable HTTP (reopened) | v0.1.5 | 2/2 | Planning | — |
 | 28b. Auth & User Management API | v0.1.5 | 1/1 | Planned | — |
 | 28c. Admin SPA Panel | v0.1.5 | 4/4 | Planned | — |
 | 38. Grafana Dashboard Embedding | v0.1.5 | 1/1 | Planned | — |
