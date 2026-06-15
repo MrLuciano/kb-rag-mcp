@@ -129,6 +129,14 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: TBD
 - [ ] Phase 46: Code Quality & Coverage — utcnow deprecation fix, flake8 cleanup, coverage gap, test tagging, unused imports
   - Plans: [46-01-PLAN.md](phases/46-code-quality-coverage/46-01-PLAN.md) — 3 tasks (utcnow replacement, F401 cleanup, integration tags)
+- [ ] Phase 47: LM Studio Dependency Handling — Graceful fallback when LM Studio is unreachable; startup health-check
+  - Plans: TBD
+- [ ] Phase 48: Cross-Encoder Lazy Loading — Defer 500MB sentence-transformers model load to first predict() call
+  - Plans: TBD
+- [ ] Phase 49: Qdrant Mock Cleanup — Replace sys.modules stubbing with unittest.mock.patch in tests
+  - Plans: TBD
+- [ ] Phase 50: SSE Test Process Consolidation — Refactor test_smoke.py for per-function @patch to consolidate SSE test process
+  - Plans: TBD
 
 </details>
 
@@ -282,6 +290,46 @@ Plans:
   5. Zero unused imports in production code
 **Plans**: 1 plan — [46-01-PLAN.md](phases/46-code-quality-coverage/46-01-PLAN.md) (3 tasks: utcnow replacement, F401 cleanup, integration tags)
 
+### Phase 47: LM Studio Dependency Handling
+**Goal**: Add graceful fallback when LM Studio / embedding backend is unreachable; add startup health-check and `kb-ingest check` command
+**Depends on**: Nothing
+**Requirements**: T-02
+**Success Criteria** (what must be TRUE):
+  1. Embedding health check warns at startup if backend unreachable (non-fatal)
+  2. `kb-ingest check` validates LM Studio/Ollama connectivity
+  3. Embedding pipeline reports clear error when backend is down (not a crash)
+**Plans**: TBD
+
+### Phase 48: Cross-Encoder Lazy Loading
+**Goal**: Defer 500MB sentence-transformers CrossEncoder model load from import time to first predict() call
+**Depends on**: Nothing
+**Requirements**: T-03
+**Success Criteria** (what must be TRUE):
+  1. CrossEncoder model loads only on first rerank() call, not at module import
+  2. Importing reranker module does not trigger model download or memory allocation
+  3. First call has expected latency penalty but subsequent calls reuse cached model
+**Plans**: TBD
+
+### Phase 49: Qdrant Mock Cleanup
+**Goal**: Replace sys.modules stubbing with unittest.mock.patch in test fixtures to eliminate MagicMock pollution
+**Depends on**: Nothing
+**Requirements**: T-04
+**Success Criteria** (what must be TRUE):
+  1. All test files use `@patch` or `with patch()` instead of `sys.modules[qdrant_client]` stubs
+  2. Enum values from qdrant_client are real enum instances, not MagicMock
+  3. No regression in test count or pass rate
+**Plans**: TBD
+
+### Phase 50: SSE Test Process Consolidation
+**Goal**: Refactor test_smoke.py to use per-function @patch instead of module-level stubs, allowing SSE tests to run in the same process as other tests
+**Depends on**: Phase 49 (Qdrant Mock Cleanup — to avoid conflicting stubs)
+**Requirements**: T-05
+**Success Criteria** (what must be TRUE):
+  1. SSE tests no longer require a separate pytest process
+  2. test_smoke.py uses per-function @patch decorators
+  3. All tests pass when run together: `pytest tests/ -x`
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -333,24 +381,20 @@ Plans:
 | 40. Configuration Backlog | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 | 41. Provider Alias | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 
-| 42. Query Logging Analytics Dashboard | v0.1.5 | 1/1 | In Progress | — |
-| 43. Chunk Preview in Document Detail | v0.1.5 | 0/1 | In Progress | — |
-| 44. Auth Security Hardening | v0.1.5 | 0/1 | In Progress | — |
-| 45. Database Reliability | v0.1.5 | 0/1 | In Progress | — |
-| 46. Code Quality & Coverage | v0.1.5 | 0/1 | Backlog | — |
+| 42. Query Logging Analytics Dashboard | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 43. Chunk Preview in Document Detail | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 44. Auth Security Hardening | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 45. Database Reliability | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 46. Code Quality & Coverage | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 47. LM Studio Dependency Handling | v0.1.5 | 0/0 | Backlog | — |
+| 48. Cross-Encoder Lazy Loading | v0.1.5 | 0/0 | Backlog | — |
+| 49. Qdrant Mock Cleanup | v0.1.5 | 0/0 | Backlog | — |
+| 50. SSE Test Process Consolidation | v0.1.5 | 0/0 | Backlog | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
-Items for future work within v0.1.5 and beyond.
-
-### Tech Debt
-
-- **T-01: KB has zero documents** — OTCS documentation never ingested; run `kb-ingest ingest --docs /mnt/c/Recebedor/learning/`.
-- **T-02: LM Studio runtime dependency** — No graceful fallback if embedding backend is unreachable; add startup health-check and `kb-ingest check` command.
-- **T-03: Cross-encoder 500MB load at import** — `kb_server/retrieval/reranker.py` loads model at import time; defer to first `predict()` call.
-- **T-04: MagicMock pollution from qdrant stubs** — `tests/conftest.py` module-level stubbing makes enum values MagicMock; switch to `unittest.mock.patch`.
-- **T-05: SSE tests need separate process** — `test_smoke.py` module-level stubs force SSE tests into separate pytest process; refactor to per-function `@patch`.
+No items — all previously tracked items have been promoted to phases 47-50 or removed.
 
 
