@@ -1,7 +1,7 @@
 """Tests for query logger."""
 import sqlite3
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import pytest
 from kb_server.telemetry.query_logger import QueryLogger
@@ -99,7 +99,7 @@ def test_cleanup_old_queries(temp_db):
     cursor = conn.cursor()
     
     # Recent query (should be kept)
-    recent = datetime.utcnow().isoformat()
+    recent = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
     cursor.execute("""
         INSERT INTO query_log (
             timestamp, query_text, top_k, result_count, latency_ms
@@ -107,7 +107,7 @@ def test_cleanup_old_queries(temp_db):
     """, (recent, "recent query", 5, 3, 10.0))
     
     # Old query (should be removed)
-    old = (datetime.utcnow() - timedelta(days=95)).isoformat()
+    old = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=95)).isoformat()
     cursor.execute("""
         INSERT INTO query_log (
             timestamp, query_text, top_k, result_count, latency_ms
@@ -167,14 +167,14 @@ def test_cleanup_custom_retention_days(temp_db):
     cursor = conn.cursor()
 
     # Insert a query 10 days old
-    ten_days_ago = (datetime.utcnow() - timedelta(days=10)).isoformat()
+    ten_days_ago = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=10)).isoformat()
     cursor.execute(
         "INSERT INTO query_log (timestamp, query_text, top_k, result_count, latency_ms)"
         " VALUES (?, ?, ?, ?, ?)",
         (ten_days_ago, "old-10d", 5, 1, 5.0),
     )
     # Insert a query 3 days old
-    three_days_ago = (datetime.utcnow() - timedelta(days=3)).isoformat()
+    three_days_ago = (datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=3)).isoformat()
     cursor.execute(
         "INSERT INTO query_log (timestamp, query_text, top_k, result_count, latency_ms)"
         " VALUES (?, ?, ?, ?, ?)",

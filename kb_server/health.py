@@ -19,7 +19,7 @@ import logging
 import os
 import shutil
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 from urllib.parse import urlparse
@@ -445,7 +445,7 @@ async def get_health_summary() -> dict:
     return {
         "status": "ok" if healthy else "degraded",
         "healthy": healthy,
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
         "components": {
             name: status.to_dict() for name, status in components.items()
         },

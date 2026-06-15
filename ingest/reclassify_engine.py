@@ -9,7 +9,7 @@ Phase 16: Core reclassification capability.
 
 import glob
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
@@ -247,7 +247,7 @@ def log_changes(session_timestamp: str, changes: list[dict[str, Any]]) -> None:
 
     log.info(f"Logging {len(changes)} document changes to audit history")
 
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
     with MetadataStore() as store:
         # Batch insert for performance
@@ -302,7 +302,7 @@ def cleanup_old_backups(retention_days: int | None = None) -> int:
     if retention_days is None:
         retention_days = RECLASSIFY_BACKUP_RETENTION_DAYS
 
-    cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+    cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=retention_days)
     cutoff_str = cutoff_date.isoformat()[:10]  # YYYY-MM-DD prefix
 
     log.info(
@@ -385,7 +385,7 @@ async def reclassify_documents(
     Raises:
         Exception: If detection, backup, update, or logging fails.
     """
-    session_timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H-%M-%S")
+    session_timestamp = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%dT%H-%M-%S")
 
     log.info(
         f"Starting reclassification session {session_timestamp} "

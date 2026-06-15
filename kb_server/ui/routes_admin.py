@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 log = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 
 template_dir = Path(__file__).parent / "templates"
@@ -270,9 +270,9 @@ def build_grafana_embed_url_with_range(
     grafana_uid = os.getenv("GRAFANA_DASHBOARD_UID", "")
     if not grafana_url or not grafana_uid:
         return ""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timezone, timedelta
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     range_map = {
         "1h": timedelta(hours=1),
         "6h": timedelta(hours=6),

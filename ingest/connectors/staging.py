@@ -10,7 +10,6 @@ temporary files under a staging directory so that the existing
 import logging
 import os
 import tempfile
-import uuid
 from pathlib import Path
 from typing import Optional
 

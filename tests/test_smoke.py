@@ -180,6 +180,7 @@ def _make_chunk(text="hello world", source="doc.md", score=0.9,
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+@pytest.mark.integration
 def test_search_kb_returns_text_content_on_results(monkeypatch):
     """WR-08: _search_kb returns list[TextContent] containing result text."""
     import importlib
@@ -206,6 +207,7 @@ def test_search_kb_returns_text_content_on_results(monkeypatch):
     assert "hello world" in combined, "Result text should appear in output"
 
 
+@pytest.mark.integration
 def test_search_kb_returns_no_results_message_when_store_empty(monkeypatch):
     """WR-08: _search_kb returns 'no results' TextContent when store returns []."""
     import importlib
@@ -225,6 +227,7 @@ def test_search_kb_returns_no_results_message_when_store_empty(monkeypatch):
     assert "No results found" in results[0].text
 
 
+@pytest.mark.integration
 def test_search_kb_passes_filters_to_store(monkeypatch):
     """WR-08: filters (product, doc_type, filter_type) are forwarded to store.search()."""
     import importlib

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from kb_server.auth.models import (
@@ -32,7 +32,7 @@ class ErasureManager:
         self._session.add(er)
 
         user.erasure_status = ErasureStatus.erasure_requested
-        user.erasure_requested_at = datetime.utcnow()
+        user.erasure_requested_at = datetime.now(timezone.utc).replace(tzinfo=None)
         self._session.flush()
 
         entry = AuditLog(
@@ -59,12 +59,12 @@ class ErasureManager:
 
         er.status = "erasure_approved"
         er.approved_by = approved_by
-        er.resolved_at = datetime.utcnow()
+        er.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
         user = self._session.query(User).filter(User.id == er.user_id).first()
         if user:
             user.erasure_status = ErasureStatus.erasure_approved
-            user.erasure_approved_at = datetime.utcnow()
+            user.erasure_approved_at = datetime.now(timezone.utc).replace(tzinfo=None)
         self._session.flush()
 
         entry = AuditLog(
@@ -97,13 +97,13 @@ class ErasureManager:
         user.username = f"deleted-user-{short_id}"
         user.is_active = False
         user.erasure_status = ErasureStatus.erasure_completed
-        user.erasure_completed_at = datetime.utcnow()
+        user.erasure_completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
         for key in user.api_keys:
             self._session.delete(key)
 
         er.status = "erasure_completed"
-        er.resolved_at = datetime.utcnow()
+        er.resolved_at = datetime.now(timezone.utc).replace(tzinfo=None)
         self._session.flush()
 
         entry = AuditLog(
