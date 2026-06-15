@@ -128,7 +128,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 - [ ] Phase 45: Database Reliability — SQLite connection leaks, FK enforcement, missing indexes, migration DDL safe re-runs
   - Plans: TBD
 - [ ] Phase 46: Code Quality & Coverage — utcnow deprecation fix, flake8 cleanup, coverage gap, test tagging, unused imports
-  - Plans: TBD
+  - Plans: [46-01-PLAN.md](phases/46-code-quality-coverage/46-01-PLAN.md) — 3 tasks (utcnow replacement, F401 cleanup, integration tags)
 
 </details>
 
@@ -280,7 +280,7 @@ Plans:
   3. Branch coverage meets or exceeds CI fail_under threshold
   4. Pre-existing test failures tagged with @pytest.mark.integration
   5. Zero unused imports in production code
-**Plans**: TBD
+**Plans**: 1 plan — [46-01-PLAN.md](phases/46-code-quality-coverage/46-01-PLAN.md) (3 tasks: utcnow replacement, F401 cleanup, integration tags)
 
 ## Progress
 
@@ -337,7 +337,7 @@ Plans:
 | 43. Chunk Preview in Document Detail | v0.1.5 | 0/1 | In Progress | — |
 | 44. Auth Security Hardening | v0.1.5 | 0/1 | In Progress | — |
 | 45. Database Reliability | v0.1.5 | 0/1 | In Progress | — |
-| 46. Code Quality & Coverage | v0.1.5 | 0/0 | Backlog | — |
+| 46. Code Quality & Coverage | v0.1.5 | 0/1 | Backlog | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
