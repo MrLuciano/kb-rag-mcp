@@ -12,8 +12,8 @@ Requirements for v0.1.5 milestone. Each maps to roadmap phases.
 - [ ] **SH-01**: Server starts Streamable HTTP transport when `MCP_TRANSPORT=streamable-http` is set
 - [ ] **SH-02**: `/mcp` endpoint accepts GET (SSE stream), POST (JSON-RPC), DELETE (session terminate), OPTIONS (CORS preflight)
 - [ ] **SH-03**: Auth middleware applies to ALL HTTP methods on `/mcp` (including GET stream)
-- [ ] **SH-04**: Session lifecycle managed: idle timeout (300s default), session count limit, background cleanup
-- [ ] **SH-05**: Prometheus metrics track allowed/rejected requests per transport
+- [x] **SH-04**: Session lifecycle managed: idle timeout (300s default), session count limit, background cleanup
+- [x] **SH-05**: Prometheus metrics track allowed/rejected requests per transport
 
 ### Auth & User Management API (Phase 28b)
 

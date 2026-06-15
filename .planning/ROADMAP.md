@@ -104,7 +104,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 **Target features:**
 
-- [ ] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics
+- [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
   - [28-02-PLAN.md](phases/28-mcp-streamable-http/28-02-PLAN.md) — 2 tasks (session limit, metrics, sweep)
 - [ ] Phase 28b: Auth & User Management API — SQLAlchemy User/ApiKey/AuditLog models, CRUD REST endpoints, role-based access, GDPR erasure workflow
@@ -238,7 +238,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 25. Optimization Experiments | v0.1.4 | 4/4 | Complete | 2026-06-11 |
 | 26. KB Content Discoverability | v0.1.4 | 1/1 | Complete | 2026-06-03 |
 | 27. Knowledge Base Registry | v0.1.4 | 3/3 | Complete | 2026-06-03 |
-| 28. MCP Streamable HTTP | v0.1.4 | 1/1 | Complete | 2026-06-03 |
+| 28. MCP Streamable HTTP | v0.1.4 | 2/2 | Complete   | 2026-06-15 |
 | 29. Enterprise Data Source Connectors | v0.1.4 | 4/4 | Complete | 2026-06-10 |
 | 30. Cross-Document Knowledge Graph | v0.1.4 | 2/2 | Complete | 2026-06-10 |
 | 31. MCP Prompt Templates | v0.1.4 | 1/1 | Complete | 2026-06-10 |
