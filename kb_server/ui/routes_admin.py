@@ -1,9 +1,12 @@
 """Admin SPA panel routes."""
 
+import logging
 import os
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlencode
+
+log = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -38,6 +41,7 @@ async def admin_tab_content(request: Request, tab_name: str):
         "ragas": "admin/tab_ragas.html",
         "admin": "admin/tab_admin.html",
         "profile": "admin/tab_profile.html",
+        "analytics": "admin/tab_analytics.html",
     }
     template = template_map.get(tab_name)
     if template is None:
@@ -45,7 +49,32 @@ async def admin_tab_content(request: Request, tab_name: str):
             "<div class='alert alert-danger'>Unknown tab</div>",
             status_code=404,
         )
-    return templates.TemplateResponse(template, {"request": request})
+    context = {"request": request}
+
+    if tab_name == "analytics":
+        try:
+            from kb_server.analytics.query_analyzer import (
+                QueryAnalyzer,
+            )
+
+            db_path = Path(os.getenv("QUERY_LOG_PATH", "data/kb_metadata.db"))
+            analyzer = QueryAnalyzer(db_path)
+            context["popular_queries"] = analyzer.get_most_common_queries(
+                limit=25, time_range_days=7
+            )
+            context["content_gaps"] = analyzer.get_zero_result_queries(
+                time_range_days=7
+            )
+            context["latency_stats"] = analyzer.get_latency_stats(
+                time_range_days=7
+            )
+        except Exception as e:
+            log.error("Failed to load analytics data: %s", e)
+            context["popular_queries"] = []
+            context["content_gaps"] = []
+            context["latency_stats"] = []
+
+    return templates.TemplateResponse(template, context)
 
 
 @router.get("/tabs/monitor-lights", response_class=HTMLResponse)

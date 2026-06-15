@@ -29,6 +29,10 @@
                    href="#" @click.prevent="switchTab('admin')">⚙ Admin</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link text-white" :class="{ 'active': activeTab === 'analytics' }"
+                   href="#" @click.prevent="switchTab('analytics')">📈 Analytics</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'profile' }"
                    href="#" @click.prevent="switchTab('profile')">👤 Profile</a>
             </li>

@@ -1,0 +1,84 @@
+<h3>Query Analytics</h3>
+<p class="text-muted">Query log analysis for the last 7 days.</p>
+
+<button class="btn btn-sm btn-outline-secondary mb-3"
+        hx-get="/admin/tabs/analytics"
+        hx-target="#analytics-content"
+        hx-swap="innerHTML">
+    ↻ Refresh
+</button>
+
+<div id="analytics-content">
+    {% if not popular_queries and not content_gaps and not (latency_stats and latency_stats[0].count > 0) %}
+    <div class="alert alert-info">
+        No query data available for the last 7 days.
+        Query data appears after users search the knowledge base.
+    </div>
+    {% else %}
+
+    {% if popular_queries %}
+    <h5>Popular Queries</h5>
+    <p class="text-muted small">Top 25 most frequent queries in the last 7 days.</p>
+    <div class="table-responsive mb-4">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr><th>#</th><th>Query</th><th>Frequency</th></tr>
+            </thead>
+            <tbody>
+                {% for q in popular_queries %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><code>{{ q.query_text }}</code></td>
+                    <td>{{ q.frequency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if content_gaps %}
+    <h5>Content Gaps</h5>
+    <p class="text-muted small">Queries that returned zero results — potential missing documentation.</p>
+    <div class="table-responsive mb-4">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr><th>#</th><th>Query</th><th>Times Searched</th></tr>
+            </thead>
+            <tbody>
+                {% for g in content_gaps %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><code>{{ g.query_text }}</code></td>
+                    <td>{{ g.frequency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if latency_stats and latency_stats[0].count > 0 %}
+    {% set ls = latency_stats[0] %}
+    <h5>Latency Statistics</h5>
+    <p class="text-muted small">Query response times over the last 7 days.</p>
+    <div class="table-responsive mb-4">
+        <table class="table table-sm" style="width: auto;">
+            <thead>
+                <tr><th>Operation</th><th>Count</th><th>p50 (ms)</th><th>p95 (ms)</th><th>p99 (ms)</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ ls.operation }}</td>
+                    <td>{{ ls.count }}</td>
+                    <td>{{ ls.p50_ms }}</td>
+                    <td>{{ ls.p95_ms }}</td>
+                    <td>{{ ls.p99_ms }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
