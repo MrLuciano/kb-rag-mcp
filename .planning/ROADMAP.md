@@ -261,11 +261,14 @@ Plans:
 **Depends on**: Nothing (infrastructure-level fixes)
 **Requirements**: DB-01, DB-02, DB-03, DB-04
 **Success Criteria** (what must be TRUE):
-  1. All sqlite3.connect() calls in UI routes use context managers
-  2. PRAGMA foreign_keys=ON is set on every SQLite connection
-  3. Indexes exist on api_keys.prefix and query_log.timestamp
-  4. All CREATE TABLE statements use IF NOT EXISTS
-**Plans**: TBD
+   1. All sqlite3.connect() calls in UI routes use context managers
+   2. PRAGMA foreign_keys=ON is set on every SQLite connection
+   3. Indexes exist on api_keys.prefix and query_log.timestamp
+   4. All CREATE TABLE statements use IF NOT EXISTS
+**Plans**: 1 plan
+
+Plans:
+- [ ] 45-01-PLAN.md — 4 tasks: connection context managers, FK PRAGMA, missing indexes, migration idempotency
 
 ### Phase 46: Code Quality & Coverage
 **Goal**: Fix code quality baseline — migrate datetime.utcnow(), reduce flake8 violations to 0, close coverage gap, tag pre-existing test failures, remove unused imports
@@ -333,7 +336,7 @@ Plans:
 | 42. Query Logging Analytics Dashboard | v0.1.5 | 1/1 | In Progress | — |
 | 43. Chunk Preview in Document Detail | v0.1.5 | 0/1 | In Progress | — |
 | 44. Auth Security Hardening | v0.1.5 | 0/1 | In Progress | — |
-| 45. Database Reliability | v0.1.5 | 0/0 | Backlog | — |
+| 45. Database Reliability | v0.1.5 | 0/1 | In Progress | — |
 | 46. Code Quality & Coverage | v0.1.5 | 0/0 | Backlog | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
