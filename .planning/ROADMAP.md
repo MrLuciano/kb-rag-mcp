@@ -153,13 +153,13 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Depends on**: Phase 28b (auth endpoints), Phase 40 (config REST API), Phase 38 (Grafana embed for monitoring tab), Phase 39 (health checks for monitor lights)
 **Requirements**: SPA-01, SPA-02, SPA-03, SPA-04, SPA-05, SPA-06, SPA-07, SPA-08, SPA-09, SPA-10, SPA-11, SPA-12, FILT-01, FILT-02, FILT-03, FILT-04, FILT-05, EXPT-01, EXPT-02, EXPT-03, EXPT-04
 **Success Criteria** (what must be TRUE):
-  1. User can log in at `/admin/` with API key via login modal and receive JWT session cookie; logout clears cookie and resets auth state
-  2. Tabbed interface shows Documents, Monitoring, Ingestion, Admin, and Profile tabs, role-gated (Admin tab admin-only)
-  3. Admin can edit config values inline with inline editing, search, and reset-all; monitor lights bar auto-refreshes every 30s
-  4. User can browse documents with advanced filters (date range, file type, vendor, product) with filter state reflected in URL query params
-  5. User can export filtered document results as CSV or JSON; large exports run as background jobs with progress indicator
-  6. CSP middleware uses Alpine.js CSP build with nonce-based script-src and `frame-src` for Grafana; all CDN scripts have SRI integrity hashes
-**Plans**: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 2 tasks (shell), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 6 tasks (tab content), 28c-03-PLAN.md — TBD (advanced filters), 28c-04-PLAN.md — TBD (document export)
+   1. User can log in at `/admin/` with API key via login modal and receive JWT session cookie; logout clears cookie and resets auth state
+   2. Tabbed interface shows Documents, Monitoring, Ingestion, Admin, and Profile tabs, role-gated (Admin tab admin-only)
+   3. Admin can edit config values inline with inline editing, search, and reset-all; monitor lights bar auto-refreshes every 30s
+   4. User can browse documents with advanced filters (date range, file type, vendor, product) with filter state reflected in URL query params
+   5. User can export filtered document results as CSV or JSON; large exports run as background jobs with progress indicator
+   6. CSP middleware uses Alpine.js CSP build with nonce-based script-src and `frame-src` for Grafana; all CDN scripts have SRI integrity hashes
+**Plans**: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 3 tasks (shell + auth + CSP), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 3 tasks (monitor lights, config, profile + browse cleanup), [28c-03-PLAN.md](phases/28c-admin-spa-panel/28c-03-PLAN.md) — 3 tasks (filter-values API, get_documents enhancement, filter UI), [28c-04-PLAN.md](phases/28c-admin-spa-panel/28c-04-PLAN.md) — 2 tasks (export endpoint, export button wiring)
 **UI hint**: yes
 
 ### Phase 38: Grafana Dashboard Embedding
