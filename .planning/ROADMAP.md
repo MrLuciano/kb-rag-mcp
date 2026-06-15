@@ -249,35 +249,51 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 36. Provider Budget & Circuit Breaker | v0.1.4 | 1/1 | Complete   | 2026-06-11 |
 | 37. Request-level Retrieval Cache | v0.1.4 | 1/1 | Complete | 2026-06-11 |
 
-| 28. MCP Streamable HTTP (reopened) | v0.1.5 | 2/2 | Planning | — |
-| 28b. Auth & User Management API | v0.1.5 | 1/1 | Planned | — |
-| 28c. Admin SPA Panel | v0.1.5 | 4/4 | Planned | — |
-| 38. Grafana Dashboard Embedding | v0.1.5 | 1/1 | Planned | — |
-| 39. Observability Backlog | v0.1.5 | 1/1 | Planned | — |
-| 40. Configuration Backlog | v0.1.5 | 1/1 | Planned | — |
-| 41. Provider Alias | v0.1.5 | 1/1 | Planned | — |
+| 28. MCP Streamable HTTP (reopened) | v0.1.5 | 2/2 | Complete | 2026-06-15 |
+| 28b. Auth & User Management API | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 28c. Admin SPA Panel | v0.1.5 | 4/4 | Complete | 2026-06-15 |
+| 38. Grafana Dashboard Embedding | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 39. Observability Backlog | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 40. Configuration Backlog | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 41. Provider Alias | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+
+| 42. Query Logging Analytics Dashboard | v0.1.6 | 0/0 | Backlog | — |
+| 43. Chunk Preview in Document Detail | v0.1.6 | 0/0 | Backlog | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
-## Backlog
+## v0.1.6 Quality & Security Hardening
 
-Items for future milestones (v0.1.6+).
+<details open>
+<summary>🔄 v0.1.6 Phase Overview — PLANNING</summary>
 
-### Low Priority
+- [ ] Phase 42: Query Logging Analytics Dashboard — Visualize query logs in the SPA with popular queries, no-results queries, and latency distribution — Plans: TBD
+- [ ] Phase 43: Chunk Preview in Document Detail — Inline chunk viewer with highlight for matched terms — Plans: TBD
 
-- **SPA-02: Query Logging Analytics Dashboard** — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution)
-- **SPA-03: Chunk Preview in Document Detail** — Inline chunk viewer with highlight for matched terms
+</details>
 
-### Phase 25: Optimization Experiments
+### Phase 42: Query Logging Analytics Dashboard
+**Goal:** Visualize query logs in the Admin SPA — show popular queries, no-results queries, and latency distribution
+**Depends on:** Phase 28c (Admin SPA shell for tab), Phase 39 (query logging infrastructure)
+**Requirements:** SPA-02
+**Success Criteria** (what must be TRUE):
+  1. Admin SPA has a Query Analytics tab showing query log data
+  2. Tab shows top-N most popular queries with count
+  3. Tab shows queries that returned zero results (for content gap analysis)
+  4. Latency distribution chart (p50/p95/p99) rendered in the SPA
+  5. Data refreshes on tab visit or manual refresh
+**Plans**: TBD
 
-**Goal:** Run systematic chunking and scoring experiments to optimize retrieval quality and provide actionable recommendations for RAG configuration.
-**Requirements:** OPT-01, OPT-02, OPT-03
-**Depends on:** Phase 24
-**Plans:** 4/4 plans executed
+### Phase 43: Chunk Preview in Document Detail
+**Goal:** Inline chunk viewer in the document detail page that shows all chunks for a document with matched term highlighting
+**Depends on:** Phase 28c (Admin SPA for the detail view integration)
+**Requirements:** SPA-03
+**Success Criteria** (what must be TRUE):
+  1. Document detail page shows an expandable chunk list
+  2. Each chunk displays its text content and metadata (score, position)
+  3. Search terms are highlighted within chunk text
+  4. Chunks are paginated or lazily loaded
+  5. Works with the existing `/ui/document/{id}` route
+**Plans**: TBD
 
-Plans:
 
-- [x] 25-01-PLAN.md — Core infrastructure: config, metric_computer, result_store
-- [x] 25-02-PLAN.md — Chunking experiments: fixed, recursive, semantic strategies
-- [x] 25-03-PLAN.md — Scoring experiments: dense, hybrid, reranked variants
-- [x] 25-04-PLAN.md — Experiment runner + CLI: `kb-rag optimize` command
