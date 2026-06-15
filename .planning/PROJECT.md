@@ -10,27 +10,28 @@ AI assistants stop hallucinating about closed-source products — every answer i
 
 ## Current Milestone: v0.1.5 Streamable HTTP & Management Platform
 
-**Goal:** Implement MCP Streamable HTTP transport, build the Management SPA with auth, user management, admin panel, and Grafana dashboard embedding.
+**Goal:** Implement MCP Streamable HTTP transport, build the Management SPA with auth, user management, admin panel, Grafana dashboard embedding, document export, and advanced filters.
 
 **Target features:**
-- Phase 28: MCP Streamable HTTP Transport — browser-compatible `/mcp` endpoint
-- SPA-01: Management SPA Panel — full web UI with document browse, Grafana embed, admin panel, personal area
-- Auth/User CRUD API — REST endpoints for users and API keys
-- User roles — admin vs regular users with controlled access
-- OBS-01: Health/Readiness Endpoints
-- CONF-01: Hot-reload Configuration
-- METRICS-01: Per-operation Percentile Metrics
-- PROV-01: Provider Aliases
-- OBS-02: Request Identity Middleware
+- Phase 28 (reopened): MCP Streamable HTTP Transport — browser-compatible `/mcp` endpoint
+- Phase 28b: Auth & User Management API — SQLAlchemy models, CRUD REST endpoints, GDPR erasure
+- Phase 28c: Admin SPA Panel — Alpine.js+HTMX tabbed UI at `/admin/`, login modal, role gating
+- Phase 38: Grafana Dashboard Embedding — iframe embed, time range selector, Jinja2 globals
+- Phase 39: Observability Backlog — OBS-01 (health checks), OBS-02 (request ID middleware), METRICS-01 (percentile metrics)
+- Phase 40: Configuration Backlog — CONF-01 (SQLite config table + ConfigLoader), CONF-02 (config REST API)
+- Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload)
+- SPA-04: Export Filtered Results — CSV/JSON export from document browse
+- SPA-05: Advanced Filters — date range, file type, vendor, product filters
 
-## Current State (v0.1.5 — planning)
+## Current State (v0.1.5 — active)
 
-- **Tests:** 656 passing, 9 pre-existing failures unchanged
+- **Tests:** 1165 passing, 5 pre-existing failures, 12 skipped
 - **Coverage:** 90% branch target enforced (kb_server/ + ingest/)
 - **Codebase:** ~251k LOC Python; single canonical module `kb_server/`
 - **Deployment:** Docker Compose + bare metal systemd + Kubernetes/Helm
 - **CI:** GitHub Actions on every push/PR to `master` — English audit, Helm lint, integration checks
 - **Monitoring:** Grafana + Prometheus with 6-tab dashboard, 28 metrics
+- **Phase 28 progress:** Plan 28-01 complete (streamable HTTP transport: server.py + 3 tests + docs)
 
 ## Requirements
 
@@ -81,30 +82,31 @@ AI assistants stop hallucinating about closed-source products — every answer i
 
 ### Active
 
-- [ ] **DOCS**: Documentation reorganized by deployment mode (Docker Compose, Helm, systemd, manual)
-- [ ] **DOCS**: README, INSTRUCTIONS, OPERATIONS, TROUBLESHOOTING refreshed and grouped
-- [ ] **DOCS**: CHANGELOG and REFERENCE.md updated with v0.1.3/v0.1.4 changes
-- [ ] **EVAL**: RAGAS evaluation pipeline implemented with metrics (hit rate, MRR, faithfulness)
-- [ ] **EVAL**: Evaluation results exposed via CLI or MCP tool
-- [ ] **OPT**: Chunking optimization experiments executable with configurable parameters
-- [ ] **OPT**: Scoring/reranking optimization experiments executable
+- [ ] **PH28**: MCP Streamable HTTP Transport — browser-compatible `/mcp` endpoint
+- [ ] **PH28b**: Auth & User Management API — SQLAlchemy models, CRUD REST endpoints, GDPR erasure
+- [ ] **PH28c**: Admin SPA Panel — Alpine.js+HTMX tabbed UI at `/admin/`, login modal, role gating
+- [ ] **PH38**: Grafana Dashboard Embedding — iframe embed, time range selector, Jinja2 globals
+- [ ] **PH39**: Observability Backlog — health checks, request ID middleware, percentile metrics
+- [ ] **PH40**: Configuration Backlog — SQLite config table + ConfigLoader + REST API
+- [ ] **PH41**: Provider Alias — provider alias resolution + hot-reload
+- [ ] **SPA-04**: Export Filtered Results — CSV/JSON export from document browse in SPA
+- [ ] **SPA-05**: Advanced Filters — date range, file type, vendor, product filters in SPA
 
 ### Out of Scope
 
-- Authentication / multi-user access control — internal team tool, trusted network
 - Cloud-managed vector store — self-hosted Qdrant only for data sovereignty
 - Real-time streaming ingest from external APIs — file-based ingest only
-- GUI for doc management — CLI + MCP tools are sufficient
+- Real-time chat / collaborative editing — not related to doc RAG
 
 ## Context
 
-- v0.1.4 in planning: documentation overhaul, RAGAS evaluation, optimization experiments
-- v0.1.3 shipped 2026-05-27: 11 phases delivered across all backlog items
-- All 3 backlog items (999.1, 999.2, 999.3) promoted to v0.1.4 active scope
+- v0.1.4 shipped 2026-06-11: 15 phases (23-37) across documentation overhaul, RAGAS evaluation, optimization experiments, enterprise connectors, knowledge graph, auth, rate limiting, quotas, circuit breakers, and retrieval caching
+- v0.1.5 active: Streamable HTTP (Phase 28 Plan 28-01 complete), Auth API, Admin SPA, Grafana embed, observability, config, provider aliases
 - `kb_server/` is the single canonical package; `server/` deleted; `ingest/core/metadata.py` is the registry
-- Committed `.env` files resolved: removed from tracking; `CONTRIBUTING.md` documents git history cleanup
 - Embedding model: local LM Studio (`http://<LM_STUDIO_HOST>:1234`); configurable via `EMBED_BACKEND`
 - Vector store: Qdrant (local or remote); multi-collection support
+- Admin SPA built with Alpine.js + HTMX + Bootstrap 5 on existing Jinja2 FastAPI backend (port 8001)
+- All env vars configurable via SQLite config table with hot-reload
 - Pre-existing test note: `test_payload_indexes.py` schema type assertion weakened (MagicMock pollution from qdrant_client stub)
 - `asyncio_mode = STRICT` in `pyproject.toml` — all async tests need `@pytest.mark.asyncio`
 
@@ -114,8 +116,8 @@ AI assistants stop hallucinating about closed-source products — every answer i
 - **Dependencies**: pip-tools (`requirements.in` → `requirements.txt`), `.venv/` virtual env
 - **Compatibility**: CLI interface must remain backward-compatible; deprecation warnings for removed flags
 - **Deployment**: Must support bare metal (systemd), Docker Compose, and Kubernetes/Helm
-- **No auth**: Internal use only — no authentication layer planned
-- **Test baseline**: 491 passing tests; no regressions allowed
+- **Auth**: API key + JWT session cookie for MCP and Admin SPA
+- **Test baseline**: 1165 passing tests; no regressions allowed
 
 ## Key Decisions
 
@@ -129,6 +131,9 @@ AI assistants stop hallucinating about closed-source products — every answer i
 | `asyncio_mode = STRICT` in pyproject.toml | Enforce explicit async test marking; prevents silent sync execution | ✓ Good |
 | `bootstrap_env()` single entry point | Eliminate 6+ copy-pasted `load_dotenv` blocks | ✓ Good — v0.1.0 |
 | fastembed BM25 for sparse vectors | No separate sparse model server needed; embedded in process | ✓ Good |
+| Admin SPA via Alpine.js+HTMX+Bootstrap 5 | No build step; leverages existing Jinja2 FastAPI backend | ✓ Good |
+| Passwordless API key + JWT session auth | Works for both MCP (Bearer header) and browser (cookie); no password infrastructure needed | ✓ Good |
+| SQLite config table with hot-reload | All env vars configurable from admin UI; chain: SQLite → `.env` → env defaults | ✓ Good |
 | Weaken `PayloadSchemaType` enum assertion in test | MagicMock pollution across test suite; assertion redundant | — Acceptable tech debt |
 
 ## Evolution
@@ -146,4 +151,4 @@ AI assistants stop hallucinating about closed-source products — every answer i
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-27 — v0.1.4 milestone started*
+*Last updated: 2026-06-15 — v0.1.5 milestone formalized*
