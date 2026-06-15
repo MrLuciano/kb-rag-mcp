@@ -2,15 +2,14 @@
 gsd_state_version: 1.0
 milestone: v0.1.5
 milestone_name: Streamable HTTP & Management Platform
-status: active
-last_updated: "2026-06-15T12:00:00.000Z"
-last_activity: 2026-06-15 -- ROADMAP.md updated: SPA-04/SPA-05 integrated into Phase 28c; phase details and success criteria added
+status: verifying
+last_updated: "2026-06-15T16:22:32.562Z"
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 1
-  total_plans: 10
+  total_plans: 8
   completed_plans: 1
-  percent: 10
+  percent: 13
 ---
 
 # Project State
@@ -169,7 +168,6 @@ Next: Phase 40 (Config) + Phase 28 execution → Phase 28b (Auth) → Phase 41 +
 - 22 Phase 35 tests pass across 4 test files
 - UAT: 8/14 pass, 1 issue fixed (connector auto-registration, commit cb42dab), 5 blocked (server-dependent)
 - Full suite: 1006 passed at completion (now 1165 after later phases)
-
 
 ## Phase 29-34, 36-37 Outcomes
 
