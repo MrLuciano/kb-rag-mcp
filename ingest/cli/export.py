@@ -98,9 +98,7 @@ def _query_registry(
     if status:
         query += " AND status = ?"
         params.append(status)
-    if version:
-        query += " AND version = ?"
-        params.append(version)
+    # version filter omitted — files table has no version column
     
     cursor.execute(query, params)
     rows = cursor.fetchall()
