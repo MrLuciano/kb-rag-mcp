@@ -105,12 +105,19 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Target features:**
 
 - [ ] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware
+  - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks
 - [ ] Phase 28b: Auth & User Management API — SQLAlchemy User/ApiKey/AuditLog models, CRUD REST endpoints, role-based access, GDPR erasure workflow
-- [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, Grafana embed tab
-- [ ] Phase 38: Grafana Dashboard Embedding — iframe embed helper, CSP config, time range selector, OPERATIONS.md docs
-- [ ] Phase 39: Observability Backlog — OBS-01 (health/readiness), OBS-02 (request identity), METRICS-01 (percentile metrics)
-- [ ] Phase 40: Configuration Backlog — CONF-01 (hot-reload), CONF-02 (config API endpoints)
-- [ ] Phase 41: Provider Alias — PROV-01 (provider name normalization)
+  - Plans: [28b-01-PLAN.md](phases/28b-auth-api/28b-01-PLAN.md) — 7 tasks
+- [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, tab content (config, monitoring, ingestion, RAGAS, browser cleanup, profile)
+  - Plans: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 2 tasks (shell), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 6 tasks (tab content)
+- [ ] Phase 38: Grafana Dashboard Embedding — iframe embed helper, time range selector, Jinja2 globals
+  - Plans: [38-01-PLAN.md](phases/38-grafana-embed/38-01-PLAN.md) — 1 task
+- [ ] Phase 39: Observability Backlog — OBS-01 (Grafana health check), OBS-02 (request ID middleware), METRICS-01 (percentile metrics)
+  - Plans: [39-01-PLAN.md](phases/39-observability/39-01-PLAN.md) — 4 tasks
+- [ ] Phase 40: Configuration Backlog — CONF-01 (config table + ConfigLoader), CONF-02 (config REST API)
+  - Plans: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks
+- [ ] Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload)
+  - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks
 
 </details>
 
@@ -157,13 +164,13 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 36. Provider Budget & Circuit Breaker | v0.1.4 | 1/1 | Complete   | 2026-06-11 |
 | 37. Request-level Retrieval Cache | v0.1.4 | 1/1 | Complete | 2026-06-11 |
 
-| 38. MCP Streamable HTTP (reopened) | v0.1.5 | 0/0 | Planning | — |
-| 39. Auth & User Management API | v0.1.5 | 0/0 | Planning | — |
-| 40. Admin SPA Panel | v0.1.5 | 0/0 | Planning | — |
-| 41. Grafana Dashboard Embedding | v0.1.5 | 0/0 | Planning | — |
-| 42. Observability Backlog | v0.1.5 | 0/0 | Planning | — |
-| 43. Configuration Backlog | v0.1.5 | 0/0 | Planning | — |
-| 44. Provider Alias | v0.1.5 | 0/0 | Planning | — |
+| 28. MCP Streamable HTTP (reopened) | v0.1.5 | 1/1 | Planned | — |
+| 28b. Auth & User Management API | v0.1.5 | 1/1 | Planned | — |
+| 28c. Admin SPA Panel | v0.1.5 | 2/2 | Planned | — |
+| 38. Grafana Dashboard Embedding | v0.1.5 | 1/1 | Planned | — |
+| 39. Observability Backlog | v0.1.5 | 1/1 | Planned | — |
+| 40. Configuration Backlog | v0.1.5 | 1/1 | Planned | — |
+| 41. Provider Alias | v0.1.5 | 1/1 | Planned | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 

@@ -1417,6 +1417,104 @@ async def main():
         )
         server = uvicorn.Server(config)
         await server.serve()
+    elif TRANSPORT == "streamable-http":
+        import uvicorn
+        from starlette.applications import Starlette
+        from starlette.middleware import Middleware
+        from starlette.middleware.cors import CORSMiddleware
+        from starlette.responses import Response
+        from starlette.routing import Route
+        from mcp.server.streamable_http_manager import (
+            StreamableHTTPSessionManager,
+            TransportSecuritySettings,
+        )
+
+        MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
+        MCP_PORT = int(os.getenv("MCP_PORT", "8765"))
+        MCP_ENDPOINT = os.getenv("MCP_ENDPOINT", "/mcp")
+        MCP_JSON_RESPONSE = os.getenv("MCP_JSON_RESPONSE", "false").lower() in (
+            "true", "1",
+        )
+        MCP_STATELESS = os.getenv("MCP_STATELESS", "false").lower() in (
+            "true", "1",
+        )
+        MCP_SESSION_TIMEOUT = float(
+            os.getenv("MCP_SESSION_TIMEOUT", "300")
+        )
+
+        security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=[MCP_HOST] if MCP_HOST != "0.0.0.0" else [],
+            allowed_origins=[],
+        )
+
+        async def handle_mcp(request):
+            _current_transport.set("streamable-http")
+
+            if RATE_LIMIT_ENABLED and rate_limiter is not None:
+                allowed, retry_after = await rate_limiter.check(subject)
+                if not allowed:
+                    record_rate_limit_rejected("streamable-http")
+                    return Response(
+                        content='{"error":"Rate limit exceeded"}',
+                        status_code=429,
+                        media_type="application/json",
+                        headers={"Retry-After": str(retry_after)},
+                    )
+                record_rate_limit_allowed("streamable-http")
+
+            await session_mgr.handle_request(
+                request.scope, request.receive, request._send
+            )
+
+        starlette_app = Starlette(
+            routes=[
+                Route(
+                    MCP_ENDPOINT,
+                    endpoint=handle_mcp,
+                    methods=["GET", "POST", "DELETE", "OPTIONS"],
+                ),
+                Route("/health", endpoint=lambda r: Response(
+                    content='{"status":"ok","service":"kb-rag"}',
+                    media_type="application/json",
+                )),
+            ],
+            middleware=[
+                Middleware(
+                    CORSMiddleware,
+                    allow_origins=["*"],
+                    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+                    allow_headers=[
+                        "Content-Type", "Accept", "Authorization",
+                        "Mcp-Session-Id", "Last-Event-ID",
+                        "MCP-Protocol-Version",
+                    ],
+                    expose_headers=["Mcp-Session-Id", "Content-Type"],
+                ),
+            ],
+        )
+
+        session_mgr = StreamableHTTPSessionManager(
+            app=app,
+            json_response=MCP_JSON_RESPONSE,
+            stateless=MCP_STATELESS,
+            security_settings=security,
+            session_idle_timeout=MCP_SESSION_TIMEOUT,
+        )
+
+        log.info(
+            f"Streamable HTTP server at http://{MCP_HOST}:{MCP_PORT}{MCP_ENDPOINT} "
+            f"(json_response={MCP_JSON_RESPONSE}, stateless={MCP_STATELESS})"
+        )
+        async with session_mgr.run():
+            config = uvicorn.Config(
+                starlette_app,
+                host=MCP_HOST,
+                port=MCP_PORT,
+                log_level="info",
+            )
+            server = uvicorn.Server(config)
+            await server.serve()
     else:
         log.info("stdio transport active")
         # Set context for tool-level rate-limit checks
