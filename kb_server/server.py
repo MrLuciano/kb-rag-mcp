@@ -724,7 +724,24 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
 
     if results is None:
         # ── Full search pipeline (cache miss) ─────────────────────
-        vector = await get_embedding(query)
+        try:
+            vector = await get_embedding(query)
+        except Exception as e:
+            log.error(
+                "Embedding backend unavailable: %s — start LM Studio or "
+                "check EMBED_BACKEND config. See docs/OPERATIONS.md",
+                e,
+            )
+            return [
+                types.TextContent(
+                    type="text",
+                    text=(
+                        "Embedding backend unavailable — start LM Studio or "
+                        "check EMBED_BACKEND config. "
+                        "See docs/OPERATIONS.md for troubleshooting."
+                    ),
+                )
+            ]
 
         # PHASE 12: Determine retrieve_k for reranking
         retrieve_k = top_k
