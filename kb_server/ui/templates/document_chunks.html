@@ -1,0 +1,40 @@
+<div id="chunks-container">
+{% for chunk in chunks %}
+<div class="accordion-item">
+    <h2 class="accordion-header" id="heading-p-{{ offset + loop.index }}">
+        <button class="accordion-button collapsed" type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapse-p-{{ offset + loop.index }}"
+                aria-expanded="false">
+            Chunk {{ chunk.chunk_index }}
+            <small class="text-muted ms-2 text-truncate" style="max-width:400px;">
+                {{ highlight_term(chunk.text[:80], search_query) }}
+            </small>
+        </button>
+    </h2>
+    <div id="collapse-p-{{ offset + loop.index }}"
+         class="accordion-collapse collapse"
+         aria-labelledby="heading-p-{{ offset + loop.index }}"
+         data-bs-parent="#chunksAccordion">
+        <div class="accordion-body">
+            <pre class="mb-0" style="white-space:pre-wrap;word-break:break-word;">{{ highlight_term(chunk.text, search_query) }}</pre>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% set next_offset = offset + chunks|length %}
+{% if next_offset < total %}
+<button class="btn btn-sm btn-outline-primary mt-2"
+        hx-get="/ui/document/{{ doc_id }}/chunks?offset={{ next_offset }}{% if search_query %}&q={{ search_query }}{% endif %}"
+        hx-target="#chunks-container"
+        hx-swap="outerHTML">
+    Show next 10 chunks ({{ total - next_offset }} remaining)
+</button>
+{% else %}
+<button class="btn btn-sm btn-outline-secondary mt-2"
+        hx-get="/ui/document/{{ doc_id }}" hx-target="body" hx-swap="outerHTML">
+    Show less
+</button>
+{% endif %}
+</div>

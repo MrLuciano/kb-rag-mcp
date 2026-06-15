@@ -67,6 +67,31 @@ templates.env.globals["build_grafana_embed_url_with_range"] = (
 )
 
 
+def highlight_term(text: str, query: str | None) -> str:
+    """Wrap occurrences of query in <mark> tags (XSS-safe)."""
+    import html as html_mod
+    import re
+
+    if not text:
+        return ""
+    if not query:
+        return html_mod.escape(text)
+    escaped = re.escape(query)
+    parts: list[str] = []
+    last = 0
+    for m in re.finditer(escaped, text, re.IGNORECASE):
+        parts.append(html_mod.escape(text[last : m.start()]))
+        parts.append("<mark>")
+        parts.append(html_mod.escape(m.group()))
+        parts.append("</mark>")
+        last = m.end()
+    parts.append(html_mod.escape(text[last:]))
+    return "".join(parts)
+
+
+templates.env.globals["highlight_term"] = highlight_term
+
+
 # Health check endpoint
 @app.get("/health")
 async def health():

@@ -18,33 +18,22 @@
         <dl class="row">
             <dt class="col-sm-3">ID</dt>
             <dd class="col-sm-9">{{ document.id }}</dd>
-            
             <dt class="col-sm-3">Status</dt>
             <dd class="col-sm-9">
-                <span class="status-{{ document.status }}">
-                    {{ document.status }}
-                </span>
+                <span class="status-{{ document.status }}">{{ document.status }}</span>
             </dd>
-            
             <dt class="col-sm-3">Product</dt>
             <dd class="col-sm-9">{{ document.product or 'N/A' }}</dd>
-            
             <dt class="col-sm-3">Document Type</dt>
             <dd class="col-sm-9">{{ document.doc_type or 'N/A' }}</dd>
-            
             <dt class="col-sm-3">Version</dt>
             <dd class="col-sm-9">{{ document.version or 'N/A' }}</dd>
-            
             <dt class="col-sm-3">File Type</dt>
             <dd class="col-sm-9">{{ document.file_type or 'N/A' }}</dd>
-            
             <dt class="col-sm-3">Chunks Stored</dt>
             <dd class="col-sm-9">{{ document.chunks_stored or 0 }}</dd>
-            
             <dt class="col-sm-3">Hash</dt>
-            <dd class="col-sm-9">
-                <code>{{ document.hash or 'N/A' }}</code>
-            </dd>
+            <dd class="col-sm-9"><code>{{ document.hash or 'N/A' }}</code></dd>
         </dl>
     </div>
 </div>
@@ -52,23 +41,67 @@
 {% if document.status == 'failed' %}
 <div class="alert alert-danger">
     <strong>Ingestion Failed</strong>
-    <p class="mb-0">
-        This document failed to process. Check the logs for details.
-    </p>
+    <p class="mb-0">This document failed to process. Check the logs for details.</p>
 </div>
 {% elif document.chunks_stored == 0 %}
 <div class="alert alert-warning">
     <strong>No Chunks Stored</strong>
-    <p class="mb-0">
-        This document has no searchable chunks yet.
-    </p>
+    <p class="mb-0">This document has no searchable chunks yet.</p>
 </div>
 {% else %}
 <div class="alert alert-success">
     <strong>Document Indexed Successfully</strong>
-    <p class="mb-0">
-        {{ document.chunks_stored }} chunks are searchable.
-    </p>
+    <p class="mb-0">{{ document.chunks_stored }} chunks are searchable.</p>
+</div>
+{% endif %}
+
+{% if chunks and chunks|length > 0 %}
+<h3 class="mt-4">Chunks ({{ chunks|length }} total)</h3>
+{% if search_query %}
+<p class="text-muted mb-3">
+    Showing results with highlighted matches for: <strong>{{ search_query }}</strong>
+</p>
+{% endif %}
+<div id="chunks-container">
+<div class="accordion" id="chunksAccordion">
+    {% for chunk in chunks %}
+    {% set outer_loop = loop %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="heading-{{ outer_loop.index }}">
+            <button class="accordion-button {% if outer_loop.index > 10 %}collapsed{% endif %}"
+                    type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapse-{{ outer_loop.index }}"
+                    aria-expanded="{% if outer_loop.index <= 10 %}true{% else %}false{% endif %}">
+                Chunk {{ chunk.chunk_index }}
+                <small class="text-muted ms-2 text-truncate" style="max-width:400px;">
+                    {{ highlight_term(chunk.text[:80], search_query) }}
+                </small>
+            </button>
+        </h2>
+        <div id="collapse-{{ outer_loop.index }}"
+             class="accordion-collapse collapse {% if outer_loop.index <= 10 %}show{% endif %}"
+             aria-labelledby="heading-{{ outer_loop.index }}"
+             data-bs-parent="#chunksAccordion">
+            <div class="accordion-body">
+                <pre class="mb-0" style="white-space:pre-wrap;word-break:break-word;">{{ highlight_term(chunk.text, search_query) }}</pre>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% if chunks|length > 10 %}
+<button class="btn btn-sm btn-outline-primary mt-2"
+        hx-get="/ui/document/{{ document.id }}/chunks?offset=10{% if search_query %}&q={{ search_query }}{% endif %}"
+        hx-target="#chunks-container"
+        hx-swap="outerHTML">
+    Show next 10 chunks
+</button>
+{% endif %}
+</div>
+{% elif chunks is not none and chunks|length == 0 %}
+<div class="alert alert-info mt-3">
+    <strong>Chunks Unavailable</strong>
+    <p class="mb-0">Chunk data could not be loaded from the vector store.</p>
 </div>
 {% endif %}
 
