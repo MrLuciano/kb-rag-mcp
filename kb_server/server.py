@@ -38,6 +38,8 @@ from observability.metrics import (
     record_rate_limit_rejected,
     record_retrieval_cache_op,
     update_rate_limit_subjects,
+    record_active_sessions,       # PHASE 28
+    record_session_evicted,       # PHASE 28
 )
 from kb_server.cache.request_cache import RetrievalCache  # PHASE 37
 
@@ -1531,7 +1533,6 @@ async def main():
             if not mcp_session_id and not MCP_STATELESS:
                 evicted_id = session_tracker.evict_if_needed()
                 if evicted_id:
-                    from observability.metrics import record_session_evicted
                     record_session_evicted("streamable-http")
                     log.info(
                         "Session limit reached: evicted %s",
@@ -1621,6 +1622,31 @@ async def main():
         session_tracker = _SessionTracker(session_mgr, MCP_MAX_SESSIONS)
         log.info(
             "Session limit: max_sessions=%d (tracking initialized)",
+            MCP_MAX_SESSIONS,
+        )
+
+        async def _session_sweep() -> None:
+            """Periodic session housekeeping every 60s (per D-04).
+
+            Removes stale tracking entries from ``session_tracker``
+            and records active session count as a Prometheus gauge.
+            """
+            while True:
+                await asyncio.sleep(60)
+                try:
+                    stale = session_tracker.cleanup()
+                    count = session_tracker.active_count
+                    record_active_sessions(count, "streamable-http")
+                    log.debug(
+                        "Session sweep: %d active, %d stale cleaned",
+                        count, stale,
+                    )
+                except Exception:
+                    log.exception("Session sweep error")
+
+        asyncio.create_task(_session_sweep())
+        log.info(
+            "Session sweep scheduled every 60s (max_sessions=%d)",
             MCP_MAX_SESSIONS,
         )
 

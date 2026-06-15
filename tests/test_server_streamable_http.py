@@ -190,3 +190,37 @@ def test_session_tracker_evict_falls_back_to_any_session():
     evicted = tracker.evict_if_needed()
     assert evicted == "only-session"
     assert "only-session" not in mock_mgr.sessions
+
+
+def test_session_metrics_import_and_call():
+    """Session metric functions are importable and callable without error."""
+    from observability.metrics import (
+        record_active_sessions,
+        record_session_evicted,
+        streamable_http_active_sessions,
+        streamable_http_sessions_evicted,
+    )
+    # Call both — should not raise
+    record_active_sessions(5, "streamable-http")
+    record_session_evicted("streamable-http")
+    # Verify labels exist
+    assert streamable_http_active_sessions._labelnames == ("transport",)
+    assert streamable_http_sessions_evicted._labelnames == ("transport",)
+
+
+@pytest.mark.asyncio
+async def test_session_sweep_wired():
+    """Background sweep task is created when streamable-http starts."""
+    os.environ["MCP_PORT"] = "18768"
+    main, mock_mgr_cls = _setup_server()
+
+    with patch("kb_server.server.asyncio.create_task") as mock_create_task:
+        mocks = await _run_main(main, mock_mgr_cls)
+        # Find calls that contain _session_sweep
+        sweep_calls = [
+            call for call in mock_create_task.call_args_list
+            if "_session_sweep" in str(call)
+        ]
+        assert len(sweep_calls) >= 1, (
+            "Expected asyncio.create_task(_session_sweep()) to be called"
+        )
