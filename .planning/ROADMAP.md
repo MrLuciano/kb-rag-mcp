@@ -119,6 +119,16 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks
 - [-] Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload)
   - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks (ConfigLoader alias methods + EmbedClient integration)
+- [ ] Phase 42: Query Logging Analytics Dashboard — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution)
+  - Plans: TBD
+- [ ] Phase 43: Chunk Preview in Document Detail — Inline chunk viewer with highlight for matched terms
+  - Plans: TBD
+- [ ] Phase 44: Auth Security Hardening — Mount auth router on server, erasure separation, ownership checks, secure cookie, verify_key batching, rate-limit hashing
+  - Plans: TBD
+- [ ] Phase 45: Database Reliability — SQLite connection leaks, FK enforcement, missing indexes, migration DDL safe re-runs
+  - Plans: TBD
+- [ ] Phase 46: Code Quality & Coverage — utcnow deprecation fix, flake8 cleanup, coverage gap, test tagging, unused imports
+  - Plans: TBD
 
 </details>
 
@@ -206,6 +216,66 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   3. Alias changes trigger hot-reload via the config event bus without server restart
 **Plans**: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks
 
+### Phase 42: Query Logging Analytics Dashboard
+**Goal**: Visualize query logs in the Admin SPA — show popular queries, no-results queries, and latency distribution
+**Depends on**: Phase 28c (Admin SPA shell), Phase 39 (query logging infrastructure)
+**Requirements**: SPA-02
+**Success Criteria** (what must be TRUE):
+  1. Admin SPA has a Query Analytics tab showing query log data
+  2. Tab shows top-N most popular queries with count
+  3. Tab shows queries that returned zero results (for content gap analysis)
+  4. Latency distribution chart (p50/p95/p99) rendered in the SPA
+  5. Data refreshes on tab visit or manual refresh
+**Plans**: TBD
+
+### Phase 43: Chunk Preview in Document Detail
+**Goal**: Inline chunk viewer in the document detail page that shows all chunks with matched term highlighting
+**Depends on**: Phase 28c (Admin SPA detail view integration)
+**Requirements**: SPA-03
+**Success Criteria** (what must be TRUE):
+  1. Document detail page shows an expandable chunk list
+  2. Each chunk displays text content and metadata (score, position)
+  3. Search terms are highlighted within chunk text
+  4. Chunks are paginated or lazily loaded
+  5. Works with existing `/ui/document/{id}` route
+**Plans**: TBD
+
+### Phase 44: Auth Security Hardening
+**Goal**: Fix auth infrastructure gaps — mount auth router, add erasure separation of duties, enforce ownership checks, secure session cookies, batch verify_key writes, hash rate-limit subjects
+**Depends on**: Phase 28b (Auth API — the endpoints being hardened)
+**Requirements**: SEC-01, SEC-02, SEC-03, SEC-04, SEC-05, SEC-06
+**Success Criteria** (what must be TRUE):
+  1. Auth router mounted and all auth endpoints reachable at runtime
+  2. Erasure approve and execute are separate endpoints callable by different roles
+  3. export_user_data and list_api_keys verify caller owns the target user_id
+  4. Session cookie sets secure=True when HTTPS is detected or env var is set
+  5. verify_key does not write to DB on every call (batched or cached)
+  6. API key prefix is not exposed in rate-limit subject tracking
+**Plans**: TBD
+
+### Phase 45: Database Reliability
+**Goal**: Fix SQLite connection management — use context managers everywhere, enforce foreign keys, add missing indexes, make migration DDL idempotent
+**Depends on**: Nothing (infrastructure-level fixes)
+**Requirements**: DB-01, DB-02, DB-03, DB-04
+**Success Criteria** (what must be TRUE):
+  1. All sqlite3.connect() calls in UI routes use context managers
+  2. PRAGMA foreign_keys=ON is set on every SQLite connection
+  3. Indexes exist on api_keys.prefix and query_log.timestamp
+  4. All CREATE TABLE statements use IF NOT EXISTS
+**Plans**: TBD
+
+### Phase 46: Code Quality & Coverage
+**Goal**: Fix code quality baseline — migrate datetime.utcnow(), reduce flake8 violations to 0, close coverage gap, tag pre-existing test failures, remove unused imports
+**Depends on**: Nothing
+**Requirements**: Q-01, Q-02, Q-03, Q-04, Q-05
+**Success Criteria** (what must be TRUE):
+  1. Zero uses of deprecated datetime.utcnow() in source code
+  2. flake8 exits with 0 on kb_server/ and ingest/
+  3. Branch coverage meets or exceeds CI fail_under threshold
+  4. Pre-existing test failures tagged with @pytest.mark.integration
+  5. Zero unused imports in production code
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -259,36 +329,15 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 | 42. Query Logging Analytics Dashboard | v0.1.5 | 0/0 | Backlog | — |
 | 43. Chunk Preview in Document Detail | v0.1.5 | 0/0 | Backlog | — |
+| 44. Auth Security Hardening | v0.1.5 | 0/0 | Backlog | — |
+| 45. Database Reliability | v0.1.5 | 0/0 | Backlog | — |
+| 46. Code Quality & Coverage | v0.1.5 | 0/0 | Backlog | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
 Items for future work within v0.1.5 and beyond.
-
-### Security & Auth Fixes
-
-- **SEC-01: Mount auth router on server** — Auth endpoints (users, API keys, session) are unreachable because `kb_server/auth/router.py` is never mounted on the main server app. Montar em `kb_server/server.py:main()`.
-- **SEC-02: Erasure approve/execute separation** — Single endpoint approves AND executes erasure; split into two-step admin workflow per GDPR requirements.
-- **SEC-03: Ownership checks on user data** — `export_user_data` and `list_api_keys` in `kb_server/auth/service.py` allow horizontal privilege escalation; add caller_id verification.
-- **SEC-04: Session cookie secure flag** — Cookie set with `secure=False` in `kb_server/auth/router.py:172`; gate with env var for production.
-- **SEC-05: verify_key DB write on every auth** — `kb_server/auth/service.py:177` writes `last_used_at` on every API key check; batch in-memory with periodic flush.
-- **SEC-06: API key prefix in rate-limit subjects** — `kb_server/server.py:564` leaks key prefix into rate-limit tracking; hash the subject.
-
-### Database Fixes
-
-- **DB-01: SQLite connection leaks** — 7+ raw `sqlite3.connect()` calls without context managers in `kb_server/ui/routes.py`, `routes_admin.py`, `tests/test_query_analyzer.py`; refactor to `with` pattern.
-- **DB-02: Foreign keys not enforced** — `PRAGMA foreign_keys=ON` never set anywhere; `ON DELETE CASCADE` silently ignored. Add to all connect() methods.
-- **DB-03: Missing indexes** — `api_keys.prefix` in `auth_registry.py` and `query_log.timestamp` in `query_logger.py` have no indexes — full table scans on revoke/cleanup.
-- **DB-04: Migration DDL fragility** — `CREATE TABLE` without `IF NOT EXISTS` in `ingest/core/metadata.py` reclassify tables; re-running migration crashes.
-
-### Code Quality
-
-- **Q-01: datetime.utcnow() deprecation** — 23 sites across kb_server/, ingest/, tests/ use deprecated `datetime.utcnow()`; migrate to timezone-aware UTC.
-- **Q-02: Flake8 cleanup** — 481 violations (E501 line length, F401 unused imports, W293 whitespace); run black + manual cleanup.
-- **Q-03: Branch coverage gap** — 72% actual vs 90% CI target (`fail_under`); add tests or adjust threshold.
-- **Q-04: 5 pre-existing test failures** — `test_smoke.py` (3) and `test_server_terms.py` (2) fail without Qdrant; tag with `@pytest.mark.integration` or add mocks.
-- **Q-05: 17 unused imports** — Stale imports across codebase; run `autoflake --remove-all-unused-imports`.
 
 ### Tech Debt
 
@@ -297,10 +346,5 @@ Items for future work within v0.1.5 and beyond.
 - **T-03: Cross-encoder 500MB load at import** — `kb_server/retrieval/reranker.py` loads model at import time; defer to first `predict()` call.
 - **T-04: MagicMock pollution from qdrant stubs** — `tests/conftest.py` module-level stubbing makes enum values MagicMock; switch to `unittest.mock.patch`.
 - **T-05: SSE tests need separate process** — `test_smoke.py` module-level stubs force SSE tests into separate pytest process; refactor to per-function `@patch`.
-
-### Feature Backlog
-
-- **Phase 42: Query Logging Analytics Dashboard** — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution). Depends on Phase 28c + Phase 39. Requirements: SPA-02.
-- **Phase 43: Chunk Preview in Document Detail** — Inline chunk viewer with highlight for matched terms. Depends on Phase 28c. Requirements: SPA-03.
 
 
