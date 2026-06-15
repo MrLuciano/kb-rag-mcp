@@ -68,6 +68,9 @@ class MetricsCollector:
         self.provider_skipped_circuit_open = provider_skipped_circuit_open
         self.provider_skipped_budget_exhausted = provider_skipped_budget_exhausted
         self.provider_circuit_opened = provider_circuit_opened
+        # PHASE 28: Session metrics
+        self.streamable_http_active_sessions = streamable_http_active_sessions
+        self.streamable_http_sessions_evicted = streamable_http_sessions_evicted
 
     def increment(self, metric_name: str, value: int = 1, **labels) -> None:
         """Helper to increment counter metrics."""
@@ -281,6 +284,32 @@ def record_rate_limit_rejected(transport: str) -> None:
 def update_rate_limit_subjects(count: int) -> None:
     """Update the gauge for tracked rate-limit subjects."""
     rate_limit_subjects.set(count)
+
+
+# ── PHASE 28: Streamable HTTP session metrics ───────────────────
+
+
+streamable_http_active_sessions = Gauge(
+    "kb_rag_streamable_http_active_sessions",
+    "Current number of active streamable-http sessions",
+    ["transport"],
+)
+
+streamable_http_sessions_evicted = Counter(
+    "kb_rag_streamable_http_sessions_evicted_total",
+    "Total number of streamable-http sessions evicted due to max session limit",
+    ["transport"],
+)
+
+
+def record_active_sessions(count: int, transport: str = "streamable-http") -> None:
+    """Set the active session count gauge for *transport*."""
+    streamable_http_active_sessions.labels(transport=transport).set(count)
+
+
+def record_session_evicted(transport: str = "streamable-http") -> None:
+    """Increment the evicted-session counter for *transport*."""
+    streamable_http_sessions_evicted.labels(transport=transport).inc()
 
 
 # ── Helper Functions ─────────────────────────────────────────────
