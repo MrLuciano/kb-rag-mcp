@@ -120,7 +120,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 - [-] Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload)
   - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks (ConfigLoader alias methods + EmbedClient integration)
 - [ ] Phase 42: Query Logging Analytics Dashboard — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution)
-  - Plans: TBD
+  - Plans: [42-01-PLAN.md](phases/42-query-analytics-dashboard/42-01-PLAN.md) — 2 tasks (get_latency_stats + analytics route + template + tests)
 - [ ] Phase 43: Chunk Preview in Document Detail — Inline chunk viewer with highlight for matched terms
   - Plans: TBD
 - [ ] Phase 44: Auth Security Hardening — Mount auth router on server, erasure separation, ownership checks, secure cookie, verify_key batching, rate-limit hashing
@@ -226,7 +226,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   3. Tab shows queries that returned zero results (for content gap analysis)
   4. Latency distribution chart (p50/p95/p99) rendered in the SPA
   5. Data refreshes on tab visit or manual refresh
-**Plans**: TBD
+**Plans**: [42-01-PLAN.md](phases/42-query-analytics-dashboard/42-01-PLAN.md) — 1 plan, 2 tasks
 
 ### Phase 43: Chunk Preview in Document Detail
 **Goal**: Inline chunk viewer in the document detail page that shows all chunks with matched term highlighting
@@ -327,7 +327,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 40. Configuration Backlog | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 | 41. Provider Alias | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 
-| 42. Query Logging Analytics Dashboard | v0.1.5 | 0/0 | Backlog | — |
+| 42. Query Logging Analytics Dashboard | v0.1.5 | 1/1 | In Progress | — |
 | 43. Chunk Preview in Document Detail | v0.1.5 | 0/0 | Backlog | — |
 | 44. Auth Security Hardening | v0.1.5 | 0/0 | Backlog | — |
 | 45. Database Reliability | v0.1.5 | 0/0 | Backlog | — |
