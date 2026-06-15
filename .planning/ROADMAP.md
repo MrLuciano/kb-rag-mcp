@@ -233,12 +233,12 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Depends on**: Phase 28c (Admin SPA detail view integration)
 **Requirements**: SPA-03
 **Success Criteria** (what must be TRUE):
-  1. Document detail page shows an expandable chunk list
-  2. Each chunk displays text content and metadata (score, position)
-  3. Search terms are highlighted within chunk text
-  4. Chunks are paginated or lazily loaded
-  5. Works with existing `/ui/document/{id}` route
-**Plans**: TBD
+   1. Document detail page shows an expandable chunk list
+   2. Each chunk displays text content with chunk index label
+   3. Search terms are highlighted within chunk text via server-side `<mark>` wrapping
+   4. Chunks are paginated with HTMX progressive reveal
+   5. Works with existing `/ui/document/{id}` route
+**Plans**: [43-01-PLAN.md](phases/43-chunk-preview-document-detail/43-01-PLAN.md) — 3 tasks (backend route extension + accordion template + tests)
 
 ### Phase 44: Auth Security Hardening
 **Goal**: Fix auth infrastructure gaps — mount auth router, add erasure separation of duties, enforce ownership checks, secure session cookies, batch verify_key writes, hash rate-limit subjects
@@ -328,7 +328,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 41. Provider Alias | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 
 | 42. Query Logging Analytics Dashboard | v0.1.5 | 1/1 | In Progress | — |
-| 43. Chunk Preview in Document Detail | v0.1.5 | 0/0 | Backlog | — |
+| 43. Chunk Preview in Document Detail | v0.1.5 | 0/1 | In Progress | — |
 | 44. Auth Security Hardening | v0.1.5 | 0/0 | Backlog | — |
 | 45. Database Reliability | v0.1.5 | 0/0 | Backlog | — |
 | 46. Code Quality & Coverage | v0.1.5 | 0/0 | Backlog | — |
