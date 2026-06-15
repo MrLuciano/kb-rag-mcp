@@ -5,22 +5,12 @@ Provides subcommands to list supported connector types and stage
 connector sync requests.
 """
 
-import asyncio
 import logging
 from pathlib import Path
 
 import click
 
-from ingest.connectors.factory import (
-    create_connector,
-    list_supported_types,
-)
 from ingest.connectors.models import ConnectorConfig
-from ingest.connectors.staging import (
-    cleanup_stale_staging,
-    get_staging_root,
-    stage_documents,
-)
 
 log = logging.getLogger("kb-ingest.cli.connectors")
 

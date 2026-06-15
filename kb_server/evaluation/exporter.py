@@ -7,7 +7,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -59,7 +59,7 @@ class ResultsExporter:
                     writer.writerow([
                         metric,
                         f"{score:.4f}",
-                        datetime.utcnow().isoformat() + "Z",
+                        datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
                     ])
 
         log.info("Results exported to CSV: %s", output_path)
@@ -80,7 +80,7 @@ class ResultsExporter:
         data: Dict[str, Any] = {
             "summary": {
                 "metrics": results,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
             },
         }
 

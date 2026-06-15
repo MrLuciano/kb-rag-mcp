@@ -11,7 +11,7 @@ PHASE 36: Provider Budget & Circuit Breaker
 import logging
 import time
 from collections import defaultdict, deque
-from typing import Dict, List, Optional
+from typing import Optional
 
 log = logging.getLogger("kb-mcp.provider_budget")
 

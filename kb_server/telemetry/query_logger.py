@@ -2,7 +2,7 @@
 import json
 import logging
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -86,7 +86,7 @@ class QueryLogger:
                     max_score, min_score, avg_score, latency_ms
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                datetime.utcnow().isoformat(),
+                datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
                 query_text,
                 top_k,
                 score_threshold,
@@ -114,7 +114,7 @@ class QueryLogger:
             Number of queries deleted
         """
         cutoff_date = (
-            datetime.utcnow() - timedelta(days=retention_days)
+            datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=retention_days)
         ).isoformat()
         
         with sqlite3.connect(self.db_path) as conn:

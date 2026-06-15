@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 
@@ -46,13 +46,13 @@ class User(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
     api_keys = relationship(
@@ -85,7 +85,7 @@ class ApiKey(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
     user = relationship("User", back_populates="api_keys")
@@ -101,7 +101,7 @@ class AuditLog(Base):
         DateTime,
         nullable=False,
         index=True,
-        default=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
     actor_id = Column(String(36), index=True, nullable=True)
     action = Column(String(100), nullable=False)
@@ -129,7 +129,7 @@ class ErasureRequest(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
     resolved_at = Column(DateTime, nullable=True)
 

@@ -64,10 +64,10 @@ class QueryAnalyzer:
         cursor = conn.cursor()
 
         if time_range_days > 0:
-            from datetime import datetime, timedelta
+            from datetime import datetime, timezone, timedelta
 
             cutoff = (
-                datetime.utcnow() - timedelta(days=time_range_days)
+                datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=time_range_days)
             ).isoformat()
             cursor.execute(
                 """
@@ -153,10 +153,10 @@ class QueryAnalyzer:
         cursor = conn.cursor()
 
         if time_range_days > 0:
-            from datetime import datetime, timedelta
+            from datetime import datetime, timezone, timedelta
 
             cutoff = (
-                datetime.utcnow() - timedelta(days=time_range_days)
+                datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=time_range_days)
             ).isoformat()
             cursor.execute(
                 """
@@ -198,10 +198,10 @@ class QueryAnalyzer:
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        from datetime import datetime, timedelta
+        from datetime import datetime, timezone, timedelta
 
         cutoff = (
-            datetime.utcnow() - timedelta(days=time_range_days)
+            datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=time_range_days)
         ).isoformat()
         cursor.execute(
             "SELECT latency_ms FROM query_log WHERE timestamp >= ?",

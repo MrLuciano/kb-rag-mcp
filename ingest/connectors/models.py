@@ -6,7 +6,6 @@ and sync results that feed into the staging layer.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Optional
 
 

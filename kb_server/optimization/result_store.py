@@ -8,7 +8,7 @@ run listing, and metric comparison across runs.
 import csv
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -55,7 +55,7 @@ class ExperimentResultStore:
         """
         record = {
             "run_id": run_id,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
             "strategy": strategy,
             "variant": variant,
             "params": params,

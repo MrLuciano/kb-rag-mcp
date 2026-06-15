@@ -5,7 +5,7 @@ from importlib.metadata import version, PackageNotFoundError
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -102,6 +102,5 @@ async def health():
 @app.get("/")
 async def root():
     """Root redirect to browse page."""
-    from fastapi.responses import RedirectResponse
 
     return RedirectResponse(url="/ui/browse")
