@@ -245,13 +245,16 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Depends on**: Phase 28b (Auth API — the endpoints being hardened)
 **Requirements**: SEC-01, SEC-02, SEC-03, SEC-04, SEC-05, SEC-06
 **Success Criteria** (what must be TRUE):
-  1. Auth router mounted and all auth endpoints reachable at runtime
-  2. Erasure approve and execute are separate endpoints callable by different roles
-  3. export_user_data and list_api_keys verify caller owns the target user_id
-  4. Session cookie sets secure=True when HTTPS is detected or env var is set
-  5. verify_key does not write to DB on every call (batched or cached)
-  6. API key prefix is not exposed in rate-limit subject tracking
-**Plans**: TBD
+   1. Auth router mounted and all auth endpoints reachable at runtime
+   2. Erasure approve and execute are separate endpoints callable by different roles
+   3. export_user_data and list_api_keys verify caller owns the target user_id
+   4. Session cookie sets secure=True when HTTPS is detected or env var is set
+   5. verify_key does not write to DB on every call (batched or cached)
+   6. API key prefix is not exposed in rate-limit subject tracking
+**Plans**: 1 plan
+
+Plans:
+- [ ] 44-01-PLAN.md — 6 tasks: mount auth router, erasure separation, ownership checks, secure cookie, verify_key batching, rate-limit hashing
 
 ### Phase 45: Database Reliability
 **Goal**: Fix SQLite connection management — use context managers everywhere, enforce foreign keys, add missing indexes, make migration DDL idempotent
@@ -329,7 +332,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 | 42. Query Logging Analytics Dashboard | v0.1.5 | 1/1 | In Progress | — |
 | 43. Chunk Preview in Document Detail | v0.1.5 | 0/1 | In Progress | — |
-| 44. Auth Security Hardening | v0.1.5 | 0/0 | Backlog | — |
+| 44. Auth Security Hardening | v0.1.5 | 0/1 | In Progress | — |
 | 45. Database Reliability | v0.1.5 | 0/0 | Backlog | — |
 | 46. Code Quality & Coverage | v0.1.5 | 0/0 | Backlog | — |
 
