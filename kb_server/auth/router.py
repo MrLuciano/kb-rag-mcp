@@ -3,6 +3,7 @@ import hmac
 import logging
 import os
 import secrets
+from typing import Optional
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -25,6 +26,9 @@ from kb_server.auth.service import AuthService
 log = logging.getLogger("kb-mcp.auth.router")
 
 _JWT_SECRET = os.getenv("JWT_SECRET", "")
+_JWT_SECURE = os.getenv("JWT_SECURE", "false").lower() in (
+    "true", "1",
+)
 
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 
@@ -57,6 +61,13 @@ async def create_session(
     current_user: User = Depends(get_current_user),
 ):
     """Exchange API key for an HttpOnly session cookie (8h)."""
+    service = _get_service(request)
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        api_key = auth_header[7:].strip()
+        if api_key:
+            service.record_key_usage(api_key)
+
     expires_at = int(time.time()) + 28800
     raw = f"{current_user.id}:{expires_at}"
     secret = _JWT_SECRET or secrets.token_hex(32)
@@ -71,7 +82,7 @@ async def create_session(
         httponly=True,
         samesite="lax",
         max_age=28800,
-        secure=False,
+        secure=_JWT_SECURE,
         path="/",
     )
     return SessionResponse(
@@ -159,12 +170,18 @@ async def create_api_key(
 
 @router.get("/api-keys", response_model=list[ApiKeyResponse])
 async def list_api_keys(
-    user_id: str,
     request: Request,
     current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = None,
 ):
     service = _get_service(request)
-    keys = service.list_api_keys(user_id)
+    target_id = user_id or current_user.id
+    if target_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot list another user's API keys",
+        )
+    keys = service.list_api_keys(target_id)
     return [ApiKeyResponse.model_validate(k) for k in keys]
 
 
@@ -211,17 +228,35 @@ async def approve_erasure(
     admin: User = Depends(require_admin),
 ):
     mgr = _get_erasure_manager(request)
-    success = mgr.approve_erasure(request_id=request_id, approved_by=admin.id)
+    success = mgr.approve_erasure(
+        request_id=request_id, approved_by=admin.id
+    )
     if not success:
         raise HTTPException(
             status_code=400,
             detail="Cannot approve — request not found or "
             "not in requested state",
         )
+    return {
+        "status": "approved",
+        "request_id": request_id,
+    }
 
+
+@router.post("/admin/erasure-requests/{request_id}/execute")
+async def execute_erasure(
+    request_id: str,
+    request: Request,
+    admin: User = Depends(require_admin),
+):
+    mgr = _get_erasure_manager(request)
     executed = mgr.execute_erasure(request_id)
     if not executed:
-        raise HTTPException(status_code=500, detail="Erasure execution failed")
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot execute — request not found or "
+            "not in approved state",
+        )
     return {
         "status": "completed",
         "request_id": request_id,
@@ -234,6 +269,11 @@ async def export_user_data(
     request: Request,
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.id != user_id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot export another user's data",
+        )
     mgr = _get_erasure_manager(request)
     data = mgr.export_user_data(user_id)
     if data is None:
