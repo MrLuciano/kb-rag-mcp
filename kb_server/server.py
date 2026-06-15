@@ -1450,10 +1450,23 @@ async def main():
 
         async def handle_mcp(request):
             from kb_server.auth import is_auth_enabled, verify_request
+
+            subject = "unknown"
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                key = auth_header[7:]
+                prefix = key[:8] if len(key) >= 8 else key
+                subject = f"key:{prefix}"
+            else:
+                forwarded = request.headers.get("X-Forwarded-For", "")
+                subject = (
+                    forwarded.split(",")[0].strip()
+                    or (request.client.host if request.client else "unknown")
+                )
+            _current_subject.set(subject)
             _current_transport.set("streamable-http")
 
             if is_auth_enabled():
-                auth_header = request.headers.get("Authorization", "")
                 ok, err = verify_request(auth_header)
                 if not ok:
                     return Response(
