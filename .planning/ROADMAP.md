@@ -133,8 +133,8 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [47-01-PLAN.md](phases/47-lm-studio-dependency/47-01-PLAN.md) — 2 tasks (graceful error fallback + kb-ingest check embedding)
 - [-] Phase 48: Cross-Encoder Lazy Loading — ✅ Already implemented and tested (shipped in v0.1.3 Phase 20)
   - Plans: Already done
-- [ ] Phase 49: Qdrant Mock Cleanup — Replace sys.modules stubbing with unittest.mock.patch in tests
-  - Plans: TBD
+- [-] Phase 49: Qdrant Mock Cleanup — ✅ Already resolved (Phase 10 imported real qdrant before stubs; conftest.py uses proper patch)
+  - Plans: Already done
 - [ ] Phase 50: SSE Test Process Consolidation — Refactor test_smoke.py for per-function @patch to consolidate SSE test process
   - Plans: TBD
 
@@ -311,11 +311,8 @@ Plans:
 **Goal**: Replace sys.modules stubbing with unittest.mock.patch in test fixtures to eliminate MagicMock pollution
 **Depends on**: Nothing
 **Requirements**: T-04
-**Success Criteria** (what must be TRUE):
-  1. All test files use `@patch` or `with patch()` instead of `sys.modules[qdrant_client]` stubs
-  2. Enum values from qdrant_client are real enum instances, not MagicMock
-  3. No regression in test count or pass rate
-**Plans**: TBD
+**Status**: ✅ Already resolved (Phase 10: real qdrant_client imported before stubs; conftest.py uses proper @patch). 50 vector_store unit tests pass with real enum values.
+**Plans**: Already shipped — no action needed.
 
 ### Phase 50: SSE Test Process Consolidation
 **Goal**: Refactor test_smoke.py to use per-function @patch instead of module-level stubs, allowing SSE tests to run in the same process as other tests
@@ -385,7 +382,7 @@ Plans:
 | 46. Code Quality & Coverage | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 | 47. LM Studio Dependency Handling | v0.1.5 | 1/1 | Planned | — |
 | 48. Cross-Encoder Lazy Loading | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
-| 49. Qdrant Mock Cleanup | v0.1.5 | 0/0 | Backlog | — |
+| 49. Qdrant Mock Cleanup | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
 | 50. SSE Test Process Consolidation | v0.1.5 | 0/0 | Backlog | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
