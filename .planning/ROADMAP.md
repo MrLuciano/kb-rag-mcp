@@ -131,8 +131,8 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [46-01-PLAN.md](phases/46-code-quality-coverage/46-01-PLAN.md) — 3 tasks (utcnow replacement, F401 cleanup, integration tags)
 - [ ] Phase 47: LM Studio Dependency Handling — Graceful fallback when LM Studio is unreachable; startup health-check
   - Plans: [47-01-PLAN.md](phases/47-lm-studio-dependency/47-01-PLAN.md) — 2 tasks (graceful error fallback + kb-ingest check embedding)
-- [ ] Phase 48: Cross-Encoder Lazy Loading — Defer 500MB sentence-transformers model load to first predict() call
-  - Plans: TBD
+- [-] Phase 48: Cross-Encoder Lazy Loading — ✅ Already implemented and tested (shipped in v0.1.3 Phase 20)
+  - Plans: Already done
 - [ ] Phase 49: Qdrant Mock Cleanup — Replace sys.modules stubbing with unittest.mock.patch in tests
   - Plans: TBD
 - [ ] Phase 50: SSE Test Process Consolidation — Refactor test_smoke.py for per-function @patch to consolidate SSE test process
@@ -304,11 +304,8 @@ Plans:
 **Goal**: Defer 500MB sentence-transformers CrossEncoder model load from import time to first predict() call
 **Depends on**: Nothing
 **Requirements**: T-03
-**Success Criteria** (what must be TRUE):
-  1. CrossEncoder model loads only on first rerank() call, not at module import
-  2. Importing reranker module does not trigger model download or memory allocation
-  3. First call has expected latency penalty but subsequent calls reuse cached model
-**Plans**: TBD
+**Status**: ✅ Already implemented and tested (shipped in v0.1.3 Phase 20). CrossEncoderReranker._load_model() lazily loads on first rerank() call.
+**Plans**: Already shipped — no action needed.
 
 ### Phase 49: Qdrant Mock Cleanup
 **Goal**: Replace sys.modules stubbing with unittest.mock.patch in test fixtures to eliminate MagicMock pollution
@@ -387,7 +384,7 @@ Plans:
 | 45. Database Reliability | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 | 46. Code Quality & Coverage | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 | 47. LM Studio Dependency Handling | v0.1.5 | 1/1 | Planned | — |
-| 48. Cross-Encoder Lazy Loading | v0.1.5 | 0/0 | Backlog | — |
+| 48. Cross-Encoder Lazy Loading | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
 | 49. Qdrant Mock Cleanup | v0.1.5 | 0/0 | Backlog | — |
 | 50. SSE Test Process Consolidation | v0.1.5 | 0/0 | Backlog | — |
 
