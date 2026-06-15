@@ -130,7 +130,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 - [ ] Phase 46: Code Quality & Coverage — utcnow deprecation fix, flake8 cleanup, coverage gap, test tagging, unused imports
   - Plans: [46-01-PLAN.md](phases/46-code-quality-coverage/46-01-PLAN.md) — 3 tasks (utcnow replacement, F401 cleanup, integration tags)
 - [ ] Phase 47: LM Studio Dependency Handling — Graceful fallback when LM Studio is unreachable; startup health-check
-  - Plans: TBD
+  - Plans: [47-01-PLAN.md](phases/47-lm-studio-dependency/47-01-PLAN.md) — 2 tasks (graceful error fallback + kb-ingest check embedding)
 - [ ] Phase 48: Cross-Encoder Lazy Loading — Defer 500MB sentence-transformers model load to first predict() call
   - Plans: TBD
 - [ ] Phase 49: Qdrant Mock Cleanup — Replace sys.modules stubbing with unittest.mock.patch in tests
@@ -298,7 +298,7 @@ Plans:
   1. Embedding health check warns at startup if backend unreachable (non-fatal)
   2. `kb-ingest check` validates LM Studio/Ollama connectivity
   3. Embedding pipeline reports clear error when backend is down (not a crash)
-**Plans**: TBD
+**Plans**: [47-01-PLAN.md](phases/47-lm-studio-dependency/47-01-PLAN.md) — 2 tasks (graceful error fallback + kb-ingest check embedding)
 
 ### Phase 48: Cross-Encoder Lazy Loading
 **Goal**: Defer 500MB sentence-transformers CrossEncoder model load from import time to first predict() call
@@ -386,7 +386,7 @@ Plans:
 | 44. Auth Security Hardening | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 | 45. Database Reliability | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 | 46. Code Quality & Coverage | v0.1.5 | 1/1 | Complete | 2026-06-15 |
-| 47. LM Studio Dependency Handling | v0.1.5 | 0/0 | Backlog | — |
+| 47. LM Studio Dependency Handling | v0.1.5 | 1/1 | Planned | — |
 | 48. Cross-Encoder Lazy Loading | v0.1.5 | 0/0 | Backlog | — |
 | 49. Qdrant Mock Cleanup | v0.1.5 | 0/0 | Backlog | — |
 | 50. SSE Test Process Consolidation | v0.1.5 | 0/0 | Backlog | — |
