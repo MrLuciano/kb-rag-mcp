@@ -768,8 +768,12 @@ class IngestRegistry:
 
         Creates the files table and indexes if they do not exist.
         """
-        self._conn = sqlite3.connect(self.db_path)
+        self._conn = sqlite3.connect(
+            self.db_path,
+            check_same_thread=False,
+        )
         self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
         self._migrate()
         log_reg.info(f"Registry: {self.db_path}")
 

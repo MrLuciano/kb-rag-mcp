@@ -237,7 +237,9 @@ async def check_database() -> HealthStatus:
         from ingest.core.metadata import MetadataStore
 
         store = MetadataStore()
+        store.connect()
         stats = store.get_stats()
+        store.close()
         latency = (time.time() - start) * 1000
 
         return HealthStatus(

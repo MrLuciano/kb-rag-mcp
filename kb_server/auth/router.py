@@ -24,6 +24,8 @@ from kb_server.auth.service import AuthService
 
 log = logging.getLogger("kb-mcp.auth.router")
 
+_JWT_SECRET = os.getenv("JWT_SECRET", "")
+
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 
 
@@ -57,7 +59,7 @@ async def create_session(
     """Exchange API key for an HttpOnly session cookie (8h)."""
     expires_at = int(time.time()) + 28800
     raw = f"{current_user.id}:{expires_at}"
-    secret = os.getenv("JWT_SECRET", secrets.token_hex(32))
+    secret = _JWT_SECRET or secrets.token_hex(32)
     signature = hmac.new(
         secret.encode(), raw.encode(), hashlib.sha256
     ).hexdigest()[:16]

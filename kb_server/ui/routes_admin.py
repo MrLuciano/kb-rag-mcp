@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
@@ -81,11 +81,34 @@ async def admin_profile_content(request: Request):
 # ── Document Cleanup API ──────────────────────────────────────
 
 
-api_router = APIRouter(prefix="/api/v1", tags=["api"])
+async def _verify_request_api_key(request: Request):
+    """Verify API key from Authorization header or X-API-Key header."""
+    auth_header = request.headers.get("Authorization", "")
+    api_key = None
+    if auth_header.startswith("Bearer "):
+        api_key = auth_header[7:].strip()
+    if not api_key:
+        api_key = request.headers.get("X-API-Key")
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    from kb_server.auth_registry import get_registry
+
+    registry = get_registry()
+    if not registry.verify_key(api_key):
+        raise HTTPException(
+            status_code=401, detail="Invalid or revoked API key"
+        )
+
+
+api_router = APIRouter(prefix="/api/v1", tags=["api"], dependencies=[])
 
 
 @api_router.delete("/documents/{source_file:path}")
-async def delete_document(source_file: str):
+async def delete_document(
+    source_file: str,
+    request: Request,
+    _auth=Depends(_verify_request_api_key),
+):
     """Delete a document from Qdrant and mark deleted in registry."""
     import sqlite3
     from pathlib import Path
@@ -95,7 +118,7 @@ async def delete_document(source_file: str):
     store = VectorStore()
     await store.connect()
     try:
-        await store.delete_by_source(source_file)
+        await store.delete_document(source_file)
     finally:
         await store.close()
     db_path = Path("data/kb_metadata.db")
@@ -111,7 +134,10 @@ async def delete_document(source_file: str):
 
 
 @api_router.post("/documents/{source_file:path}/re-ingest")
-async def reingest_document(source_file: str):
+async def reingest_document(
+    source_file: str,
+    _auth=Depends(_verify_request_api_key),
+):
     """Re-ingest a document."""
     from ingest.ingest import process_file
 
@@ -124,7 +150,10 @@ async def reingest_document(source_file: str):
 
 
 @api_router.post("/documents/delete-failed")
-async def delete_failed_documents():
+async def delete_failed_documents(
+    request: Request,
+    _auth=Depends(_verify_request_api_key),
+):
     """Delete all documents with 'failed' status from registry."""
     import sqlite3
     from pathlib import Path
@@ -142,6 +171,8 @@ async def delete_failed_documents():
 
 @api_router.get("/documents/export")
 async def export_documents(
+    request: Request,
+    _auth=Depends(_verify_request_api_key),
     format: str = Query("json", pattern="^(csv|json)$"),
     product: Optional[str] = Query(None),
     doc_type: Optional[str] = Query(None),

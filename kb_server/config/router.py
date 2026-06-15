@@ -1,12 +1,39 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 log = logging.getLogger("kb-mcp.config.router")
 
-router = APIRouter(prefix="/api/v1/config", tags=["config"])
+
+def _verify_config_auth(request: Request):
+    auth_header = request.headers.get("Authorization", "")
+    api_key = None
+    if auth_header.startswith("Bearer "):
+        api_key = auth_header[7:].strip()
+    if not api_key:
+        api_key = request.headers.get("X-API-Key")
+    if not api_key:
+        from kb_server.auth import is_auth_enabled
+
+        if not is_auth_enabled():
+            return
+        raise HTTPException(status_code=401, detail="API key required")
+    from kb_server.auth_registry import get_registry
+
+    registry = get_registry()
+    if not registry.verify_key(api_key):
+        raise HTTPException(
+            status_code=401, detail="Invalid or revoked API key"
+        )
+
+
+router = APIRouter(
+    prefix="/api/v1/config",
+    tags=["config"],
+    dependencies=[Depends(_verify_config_auth)],
+)
 
 
 class ConfigUpdate(BaseModel):

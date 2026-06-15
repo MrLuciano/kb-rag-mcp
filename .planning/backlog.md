@@ -146,8 +146,178 @@ When ingest metrics are wired, restore the removed panels to the dashboard:
 
 ---
 
+---
+
+## v0.1.6 Backlog — Review Findings & Tech Debt
+
+Items consolidated from `REVIEW.md` (2026-06-15 full audit) and `.planning/reports/TECH_DEBT.md`.
+
+### 🔴 Critical (Must Fix)
+
+#### CR-01: Admin API has zero authentication
+- **File:** `kb_server/ui/routes_admin.py`
+- **Source:** REVIEW.md
+- **Fix:** Add `Depends(get_current_user)` or API key check to document cleanup endpoints. **Partially fixed** — auth added but needs verification.
+
+#### CR-02: Admin endpoints call non-existent methods
+- **File:** `kb_server/ui/routes_admin.py`
+- **Source:** REVIEW.md
+- **Fix:** `delete_by_source` doesn't exist on VectorStore. `process_file` called with wrong signature. **Fixed** — changed to `delete_document`.
+
+#### CR-03: Session cookie JWT_SECRET per-request random
+- **File:** `kb_server/auth/router.py`
+- **Source:** REVIEW.md
+- **Fix:** `JWT_SECRET` defaults to random per-request. No cookie validation code exists. **Partially fixed** — secret made stable, validation still needed.
+
+#### CR-05: Health check DB without connecting
+- **File:** `kb_server/health.py:239`
+- **Source:** REVIEW.md
+- **Fix:** `check_database()` calls `get_stats()` without `connect()`. **Fixed.**
+
+#### CR-06: Export crashes on non-existent column
+- **File:** `ingest/cli/export.py:102`
+- **Source:** REVIEW.md
+- **Fix:** `version` column doesn't exist in files table. **Fixed.**
+
+#### CR-07: IngestRegistry missing thread safety
+- **File:** `ingest/core/metadata.py:766`
+- **Source:** REVIEW.md
+- **Fix:** Missing `check_same_thread=False` and WAL mode. **Fixed.**
+
+#### CR-08: Undefined `os` in reclassify CLI
+- **File:** `ingest/cli/reclassify.py`
+- **Source:** REVIEW.md
+- **Fix:** Uses `os.getenv` without importing `os`. **Fixed.**
+
+#### Coverage: 72% branch vs 90% target
+- **Severity:** HIGH
+- **Source:** REVIEW.md
+- **Issue:** CI gate `fail_under = 90` will fail on every PR. 1204 tests pass, 5 pre-existing failures (need Qdrant).
+
+### 🟡 Security Warnings
+
+#### HW-01: Horizontal privilege escalation — export_user_data
+- **File:** `kb_server/auth/service.py:63`
+- **Issue:** Any authenticated user can export any other user's data. No ownership check.
+- **Fix:** Add `caller_id == target_user_id` check.
+
+#### HW-02: Horizontal privilege escalation — list_api_keys
+- **File:** `kb_server/auth/service.py:120`
+- **Issue:** `list_api_keys` accepts arbitrary user_id without verifying caller ownership.
+- **Fix:** Scope to caller's user_id from auth context.
+
+#### HW-03: Erasure approve+execute in single request
+- **File:** `kb_server/auth/erasure.py:46` + `kb_server/auth/router.py:178`
+- **Issue:** No separation of duties — single request approves AND executes erasure.
+- **Fix:** Split into two endpoints called by different roles.
+
+#### HW-04: Session cookie secure=False
+- **File:** `kb_server/auth/router.py:172`
+- **Issue:** Cookie set with `secure=False` — leaks over HTTP.
+- **Fix:** Set `secure=True` in production (env var gated).
+
+#### HW-05: verify_key writes DB on every auth
+- **File:** `kb_server/auth/service.py:177-178`
+- **Issue:** Every API key verification writes `last_used_at` timestamp — DB contention under load.
+- **Fix:** Batch in-memory, flush periodically.
+
+#### HW-06: Auth router never mounted
+- **File:** `kb_server/auth/router.py` (entire file)
+- **Issue:** All auth endpoints are unreachable because the auth router is never mounted on the main server app.
+- **Fix:** Mount router in `kb_server/server.py` `main()`.
+
+#### HW-07: API key prefix in rate-limit subject
+- **File:** `kb_server/server.py:564`
+- **Issue:** API key prefix leaked into rate-limit subject tracking via `extract_bearer_token`.
+- **Fix:** Hash or truncate the subject.
+
+### 🟡 Database Warnings
+
+#### DB-01: Connection leaks in UI routes
+- **Files:** `kb_server/ui/routes.py`, `kb_server/ui/routes_admin.py`, `tests/test_query_analyzer.py`
+- **Issue:** 7+ raw `sqlite3.connect()` calls without context managers — connections leak on exception.
+- **Fix:** Use `with sqlite3.connect() as conn:` pattern.
+
+#### DB-02: Foreign keys not enforced
+- **Files:** All `connect()` methods in `ingest/core/metadata.py`, `kb_server/auth_registry.py`
+- **Issue:** `PRAGMA foreign_keys=ON` never set — `ON DELETE CASCADE` silently ignored.
+- **Fix:** Set `PRAGMA foreign_keys=ON` on every connection.
+
+#### DB-03: Missing indexes
+- **Files:** `kb_server/auth_registry.py` (`api_keys.prefix`), `kb_server/telemetry/query_logger.py` (`query_log.timestamp`)
+- **Issue:** Full table scans on revoke and cleanup operations.
+- **Fix:** Add indexes on `prefix` and `timestamp` columns.
+
+#### DB-04: Migration fragility — bare CREATE TABLE
+- **File:** `ingest/core/metadata.py` (reclassify_backups, reclassify_history tables)
+- **Issue:** `CREATE TABLE` without `IF NOT EXISTS` — re-running migration crashes.
+- **Fix:** Add `IF NOT EXISTS` to all migration DDL.
+
+### 🟡 Quality Warnings
+
+#### Q-01: 23 uses of deprecated datetime.utcnow()
+- **Files:** Multiple across `kb_server/`, `ingest/`, `tests/`
+- **Issue:** `datetime.utcnow()` deprecated in Python 3.12+. Causes warnings in test output (302 warnings).
+- **Fix:** Replace with `datetime.now(datetime.UTC).replace(tzinfo=None)`.
+
+#### Q-02: 481 flake8 violations
+- **Source:** Full codebase scan
+- **Issue:** Mostly line length (E501), unused imports (F401), whitespace (W293).
+- **Fix:** Run `black` + manual cleanup.
+
+#### Q-03: 17 unused imports
+- **Files:** Multiple across codebase
+- **Issue:** Stale imports from refactoring.
+- **Fix:** Run `autoflake --remove-all-unused-imports`.
+
+#### Q-04: 5 pre-existing test failures
+- **Files:** `tests/test_smoke.py` (3), `tests/test_server_terms.py` (2)
+- **Issue:** Require Qdrant running — need `@pytest.mark.integration` tag or mock fixes.
+
+### 🟢 TECH_DEBT Items (from .planning/reports/TECH_DEBT.md)
+
+#### M-01: KB has zero documents (Must Fix)
+- **Effort:** ~30 min
+- **Issue:** OTCS documentation never ingested. Server returns empty results.
+- **Remediation:** `kb-ingest ingest --docs /mnt/c/Recebedor/learning/`
+
+#### M-02: LM Studio must be running for ingest/eval (Must Fix)
+- **Effort:** ~2h
+- **Issue:** No graceful fallback if embedding backend is unreachable.
+- **Remediation:** Add startup health-check, `kb-ingest check` command.
+
+#### S-01: Cross-encoder model loads 500MB at import (Should Fix)
+- **File:** `kb_server/retrieval/reranker.py`
+- **Effort:** ~1h
+- **Fix:** Defer model loading to first `predict()` call.
+
+#### S-03: MagicMock pollution from qdrant_client stubs (Should Fix)
+- **Files:** `tests/conftest.py`, `tests/test_vector_store_unit.py`
+- **Effort:** ~2h
+- **Fix:** Replace `sys.modules` stubbing with `unittest.mock.patch`.
+
+#### N-03: SSE tests need separate process (Nice to Have)
+- **Effort:** ~1h
+- **Fix:** Refactor `test_smoke.py` to use per-function `@patch` instead of module-level stubs.
+
+### TODO from REVIEW.md (not yet addressed)
+
+- CR-09: Branch coverage — 72% vs 90% target in CI
+- HW-01/02: Horizontal privilege escalation — ownership checks
+- HW-03: Erasure separation of duties — split approve/execute
+- HW-06: Mount auth router on main server app
+- DB-01: Connection leaks — context manager pattern
+- DB-02: Foreign key enforcement — PRAGMA foreign_keys=ON
+- DB-03: Missing indexes — prefix, timestamp
+- Q-01: datetime.utcnow() deprecation — 23 sites
+- Q-02: 481 flake8 violations
+
+---
+
 ## References
 
+- `REVIEW.md` — Full audit with scores by dimension
+- `.planning/reports/TECH_DEBT.md` — Consolidated technical debt from v0.1.0/v0.1.1
 - `docs/AMDGPURESEARCH.md` — AMD GPU docling acceleration research
 - `ingest/ingest.py` — PDF extractor selection (`PDF_EXTRACTOR` env var)
 - `ingest/reclassify_engine.py` — path resolution fixes
