@@ -15,6 +15,7 @@ import sys
 
 # ── Load .env before any os.getenv
 from config.bootstrap_env import bootstrap_env
+
 bootstrap_env()
 
 from fastapi import FastAPI, Response
@@ -23,11 +24,11 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 # Import metrics module to register all metrics with prometheus_client
 import observability.metrics  # noqa: F401
-
 from kb_server.health import (
     check_all_components,
     get_health_summary,
 )
+from kb_server.observability.percentiles import get_percentile_tracker
 
 # ── Logging ─────────────────────────────────────────────────────
 logging.basicConfig(
@@ -35,9 +36,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
         logging.StreamHandler(sys.stderr),
-        logging.FileHandler(
-            os.getenv("LOG_PATH", "/tmp/kb-mcp-health.log")
-        ),
+        logging.FileHandler(os.getenv("LOG_PATH", "/tmp/kb-mcp-health.log")),
     ],
 )
 log = logging.getLogger("kb-mcp.health-server")
@@ -88,8 +87,7 @@ async def readiness_check():
     # Service is ready if critical components are healthy
     critical = ["embedding", "vector_store", "database"]
     ready = all(
-        name in components and components[name].healthy
-        for name in critical
+        name in components and components[name].healthy for name in critical
     )
 
     if ready:
@@ -116,18 +114,24 @@ async def liveness_check():
 async def metrics_endpoint():
     """
     Prometheus metrics endpoint.
-    
+
     Returns all metrics in Prometheus text format.
     Used by: Prometheus scraper
     """
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    prometheus_output = generate_latest().decode()
+    percentile_output = get_percentile_tracker().export_prometheus()
+    if percentile_output:
+        prometheus_output += "\n" + percentile_output
+    return Response(prometheus_output, media_type=CONTENT_TYPE_LATEST)
 
 
 if __name__ == "__main__":
     import uvicorn
 
     log.info(f"Starting health check server on {HEALTH_HOST}:{HEALTH_PORT}")
-    log.info("Metrics endpoint available at /metrics (Prometheus scrape target)")
+    log.info(
+        "Metrics endpoint available at /metrics (Prometheus scrape target)"
+    )
     uvicorn.run(
         app,
         host=HEALTH_HOST,

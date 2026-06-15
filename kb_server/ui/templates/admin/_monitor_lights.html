@@ -1,0 +1,34 @@
+<div class="d-flex gap-3 flex-wrap mb-3">
+    {% set labels = {
+        "vector_store": "Qdrant",
+        "embedding": "Embedding",
+        "cache": "Cache",
+        "database": "Database",
+        "filesystem": "Filesystem",
+        "grafana": "Grafana",
+    } %}
+    {% set all_components = {
+        "vector_store": true, "embedding": true, "cache": true,
+        "database": true, "filesystem": true, "grafana": true,
+    } %}
+    {% for key, label in labels.items() %}
+        {% set status = components.get(key) %}
+        <div class="card" style="width: 160px;">
+            <div class="card-body text-center py-3">
+                {% if status and status.healthy %}
+                    <div class="mb-1" style="width:12px;height:12px;border-radius:50%;background:#198754;margin:0 auto;"></div>
+                    <small class="text-success d-block">{{ label }}</small>
+                    <small class="text-muted">{{ status.message[:30] }}</small>
+                {% elif status and not status.healthy %}
+                    <div class="mb-1" style="width:12px;height:12px;border-radius:50%;background:#dc3545;margin:0 auto;"></div>
+                    <small class="text-danger d-block">{{ label }}</small>
+                    <small class="text-muted">{{ status.message[:30] }}</small>
+                {% else %}
+                    <div class="mb-1" style="width:12px;height:12px;border-radius:50%;background:#6c757d;margin:0 auto;"></div>
+                    <small class="text-secondary d-block">{{ label }}</small>
+                    <small class="text-muted">Not configured</small>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>

@@ -1,0 +1,241 @@
+import hashlib
+import hmac
+import logging
+import os
+import secrets
+import time
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response as FastAPIResponse
+
+from kb_server.auth.deps import get_current_user, require_admin
+from kb_server.auth.erasure import ErasureManager
+from kb_server.auth.models import User
+from kb_server.auth.schemas import (
+    ApiKeyCreatedResponse,
+    ApiKeyResponse,
+    CreateApiKeyRequest,
+    CreateUserRequest,
+    ErasureRequestResponse,
+    SessionResponse,
+    UserResponse,
+)
+from kb_server.auth.service import AuthService
+
+log = logging.getLogger("kb-mcp.auth.router")
+
+router = APIRouter(prefix="/api/v1", tags=["auth"])
+
+
+def _get_service(request: Request) -> AuthService:
+    svc = getattr(request.app.state, "auth_service", None)
+    if svc is None:
+        raise HTTPException(
+            status_code=503, detail="Auth service not available"
+        )
+    return svc
+
+
+def _get_erasure_manager(request: Request) -> ErasureManager:
+    svc = _get_service(request)
+    erasure = getattr(request.app.state, "erasure_manager", None)
+    if erasure is None:
+        erasure = ErasureManager(svc._session)
+        request.app.state.erasure_manager = erasure
+    return erasure
+
+
+# ── Auth Session ────────────────────────────────────────────────
+
+
+@router.post("/auth/session", response_model=SessionResponse)
+async def create_session(
+    request: Request,
+    response: FastAPIResponse,
+    current_user: User = Depends(get_current_user),
+):
+    """Exchange API key for an HttpOnly session cookie (8h)."""
+    expires_at = int(time.time()) + 28800
+    raw = f"{current_user.id}:{expires_at}"
+    secret = os.getenv("JWT_SECRET", secrets.token_hex(32))
+    signature = hmac.new(
+        secret.encode(), raw.encode(), hashlib.sha256
+    ).hexdigest()[:16]
+    session_token = f"{raw}:{signature}"
+
+    response.set_cookie(
+        key="session",
+        value=session_token,
+        httponly=True,
+        samesite="lax",
+        max_age=28800,
+        secure=False,
+        path="/",
+    )
+    return SessionResponse(
+        id=str(current_user.id),
+        username=current_user.username,
+        role=current_user.role,
+        expires_in=28800,
+    )
+
+
+# ── User Endpoints ──────────────────────────────────────────────
+
+
+@router.post("/users", response_model=UserResponse)
+async def create_user(
+    body: CreateUserRequest,
+    request: Request,
+    admin: User = Depends(require_admin),
+):
+    service = _get_service(request)
+    try:
+        user = service.create_user(username=body.username, role=body.role)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return UserResponse.model_validate(user)
+
+
+@router.get("/users", response_model=list[UserResponse])
+async def list_users(
+    request: Request,
+    admin: User = Depends(require_admin),
+):
+    service = _get_service(request)
+    users = service.list_users()
+    return [UserResponse.model_validate(u) for u in users]
+
+
+@router.get("/users/me", response_model=UserResponse)
+async def get_current_user_endpoint(
+    current_user: User = Depends(get_current_user),
+):
+    return UserResponse.model_validate(current_user)
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    request: Request,
+    admin: User = Depends(require_admin),
+):
+    service = _get_service(request)
+    deleted = service.delete_user(user_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=404, detail=f"User not found: {user_id}"
+        )
+    return {"deleted": True, "user_id": user_id}
+
+
+# ── API Key Endpoints ───────────────────────────────────────────
+
+
+@router.post("/api-keys", response_model=ApiKeyCreatedResponse)
+async def create_api_key(
+    body: CreateApiKeyRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    service = _get_service(request)
+    try:
+        raw_key, api_key = service.create_api_key(
+            user_id=body.user_id, description=body.description
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return ApiKeyCreatedResponse(
+        id=api_key.id,
+        prefix=api_key.prefix,
+        description=api_key.description,
+        is_revoked=api_key.is_revoked,
+        created_at=api_key.created_at,
+        raw_key=raw_key,
+    )
+
+
+@router.get("/api-keys", response_model=list[ApiKeyResponse])
+async def list_api_keys(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    service = _get_service(request)
+    keys = service.list_api_keys(user_id)
+    return [ApiKeyResponse.model_validate(k) for k in keys]
+
+
+@router.delete("/api-keys/{key_id}")
+async def revoke_api_key(
+    key_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    service = _get_service(request)
+    revoked = service.revoke_api_key(key_id)
+    if not revoked:
+        raise HTTPException(
+            status_code=404, detail=f"API key not found: {key_id}"
+        )
+    return {"revoked": True, "key_id": key_id}
+
+
+# ── GDPR Erasure Endpoints ──────────────────────────────────────
+
+
+@router.post("/users/{user_id}/erasure-request")
+async def request_erasure(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    mgr = _get_erasure_manager(request)
+    try:
+        er = mgr.request_erasure(
+            user_id=user_id,
+            requested_by=current_user.id,
+            reason="User requested erasure",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return ErasureRequestResponse.model_validate(er)
+
+
+@router.post("/admin/erasure-requests/{request_id}/approve")
+async def approve_erasure(
+    request_id: str,
+    request: Request,
+    admin: User = Depends(require_admin),
+):
+    mgr = _get_erasure_manager(request)
+    success = mgr.approve_erasure(request_id=request_id, approved_by=admin.id)
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot approve — request not found or "
+            "not in requested state",
+        )
+
+    executed = mgr.execute_erasure(request_id)
+    if not executed:
+        raise HTTPException(status_code=500, detail="Erasure execution failed")
+    return {
+        "status": "completed",
+        "request_id": request_id,
+    }
+
+
+@router.get("/users/{user_id}/export")
+async def export_user_data(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    mgr = _get_erasure_manager(request)
+    data = mgr.export_user_data(user_id)
+    if data is None:
+        raise HTTPException(
+            status_code=404, detail=f"User not found: {user_id}"
+        )
+    return data

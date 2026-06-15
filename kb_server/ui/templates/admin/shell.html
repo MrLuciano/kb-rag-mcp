@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - KB-RAG{% endblock %}
+
+{% block content %}
+<div x-data="adminApp()" class="d-flex" style="min-height: calc(100vh - 80px);">
+    <!-- Sidebar -->
+    <div class="d-flex flex-column bg-dark text-white p-3" style="width: 220px; flex-shrink: 0;">
+        <h5 class="text-center mb-4">Admin Panel</h5>
+        <ul class="nav nav-pills flex-column">
+            <li class="nav-item">
+                <a class="nav-link text-white" :class="{ 'active': activeTab === 'documents' }"
+                   href="#" @click.prevent="switchTab('documents')">📄 Documents</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" :class="{ 'active': activeTab === 'monitoring' }"
+                   href="#" @click.prevent="switchTab('monitoring')">📊 Monitoring</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" :class="{ 'active': activeTab === 'ingestion' }"
+                   href="#" @click.prevent="switchTab('ingestion')">📥 Ingestion</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" :class="{ 'active': activeTab === 'ragas' }"
+                   href="#" @click.prevent="switchTab('ragas')">🧪 RAGAS</a>
+            </li>
+            <li class="nav-item" x-show="isAdmin">
+                <a class="nav-link text-white" :class="{ 'active': activeTab === 'admin' }"
+                   href="#" @click.prevent="switchTab('admin')">⚙ Admin</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" :class="{ 'active': activeTab === 'profile' }"
+                   href="#" @click.prevent="switchTab('profile')">👤 Profile</a>
+            </li>
+        </ul>
+        <div class="mt-auto">
+            <button class="btn btn-outline-light w-100" @click="logout()"
+                    x-show="isAuthenticated">Log out</button>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="flex-grow-1 p-4" id="tab-content"
+         hx-get="/admin/tabs/documents"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <div class="text-center text-muted py-5">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-2">Loading...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Authentication Required</h5>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Enter your API key to access the admin panel.</p>
+                <input type="password" class="form-control" id="apiKeyInput"
+                       placeholder="Enter API key"
+                       @keydown.enter="authenticate($el.value)">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary w-100" id="loginBtn"
+                        @click="authenticate(document.getElementById('apiKeyInput').value)">Log in</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ get_nonce(request) }}">
+    function adminApp() {
+        return {
+            activeTab: 'documents',
+            isAuthenticated: false,
+            isAdmin: false,
+            init() {
+                var key = localStorage.getItem('kb_api_key');
+                if (key) {
+                    this.isAuthenticated = true;
+                }
+            },
+            switchTab(tab) {
+                this.activeTab = tab;
+                var target = '/admin/tabs/' + tab;
+                htmx.ajax('GET', target, { target: '#tab-content', swap: 'innerHTML' });
+            },
+            authenticate(key) {
+                if (!key) return;
+                localStorage.setItem('kb_api_key', key);
+                this.isAuthenticated = true;
+                var modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                if (modal) modal.hide();
+            },
+            logout() {
+                localStorage.removeItem('kb_api_key');
+                this.isAuthenticated = false;
+                this.isAdmin = false;
+                var modal = new bootstrap.Modal(document.getElementById('loginModal'));
+                modal.show();
+            }
+        };
+    }
+</script>
+{% endblock %}

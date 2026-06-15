@@ -19,6 +19,7 @@ from typing import Any
 
 # ── Load .env before any os.getenv reads
 from config.bootstrap_env import bootstrap_env
+
 bootstrap_env()
 
 import mcp.types as types
@@ -27,9 +28,13 @@ from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from mcp.server.stdio import stdio_server
 from kb_server.vector_store import VectorStore
+from kb_server.observability.percentiles import get_percentile_tracker
 from kb_server.telemetry.query_logger import QueryLogger
 from kb_server.collections.manager import CollectionManager
-from kb_server.collections.router import CollectionRouter, CollectionNotFoundError
+from kb_server.collections.router import (
+    CollectionRouter,
+    CollectionNotFoundError,
+)
 from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
 from observability.metrics import (
     record_query,
@@ -38,8 +43,8 @@ from observability.metrics import (
     record_rate_limit_rejected,
     record_retrieval_cache_op,
     update_rate_limit_subjects,
-    record_active_sessions,       # PHASE 28
-    record_session_evicted,       # PHASE 28
+    record_active_sessions,  # PHASE 28
+    record_session_evicted,  # PHASE 28
 )
 from kb_server.cache.request_cache import RetrievalCache  # PHASE 37
 
@@ -64,33 +69,37 @@ TOP_K = int(os.getenv("DEFAULT_TOP_K", "5"))
 
 # PHASE 33: Rate limiting config
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "false").lower() in (
-    "true", "1", "yes"
+    "true",
+    "1",
+    "yes",
 )
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
 RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
 
 # Per-subject tracking for rate limiting across transport sessions
-_current_subject: contextvars.ContextVar[str | None] = (
-    contextvars.ContextVar("current_subject", default=None)
+_current_subject: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "current_subject", default=None
 )
-_current_transport: contextvars.ContextVar[str] = (
-    contextvars.ContextVar("current_transport", default="stdio")
+_current_transport: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "current_transport", default="stdio"
 )
 
 # PHASE 37: Retrieval cache configuration
 RLCACHE_ENABLED = os.getenv("RLCACHE_ENABLED", "true").lower() in (
-    "true", "1", "yes"
+    "true",
+    "1",
+    "yes",
 )
 RLCACHE_TTL = int(os.getenv("RLCACHE_TTL", "300"))
 RLCACHE_MAX_ENTRIES = int(os.getenv("RLCACHE_MAX_ENTRIES", "1000"))
 
 # PHASE 14: Query logging configuration
 QUERY_LOG_ENABLED = os.getenv("QUERY_LOG_ENABLED", "true").lower() in (
-    "true", "1", "yes"
+    "true",
+    "1",
+    "yes",
 )
-QUERY_LOG_PATH = Path(
-    os.getenv("QUERY_LOG_PATH", "data/kb_metadata.db")
-)
+QUERY_LOG_PATH = Path(os.getenv("QUERY_LOG_PATH", "data/kb_metadata.db"))
 QUERY_LOG_RETENTION_DAYS = int(os.getenv("QUERY_LOG_RETENTION_DAYS", "90"))
 QUERY_LOG_CLEANUP_INTERVAL_HOURS = int(
     os.getenv("QUERY_LOG_CLEANUP_INTERVAL_HOURS", "24")
@@ -116,7 +125,8 @@ if RLCACHE_ENABLED:
         )
         log.info(
             "Retrieval cache enabled: max_entries=%d ttl=%d",
-            RLCACHE_MAX_ENTRIES, RLCACHE_TTL,
+            RLCACHE_MAX_ENTRIES,
+            RLCACHE_TTL,
         )
     except Exception as e:
         log.error(f"Failed to initialise retrieval cache: {e}")
@@ -372,8 +382,7 @@ async def list_tools() -> list[types.Tool]:
                 "properties": {
                     "chunk_id": {
                         "type": "string",
-                        "description": "Chunk ID (returned by "
-                        "search_kb)",
+                        "description": "Chunk ID (returned by " "search_kb)",
                     },
                     "context_window": {
                         "type": "integer",
@@ -569,7 +578,9 @@ async def call_tool(
             record_rate_limit_rejected(transport)
             log.warning(
                 "Rate limit exceeded for subject=%s transport=%s tool=%s",
-                subject, transport, name,
+                subject,
+                transport,
+                name,
             )
             return [
                 types.TextContent(
@@ -601,11 +612,12 @@ async def call_tool(
             result = await _explore_topic(arguments)
         else:
             result = [
-                types.TextContent(
-                    type="text", text=f"Unknown tool: {name}"
-                )
+                types.TextContent(type="text", text=f"Unknown tool: {name}")
             ]
-        record_query(name, "success", time.time() - start)
+        elapsed = time.time() - start
+        record_query(name, "success", elapsed)
+        if name in ("search_kb", "list_documents", "get_chunk", "kb_stats"):
+            get_percentile_tracker().record(name, elapsed * 1000)
         return result
     except Exception as e:
         latency = time.time() - start
@@ -613,8 +625,8 @@ async def call_tool(
         record_query(name, "error", latency)
         record_query_error(name)
         return [
-                types.TextContent(
-                    type="text", text=f"Error executing {name}: {str(e)}"
+            types.TextContent(
+                type="text", text=f"Error executing {name}: {str(e)}"
             )
         ]
 
@@ -626,7 +638,7 @@ async def call_tool(
 
 async def _search_kb(args: dict) -> list[types.TextContent]:
     start_time = time.time()
-    
+
     query = args["query"]
     top_k = args.get("top_k", TOP_K)
     filter_type = args.get("filter_type")
@@ -645,7 +657,9 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     target_collection = getattr(store, "collection", None)
     if collection_router is not None and not kb_ids:
         try:
-            target_collection = await collection_router.resolve(collection_param)
+            target_collection = await collection_router.resolve(
+                collection_param
+            )
         except CollectionNotFoundError as exc:
             return [types.TextContent(type="text", text=str(exc))]
 
@@ -690,7 +704,9 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             record_retrieval_cache_op("hit")
             log.info(
                 "Retrieval cache hit: key=%s query='%s' results=%d",
-                cache_key[:16], query, len(results),
+                cache_key[:16],
+                query,
+                len(results),
             )
         else:
             record_retrieval_cache_op("miss")
@@ -703,7 +719,9 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         retrieve_k = top_k
         if rerank:
             retrieve_k = min(top_k * 4, 20)
-            log.info(f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}")
+            log.info(
+                f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}"
+            )
 
         # PHASE 35: Multi-KB aggregated search path
         if multi_collections:
@@ -728,7 +746,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             )
             log.info(
                 "Multi-KB search: %d collections → %d results",
-                len(multi_collections), len(results),
+                len(multi_collections),
+                len(results),
             )
         # PHASE 12: Route to hybrid search if enabled
         elif hybrid:
@@ -760,14 +779,18 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
                 module=module,  # PHASE 17
             )
             if target_collection is not None:
-                _search_kwargs["collection_name"] = target_collection  # PHASE 15
+                _search_kwargs["collection_name"] = (
+                    target_collection  # PHASE 15
+                )
             results = await store.search(**_search_kwargs)
 
         # PHASE 12: Apply reranking if enabled (skip for multi-KB — already merged)
         if rerank and results and not multi_collections:
             from kb_server.retrieval.reranker import get_reranker
 
-            log.info(f"Applying cross-encoder reranking to {len(results)} results")
+            log.info(
+                f"Applying cross-encoder reranking to {len(results)} results"
+            )
             reranker = get_reranker()
             try:
                 results = await reranker.rerank(
@@ -775,7 +798,9 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
                     results=results,
                     top_k=top_k,
                 )
-                log.info(f"Reranking complete: {len(results)} results returned")
+                log.info(
+                    f"Reranking complete: {len(results)} results returned"
+                )
             except Exception as e:
                 log.error(f"Reranking failed: {e}", exc_info=True)
                 log.warning("Falling back to original results")
@@ -791,12 +816,12 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             try:
                 filters = {}
                 if product:
-                    filters['product'] = product
+                    filters["product"] = product
                 if doc_type:
-                    filters['doc_type'] = doc_type
+                    filters["doc_type"] = doc_type
                 if filter_type:
-                    filters['file_type'] = filter_type
-                
+                    filters["file_type"] = filter_type
+
                 query_logger.log_query(
                     query_text=query,
                     top_k=top_k,
@@ -805,11 +830,11 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
                     version_filter=version,
                     result_count=0,
                     scores=[],
-                    latency_ms=latency_ms
+                    latency_ms=latency_ms,
                 )
             except Exception as e:
                 log.error(f"Failed to log query: {e}")
-        
+
         return [
             types.TextContent(
                 type="text",
@@ -819,22 +844,20 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         ]
 
     lines = [f'## Results for: "{query}"\n']
-    
+
     mode_indicators = []
     if multi_collections:
-        mode_indicators.append(
-            f"multi-KB ({', '.join(multi_collections)})"
-        )
+        mode_indicators.append(f"multi-KB ({', '.join(multi_collections)})")
     if hybrid:
         mode_indicators.append("hybrid")
     if rerank:
         mode_indicators.append("reranked")
     if mode_indicators:
         lines.append(f"*Search {' + '.join(mode_indicators)}*\n")
-    
+
     for i, r in enumerate(results, 1):
         score_pct = f"{r['score'] * 100:.1f}%"
-        source = r['source_file']
+        source = r["source_file"]
         coll_tag = r.get("_collection", "")
         meta = (
             f"**ID:** `{r['chunk_id']}`  |  "
@@ -859,20 +882,20 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         lines.append("\n---")
 
     lines.append("\n*Use `get_chunk` with the ID to get expanded context.*")
-    
+
     latency_ms = (time.time() - start_time) * 1000
     if query_logger:
         try:
             filters = {}
             if product:
-                filters['product'] = product
+                filters["product"] = product
             if doc_type:
-                filters['doc_type'] = doc_type
+                filters["doc_type"] = doc_type
             if filter_type:
-                filters['file_type'] = filter_type
-            
-            scores = [r['score'] for r in results]
-            
+                filters["file_type"] = filter_type
+
+            scores = [r["score"] for r in results]
+
             query_logger.log_query(
                 query_text=query,
                 top_k=top_k,
@@ -881,11 +904,11 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
                 version_filter=version,
                 result_count=len(results),
                 scores=scores,
-                latency_ms=latency_ms
+                latency_ms=latency_ms,
             )
         except Exception as e:
             log.error(f"Failed to log query: {e}")
-    
+
     return [types.TextContent(type="text", text="\n".join(lines))]
 
 
@@ -894,7 +917,9 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
     target_collection = getattr(store, "collection", None)
     if collection_router is not None:
         try:
-            target_collection = await collection_router.resolve(collection_param)
+            target_collection = await collection_router.resolve(
+                collection_param
+            )
         except CollectionNotFoundError as exc:
             return [types.TextContent(type="text", text=str(exc))]
 
@@ -913,9 +938,9 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
 
     if not docs:
         return [
-                types.TextContent(
-                    type="text", text="No documents indexed in the knowledge base."
-                )
+            types.TextContent(
+                type="text", text="No documents indexed in the knowledge base."
+            )
         ]
 
     lines = [f"## Documents in the Knowledge Base ({len(docs)} found)\n"]
@@ -926,16 +951,28 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
     for dt, items in sorted(by_dt.items()):
         lines.append(f"### {dt}  ({len(items)} documents)")
         for d in items:
-            vendor_info = f" | vendor: {d.get('vendor','n/a')}" if d.get('vendor') else ""
-            subsystem_info = f" | subsystem: {d.get('subsystem','n/a')}" if d.get('subsystem') else ""
-            module_info = f" | module: {d.get('module','n/a')}" if d.get('module') else ""
+            vendor_info = (
+                f" | vendor: {d.get('vendor','n/a')}"
+                if d.get("vendor")
+                else ""
+            )
+            subsystem_info = (
+                f" | subsystem: {d.get('subsystem','n/a')}"
+                if d.get("subsystem")
+                else ""
+            )
+            module_info = (
+                f" | module: {d.get('module','n/a')}"
+                if d.get("module")
+                else ""
+            )
             lines.append(
-            f"- `{d['source_file']}` — {d['chunk_count']} chunks"
-            f" | product: {d.get('product','n/a')}"
-            f"{vendor_info}"
-            f"{subsystem_info}"
-            f"{module_info}"
-            f" | format: {d['file_type']}"
+                f"- `{d['source_file']}` — {d['chunk_count']} chunks"
+                f" | product: {d.get('product','n/a')}"
+                f"{vendor_info}"
+                f"{subsystem_info}"
+                f"{module_info}"
+                f" | format: {d['file_type']}"
             )
         lines.append("")
 
@@ -956,9 +993,7 @@ async def _get_chunk(args: dict) -> list[types.TextContent]:
 
     lines = [f"## Chunk `{chunk_id}` with context\n"]
     for c in chunks:
-        marker = (
-            "→ **[requested chunk]**" if c["chunk_id"] == chunk_id else ""
-        )
+        marker = "→ **[requested chunk]**" if c["chunk_id"] == chunk_id else ""
         lines.append(
             f"### {c['source_file']} — chunk {c['chunk_index']} {marker}"
         )
@@ -995,10 +1030,15 @@ async def _kb_stats() -> list[types.TextContent]:
 # ENTRYPOINT
 # ──────────────────────────────────────────────────────────────────
 
+
 async def _list_collections() -> list[types.TextContent]:
     """PHASE 15: List all Qdrant collections."""
     if collection_manager is None:
-        return [types.TextContent(type="text", text="CollectionManager not initialized.")]
+        return [
+            types.TextContent(
+                type="text", text="CollectionManager not initialized."
+            )
+        ]
     names = await collection_manager.list_collections()
     if not names:
         return [types.TextContent(type="text", text="No collections found.")]
@@ -1021,7 +1061,9 @@ async def _list_filter_options(args: dict) -> list[types.TextContent]:
     target_collection = getattr(store, "collection", None)
     if collection_router is not None and collection_param:
         try:
-            target_collection = await collection_router.resolve(collection_param)
+            target_collection = await collection_router.resolve(
+                collection_param
+            )
         except CollectionNotFoundError as exc:
             return [types.TextContent(type="text", text=str(exc))]
 
@@ -1059,11 +1101,13 @@ async def _list_filter_options(args: dict) -> list[types.TextContent]:
                 f"({len(values)} values):\n"
             )
             for item in values[:10]:
-                lines.append(f"- `{item['value']}` - {item['count']} document(s)")
+                lines.append(
+                    f"- `{item['value']}` - {item['count']} document(s)"
+                )
             if len(values) > 10:
                 lines.append(
                     f"  *(+{len(values) - 10} more - "
-                    f"use `field=\"{f}\"` for full list)*\n"
+                    f'use `field="{f}"` for full list)*\n'
                 )
         else:
             lines.append(
@@ -1166,10 +1210,7 @@ async def _explore_topic(
             )
         ]
 
-    lines = [
-        f"## Documents for topic `{topic}` "
-        f"({len(results)} chunks)\n"
-    ]
+    lines = [f"## Documents for topic `{topic}` " f"({len(results)} chunks)\n"]
     seen: set[str] = set()
     for r in results:
         sf = r.payload.get("source_file", "")
@@ -1182,8 +1223,7 @@ async def _explore_topic(
             )
 
     lines.append(
-        f"\n*Total: {len(seen)} unique documents, "
-        f"{len(results)} chunks*"
+        f"\n*Total: {len(seen)} unique documents, " f"{len(results)} chunks*"
     )
     return [types.TextContent(type="text", text="\n".join(lines))]
 
@@ -1228,7 +1268,9 @@ async def _schedule_log_cleanup() -> None:
         await asyncio.sleep(interval_seconds)
         if query_logger:
             try:
-                deleted = query_logger.cleanup_old_queries(QUERY_LOG_RETENTION_DAYS)
+                deleted = query_logger.cleanup_old_queries(
+                    QUERY_LOG_RETENTION_DAYS
+                )
                 log.info(
                     f"Query log cleanup: {deleted} entries older than "
                     f"{QUERY_LOG_RETENTION_DAYS}d removed"
@@ -1346,12 +1388,14 @@ async def main():
         from kb_server.rate_limiter import ServerRateLimiter
 
         rate_limiter = ServerRateLimiter(
-            requests_per_minute=RATE_LIMIT_REQUESTS / (RATE_LIMIT_WINDOW / 60.0),
+            requests_per_minute=RATE_LIMIT_REQUESTS
+            / (RATE_LIMIT_WINDOW / 60.0),
             cleanup_interval=300,
         )
         log.info(
             "Rate limiting enabled: %d requests per %ds window",
-            RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW,
+            RATE_LIMIT_REQUESTS,
+            RATE_LIMIT_WINDOW,
         )
 
     # Pre-flight health checks
@@ -1376,7 +1420,9 @@ async def main():
         log.info(f"Qdrant healthy: {vector_status.message}")
 
     collection_manager = CollectionManager(store.client, vector_size=store.dim)
-    collection_router = CollectionRouter(collection_manager, default_collection=store.collection)
+    collection_router = CollectionRouter(
+        collection_manager, default_collection=store.collection
+    )
     log.info(f"CollectionRouter initialized (default='{store.collection}')")
 
     # PHASE 17: Initialize filter terms cache
@@ -1455,7 +1501,8 @@ async def main():
                     log.warning(
                         "Rate-limit connection rejected for subject=%s "
                         "retry_after=%ds",
-                        sse_subject, retry_after,
+                        sse_subject,
+                        retry_after,
                     )
                     return Response(
                         content='{"error":"Rate limit exceeded"}',
@@ -1479,7 +1526,10 @@ async def main():
 
         async def handle_health(request):
             """Simple health check endpoint for Docker healthchecks."""
-            return Response(content='{"status":"ok","service":"kb-rag"}', media_type="application/json")
+            return Response(
+                content='{"status":"ok","service":"kb-rag"}',
+                media_type="application/json",
+            )
 
         starlette_app = Starlette(
             routes=[
@@ -1510,15 +1560,17 @@ async def main():
         MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
         MCP_PORT = int(os.getenv("MCP_PORT", "8765"))
         MCP_ENDPOINT = os.getenv("MCP_ENDPOINT", "/mcp")
-        MCP_JSON_RESPONSE = os.getenv("MCP_JSON_RESPONSE", "false").lower() in (
-            "true", "1",
+        MCP_JSON_RESPONSE = os.getenv(
+            "MCP_JSON_RESPONSE", "false"
+        ).lower() in (
+            "true",
+            "1",
         )
         MCP_STATELESS = os.getenv("MCP_STATELESS", "false").lower() in (
-            "true", "1",
+            "true",
+            "1",
         )
-        MCP_SESSION_TIMEOUT = float(
-            os.getenv("MCP_SESSION_TIMEOUT", "300")
-        )
+        MCP_SESSION_TIMEOUT = float(os.getenv("MCP_SESSION_TIMEOUT", "300"))
         MCP_MAX_SESSIONS = int(os.getenv("MCP_MAX_SESSIONS", "50"))
 
         security = TransportSecuritySettings(
@@ -1549,9 +1601,8 @@ async def main():
                 subject = f"key:{prefix}"
             else:
                 forwarded = request.headers.get("X-Forwarded-For", "")
-                subject = (
-                    forwarded.split(",")[0].strip()
-                    or (request.client.host if request.client else "unknown")
+                subject = forwarded.split(",")[0].strip() or (
+                    request.client.host if request.client else "unknown"
                 )
             _current_subject.set(subject)
             _current_transport.set("streamable-http")
@@ -1591,10 +1642,13 @@ async def main():
                     endpoint=handle_mcp,
                     methods=["GET", "POST", "DELETE", "OPTIONS"],
                 ),
-                Route("/health", endpoint=lambda r: Response(
-                    content='{"status":"ok","service":"kb-rag"}',
-                    media_type="application/json",
-                )),
+                Route(
+                    "/health",
+                    endpoint=lambda r: Response(
+                        content='{"status":"ok","service":"kb-rag"}',
+                        media_type="application/json",
+                    ),
+                ),
             ],
             middleware=[
                 Middleware(
@@ -1602,8 +1656,11 @@ async def main():
                     allow_origins=["*"],
                     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
                     allow_headers=[
-                        "Content-Type", "Accept", "Authorization",
-                        "Mcp-Session-Id", "Last-Event-ID",
+                        "Content-Type",
+                        "Accept",
+                        "Authorization",
+                        "Mcp-Session-Id",
+                        "Last-Event-ID",
                         "MCP-Protocol-Version",
                     ],
                     expose_headers=["Mcp-Session-Id", "Content-Type"],
@@ -1639,7 +1696,8 @@ async def main():
                     record_active_sessions(count, "streamable-http")
                     log.debug(
                         "Session sweep: %d active, %d stale cleaned",
-                        count, stale,
+                        count,
+                        stale,
                     )
                 except Exception:
                     log.exception("Session sweep error")

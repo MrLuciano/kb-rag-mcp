@@ -304,13 +304,14 @@ async def test_check_filesystem_exception():
 
 @pytest.mark.asyncio
 async def test_check_all_components_all_healthy():
-    """check_all_components returns all 5 components when all succeed."""
+    """check_all_components returns all 6 components when all succeed."""
     mock_statuses = [
         HealthStatus("embedding", True, "ok"),
         HealthStatus("vector_store", True, "ok"),
         HealthStatus("cache", True, "ok"),
         HealthStatus("database", True, "ok"),
         HealthStatus("filesystem", True, "ok"),
+        HealthStatus("grafana", True, "ok"),
     ]
 
     with patch("kb_server.health.check_embedding_service", new=AsyncMock(return_value=mock_statuses[0])):
@@ -318,10 +319,12 @@ async def test_check_all_components_all_healthy():
             with patch("kb_server.health.check_cache", new=AsyncMock(return_value=mock_statuses[2])):
                 with patch("kb_server.health.check_database", new=AsyncMock(return_value=mock_statuses[3])):
                     with patch("kb_server.health.check_filesystem", new=AsyncMock(return_value=mock_statuses[4])):
-                        result = await check_all_components()
+                        with patch("kb_server.health.check_grafana", new=AsyncMock(return_value=mock_statuses[5])):
+                            result = await check_all_components()
 
     assert set(result.keys()) == {
-        "embedding", "vector_store", "cache", "database", "filesystem"
+        "embedding", "vector_store", "cache", "database",
+        "filesystem", "grafana",
     }
     assert all(v.healthy for v in result.values())
 

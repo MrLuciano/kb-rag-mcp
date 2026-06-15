@@ -1,0 +1,81 @@
+<div x-data="configEditor()" x-init="loadConfig()">
+    <div class="mb-2">
+        <input type="text" class="form-control form-control-sm" style="max-width:300px"
+               placeholder="Search config..." x-model="search">
+    </div>
+    <table class="table table-sm table-striped">
+        <thead><tr><th>Key</th><th>Value</th><th>Type</th><th>Group</th><th>Updated</th><th></th></tr></thead>
+        <tbody>
+            <template x-for="entry in filteredConfig" :key="entry.key">
+                <tr>
+                    <td><code x-text="entry.key"></code></td>
+                    <td>
+                        <span x-show="editing !== entry.key" x-text="entry.value"
+                              @dblclick="startEdit(entry)" style="cursor:pointer"></span>
+                        <input x-show="editing === entry.key" type="text" class="form-control form-control-sm"
+                               x-model="editValue" @keydown.enter="saveEdit(entry)" @keydown.escape="cancelEdit()">
+                    </td>
+                    <td><span class="badge bg-secondary" x-text="entry.type"></span></td>
+                    <td x-text="entry.group_name"></td>
+                    <td x-text="entry.updated_at ? new Date(entry.updated_at*1000).toLocaleDateString() : ''"></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" @click="startEdit(entry)">Edit</button>
+                    </td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+    <div x-show="filteredConfig.length === 0" class="text-muted">No configuration entries found.</div>
+</div>
+
+<script nonce="{{ get_nonce(request) }}">
+function configEditor() {
+    return {
+        entries: [],
+        editing: '',
+        editValue: '',
+        search: '',
+        get filteredConfig() {
+            if (!this.search) return this.entries;
+            var s = this.search.toLowerCase();
+            return this.entries.filter(function(e) {
+                return e.key.toLowerCase().includes(s) || e.group_name.toLowerCase().includes(s);
+            });
+        },
+        loadConfig() {
+            fetch('/api/v1/config')
+                .then(r => r.json())
+                .then(data => { this.entries = data; });
+        },
+        startEdit(entry) {
+            this.editing = entry.key;
+            this.editValue = entry.value;
+        },
+        cancelEdit() {
+            this.editing = '';
+            this.editValue = '';
+        },
+        saveEdit(entry) {
+            var headers = { 'Content-Type': 'application/json' };
+            fetch('/api/v1/config/' + entry.key, {
+                method: 'PUT',
+                headers: headers,
+                body: JSON.stringify({
+                    value: this.editValue,
+                    type: entry.type,
+                    group_name: entry.group_name,
+                    description: entry.description || ''
+                })
+            })
+            .then(r => {
+                if (!r.ok) { alert('Failed to save config value. Check the value format and try again.'); return; }
+                return r.json();
+            })
+            .then(() => {
+                this.editing = '';
+                this.loadConfig();
+            });
+        }
+    };
+}
+</script>
