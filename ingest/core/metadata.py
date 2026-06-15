@@ -55,6 +55,7 @@ class MetadataStore:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")  # Better concurrency
         self._conn.execute("PRAGMA synchronous=NORMAL")  # Performance
+        self._conn.execute("PRAGMA foreign_keys=ON")
         self._migrate()
         log.info(f"MetadataStore: {self.db_path} (schema v{SCHEMA_VERSION})")
 
@@ -263,7 +264,7 @@ class MetadataStore:
             log.debug("connector_state table already exists")
         else:
             self.conn.execute("""
-                CREATE TABLE connector_state (
+                CREATE TABLE IF NOT EXISTS connector_state (
                     source_key     TEXT NOT NULL,
                     remote_id      TEXT NOT NULL,
                     connector_type TEXT NOT NULL,
@@ -774,6 +775,7 @@ class IngestRegistry:
         )
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA foreign_keys=ON")
         self._migrate()
         log_reg.info(f"Registry: {self.db_path}")
 

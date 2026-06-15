@@ -60,8 +60,14 @@ class TestAppModule:
 # routes.py — get_documents helper
 # ---------------------------------------------------------------------------
 class TestGetDocuments:
-    def test_returns_empty_on_no_rows(self):
+    def _make_conn_mock(self):
         mock_conn = MagicMock()
+        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+        mock_conn.__exit__ = MagicMock(return_value=None)
+        return mock_conn
+
+    def test_returns_empty_on_no_rows(self):
+        mock_conn = self._make_conn_mock()
         mock_conn.cursor.return_value.fetchone.return_value = (0,)
         mock_conn.cursor.return_value.fetchall.return_value = []
         with patch("sqlite3.connect", return_value=mock_conn):
@@ -73,14 +79,12 @@ class TestGetDocuments:
 
     def test_returns_rows_as_dicts(self):
         fake = _fake_row()
-        # sqlite3.Row-like: fetchone returns count, fetchall returns row-like objects
+        mock_conn = self._make_conn_mock()
         mock_row = MagicMock()
         mock_row.__iter__ = MagicMock(return_value=iter(fake.items()))
-        # Make dict(row) work by having the mock support it
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = (1,)
         mock_cursor.fetchall.return_value = [fake]
-        mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
         # Patch dict(row) — rows are already dicts in our mock
         with patch("sqlite3.connect", return_value=mock_conn):
@@ -122,7 +126,7 @@ class TestGetDocuments:
             captured_params.append(list(params))
 
         mock_cursor.execute.side_effect = capture_execute
-        mock_conn = MagicMock()
+        mock_conn = self._make_conn_mock()
         mock_conn.cursor.return_value = mock_cursor
 
         with patch("sqlite3.connect", return_value=mock_conn):
@@ -222,6 +226,8 @@ class TestUIEndpoints:
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = None
         mock_conn = MagicMock()
+        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+        mock_conn.__exit__ = MagicMock(return_value=None)
         mock_conn.cursor.return_value = mock_cursor
 
         with (
@@ -236,6 +242,8 @@ class TestUIEndpoints:
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = fake
         mock_conn = MagicMock()
+        mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+        mock_conn.__exit__ = MagicMock(return_value=None)
         mock_conn.cursor.return_value = mock_cursor
 
         with (
