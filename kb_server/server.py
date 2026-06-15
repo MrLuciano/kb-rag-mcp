@@ -10,6 +10,7 @@ multi-collection routing, and query logging.
 
 import asyncio
 import contextvars
+import hashlib
 import logging
 import os
 import sys
@@ -35,6 +36,9 @@ from kb_server.collections.router import (
     CollectionRouter,
     CollectionNotFoundError,
 )
+from kb_server.auth.router import router as auth_router
+from kb_server.auth.service import AuthService
+from kb_server.auth.erasure import ErasureManager
 from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
 from observability.metrics import (
     record_query,
@@ -60,6 +64,11 @@ logging.basicConfig(
     ],
 )
 log = logging.getLogger("kb-mcp")
+
+
+def _hash_subject(subject: str) -> str:
+    """Produce a stable, non-reversible rate-limit subject identifier."""
+    return hashlib.sha256(subject.encode()).hexdigest()[:16]
 
 # ── Config ────────────────────────────────────────────────────────
 TRANSPORT = os.getenv("MCP_TRANSPORT", "stdio")  # stdio | sse
@@ -571,7 +580,9 @@ async def call_tool(
 
     # PHASE 33: Rate-limit check for tool calls
     if RATE_LIMIT_ENABLED and rate_limiter is not None:
-        subject = _current_subject.get() or "unknown"
+        subject = _hash_subject(
+            _current_subject.get() or "unknown"
+        )
         transport = _current_transport.get()
         allowed, retry_after = await rate_limiter.check(subject)
         if not allowed:
@@ -1383,6 +1394,23 @@ async def main():
     log.info(f"KB RAG MCP Server starting (transport={TRANSPORT})")
     await store.connect()
 
+    # Initialize auth service
+    from pathlib import Path
+
+    auth_db_path = Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
+    auth_service = AuthService(db_path=auth_db_path)
+    erasure_manager = ErasureManager(auth_service._session)
+
+    def _build_auth_app():
+        """Build a FastAPI sub-app with mounted auth router."""
+        from fastapi import FastAPI
+
+        auth_app = FastAPI()
+        auth_app.state.auth_service = auth_service
+        auth_app.state.erasure_manager = erasure_manager
+        auth_app.include_router(auth_router)
+        return auth_app
+
     # PHASE 33: Initialize rate limiter
     if RATE_LIMIT_ENABLED:
         from kb_server.rate_limiter import ServerRateLimiter
@@ -1495,7 +1523,9 @@ async def main():
 
             # PHASE 33: Rate-limit the SSE connection itself
             if RATE_LIMIT_ENABLED and rate_limiter is not None:
-                allowed, retry_after = await rate_limiter.check(sse_subject)
+                allowed, retry_after = await rate_limiter.check(
+                    _hash_subject(sse_subject)
+                )
                 if not allowed:
                     record_rate_limit_rejected("sse")
                     log.warning(
@@ -1536,9 +1566,11 @@ async def main():
                 Route("/sse", endpoint=handle_sse),
                 Route("/health", endpoint=handle_health),
                 Mount("/messages/", app=sse.handle_post_message),
+                Mount("/api/v1", app=_build_auth_app()),
             ]
         )
 
+        log.info(f"Auth router mounted on SSE transport")
         log.info(f"SSE server at http://{SSE_HOST}:{SSE_PORT}/sse")
         config = uvicorn.Config(
             starlette_app, host=SSE_HOST, port=SSE_PORT, log_level="info"
@@ -1617,7 +1649,9 @@ async def main():
                     )
 
             if RATE_LIMIT_ENABLED and rate_limiter is not None:
-                allowed, retry_after = await rate_limiter.check(subject)
+                allowed, retry_after = await rate_limiter.check(
+                    _hash_subject(subject)
+                )
                 if not allowed:
                     record_rate_limit_rejected("streamable-http")
                     return Response(
@@ -1649,6 +1683,7 @@ async def main():
                         media_type="application/json",
                     ),
                 ),
+                Mount("/api/v1", app=_build_auth_app()),
             ],
             middleware=[
                 Middleware(

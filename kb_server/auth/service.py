@@ -138,6 +138,18 @@ class AuthService:
         log.info("Revoked API key: %s", key_id)
         return True
 
+    def record_key_usage(self, raw_key: str) -> None:
+        """Record last_used_at for a key (called on explicit auth, not every verify)."""
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        api_key = (
+            self._session.query(ApiKey)
+            .filter(ApiKey.key_hash == key_hash)
+            .first()
+        )
+        if api_key:
+            api_key.last_used_at = datetime.utcnow()
+            self._session.commit()
+
     def verify_key(self, raw_key: str) -> Optional[User]:
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         api_key = (
@@ -159,7 +171,6 @@ class AuthService:
         if user.erasure_status == ErasureStatus.erasure_completed:
             return None
 
-        api_key.last_used_at = datetime.utcnow()
         self._session.commit()
         return user
 
