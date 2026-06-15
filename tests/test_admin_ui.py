@@ -57,6 +57,50 @@ class TestGrafana:
         assert "build_grafana_embed_url_with_range" in templates.env.globals
 
 
+class TestAnalyticsTab:
+    def test_analytics_tab_template_exists(self):
+        assert os.path.exists(
+            "kb_server/ui/templates/admin/tab_analytics.html"
+        )
+
+    def test_analytics_in_sidebar(self):
+        with open("kb_server/ui/templates/admin/shell.html") as f:
+            content = f.read()
+        assert "analytics" in content
+        assert "Analytics" in content
+
+    def test_analytics_in_template_map(self):
+        with open("kb_server/ui/routes_admin.py") as f:
+            content = f.read()
+        assert '"analytics"' in content
+        assert "tab_analytics.html" in content
+
+    def test_get_most_common_queries_accepts_time_range(self):
+        from kb_server.analytics.query_analyzer import QueryAnalyzer
+
+        import inspect
+
+        sig = inspect.signature(QueryAnalyzer.get_most_common_queries)
+        assert "time_range_days" in sig.parameters
+
+    def test_get_zero_result_queries_accepts_time_range(self):
+        from kb_server.analytics.query_analyzer import (
+            QueryAnalyzer,
+        )
+
+        import inspect
+
+        sig = inspect.signature(QueryAnalyzer.get_zero_result_queries)
+        assert "time_range_days" in sig.parameters
+
+    def test_get_latency_stats_exists(self):
+        from kb_server.analytics.query_analyzer import (
+            QueryAnalyzer,
+        )
+
+        assert hasattr(QueryAnalyzer, "get_latency_stats")
+
+
 class TestAdminTemplates:
     def test_all_tab_templates_exist(self):
         tabs = [
@@ -66,6 +110,7 @@ class TestAdminTemplates:
             "ragas",
             "admin",
             "profile",
+            "analytics",
         ]
         for tab in tabs:
             path = f"kb_server/ui/templates/admin/tab_{tab}.html"
