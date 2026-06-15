@@ -92,3 +92,18 @@ async def test_streamable_http_auth_rejection():
          patch("kb_server.auth.verify_request", return_value=(False, "Missing API key")):
         mocks = await _run_main(main, mock_mgr_cls)
     assert mocks["serve"].called
+
+
+@pytest.mark.asyncio
+async def test_streamable_http_rate_limiting():
+    """Rate limiting integration for streamable-http transport."""
+    os.environ["MCP_PORT"] = "18767"
+    main, mock_mgr_cls = _setup_server()
+
+    with patch("kb_server.server.RATE_LIMIT_ENABLED", True), \
+         patch("kb_server.server.rate_limiter") as mock_rl, \
+         patch("kb_server.server.record_rate_limit_allowed") as mock_allowed, \
+         patch("kb_server.server.record_rate_limit_rejected") as mock_rejected:
+        mock_rl.check = AsyncMock(return_value=(True, None))
+        mocks = await _run_main(main, mock_mgr_cls)
+    assert mocks["serve"].called
