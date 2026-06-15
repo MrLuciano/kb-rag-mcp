@@ -1,5 +1,6 @@
 """Tests for streamable HTTP transport in the MCP server."""
 import os
+import time
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -107,3 +108,85 @@ async def test_streamable_http_rate_limiting():
         mock_rl.check = AsyncMock(return_value=(True, None))
         mocks = await _run_main(main, mock_mgr_cls)
     assert mocks["serve"].called
+
+
+def test_session_tracker_evict_when_at_capacity():
+    """Evict oldest tracked session when at max_sessions limit (D-01 / D-02)."""
+    from kb_server.server import _SessionTracker
+
+    mock_mgr = MagicMock()
+    mock_mgr.sessions = {
+        "session-old": MagicMock(),
+        "session-new": MagicMock(),
+    }
+    tracker = _SessionTracker(mock_mgr, max_sessions=2)
+    tracker._last_active = {
+        "session-old": time.time() - 100,
+        "session-new": time.time() - 10,
+    }
+    evicted = tracker.evict_if_needed()
+    assert evicted == "session-old", "Should evict oldest session"
+    assert "session-old" not in mock_mgr.sessions
+    assert "session-new" in mock_mgr.sessions
+
+
+def test_session_tracker_no_evict_below_capacity():
+    """No eviction when sessions below max_sessions."""
+    from kb_server.server import _SessionTracker
+
+    mock_mgr = MagicMock()
+    mock_mgr.sessions = {"session-1": MagicMock()}
+    tracker = _SessionTracker(mock_mgr, max_sessions=5)
+    evicted = tracker.evict_if_needed()
+    assert evicted is None
+    assert "session-1" in mock_mgr.sessions
+
+
+def test_session_tracker_mark_active():
+    """mark_active updates last_active for a session ID."""
+    from kb_server.server import _SessionTracker
+
+    mock_mgr = MagicMock()
+    mock_mgr.sessions = {}
+    tracker = _SessionTracker(mock_mgr, max_sessions=10)
+
+    before = time.time()
+    tracker.mark_active("sess-123")
+    assert "sess-123" in tracker._last_active
+    assert tracker._last_active["sess-123"] >= before
+
+    tracker.mark_active(None)
+    # Should not raise — None sessions are ignored
+
+
+def test_session_tracker_cleanup():
+    """cleanup removes entries for sessions no longer in the manager."""
+    from kb_server.server import _SessionTracker
+
+    mock_mgr = MagicMock()
+    mock_mgr.sessions = {"active-1": MagicMock()}
+    tracker = _SessionTracker(mock_mgr, max_sessions=10)
+    tracker._last_active = {
+        "active-1": time.time() - 5,
+        "gone-1": time.time() - 100,
+        "gone-2": time.time() - 200,
+    }
+    removed = tracker.cleanup()
+    assert removed == 2
+    assert "active-1" in tracker._last_active
+    assert "gone-1" not in tracker._last_active
+    assert "gone-2" not in tracker._last_active
+    assert tracker.active_count == 1
+
+
+def test_session_tracker_evict_falls_back_to_any_session():
+    """When no last_active tracked, evict the first session in dict."""
+    from kb_server.server import _SessionTracker
+
+    mock_mgr = MagicMock()
+    mock_mgr.sessions = {"only-session": MagicMock()}
+    tracker = _SessionTracker(mock_mgr, max_sessions=1)
+    # No _last_active entries for these sessions
+    evicted = tracker.evict_if_needed()
+    assert evicted == "only-session"
+    assert "only-session" not in mock_mgr.sessions

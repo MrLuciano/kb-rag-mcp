@@ -1251,6 +1251,82 @@ def invalidate_retrieval_cache() -> None:
         log.info("Retrieval cache invalidated by external signal")
 
 
+class _SessionTracker:
+    """Enforce max session limit via oldest-idle eviction.
+
+    Wraps ``StreamableHTTPSessionManager`` and tracks session
+    last-active times. When a new-session request arrives and
+    the active count is at ``MCP_MAX_SESSIONS``, the oldest
+    tracked session is evicted from the underlying manager's
+    ``sessions`` dict. The mcp library automatically returns
+    JSON-RPC error ``-32000`` ("Session not found") when an
+    evicted client reconnects with its old session ID
+    (per D-03).
+
+    This class does NOT add or remove any sessions itself
+    outside of ``evict_if_needed``; ``StreamableHTTPSessionManager``
+    owns the full session lifecycle.
+    """
+
+    __slots__ = ("_mgr", "_max", "_last_active")
+
+    def __init__(
+        self,
+        mgr: Any,
+        max_sessions: int,
+    ) -> None:
+        self._mgr = mgr
+        self._max = max_sessions
+        self._last_active: dict[str, float] = {}
+
+    def mark_active(self, session_id: str | None) -> None:
+        """Record that *session_id* was active *now*."""
+        if session_id:
+            self._last_active[session_id] = time.time()
+
+    def evict_if_needed(self) -> str | None:
+        """Evict oldest idle session if at capacity.
+
+        Returns the evicted session ID (for logging / metrics)
+        or ``None`` if no eviction was needed.
+        """
+        sessions = self._mgr.sessions
+        if len(sessions) < self._max:
+            return None
+
+        now = time.time()
+        oldest_id: str | None = None
+        oldest_time = now
+
+        for sid in sessions:
+            last_active = self._last_active.get(sid, now)
+            if last_active <= oldest_time:
+                oldest_time = last_active
+                oldest_id = sid
+
+        if oldest_id is not None:
+            del self._mgr.sessions[oldest_id]
+            self._last_active.pop(oldest_id, None)
+            return oldest_id
+        return None
+
+    def cleanup(self) -> int:
+        """Remove tracking entries for sessions no longer active.
+
+        Returns the number of stale entries removed.
+        """
+        sessions = self._mgr.sessions
+        stale = [sid for sid in self._last_active if sid not in sessions]
+        for sid in stale:
+            self._last_active.pop(sid, None)
+        return len(stale)
+
+    @property
+    def active_count(self) -> int:
+        """Number of active sessions in the underlying manager."""
+        return len(self._mgr.sessions)
+
+
 async def main():
     """Main entry point — connect to Qdrant, initialize routing, start server.
 
@@ -1441,6 +1517,7 @@ async def main():
         MCP_SESSION_TIMEOUT = float(
             os.getenv("MCP_SESSION_TIMEOUT", "300")
         )
+        MCP_MAX_SESSIONS = int(os.getenv("MCP_MAX_SESSIONS", "50"))
 
         security = TransportSecuritySettings(
             enable_dns_rebinding_protection=True,
@@ -1449,6 +1526,18 @@ async def main():
         )
 
         async def handle_mcp(request):
+            # ── Session limit enforcement ─────────────────────────
+            mcp_session_id = request.headers.get("Mcp-Session-Id")
+            if not mcp_session_id and not MCP_STATELESS:
+                evicted_id = session_tracker.evict_if_needed()
+                if evicted_id:
+                    from observability.metrics import record_session_evicted
+                    record_session_evicted("streamable-http")
+                    log.info(
+                        "Session limit reached: evicted %s",
+                        evicted_id[:12],
+                    )
+
             from kb_server.auth import is_auth_enabled, verify_request
 
             subject = "unknown"
@@ -1487,6 +1576,9 @@ async def main():
                     )
                 record_rate_limit_allowed("streamable-http")
 
+            # Track session activity for eviction ordering
+            session_tracker.mark_active(mcp_session_id)
+
             await session_mgr.handle_request(
                 request.scope, request.receive, request._send
             )
@@ -1524,6 +1616,12 @@ async def main():
             stateless=MCP_STATELESS,
             security_settings=security,
             session_idle_timeout=MCP_SESSION_TIMEOUT,
+        )
+
+        session_tracker = _SessionTracker(session_mgr, MCP_MAX_SESSIONS)
+        log.info(
+            "Session limit: max_sessions=%d (tracking initialized)",
+            MCP_MAX_SESSIONS,
         )
 
         log.info(
