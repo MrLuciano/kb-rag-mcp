@@ -432,6 +432,44 @@ class TestHeadingHierarchy:
         )
 
 
+class TestNavbarActiveState:
+    def _mock_get_documents(self, docs=None, total=None):
+        docs = docs or [_fake_row()]
+        total = total if total is not None else len(docs)
+        return patch(
+            "kb_server.ui.routes.get_documents", return_value=(docs, total)
+        )
+
+    def test_navbar_active_state(self):
+        """Navbar highlights current page."""
+        pages = {
+            "/ui/browse": "browse",
+            "/ui/search": "search",
+            "/admin": "admin",
+        }
+
+        for path, expected_active in pages.items():
+            if path == "/ui/browse":
+                with self._mock_get_documents():
+                    resp = client.get(path)
+            else:
+                resp = client.get(path)
+
+            assert resp.status_code == 200
+            html = resp.text
+            assert 'class="nav-link active"' in html
+            # Verify the expected link has aria-current
+            if expected_active == "browse":
+                assert 'href="/ui/browse"' in html
+                assert 'aria-current="page"' in html
+            elif expected_active == "search":
+                assert 'href="/ui/search"' in html
+                assert 'aria-current="page"' in html
+            elif expected_active == "admin":
+                assert 'href="/admin"' in html
+                assert 'aria-current="page"' in html
+
+
 class TestRunUiModule:
     def test_run_ui_imports_without_error(self):
         """run_ui.py should be importable without starting uvicorn."""
