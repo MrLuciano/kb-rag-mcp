@@ -13,9 +13,32 @@
                     <div class="mb-3">
                         <input type="text" class="form-control" name="path"
                                placeholder="/path/to/docs" required>
-                    </div>
+</div>
+
+<script>
+    var ingestForm = document.querySelector('form[hx-post="/admin/tabs/ingest-trigger"]');
+    if (ingestForm) {
+        ingestForm.addEventListener('htmx:beforeRequest', function() {
+            var btn = ingestForm.querySelector('button[type="submit"]');
+            var spinner = document.getElementById('ingest-spinner');
+            var btnText = btn.querySelector('.btn-text');
+            btn.disabled = true;
+            btnText.classList.add('d-none');
+            spinner.classList.remove('d-none');
+        });
+        ingestForm.addEventListener('htmx:afterRequest', function() {
+            var btn = ingestForm.querySelector('button[type="submit"]');
+            var spinner = document.getElementById('ingest-spinner');
+            var btnText = btn.querySelector('.btn-text');
+            btn.disabled = false;
+            btnText.classList.remove('d-none');
+            spinner.classList.add('d-none');
+        });
+    }
+</script>
                     <button type="submit" class="btn btn-primary btn-sm">
-                        Start Ingest
+                        <span class="btn-text">Start Ingest</span>
+                        <span class="spinner-border spinner-border-sm d-none" id="ingest-spinner" role="status" aria-hidden="true"></span>
                     </button>
                 </form>
                 <div id="ingest-result" class="mt-2"></div>

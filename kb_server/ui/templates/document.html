@@ -101,7 +101,12 @@
 {% elif chunks is not none and chunks|length == 0 %}
 <div class="alert alert-info mt-3">
     <strong>Chunks Unavailable</strong>
-    <p class="mb-0">Chunk data could not be loaded from the vector store.</p>
+    <p class="mb-0">No chunks are stored for this document.</p>
+</div>
+{% elif chunks is none %}
+<div class="alert alert-warning mt-3">
+    <strong>Chunk Loading Failed</strong>
+    <p class="mb-0">Chunk data could not be loaded from the vector store. Please try again later.</p>
 </div>
 {% endif %}
 
