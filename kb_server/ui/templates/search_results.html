@@ -1,4 +1,5 @@
 {% if results %}
+<h2 class="visually-hidden">Search Results</h2>
 <div class="alert alert-success">
     Found {{ results|length }} result{{ 's' if results|length > 1 else '' }} for "<strong>{{ query }}</strong>"
 </div>
