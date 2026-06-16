@@ -17,21 +17,21 @@ Requirements for v0.1.5 milestone. Each maps to roadmap phases.
 
 ### Auth & User Management API (Phase 28b)
 
-- [ ] **AUTH-01**: SQLAlchemy models for User (UUID PK, username, role, is_active, timestamps)
-- [ ] **AUTH-02**: SQLAlchemy models for ApiKey (UUID PK, user_id FK, SHA-256 hash, prefix, description, is_revoked, last_used_at)
-- [ ] **AUTH-03**: SQLAlchemy models for AuditLog (UUID PK, actor_id, action, resource_type, resource_id, details, timestamp)
-- [ ] **AUTH-04**: SQLAlchemy models for ErasureRequest (UUID PK, user_id FK, status state machine, approval chain, timestamps)
-- [ ] **AUTH-05**: POST `/api/v1/auth/session` — exchange API key for JWT session cookie (HttpOnly, SameSite=Lax, 8h)
-- [ ] **AUTH-06**: POST/GET `/api/v1/users` — admin creates users, lists users (paginated, no PII)
-- [ ] **AUTH-07**: GET `/api/v1/users/me` — current user profile (GDPR Article 15)
-- [ ] **AUTH-08**: DELETE `/api/v1/users/{id}` — admin deletes user (tombstone: anonymize username, clear hash, keep UUID)
-- [ ] **AUTH-09**: FastAPI `Depends()` chain: `get_current_user` → `get_active_user` → `require_admin`/`require_auth`
-- [ ] **AUTH-10**: POST/GET/DELETE `/api/v1/api-keys` — create (shown once), list (prefix + meta), revoke
-- [ ] **AUTH-11**: GDPR erasure flow: `active → erasure_requested → erasure_approved → erasure_completed`
-- [ ] **AUTH-12**: GDPR data export endpoint (Article 20) — returns user data as JSON
-- [ ] **AUTH-13**: Audit log auto-prune after 90 days
-- [ ] **AUTH-14**: Pre-requisite: migrate ALL existing SQLite connections to WAL mode with `db_utils.py` helper before any concurrent writes
-- [ ] **AUTH-15**: GDPR data inventory documenting all PII fields and retention periods
+- [x] **AUTH-01**: SQLAlchemy models for User (UUID PK, username, role, is_active, timestamps)
+- [x] **AUTH-02**: SQLAlchemy models for ApiKey (UUID PK, user_id FK, SHA-256 hash, prefix, description, is_revoked, last_used_at)
+- [x] **AUTH-03**: SQLAlchemy models for AuditLog (UUID PK, actor_id, action, resource_type, resource_id, details, timestamp)
+- [x] **AUTH-04**: SQLAlchemy models for ErasureRequest (UUID PK, user_id FK, status state machine, approval chain, timestamps)
+- [x] **AUTH-05**: POST `/api/v1/auth/session` — exchange API key for JWT session cookie (HttpOnly, SameSite=Lax, 8h)
+- [x] **AUTH-06**: POST/GET `/api/v1/users` — admin creates users, lists users (paginated, no PII)
+- [x] **AUTH-07**: GET `/api/v1/users/me` — current user profile (GDPR Article 15)
+- [x] **AUTH-08**: DELETE `/api/v1/users/{id}` — admin deletes user (tombstone: anonymize username, clear hash, keep UUID)
+- [x] **AUTH-09**: FastAPI `Depends()` chain: `get_current_user` → `get_active_user` → `require_admin`/`require_auth`
+- [x] **AUTH-10**: POST/GET/DELETE `/api/v1/api-keys` — create (shown once), list (prefix + meta), revoke
+- [x] **AUTH-11**: GDPR erasure flow: `active → erasure_requested → erasure_approved → erasure_completed`
+- [x] **AUTH-12**: GDPR data export endpoint (Article 20) — returns user data as JSON
+- [x] **AUTH-13**: Audit log auto-prune after 90 days
+- [x] **AUTH-14**: Pre-requisite: migrate ALL existing SQLite connections to WAL mode with `db_utils.py` helper before any concurrent writes
+- [x] **AUTH-15**: GDPR data inventory documenting all PII fields and retention periods
 
 ### Config API (Phase 40)
 
