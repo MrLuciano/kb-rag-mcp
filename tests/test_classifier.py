@@ -22,7 +22,10 @@ from ingest.classifier import (
 
 class TestInferDocType:
     def test_admin_guide(self):
-        assert infer_doc_type(Path("Content-Server-Admin-Guide.pdf")) == "admin_guide"
+        assert (
+            infer_doc_type(Path("Content-Server-Admin-Guide.pdf"))
+            == "admin_guide"
+        )
 
     def test_standard_iso(self):
         assert infer_doc_type(Path("ISO-9001-Standard.pdf")) == "standard"
@@ -31,10 +34,14 @@ class TestInferDocType:
         assert infer_doc_type(Path("Training-Manual-v2.pdf")) == "training"
 
     def test_release_notes(self):
-        assert infer_doc_type(Path("Release-Notes-23.4.pdf")) == "release_notes"
+        assert (
+            infer_doc_type(Path("Release-Notes-23.4.pdf")) == "release_notes"
+        )
 
     def test_install_guide(self):
-        assert infer_doc_type(Path("Installation-Guide.pdf")) == "install_guide"
+        assert (
+            infer_doc_type(Path("Installation-Guide.pdf")) == "install_guide"
+        )
 
     def test_user_guide(self):
         assert infer_doc_type(Path("User-Guide.pdf")) == "user_guide"
@@ -151,16 +158,18 @@ class TestClassify:
         assert "vendor" in result
         assert "subsystem" in result
         assert result["vendor"] == "OpenText"  # via VENDOR_MAP for WebReports
-        assert result["subsystem"] == "API"    # via filename pattern
+        assert result["subsystem"] == "API"  # via filename pattern
 
     def test_classify_opentext_webreport_admin_guide(self, tmp_path):
         """SC1: 'OpenText WebReport Administrator Guide 23.4.pdf' → all fields correct.
-        
+
         This is the success criteria test from 11-01-PLAN.md SC1.
         """
         docs_root = tmp_path / "docs"
         # Using classify_document which uses parent as docs_root
-        file_path = docs_root / "OpenText WebReport Administrator Guide 23.4.pdf"
+        file_path = (
+            docs_root / "OpenText WebReport Administrator Guide 23.4.pdf"
+        )
         docs_root.mkdir()
         file_path.write_text("")
         result = classify_document(file_path)
@@ -319,7 +328,9 @@ class TestInferVendor:
 
     def test_vendor_from_product_map(self):
         """No vendor in filename, but product='WebReports' → 'OpenText' via VENDOR_MAP."""
-        assert infer_vendor(Path("Report Guide.pdf"), "WebReports") == "OpenText"
+        assert (
+            infer_vendor(Path("Report Guide.pdf"), "WebReports") == "OpenText"
+        )
 
     def test_vendor_non_opentext_product(self):
         """No patterns matched, product='Adobe' → '' (empty string)."""
@@ -371,7 +382,10 @@ class TestInferSubsystem:
 
     def test_subsystem_from_filename_pattern(self):
         """'ContentServer API Reference.pdf' → 'API' via SUBSYSTEM_PATTERNS."""
-        assert infer_subsystem(Path("ContentServer API Reference.pdf"), Path("/")) == "API"
+        assert (
+            infer_subsystem(Path("ContentServer API Reference.pdf"), Path("/"))
+            == "API"
+        )
 
     def test_subsystem_unknown(self):
         """Generic name, no subdirectory → ''."""
@@ -403,11 +417,19 @@ class TestInferSubsystem:
 
     def test_subsystem_security_from_filename(self):
         """Filename with 'security' → 'Security'."""
-        assert infer_subsystem(Path("ContentServer Security Guide.pdf"), Path("/")) == "Security"
+        assert (
+            infer_subsystem(
+                Path("ContentServer Security Guide.pdf"), Path("/")
+            )
+            == "Security"
+        )
 
     def test_subsystem_admin_from_filename(self):
         """Filename with 'admin' → 'Admin' (lower priority but catches)."""
-        assert infer_subsystem(Path("Platform Admin Guide.pdf"), Path("/")) == "Admin"
+        assert (
+            infer_subsystem(Path("Platform Admin Guide.pdf"), Path("/"))
+            == "Admin"
+        )
 
 
 class TestExtractDocumentMetadata:
@@ -419,12 +441,14 @@ class TestExtractDocumentMetadata:
 
         doc = fitz.open()
         doc.insert_page(0, text="Test content")
-        doc.set_metadata({
-            "title": "Test Title",
-            "author": "Test Author",
-            "subject": "OpenText WebReports",
-            "keywords": "admin, guide",
-        })
+        doc.set_metadata(
+            {
+                "title": "Test Title",
+                "author": "Test Author",
+                "subject": "OpenText WebReports",
+                "keywords": "admin, guide",
+            }
+        )
         test_path = tmp_path / "test.pdf"
         doc.save(str(test_path), incremental=False, deflate=True)
         doc.close()
@@ -483,7 +507,12 @@ class TestExtractDocumentMetadata:
 
     def test_build_metadata_text_with_gaps(self):
         """Only title set returns just the title."""
-        metadata = {"title": "Only Title", "subject": "", "author": "", "keywords": ""}
+        metadata = {
+            "title": "Only Title",
+            "subject": "",
+            "author": "",
+            "keywords": "",
+        }
         text = _build_metadata_text(metadata)
         assert text == "Only Title"
 
@@ -501,12 +530,14 @@ class TestEnrichClassification:
 
         doc = fitz.open()
         doc.insert_page(0, text="test")
-        doc.set_metadata({
-            "title": "General Guide",
-            "author": "",
-            "subject": "OpenText WebReports",
-            "keywords": "",
-        })
+        doc.set_metadata(
+            {
+                "title": "General Guide",
+                "author": "",
+                "subject": "OpenText WebReports",
+                "keywords": "",
+            }
+        )
         pdf_path = tmp_path / "general-guide.pdf"
         doc.save(str(pdf_path), incremental=False, deflate=True)
         doc.close()
@@ -551,12 +582,14 @@ class TestEnrichClassification:
 
         doc = fitz.open()
         doc.insert_page(0, text="test")
-        doc.set_metadata({
-            "title": "Adobe Reader Guide",
-            "author": "Adobe Inc",
-            "subject": "Adobe",
-            "keywords": "",
-        })
+        doc.set_metadata(
+            {
+                "title": "Adobe Reader Guide",
+                "author": "Adobe Inc",
+                "subject": "Adobe",
+                "keywords": "",
+            }
+        )
         webreports_dir = tmp_path / "WebReports"
         webreports_dir.mkdir()
         pdf_path = webreports_dir / "admin-guide.pdf"
@@ -601,12 +634,14 @@ class TestEnrichClassification:
 
         doc = fitz.open()
         doc.insert_page(0, text="test")
-        doc.set_metadata({
-            "title": "System Reference",
-            "author": "",
-            "subject": "Admin Guide",
-            "keywords": "",
-        })
+        doc.set_metadata(
+            {
+                "title": "System Reference",
+                "author": "",
+                "subject": "Admin Guide",
+                "keywords": "",
+            }
+        )
         pdf_path = tmp_path / "reference-doc.pdf"
         doc.save(str(pdf_path), incremental=False, deflate=True)
         doc.close()
@@ -626,12 +661,14 @@ class TestEnrichClassification:
 
         doc = fitz.open()
         doc.insert_page(0, text="test")
-        doc.set_metadata({
-            "title": "WebReport Administrator Guide",
-            "author": "",
-            "subject": "OpenText Content Server",
-            "keywords": "administration, config",
-        })
+        doc.set_metadata(
+            {
+                "title": "WebReport Administrator Guide",
+                "author": "",
+                "subject": "OpenText Content Server",
+                "keywords": "administration, config",
+            }
+        )
         pdf_path = tmp_path / "doc-12345.pdf"
         doc.save(str(pdf_path), incremental=False, deflate=True)
         doc.close()

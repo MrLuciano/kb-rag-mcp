@@ -2,6 +2,7 @@
 
 Uses mocked LLM judge to avoid live backend dependencies.
 """
+
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,7 +12,6 @@ import pytest
 from kb_server.evaluation.dataset import GoldenDataset
 from kb_server.evaluation.metrics import _parse_score
 from kb_server.evaluation.ragas_pipeline import RAGASEvaluator
-
 
 # ── _parse_score tests ─────────────────────────────────────────────────────
 
@@ -64,7 +64,9 @@ class TestRAGASEvaluatorInit:
 
     def test_init_without_llm_uses_env_backend(self, tmp_path):
         dataset = GoldenDataset(tmp_path / "empty.json")
-        with patch("kb_server.evaluation.ragas_pipeline.create_llm_wrapper") as mock_create:
+        with patch(
+            "kb_server.evaluation.ragas_pipeline.create_llm_wrapper"
+        ) as mock_create:
             mock_wrapper = MagicMock()
             mock_create.return_value = mock_wrapper
             evaluator = RAGASEvaluator(dataset=dataset)
@@ -87,13 +89,20 @@ class TestRAGASEvaluatorEvaluate:
     @pytest.mark.asyncio
     async def test_evaluate_returns_four_metrics(self, tmp_path):
         dataset_path = tmp_path / "dataset.json"
-        dataset_path.write_text(json.dumps([
-            {
-                "query": "How to install?",
-                "expected_answer": "Run the installer.",
-                "expected_docs": ["Step 1: download", "Step 2: install"],
-            }
-        ]))
+        dataset_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "query": "How to install?",
+                        "expected_answer": "Run the installer.",
+                        "expected_docs": [
+                            "Step 1: download",
+                            "Step 2: install",
+                        ],
+                    }
+                ]
+            )
+        )
         dataset = GoldenDataset(dataset_path)
 
         mock_llm = MagicMock()
@@ -113,27 +122,39 @@ class TestRAGASEvaluatorEvaluate:
     @pytest.mark.asyncio
     async def test_evaluate_with_multiple_examples(self, tmp_path):
         dataset_path = tmp_path / "dataset.json"
-        dataset_path.write_text(json.dumps([
-            {
-                "query": "How to install?",
-                "expected_answer": "Run the installer.",
-                "expected_docs": ["doc1"],
-            },
-            {
-                "query": "How to configure?",
-                "expected_answer": "Edit the config file.",
-                "expected_docs": ["doc2"],
-            },
-        ]))
+        dataset_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "query": "How to install?",
+                        "expected_answer": "Run the installer.",
+                        "expected_docs": ["doc1"],
+                    },
+                    {
+                        "query": "How to configure?",
+                        "expected_answer": "Edit the config file.",
+                        "expected_docs": ["doc2"],
+                    },
+                ]
+            )
+        )
         dataset = GoldenDataset(dataset_path)
 
         mock_llm = MagicMock()
         mock_adapter = MagicMock()
         # Return different scores for variety
-        mock_adapter.invoke = AsyncMock(side_effect=[
-            "0.9", "0.8", "0.7", "0.6",  # example 1
-            "0.5", "0.4", "0.3", "0.2",  # example 2
-        ])
+        mock_adapter.invoke = AsyncMock(
+            side_effect=[
+                "0.9",
+                "0.8",
+                "0.7",
+                "0.6",  # example 1
+                "0.5",
+                "0.4",
+                "0.3",
+                "0.2",  # example 2
+            ]
+        )
         evaluator = RAGASEvaluator(dataset=dataset, llm_provider=mock_llm)
         evaluator.llm = mock_adapter
 
@@ -147,13 +168,17 @@ class TestRAGASEvaluatorEvaluate:
     @pytest.mark.asyncio
     async def test_evaluate_skips_missing_contexts(self, tmp_path):
         dataset_path = tmp_path / "dataset.json"
-        dataset_path.write_text(json.dumps([
-            {
-                "query": "How to install?",
-                "expected_answer": "Run the installer.",
-                "expected_docs": [],  # No contexts
-            }
-        ]))
+        dataset_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "query": "How to install?",
+                        "expected_answer": "Run the installer.",
+                        "expected_docs": [],  # No contexts
+                    }
+                ]
+            )
+        )
         dataset = GoldenDataset(dataset_path)
 
         mock_llm = MagicMock()
@@ -169,28 +194,39 @@ class TestRAGASEvaluatorEvaluate:
     @pytest.mark.asyncio
     async def test_evaluate_logs_error_but_continues(self, tmp_path):
         dataset_path = tmp_path / "dataset.json"
-        dataset_path.write_text(json.dumps([
-            {
-                "query": "How to install?",
-                "expected_answer": "Run the installer.",
-                "expected_docs": ["doc1"],
-            },
-            {
-                "query": "How to configure?",
-                "expected_answer": "Edit config.",
-                "expected_docs": ["doc2"],
-            },
-        ]))
+        dataset_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "query": "How to install?",
+                        "expected_answer": "Run the installer.",
+                        "expected_docs": ["doc1"],
+                    },
+                    {
+                        "query": "How to configure?",
+                        "expected_answer": "Edit config.",
+                        "expected_docs": ["doc2"],
+                    },
+                ]
+            )
+        )
         dataset = GoldenDataset(dataset_path)
 
         mock_llm = MagicMock()
         mock_adapter = MagicMock()
         # Fail on first metric of first example, succeed on rest
-        mock_adapter.invoke = AsyncMock(side_effect=[
-            Exception("LLM timeout"),
-            "0.8", "0.7", "0.6",
-            "0.5", "0.4", "0.3", "0.2",
-        ])
+        mock_adapter.invoke = AsyncMock(
+            side_effect=[
+                Exception("LLM timeout"),
+                "0.8",
+                "0.7",
+                "0.6",
+                "0.5",
+                "0.4",
+                "0.3",
+                "0.2",
+            ]
+        )
         evaluator = RAGASEvaluator(dataset=dataset, llm_provider=mock_llm)
         evaluator.llm = mock_adapter
 

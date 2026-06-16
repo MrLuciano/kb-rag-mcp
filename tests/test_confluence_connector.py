@@ -91,9 +91,7 @@ class TestConfluencePagination:
         from ingest.connectors.confluence import ConfluenceConnector
 
         conn = ConfluenceConnector(cloud_config)
-        url = conn._build_content_url(
-            space="DEV", cursor="abc123"
-        )
+        url = conn._build_content_url(space="DEV", cursor="abc123")
         assert "cursor=abc123" in url
 
 
@@ -110,9 +108,7 @@ class TestConfluenceCQL:
         from ingest.connectors.confluence import ConfluenceConnector
 
         conn = ConfluenceConnector(server_config)
-        cql = conn._build_cql(
-            space="DEV", since="2026-01-01T00:00:00Z"
-        )
+        cql = conn._build_cql(space="DEV", since="2026-01-01T00:00:00Z")
         assert "lastModified" in cql
         assert "2026-01-01" in cql
 
@@ -120,9 +116,7 @@ class TestConfluenceCQL:
         from ingest.connectors.confluence import ConfluenceConnector
 
         conn = ConfluenceConnector(server_config)
-        cql = conn._build_cql(
-            space="DEV", labels=["howto", "reference"]
-        )
+        cql = conn._build_cql(space="DEV", labels=["howto", "reference"])
         assert "label=" in cql
         assert "howto" in cql or "reference" in cql
 
@@ -134,9 +128,7 @@ class TestConfluenceVersionDetection:
         conn = ConfluenceConnector(server_config)
         assert conn._detect_version() == "server"
 
-    def test_cloud_version_from_atlassian_url(
-        self, cloud_config
-    ):
+    def test_cloud_version_from_atlassian_url(self, cloud_config):
         from ingest.connectors.confluence import ConfluenceConnector
 
         conn = ConfluenceConnector(cloud_config)
@@ -214,9 +206,7 @@ class TestConfluenceFetchDocuments:
 
         error_response = MagicMock()
         error_response.status_code = 500
-        error_response.raise_for_status.side_effect = Exception(
-            "API error"
-        )
+        error_response.raise_for_status.side_effect = Exception("API error")
 
         with patch.object(conn, "_get_client") as mf:
             mc = AsyncMock()

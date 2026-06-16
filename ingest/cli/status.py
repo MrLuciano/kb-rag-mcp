@@ -49,9 +49,7 @@ def status(ctx: click.Context, source: str | None) -> None:
     # Filter by source if requested (case-insensitive partial match)
     if source:
         source_lower = source.lower()
-        rows = [
-            r for r in rows if source_lower in r["source"].lower()
-        ]
+        rows = [r for r in rows if source_lower in r["source"].lower()]
 
     if not rows:
         console.print("No ingest data found.")

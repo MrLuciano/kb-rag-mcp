@@ -124,25 +124,31 @@ class VectorStore:
                     size=self.dim, distance=Distance.COSINE
                 ),
             )
-            log.info(f"Collection '{self.collection}' created (dim={self.dim})")
-            
+            log.info(
+                f"Collection '{self.collection}' created (dim={self.dim})"
+            )
+
             # PHASE 12: Create payload indexes for fast filtered queries
             await self._create_payload_indexes()
 
     async def _create_payload_indexes(self) -> None:
         """
         Create payload indexes on product, doc_type, and version fields.
-        
+
         PHASE 12: Accelerates filtered queries from O(n) to O(log n).
         PHASE 13: Added version field index.
         """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
-        
+
         indexed_fields = [
-            "product", "doc_type", "version",
+            "product",
+            "doc_type",
+            "version",
             # PHASE 30: Graph metadata fields
-            "doc_graph_id", "graph_topics", "graph_related",
+            "doc_graph_id",
+            "graph_topics",
+            "graph_related",
         ]
         for field in indexed_fields:
             try:
@@ -155,9 +161,7 @@ class VectorStore:
                 log.info(f"Index created on field '{field}'")
             except Exception as e:
                 # Non-fatal: indexes improve performance but aren't critical
-                log.warning(
-                    f"Failed to create index on field '{field}': {e}"
-                )
+                log.warning(f"Failed to create index on field '{field}': {e}")
 
     # ── Search ──────────────────────────────────────────────────────
 
@@ -172,7 +176,9 @@ class VectorStore:
         vendor: str | None = None,  # PHASE 11.1: Vendor filter
         subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
         module: str | None = None,  # PHASE 17: Module filter
-        collection_name: str | None = None,  # PHASE 15: multi-collection override
+        collection_name: (
+            str | None
+        ) = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
         """Semantic search with optional filters by
         file_type, product, doc_type, version, vendor, subsystem, and module.
@@ -198,15 +204,11 @@ class VectorStore:
             )
         if version:  # PHASE 13: Version filtering
             conditions.append(
-                FieldCondition(
-                    key="version", match=MatchValue(value=version)
-                )
+                FieldCondition(key="version", match=MatchValue(value=version))
             )
         if vendor:  # PHASE 11.1: Vendor filtering
             conditions.append(
-                FieldCondition(
-                    key="vendor", match=MatchValue(value=vendor)
-                )
+                FieldCondition(key="vendor", match=MatchValue(value=vendor))
             )
         if subsystem:  # PHASE 11.1: Subsystem filtering
             conditions.append(
@@ -216,9 +218,7 @@ class VectorStore:
             )
         if module:  # PHASE 17: Module filtering
             conditions.append(
-                FieldCondition(
-                    key="module", match=MatchValue(value=module)
-                )
+                FieldCondition(key="module", match=MatchValue(value=module))
             )
 
         query_filter = Filter(must=conditions) if conditions else None
@@ -335,9 +335,7 @@ class VectorStore:
             )
         if product:
             conditions.append(
-                FieldCondition(
-                    key="product", match=MatchValue(value=product)
-                )
+                FieldCondition(key="product", match=MatchValue(value=product))
             )
         if doc_type:
             conditions.append(
@@ -347,15 +345,11 @@ class VectorStore:
             )
         if version:
             conditions.append(
-                FieldCondition(
-                    key="version", match=MatchValue(value=version)
-                )
+                FieldCondition(key="version", match=MatchValue(value=version))
             )
         if vendor:  # PHASE 11.1: Vendor filtering
             conditions.append(
-                FieldCondition(
-                    key="vendor", match=MatchValue(value=vendor)
-                )
+                FieldCondition(key="vendor", match=MatchValue(value=vendor))
             )
         if subsystem:  # PHASE 11.1: Subsystem filtering
             conditions.append(
@@ -365,9 +359,7 @@ class VectorStore:
             )
         if module:  # PHASE 17: Module filtering
             conditions.append(
-                FieldCondition(
-                    key="module", match=MatchValue(value=module)
-                )
+                FieldCondition(key="module", match=MatchValue(value=module))
             )
 
         query_filter = Filter(must=conditions) if conditions else None
@@ -430,7 +422,7 @@ class VectorStore:
         if not chunks:
             log.warning("upsert_chunks called with empty list")
             return
-        
+
         points = []
         for chunk in chunks:
             cid = chunk.get("chunk_id") or str(uuid.uuid4())
@@ -446,7 +438,7 @@ class VectorStore:
             f"Upserting {len(points)} chunks in {total_batches} batches "
             f"(batch_size={self.batch_size})"
         )
-        
+
         for batch_num, i in enumerate(
             range(0, len(points), self.batch_size), 1
         ):
@@ -466,7 +458,7 @@ class VectorStore:
                 f"Batch {batch_num}/{total_batches} uploaded "
                 f"({len(batch_points)} points)"
             )
-        
+
         log.info(f"Upserted {len(points)} chunks successfully")
 
     async def delete_document(self, source_file: str) -> None:
@@ -506,7 +498,9 @@ class VectorStore:
         subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
         module: str | None = None,  # PHASE 17: Module filter
         limit: int = 50,
-        collection_name: str | None = None,  # PHASE 15: multi-collection override
+        collection_name: (
+            str | None
+        ) = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
         """List indexed documents with optional filtering.
 
@@ -550,9 +544,7 @@ class VectorStore:
             )
         if vendor:  # PHASE 11.1: Vendor filtering
             conditions.append(
-                FieldCondition(
-                    key="vendor", match=MatchValue(value=vendor)
-                )
+                FieldCondition(key="vendor", match=MatchValue(value=vendor))
             )
         if subsystem:  # PHASE 11.1: Subsystem filtering
             conditions.append(
@@ -562,9 +554,7 @@ class VectorStore:
             )
         if module:  # PHASE 17: Module filtering
             conditions.append(
-                FieldCondition(
-                    key="module", match=MatchValue(value=module)
-                )
+                FieldCondition(key="module", match=MatchValue(value=module))
             )
 
         query_filter = Filter(must=conditions) if conditions else None
@@ -589,7 +579,9 @@ class VectorStore:
                         "file_type": r.payload.get("file_type", ""),
                         "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
                         "product": r.payload.get("product", ""),
-                        "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
+                        "subsystem": r.payload.get(
+                            "subsystem", ""
+                        ),  # PHASE 11.1
                         "module": r.payload.get("module", ""),  # PHASE 17
                         "doc_type": r.payload.get("doc_type", "document"),
                         "version": r.payload.get("version", ""),  # PHASE 13
@@ -797,20 +789,20 @@ class VectorStore:
     ) -> None:
         """
         PHASE 8: Parallel batch upsert for maximum throughput.
-        
+
         Splits chunks into batches and uploads multiple batches in parallel.
         Use this for large ingestion jobs (>1000 chunks).
-        
+
         Args:
             chunks: List of chunk dicts with vectors and metadata
             max_parallel: Maximum parallel batch uploads (default 3)
         """
         if not chunks:
             return
-        
+
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
-        
+
         points = []
         for chunk in chunks:
             cid = chunk.get("chunk_id") or str(uuid.uuid4())
@@ -819,21 +811,21 @@ class VectorStore:
             points.append(
                 PointStruct(id=cid, vector=chunk["vector"], payload=payload)
             )
-        
+
         # Split into batches
         batches = [
             points[i : i + self.batch_size]
             for i in range(0, len(points), self.batch_size)
         ]
-        
+
         log.info(
             f"Parallel upsert: {len(points)} chunks in {len(batches)} "
             f"batches (max_parallel={max_parallel})"
         )
-        
+
         # Upload batches in parallel (with limit)
         import asyncio
-        
+
         async def upload_batch(batch_num: int, batch: list) -> None:
             """Upload a single batch of points to Qdrant.
 
@@ -856,7 +848,7 @@ class VectorStore:
                 f"Parallel batch {batch_num}/{len(batches)} uploaded "
                 f"({len(batch)} points)"
             )
-        
+
         # Process in chunks of max_parallel
         for i in range(0, len(batches), max_parallel):
             parallel_batches = batches[i : i + max_parallel]
@@ -866,7 +858,7 @@ class VectorStore:
                     for j, batch in enumerate(parallel_batches)
                 ]
             )
-        
+
         log.info(f"Parallel upsert complete: {len(points)} chunks")
 
     # ── Phase 16: Reclassification metadata update ──────────────────────
@@ -901,9 +893,7 @@ class VectorStore:
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
 
-        log.info(
-            f"Updating metadata for {source_file} in {collection_name}"
-        )
+        log.info(f"Updating metadata for {source_file} in {collection_name}")
 
         # Build filter
         must_conditions = [

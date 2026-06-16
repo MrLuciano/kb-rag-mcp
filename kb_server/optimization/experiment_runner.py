@@ -96,9 +96,7 @@ class ExperimentRunner:
             chunk_size=chunk_size,
             overlap=overlap,
         )
-        engine = ChunkingEngine(
-            strategy_obj, self.vector_store, self.dataset
-        )
+        engine = ChunkingEngine(strategy_obj, self.vector_store, self.dataset)
         metrics = await engine.run_experiment(
             docs_path, top_k=top_k, clean=True
         )
@@ -242,9 +240,7 @@ class ExperimentRunner:
                     run_id="baseline",
                     params=result.get("metrics", {}),
                     metrics=result.get("metrics", {}),
-                    strategy=params.get(
-                        "strategy", params.get("variant", "")
-                    ),
+                    strategy=params.get("strategy", params.get("variant", "")),
                     variant=experiment_type,
                 )
                 baseline_saved = True

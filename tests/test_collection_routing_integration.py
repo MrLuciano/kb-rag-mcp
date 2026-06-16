@@ -1,9 +1,13 @@
 """Integration tests for multi-collection routing (TEST-03)."""
+
 import pytest
 from unittest.mock import AsyncMock, patch
 
 import kb_server.server as server_module
-from kb_server.collections.router import CollectionRouter, CollectionNotFoundError
+from kb_server.collections.router import (
+    CollectionRouter,
+    CollectionNotFoundError,
+)
 from kb_server.collections.manager import CollectionManager
 from kb_server.server import _search_kb
 
@@ -46,9 +50,11 @@ def patch_server_globals(mock_store):
     """Patch common server module globals."""
     with (
         patch.object(server_module, "store", mock_store),
-        patch.object(server_module, "get_embedding", new=AsyncMock(
-            return_value=[0.1] * 384
-        )),
+        patch.object(
+            server_module,
+            "get_embedding",
+            new=AsyncMock(return_value=[0.1] * 384),
+        ),
         patch.object(server_module, "query_logger", None),
     ):
         yield mock_store
@@ -60,7 +66,9 @@ async def test_search_routes_to_correct_collection(
 ):
     """When collection='col_a' is specified, store.search must be called
     with collection_name='col_a'."""
-    with patch.object(server_module, "collection_router", two_collection_router):
+    with patch.object(
+        server_module, "collection_router", two_collection_router
+    ):
         await _search_kb({"query": "some query", "collection": "col_a"})
 
     call_kwargs = patch_server_globals.search.call_args
@@ -73,7 +81,9 @@ async def test_search_routes_to_default_when_no_collection_param(
 ):
     """When no collection is specified, store.search should use the default
     collection (kb_docs)."""
-    with patch.object(server_module, "collection_router", two_collection_router):
+    with patch.object(
+        server_module, "collection_router", two_collection_router
+    ):
         await _search_kb({"query": "default collection query"})
 
     call_kwargs = patch_server_globals.search.call_args
@@ -86,7 +96,9 @@ async def test_search_graceful_fallback_on_missing_collection(
 ):
     """Requesting a non-existent collection should return a TextContent with
     an error message — not raise an exception."""
-    with patch.object(server_module, "collection_router", two_collection_router):
+    with patch.object(
+        server_module, "collection_router", two_collection_router
+    ):
         results = await _search_kb(
             {"query": "some query", "collection": "missing_col"}
         )
@@ -94,7 +106,10 @@ async def test_search_graceful_fallback_on_missing_collection(
     assert len(results) == 1
     assert results[0].type == "text"
     # Should contain some indication of the missing collection
-    assert "missing_col" in results[0].text or "not exist" in results[0].text.lower()
+    assert (
+        "missing_col" in results[0].text
+        or "not exist" in results[0].text.lower()
+    )
 
 
 @pytest.mark.asyncio
@@ -103,7 +118,9 @@ async def test_multi_collection_isolation(
 ):
     """Searching col_a should call store.search exactly once with
     collection_name='col_a'."""
-    with patch.object(server_module, "collection_router", two_collection_router):
+    with patch.object(
+        server_module, "collection_router", two_collection_router
+    ):
         await _search_kb({"query": "isolation query", "collection": "col_a"})
 
     patch_server_globals.search.assert_called_once()

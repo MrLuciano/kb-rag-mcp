@@ -9,6 +9,7 @@ Metrics:
   - context_precision   : Fraction of retrieved contexts that are relevant
   - context_recall      : Fraction of ground-truth facts present in contexts
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -32,7 +33,9 @@ log = logging.getLogger("kb-mcp.eval")
 
 # Default backend for evaluation judge
 DEFAULT_EVAL_BACKEND = os.getenv("EMBED_BACKEND", "lmstudio-rest")
-DEFAULT_EVAL_MODEL = os.getenv("EVAL_LLM_MODEL", os.getenv("LLM_MODEL", "default"))
+DEFAULT_EVAL_MODEL = os.getenv(
+    "EVAL_LLM_MODEL", os.getenv("LLM_MODEL", "default")
+)
 
 
 class RAGASEvaluator:
@@ -100,7 +103,12 @@ class RAGASEvaluator:
             expected_answer = example.get("expected_answer", "")
             expected_docs = example.get("expected_docs", [])
 
-            log.debug("Evaluating example %d/%d: %s", i + 1, len(self.dataset.examples), query[:60])
+            log.debug(
+                "Evaluating example %d/%d: %s",
+                i + 1,
+                len(self.dataset.examples),
+                query[:60],
+            )
 
             # Determine contexts to use
             contexts = await self._get_contexts(query, expected_docs)
@@ -116,8 +124,12 @@ class RAGASEvaluator:
                 f_score, ar_score, cp_score, cr_score = await asyncio.gather(
                     custom_metrics.faithfulness(answer, contexts, self.llm),
                     custom_metrics.answer_relevancy(query, answer, self.llm),
-                    custom_metrics.context_precision(query, contexts, self.llm),
-                    custom_metrics.context_recall(query, answer, contexts, self.llm),
+                    custom_metrics.context_precision(
+                        query, contexts, self.llm
+                    ),
+                    custom_metrics.context_recall(
+                        query, answer, contexts, self.llm
+                    ),
                 )
                 scores["faithfulness"].append(f_score)
                 scores["answer_relevancy"].append(ar_score)
@@ -161,7 +173,9 @@ class RAGASEvaluator:
                     top_k=5,
                 )
                 contexts = [r.get("text", str(r)) for r in results]
-                log.debug("Retrieved %d contexts from vector store", len(contexts))
+                log.debug(
+                    "Retrieved %d contexts from vector store", len(contexts)
+                )
             except Exception as e:
                 log.warning("VectorStore search failed: %s", e)
 
@@ -172,7 +186,9 @@ class RAGASEvaluator:
 
         return contexts
 
-    def save_results(self, results: Dict[str, float], output_path: Path) -> None:
+    def save_results(
+        self, results: Dict[str, float], output_path: Path
+    ) -> None:
         """Save evaluation results to JSON."""
         with open(output_path, "w") as f:
             json.dump(results, f, indent=2)

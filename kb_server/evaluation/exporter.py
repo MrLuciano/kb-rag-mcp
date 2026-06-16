@@ -2,6 +2,7 @@
 
 Supports CSV, JSON, and rich console table output.
 """
+
 from __future__ import annotations
 
 import csv
@@ -39,28 +40,36 @@ class ResultsExporter:
                 headers = ["example_index", "query"]
                 if per_example_scores:
                     headers.extend(
-                        k for k in per_example_scores[0].keys()
+                        k
+                        for k in per_example_scores[0].keys()
                         if k not in ("example_index", "query", "timestamp")
                     )
                 headers.append("timestamp")
                 writer.writerow(headers)
 
                 for i, row in enumerate(per_example_scores):
-                    writer.writerow([
-                        i,
-                        row.get("query", ""),
-                        *[row.get(k, "") for k in headers[2:-1]],
-                        row.get("timestamp", ""),
-                    ])
+                    writer.writerow(
+                        [
+                            i,
+                            row.get("query", ""),
+                            *[row.get(k, "") for k in headers[2:-1]],
+                            row.get("timestamp", ""),
+                        ]
+                    )
             else:
                 # Summary-only format
                 writer.writerow(["metric", "score", "timestamp"])
                 for metric, score in results.items():
-                    writer.writerow([
-                        metric,
-                        f"{score:.4f}",
-                        datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
-                    ])
+                    writer.writerow(
+                        [
+                            metric,
+                            f"{score:.4f}",
+                            datetime.now(timezone.utc)
+                            .replace(tzinfo=None)
+                            .isoformat()
+                            + "Z",
+                        ]
+                    )
 
         log.info("Results exported to CSV: %s", output_path)
 
@@ -80,7 +89,10 @@ class ResultsExporter:
         data: Dict[str, Any] = {
             "summary": {
                 "metrics": results,
-                "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc)
+                .replace(tzinfo=None)
+                .isoformat()
+                + "Z",
             },
         }
 
@@ -90,10 +102,7 @@ class ResultsExporter:
             # Compute stats per metric
             stats: Dict[str, Dict[str, float]] = {}
             for metric in results.keys():
-                values = [
-                    r[metric] for r in per_example_scores
-                    if metric in r
-                ]
+                values = [r[metric] for r in per_example_scores if metric in r]
                 if values:
                     stats[metric] = {
                         "mean": round(sum(values) / len(values), 4),

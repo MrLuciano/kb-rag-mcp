@@ -20,6 +20,7 @@ ollama         →  POST {OLLAMA_HOST}/api/generate
 lmstudio-sdk   →  lms.ChatCompletion.create(...)  (if SDK installed)
                   Falls back to lmstudio-rest if SDK unavailable.
 """
+
 from __future__ import annotations
 
 import logging

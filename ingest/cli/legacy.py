@@ -12,6 +12,7 @@ from pathlib import Path
 # Load .env before imports
 _project_root = Path(__file__).parent.parent.parent
 from config.bootstrap_env import bootstrap_env
+
 bootstrap_env()
 
 # Add server/ to path

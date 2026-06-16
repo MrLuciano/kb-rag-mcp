@@ -6,6 +6,7 @@ Provides strategy abstractions for comparing dense-only, hybrid, and
 reranked retrieval variants.  The ``ScoringEngine`` runs experiments
 against an existing indexed collection without re-ingesting.
 """
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
@@ -93,8 +94,7 @@ class DenseOnlyVariant(ScoringVariant):
         creation is the caller's responsibility.
         """
         log.info(
-            "DenseOnlyVariant search: query='%s...', top_k=%d, "
-            "metric=%s",
+            "DenseOnlyVariant search: query='%s...', top_k=%d, " "metric=%s",
             query[:60],
             top_k,
             self.distance_metric,
@@ -195,8 +195,7 @@ class RerankedVariant(ScoringVariant):
     ) -> List[dict]:
         """Run base search, then rerank results via cross-encoder."""
         log.info(
-            "RerankedVariant search: query='%s...', top_k=%d, "
-            "model=%s",
+            "RerankedVariant search: query='%s...', top_k=%d, " "model=%s",
             query[:60],
             top_k,
             self.model_name,
@@ -218,9 +217,7 @@ class RerankedVariant(ScoringVariant):
                 top_k=top_k,
             )
         except Exception as e:
-            log.warning(
-                "Reranking failed (%s); returning base results", e
-            )
+            log.warning("Reranking failed (%s); returning base results", e)
             return base_results
 
 
@@ -264,8 +261,7 @@ class ScoringEngine:
             ``ndcg_at_k``, plus metadata fields.
         """
         log.info(
-            "ScoringEngine.run_experiment: top_k=%d, "
-            "dataset_size=%d",
+            "ScoringEngine.run_experiment: top_k=%d, " "dataset_size=%d",
             top_k,
             len(self.dataset),
         )
@@ -286,9 +282,7 @@ class ScoringEngine:
                 vector_store=self.vector_store,
                 top_k=top_k,
             )
-            retrieved_docs = [
-                r.get("source_file", "") for r in results
-            ]
+            retrieved_docs = [r.get("source_file", "") for r in results]
             query_results.append(
                 {
                     "query": query_text,
@@ -314,9 +308,7 @@ class ScoringEngine:
             metrics["dense_weight"] = None
             metrics["sparse_weight"] = None
 
-        metrics["reranker_enabled"] = isinstance(
-            self.variant, RerankedVariant
-        )
+        metrics["reranker_enabled"] = isinstance(self.variant, RerankedVariant)
 
         log.info("ScoringEngine experiment complete: %s", metrics)
         return metrics

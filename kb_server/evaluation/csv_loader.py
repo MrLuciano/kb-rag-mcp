@@ -4,6 +4,7 @@ Supports comma, semicolon, and tab delimiters.
 Normalizes columns to the GoldenDataset format:
   query, expected_answer, expected_docs, metadata
 """
+
 from __future__ import annotations
 
 import csv

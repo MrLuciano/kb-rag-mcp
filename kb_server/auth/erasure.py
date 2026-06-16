@@ -32,7 +32,9 @@ class ErasureManager:
         self._session.add(er)
 
         user.erasure_status = ErasureStatus.erasure_requested
-        user.erasure_requested_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        user.erasure_requested_at = datetime.now(timezone.utc).replace(
+            tzinfo=None
+        )
         self._session.flush()
 
         entry = AuditLog(
@@ -64,7 +66,9 @@ class ErasureManager:
         user = self._session.query(User).filter(User.id == er.user_id).first()
         if user:
             user.erasure_status = ErasureStatus.erasure_approved
-            user.erasure_approved_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            user.erasure_approved_at = datetime.now(timezone.utc).replace(
+                tzinfo=None
+            )
         self._session.flush()
 
         entry = AuditLog(
@@ -97,7 +101,9 @@ class ErasureManager:
         user.username = f"deleted-user-{short_id}"
         user.is_active = False
         user.erasure_status = ErasureStatus.erasure_completed
-        user.erasure_completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        user.erasure_completed_at = datetime.now(timezone.utc).replace(
+            tzinfo=None
+        )
 
         for key in user.api_keys:
             self._session.delete(key)

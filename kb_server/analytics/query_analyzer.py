@@ -67,7 +67,8 @@ class QueryAnalyzer:
             from datetime import datetime, timezone, timedelta
 
             cutoff = (
-                datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=time_range_days)
+                datetime.now(timezone.utc).replace(tzinfo=None)
+                - timedelta(days=time_range_days)
             ).isoformat()
             cursor.execute(
                 """
@@ -156,7 +157,8 @@ class QueryAnalyzer:
             from datetime import datetime, timezone, timedelta
 
             cutoff = (
-                datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=time_range_days)
+                datetime.now(timezone.utc).replace(tzinfo=None)
+                - timedelta(days=time_range_days)
             ).isoformat()
             cursor.execute(
                 """
@@ -201,7 +203,8 @@ class QueryAnalyzer:
         from datetime import datetime, timezone, timedelta
 
         cutoff = (
-            datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=time_range_days)
+            datetime.now(timezone.utc).replace(tzinfo=None)
+            - timedelta(days=time_range_days)
         ).isoformat()
         cursor.execute(
             "SELECT latency_ms FROM query_log WHERE timestamp >= ?",

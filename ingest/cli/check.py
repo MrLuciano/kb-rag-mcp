@@ -58,14 +58,24 @@ def health(verbose: bool) -> None:
 
     critical_unhealthy = 0
 
-    for name in ["embedding", "vector_store", "cache", "database", "filesystem"]:
+    for name in [
+        "embedding",
+        "vector_store",
+        "cache",
+        "database",
+        "filesystem",
+    ]:
         status = components.get(name)
         if status is None:
-            table.add_row(name, "[yellow]SKIP[/yellow]", "Not checked", "\u2014")
+            table.add_row(
+                name, "[yellow]SKIP[/yellow]", "Not checked", "\u2014"
+            )
             continue
 
         status_text = (
-            "[green]Healthy[/green]" if status.healthy else "[red]Unhealthy[/red]"
+            "[green]Healthy[/green]"
+            if status.healthy
+            else "[red]Unhealthy[/red]"
         )
         latency = (
             f"{status.latency_ms:.0f}ms"
@@ -81,7 +91,11 @@ def health(verbose: bool) -> None:
 
         table.add_row(name, status_text, details, latency)
 
-        if not status.healthy and name in ("embedding", "vector_store", "database"):
+        if not status.healthy and name in (
+            "embedding",
+            "vector_store",
+            "database",
+        ):
             critical_unhealthy += 1
 
     panel = Panel(

@@ -16,7 +16,6 @@ from observability.metrics import (
     rate_limit_subjects,
 )
 
-
 # ---------------------------------------------------------------------------
 # ServerRateLimiter unit tests
 # ---------------------------------------------------------------------------
@@ -27,7 +26,9 @@ class TestServerRateLimiter:
     """Tests for the per-subject rate limiter."""
 
     async def test_allows_first_request(self) -> None:
-        limiter = ServerRateLimiter(requests_per_minute=60, cleanup_interval=9999)
+        limiter = ServerRateLimiter(
+            requests_per_minute=60, cleanup_interval=9999
+        )
         allowed, retry_after = await limiter.check("alice")
         assert allowed is True
         assert retry_after == 0
@@ -55,14 +56,18 @@ class TestServerRateLimiter:
         assert allowed_b is True
 
     async def test_subject_count(self) -> None:
-        limiter = ServerRateLimiter(requests_per_minute=60, cleanup_interval=9999)
+        limiter = ServerRateLimiter(
+            requests_per_minute=60, cleanup_interval=9999
+        )
         assert await limiter.subject_count() == 0
         await limiter.check("alice")
         assert await limiter.subject_count() == 1
         await limiter.check("bob")
         assert await limiter.subject_count() == 2
 
-    async def test_multiple_requests_same_subject_tracks_correctly(self) -> None:
+    async def test_multiple_requests_same_subject_tracks_correctly(
+        self,
+    ) -> None:
         limiter = ServerRateLimiter(
             requests_per_minute=120,  # 2 per second
             burst_capacity=5,
@@ -134,7 +139,9 @@ class TestCallToolRateLimit:
     """call_tool should reject with error content when over limit."""
 
     @patch("kb_server.server.rate_limiter")
-    async def test_rejects_when_rate_limited(self, mock_limiter: AsyncMock) -> None:
+    async def test_rejects_when_rate_limited(
+        self, mock_limiter: AsyncMock
+    ) -> None:
         import kb_server.server as srv
 
         mock_limiter.check = AsyncMock(return_value=(False, 30))
@@ -149,7 +156,9 @@ class TestCallToolRateLimit:
         mock_limiter.check.assert_awaited_once_with("test-subject")
 
     @patch("kb_server.server.rate_limiter")
-    async def test_passes_when_within_limit(self, mock_limiter: AsyncMock) -> None:
+    async def test_passes_when_within_limit(
+        self, mock_limiter: AsyncMock
+    ) -> None:
         import kb_server.server as srv
 
         mock_limiter.check = AsyncMock(return_value=(True, 0))
@@ -185,9 +194,7 @@ class TestAuthHeaderToSubjectPrefix:
     def test_valid_bearer_returns_prefix(self) -> None:
         import kb_server.server as srv
 
-        result = srv._auth_header_to_subject_prefix(
-            "Bearer abcdef1234567890"
-        )
+        result = srv._auth_header_to_subject_prefix("Bearer abcdef1234567890")
         assert result == "abcdef12"
 
     def test_short_key_returns_full_key(self) -> None:
@@ -209,10 +216,7 @@ class TestAuthHeaderToSubjectPrefix:
     def test_wrong_scheme_returns_none(self) -> None:
         import kb_server.server as srv
 
-        assert (
-            srv._auth_header_to_subject_prefix("Basic dGVzdDp0ZXN0")
-            is None
-        )
+        assert srv._auth_header_to_subject_prefix("Basic dGVzdDp0ZXN0") is None
 
 
 # ---------------------------------------------------------------------------

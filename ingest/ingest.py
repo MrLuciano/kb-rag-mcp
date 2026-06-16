@@ -27,6 +27,7 @@ from pathlib import Path
 _project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(_project_root))
 from config.bootstrap_env import bootstrap_env
+
 bootstrap_env()
 
 # Now add server/ to path for embed_client and vector_store imports
@@ -45,11 +46,11 @@ logging.basicConfig(
 EXT_TYPE_MAP = {
     ".pdf": "pdf",
     ".docx": "docx",
-    ".doc": "doc",        # legacy Word 97-2003
+    ".doc": "doc",  # legacy Word 97-2003
     ".xlsx": "xlsx",
-    ".xls": "xls",        # legacy Excel 97-2003
+    ".xls": "xls",  # legacy Excel 97-2003
     ".pptx": "pptx",
-    ".ppt": "ppt",        # legacy PowerPoint 97-2003
+    ".ppt": "ppt",  # legacy PowerPoint 97-2003
     ".txt": "txt",
     ".md": "txt",
     ".rst": "txt",
@@ -68,11 +69,11 @@ EXT_TYPE_MAP = {
     ".xml": "code",
     ".sh": "code",
     ".sql": "code",
-    ".odt": "odt",        # OpenDocument Text
-    ".ods": "ods",        # OpenDocument Spreadsheet
-    ".odp": "odp",        # OpenDocument Presentation
-    ".wpd": "wpd",        # WordPerfect
-    ".zip": "zip",        # ZIP archive
+    ".odt": "odt",  # OpenDocument Text
+    ".ods": "ods",  # OpenDocument Spreadsheet
+    ".odp": "odp",  # OpenDocument Presentation
+    ".wpd": "wpd",  # WordPerfect
+    ".zip": "zip",  # ZIP archive
 }
 
 # Chunk settings by type
@@ -80,18 +81,30 @@ _DEFAULT_CHUNK_SIZE = int(os.getenv("INGEST_CHUNK_SIZE_DEFAULT", "600"))
 _DEFAULT_CHUNK_OVERLAP = int(os.getenv("INGEST_CHUNK_OVERLAP_DEFAULT", "80"))
 
 CHUNK_SETTINGS = {
-    "pdf":  {"size": int(os.getenv("INGEST_CHUNK_SIZE_PDF",  "800")),
-             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_PDF", "100"))},
-    "docx": {"size": int(os.getenv("INGEST_CHUNK_SIZE_DOCX", "700")),
-             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_DOCX", "80"))},
-    "xlsx": {"size": int(os.getenv("INGEST_CHUNK_SIZE_XLSX", "500")),
-             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_XLSX", "50"))},
-    "pptx": {"size": int(os.getenv("INGEST_CHUNK_SIZE_PPTX", "600")),
-             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_PPTX", "80"))},
-    "txt":  {"size": int(os.getenv("INGEST_CHUNK_SIZE_TXT",  "600")),
-             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_TXT",  "80"))},
-    "code": {"size": int(os.getenv("INGEST_CHUNK_SIZE_CODE", "400")),
-             "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_CODE", "60"))},
+    "pdf": {
+        "size": int(os.getenv("INGEST_CHUNK_SIZE_PDF", "800")),
+        "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_PDF", "100")),
+    },
+    "docx": {
+        "size": int(os.getenv("INGEST_CHUNK_SIZE_DOCX", "700")),
+        "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_DOCX", "80")),
+    },
+    "xlsx": {
+        "size": int(os.getenv("INGEST_CHUNK_SIZE_XLSX", "500")),
+        "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_XLSX", "50")),
+    },
+    "pptx": {
+        "size": int(os.getenv("INGEST_CHUNK_SIZE_PPTX", "600")),
+        "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_PPTX", "80")),
+    },
+    "txt": {
+        "size": int(os.getenv("INGEST_CHUNK_SIZE_TXT", "600")),
+        "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_TXT", "80")),
+    },
+    "code": {
+        "size": int(os.getenv("INGEST_CHUNK_SIZE_CODE", "400")),
+        "overlap": int(os.getenv("INGEST_CHUNK_OVERLAP_CODE", "60")),
+    },
 }
 
 
@@ -335,26 +348,31 @@ def extract_code(path: Path) -> list[dict]:
 
 
 from ingest.parsers.legacy_office import (
-    extract_doc, extract_xls, extract_ppt,
-    extract_odt, extract_ods, extract_odp, extract_wpd,
+    extract_doc,
+    extract_xls,
+    extract_ppt,
+    extract_odt,
+    extract_ods,
+    extract_odp,
+    extract_wpd,
 )
 from ingest.parsers.zip_handler import extract_zip
 
 EXTRACTORS = {
     "pdf": extract_pdf,
     "docx": extract_docx,
-    "doc": extract_doc,        # legacy Word 97-2003
+    "doc": extract_doc,  # legacy Word 97-2003
     "xlsx": extract_xlsx,
-    "xls": extract_xls,        # legacy Excel 97-2003
+    "xls": extract_xls,  # legacy Excel 97-2003
     "pptx": extract_pptx,
-    "ppt": extract_ppt,        # legacy PowerPoint 97-2003
+    "ppt": extract_ppt,  # legacy PowerPoint 97-2003
     "txt": extract_text,
     "code": extract_code,
-    "odt": extract_odt,        # OpenDocument Text
-    "ods": extract_ods,        # OpenDocument Spreadsheet
-    "odp": extract_odp,        # OpenDocument Presentation
-    "wpd": extract_wpd,        # WordPerfect
-    "zip": extract_zip,        # ZIP archive
+    "odt": extract_odt,  # OpenDocument Text
+    "ods": extract_ods,  # OpenDocument Spreadsheet
+    "odp": extract_odp,  # OpenDocument Presentation
+    "wpd": extract_wpd,  # WordPerfect
+    "zip": extract_zip,  # ZIP archive
 }
 
 
@@ -466,7 +484,9 @@ async def process_file(
             log.debug(f"  SKIP: {source_file} ({reason})")
             return 0, "skipped"
         vendor_tag = f"[{vendor:10}] " if vendor else ""
-        log.info(f"{vendor_tag}[{doc_type:16}] [{product:20}] {source_file}  ({reason})")
+        log.info(
+            f"{vendor_tag}[{doc_type:16}] [{product:20}] {source_file}  ({reason})"
+        )
     else:
         log.info(f"[{doc_type:16}] [{product:20}] {source_file}  (forced)")
 
@@ -677,9 +697,7 @@ async def run_ingest(
                         )
                     meta_store.close()
                 except Exception:
-                    log.warning(
-                        "Could not record connector state for %s", f
-                    )
+                    log.warning("Could not record connector state for %s", f)
             return n, status
 
     results = await asyncio.gather(*[process_one(f) for f in files])
@@ -713,6 +731,7 @@ async def run_ingest(
     # PHASE 17: Signal MCP server to refresh filter terms
     try:
         from ingest.utils import write_filter_cache_bust
+
         write_filter_cache_bust()
     except Exception:
         pass
@@ -736,8 +755,7 @@ def _sync_deleted(registry, docs_root: Path, current_files: list[Path]):
             removed += 1
     if removed:
         log.info(
-            f"  {removed} file(s) removed from disk "
-            f"marked as 'deleted'"
+            f"  {removed} file(s) removed from disk " f"marked as 'deleted'"
         )
 
 
@@ -808,19 +826,13 @@ def main():
     Parses arguments and routes to either the ingest subcommand or the
     status subcommand. Supports backward-compatible direct flags.
     """
-    parser = argparse.ArgumentParser(
-        description="KB RAG — Ingest Pipeline"
-    )
+    parser = argparse.ArgumentParser(description="KB RAG — Ingest Pipeline")
     sub = parser.add_subparsers(dest="cmd")
 
     # ── ingest (default)
     p_ingest = sub.add_parser("ingest", help="Ingest documents (default)")
-    p_ingest.add_argument(
-        "--docs", type=Path, help="Root documents directory"
-    )
-    p_ingest.add_argument(
-        "--file", type=Path, help="Single file to ingest"
-    )
+    p_ingest.add_argument("--docs", type=Path, help="Root documents directory")
+    p_ingest.add_argument("--file", type=Path, help="Single file to ingest")
     p_ingest.add_argument(
         "--product", type=str, help="Product name (override)"
     )
@@ -851,9 +863,7 @@ def main():
     p_status.add_argument(
         "--errors", action="store_true", help="Show files with errors"
     )
-    p_status.add_argument(
-        "--list", action="store_true", help="List all files"
-    )
+    p_status.add_argument("--list", action="store_true", help="List all files")
 
     # Backward compatibility: accept direct flags without subcommand
 

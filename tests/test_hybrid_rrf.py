@@ -1,13 +1,19 @@
 """Tests for HybridSearcher._rrf_fusion — CR-03 regression test."""
+
 import pytest
 import sys
 from pathlib import Path
 
 # hybrid_search imports fastembed at module level; stub it out before import
 import types as _types
+
 _fastembed = _types.ModuleType("fastembed")
+
+
 class _SparseTextEmbedding:
     pass
+
+
 _fastembed.SparseTextEmbedding = _SparseTextEmbedding
 sys.modules.setdefault("fastembed", _fastembed)
 
@@ -59,7 +65,11 @@ class TestRRFFusion:
 
     def test_rrf_fusion_empty_sparse_returns_dense_order(self):
         """With empty sparse, fusion order matches dense order."""
-        dense = [make_result("a", 0.9), make_result("b", 0.8), make_result("c", 0.7)]
+        dense = [
+            make_result("a", 0.9),
+            make_result("b", 0.8),
+            make_result("c", 0.7),
+        ]
         fused = self.hs._rrf_fusion(dense_results=dense, sparse_results=[])
 
         ids = [r["chunk_id"] for r in fused]

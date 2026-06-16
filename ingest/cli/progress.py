@@ -158,9 +158,7 @@ def follow(ctx: click.Context, job_id: str, interval: float) -> None:
                     "failed",
                     "cancelled",
                 ):
-                    console.print(
-                        f"\n[bold]Job {job.status.value}![/bold]"
-                    )
+                    console.print(f"\n[bold]Job {job.status.value}![/bold]")
                     _display_progress(job)
                     break
 
@@ -200,9 +198,7 @@ def _display_progress(job) -> None:
     table.add_column("Value")
 
     table.add_row("Job ID", job.job_id[:8])
-    table.add_row(
-        "Status", f"[{status_color}]{job.status.value}[/]"
-    )
+    table.add_row("Status", f"[{status_color}]{job.status.value}[/]")
     table.add_row("Progress", progress_text)
     table.add_row("Total chunks", str(job.total_chunks))
 

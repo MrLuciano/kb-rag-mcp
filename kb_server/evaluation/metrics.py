@@ -8,6 +8,7 @@ Implements the 4 core RAGAS metrics without requiring the ragas library:
 
 Each metric sends one or more prompts to an LLM judge and parses a 0-1 score.
 """
+
 from __future__ import annotations
 
 import logging
@@ -195,7 +196,9 @@ async def answer_relevancy(question: str, answer: str, llm: Any) -> float:
     return _parse_score(response)
 
 
-async def context_precision(question: str, contexts: list[str], llm: Any) -> float:
+async def context_precision(
+    question: str, contexts: list[str], llm: Any
+) -> float:
     """Rate what fraction of retrieved contexts are relevant to the question.
 
     Args:
@@ -208,7 +211,9 @@ async def context_precision(question: str, contexts: list[str], llm: Any) -> flo
     """
     prompt = _CONTEXT_PRECISION_PROMPT.format(
         question=question,
-        contexts="\n---\n".join(f"[{i+1}] {ctx}" for i, ctx in enumerate(contexts)),
+        contexts="\n---\n".join(
+            f"[{i+1}] {ctx}" for i, ctx in enumerate(contexts)
+        ),
     )
     response = await llm.invoke(prompt)
     return _parse_score(response)
@@ -234,7 +239,9 @@ async def context_recall(
     prompt = _CONTEXT_RECALL_PROMPT.format(
         question=question,
         ground_truth=ground_truth,
-        contexts="\n---\n".join(f"[{i+1}] {ctx}" for i, ctx in enumerate(contexts)),
+        contexts="\n---\n".join(
+            f"[{i+1}] {ctx}" for i, ctx in enumerate(contexts)
+        ),
     )
     response = await llm.invoke(prompt)
     return _parse_score(response)

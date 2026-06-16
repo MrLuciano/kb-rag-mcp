@@ -86,9 +86,7 @@ class TestMetaLoader:
         """Reject invalid doc_type in file-specific override."""
         meta_file = temp_dir / "_meta.json"
         meta_file.write_text(
-            json.dumps(
-                {"files": {"test.pdf": {"doc_type": "invalid_type"}}}
-            )
+            json.dumps({"files": {"test.pdf": {"doc_type": "invalid_type"}}})
         )
 
         with pytest.raises(ValueError, match="Invalid doc_type"):
@@ -182,15 +180,11 @@ class TestMetaLoader:
         # Create directory structure with multiple _meta.json files
         dir1 = temp_dir / "dir1"
         dir1.mkdir()
-        (dir1 / "_meta.json").write_text(
-            json.dumps({"product": "Product1"})
-        )
+        (dir1 / "_meta.json").write_text(json.dumps({"product": "Product1"}))
 
         dir2 = temp_dir / "dir2"
         dir2.mkdir()
-        (dir2 / "_meta.json").write_text(
-            json.dumps({"product": "Product2"})
-        )
+        (dir2 / "_meta.json").write_text(json.dumps({"product": "Product2"}))
 
         meta_map = loader.scan_directory(temp_dir)
 
@@ -214,16 +208,12 @@ class TestMetaLoader:
         assert nested in meta_map
         assert meta_map[nested]["product"] == "NestedProduct"
 
-    def test_scan_directory_handles_errors(
-        self, loader, temp_dir, caplog
-    ):
+    def test_scan_directory_handles_errors(self, loader, temp_dir, caplog):
         """scan_directory() logs errors but continues."""
         # Create one valid and one invalid _meta.json
         valid_dir = temp_dir / "valid"
         valid_dir.mkdir()
-        (valid_dir / "_meta.json").write_text(
-            json.dumps({"product": "Valid"})
-        )
+        (valid_dir / "_meta.json").write_text(json.dumps({"product": "Valid"}))
 
         invalid_dir = temp_dir / "invalid"
         invalid_dir.mkdir()
@@ -239,9 +229,7 @@ class TestMetaLoader:
     def test_convenience_function_load(self, temp_dir):
         """Test convenience function for loading."""
         meta_file = temp_dir / "_meta.json"
-        meta_file.write_text(
-            json.dumps({"product": "TestProduct"})
-        )
+        meta_file.write_text(json.dumps({"product": "TestProduct"}))
 
         meta = load_directory_meta(temp_dir)
         assert meta["product"] == "TestProduct"

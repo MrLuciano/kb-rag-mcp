@@ -21,7 +21,9 @@ def cli_runner():
     return CliRunner()
 
 
-def _make_health_status(name, healthy, message="", latency_ms=None, details=None):
+def _make_health_status(
+    name, healthy, message="", latency_ms=None, details=None
+):
     """Helper to create a HealthStatus-like mock."""
     s = MagicMock()
     s.name = name
@@ -42,8 +44,12 @@ def test_help_shows_verbose_flag(cli_runner):
 def test_all_healthy_exits_zero(cli_runner):
     """All components healthy → exits 0, prints success message."""
     mock_components = {
-        "embedding": _make_health_status("embedding", True, "backend: lmstudio"),
-        "vector_store": _make_health_status("vector_store", True, "100 chunks"),
+        "embedding": _make_health_status(
+            "embedding", True, "backend: lmstudio"
+        ),
+        "vector_store": _make_health_status(
+            "vector_store", True, "100 chunks"
+        ),
         "cache": _make_health_status("cache", True, "enabled"),
         "database": _make_health_status("database", True, "10 jobs"),
         "filesystem": _make_health_status("filesystem", True, "50GB free"),
@@ -65,7 +71,9 @@ def test_embedding_unhealthy_exits_one(cli_runner):
         "embedding": _make_health_status(
             "embedding", False, "connection refused"
         ),
-        "vector_store": _make_health_status("vector_store", True, "100 chunks"),
+        "vector_store": _make_health_status(
+            "vector_store", True, "100 chunks"
+        ),
         "cache": _make_health_status("cache", True, "enabled"),
         "database": _make_health_status("database", True, "10 jobs"),
         "filesystem": _make_health_status("filesystem", True, "50GB free"),
@@ -139,7 +147,13 @@ def test_component_order_is_consistent(cli_runner):
 
     assert result.exit_code == 0
     # The output should contain all 5 component names
-    for name in ["embedding", "vector_store", "cache", "database", "filesystem"]:
+    for name in [
+        "embedding",
+        "vector_store",
+        "cache",
+        "database",
+        "filesystem",
+    ]:
         assert name in result.output
 
 

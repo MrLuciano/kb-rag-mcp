@@ -3,6 +3,7 @@
 FASE 12/14/17: Covers query metrics, batch metrics, and cache metrics
 added during recent metrics-wiring work.
 """
+
 import time
 from unittest.mock import MagicMock, patch
 
@@ -11,8 +12,8 @@ from prometheus_client import REGISTRY
 
 from observability import metrics as m
 
-
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _clear_metric(metric_name: str) -> None:
     """Remove a metric from the global registry so tests don't collide."""
@@ -63,7 +64,8 @@ class TestRecordBatchEmbedding:
             "kb_batch_embedding_texts_total", "", ["backend"]
         )
         m.batch_embedding_duration = m.Histogram(
-            "kb_batch_embedding_duration_seconds", "",
+            "kb_batch_embedding_duration_seconds",
+            "",
             buckets=[0.1, 0.5, 1.0],
         )
         m.record_batch_embedding("openai-compat", 5, 0.3)
@@ -79,7 +81,8 @@ class TestRecordBatchEmbedding:
             "kb_batch_embedding_texts_total", "", ["backend"]
         )
         m.batch_embedding_duration = m.Histogram(
-            "kb_batch_embedding_duration_seconds", "",
+            "kb_batch_embedding_duration_seconds",
+            "",
             buckets=[0.1, 0.5, 1.0],
         )
         m.record_batch_embedding("ollama", 25, 1.5)
@@ -95,7 +98,8 @@ class TestRecordBatchEmbedding:
             "kb_batch_embedding_texts_total", "", ["backend"]
         )
         m.batch_embedding_duration = m.Histogram(
-            "kb_batch_embedding_duration_seconds", "",
+            "kb_batch_embedding_duration_seconds",
+            "",
             buckets=[0.1, 0.5, 1.0],
         )
         m.record_batch_embedding("lmstudio-rest", 100, 5.0)
@@ -110,10 +114,12 @@ class TestRecordBatchUpsert:
             "kb_batch_upserts_total", "", ["parallel"]
         )
         m.batch_upsert_points = m.Counter(
-            "kb_batch_upsert_points_total", "",
+            "kb_batch_upsert_points_total",
+            "",
         )
         m.batch_upsert_duration = m.Histogram(
-            "kb_batch_upsert_duration_seconds", "",
+            "kb_batch_upsert_duration_seconds",
+            "",
             buckets=[0.1, 0.5, 1.0],
         )
         m.record_batch_upsert(50, 2.0, parallel=False)
@@ -126,10 +132,12 @@ class TestRecordBatchUpsert:
             "kb_batch_upserts_total", "", ["parallel"]
         )
         m.batch_upsert_points = m.Counter(
-            "kb_batch_upsert_points_total", "",
+            "kb_batch_upsert_points_total",
+            "",
         )
         m.batch_upsert_duration = m.Histogram(
-            "kb_batch_upsert_duration_seconds", "",
+            "kb_batch_upsert_duration_seconds",
+            "",
             buckets=[0.1, 0.5, 1.0],
         )
         m.record_batch_upsert(200, 3.0, parallel=True)
@@ -142,12 +150,8 @@ class TestUpdateCacheMetrics:
     def test_update_cache_metrics(self):
         _clear_metric("kb_cache_size_bytes")
         _clear_metric("kb_cache_entries")
-        m.cache_size_bytes = m.Gauge(
-            "kb_cache_size_bytes", "", ["backend"]
-        )
-        m.cache_entries = m.Gauge(
-            "kb_cache_entries", "", ["backend"]
-        )
+        m.cache_size_bytes = m.Gauge("kb_cache_size_bytes", "", ["backend"])
+        m.cache_entries = m.Gauge("kb_cache_entries", "", ["backend"])
         m.update_cache_metrics("lru", 1024, 42)
 
 
@@ -190,6 +194,7 @@ class TestServerMetricsIntegration:
     @pytest.mark.asyncio
     async def test_call_tool_records_query_on_success(self):
         import kb_server.server as srv
+
         with patch.object(srv, "record_query") as mock_rq:
             with patch.object(srv, "_list_collections", return_value=[]):
                 await srv.call_tool("list_collections", {})
@@ -202,6 +207,7 @@ class TestServerMetricsIntegration:
     @pytest.mark.asyncio
     async def test_call_tool_records_query_error_on_exception(self):
         import kb_server.server as srv
+
         with patch.object(srv, "record_query") as mock_rq:
             with patch.object(srv, "record_query_error") as mock_err:
                 with patch.object(
@@ -215,10 +221,9 @@ class TestServerMetricsIntegration:
     @pytest.mark.asyncio
     async def test_call_tool_records_query_for_list_filter_options(self):
         import kb_server.server as srv
+
         with patch.object(srv, "record_query") as mock_rq:
-            with patch.object(
-                srv, "_list_filter_options", return_value=[]
-            ):
+            with patch.object(srv, "_list_filter_options", return_value=[]):
                 await srv.call_tool("list_filter_options", {})
         mock_rq.assert_called_once()
         assert mock_rq.call_args[0][0] == "list_filter_options"

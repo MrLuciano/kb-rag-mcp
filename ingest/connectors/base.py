@@ -10,7 +10,11 @@ incremental sync checkpointing.
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from ingest.connectors.models import ConnectorConfig, RemoteDocument, SyncResult
+from ingest.connectors.models import (
+    ConnectorConfig,
+    RemoteDocument,
+    SyncResult,
+)
 
 
 class ConnectorBase(ABC):
@@ -28,9 +32,7 @@ class ConnectorBase(ABC):
         self.config = config
 
     @abstractmethod
-    async def fetch_documents(
-        self, since: Optional[str] = None
-    ) -> SyncResult:
+    async def fetch_documents(self, since: Optional[str] = None) -> SyncResult:
         """Fetch documents from the remote source, optionally since a
         checkpoint.
 
@@ -44,9 +46,7 @@ class ConnectorBase(ABC):
         ...
 
     @abstractmethod
-    async def fetch_document(
-        self, remote_id: str
-    ) -> Optional[RemoteDocument]:
+    async def fetch_document(self, remote_id: str) -> Optional[RemoteDocument]:
         """Fetch a single document by its remote identity.
 
         Args:

@@ -18,6 +18,7 @@ async def test_list_filter_options_integration():
 async def test_list_filter_options_registered():
     """list_filter_options should appear in list_tools output."""
     import kb_server.server as srv
+
     tools = await srv.list_tools()
     names = [t.name for t in tools]
     assert "list_filter_options" in names
@@ -27,6 +28,7 @@ async def test_list_filter_options_registered():
 async def test_list_filter_options_tool_structure():
     """Tool should have field and collection params."""
     import kb_server.server as srv
+
     tools = await srv.list_tools()
     for tool in tools:
         if tool.name == "list_filter_options":
@@ -42,7 +44,10 @@ async def test_list_filter_options_tool_structure():
 async def test_list_filter_options_unknown_field():
     """Unknown field should return empty message."""
     import kb_server.server as srv
-    result = await srv.call_tool("list_filter_options", {"field": "nonexistent"})
+
+    result = await srv.call_tool(
+        "list_filter_options", {"field": "nonexistent"}
+    )
     assert len(result) == 1
     assert "No values" in result[0].text or "No results" in result[0].text
 
@@ -51,6 +56,7 @@ async def test_list_filter_options_unknown_field():
 async def test_list_filter_options_callable():
     """list_filter_options should be callable without errors."""
     import kb_server.server as srv
+
     result = await srv.call_tool("list_filter_options", {})
     assert len(result) == 1
     assert isinstance(result[0].text, str)

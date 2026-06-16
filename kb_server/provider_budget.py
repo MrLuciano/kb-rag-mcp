@@ -119,9 +119,7 @@ class ProviderBudget:
         }
 
         if self._max_tokens is not None:
-            total_tokens = sum(
-                entry[1] for entry in dq if len(entry) > 1
-            )
+            total_tokens = sum(entry[1] for entry in dq if len(entry) > 1)
             result["token_count"] = total_tokens
             result["token_limit"] = self._max_tokens
             result["tokens_remaining"] = max(

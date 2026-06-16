@@ -19,15 +19,13 @@ log = logging.getLogger("kb-mcp.hybrid")
 HYBRID_DENSE_WEIGHT = float(os.getenv("HYBRID_DENSE_WEIGHT", "0.7"))
 HYBRID_SPARSE_WEIGHT = float(os.getenv("HYBRID_SPARSE_WEIGHT", "0.3"))
 HYBRID_RRF_K = int(os.getenv("HYBRID_RRF_K", "60"))
-HYBRID_SPARSE_MODEL = os.getenv(
-    "HYBRID_SPARSE_MODEL", "Qdrant/bm25"
-)
+HYBRID_SPARSE_MODEL = os.getenv("HYBRID_SPARSE_MODEL", "Qdrant/bm25")
 
 
 class HybridSearcher:
     """
     Hybrid search combining dense vectors with BM25 sparse retrieval.
-    
+
     Features:
     - Dense vector search (semantic similarity)
     - BM25 sparse search (keyword/term matching)
@@ -50,7 +48,7 @@ class HybridSearcher:
         """Lazy load sparse embedding model."""
         if self.sparse_model is not None:
             return
-        
+
         log.info(f"Loading sparse model: {HYBRID_SPARSE_MODEL}")
         try:
             self.sparse_model = SparseTextEmbedding(
@@ -64,23 +62,25 @@ class HybridSearcher:
     async def generate_sparse_vector(self, text: str) -> dict[int, float]:
         """
         Generate BM25 sparse vector for text.
-        
+
         Returns dict mapping token index to score.
         """
         self._load_sparse_model()
-        
+
         try:
             # fastembed returns list of sparse vectors
             result = list(self.sparse_model.embed([text]))
             if not result:
                 log.warning("Sparse embedding returned empty result")
                 return {}
-            
+
             # Convert sparse vector to dict format
             sparse_vec = result[0]
-            
+
             # sparse_vec is typically a SparseEmbedding with .indices and .values
-            if hasattr(sparse_vec, 'indices') and hasattr(sparse_vec, 'values'):
+            if hasattr(sparse_vec, "indices") and hasattr(
+                sparse_vec, "values"
+            ):
                 return dict(zip(sparse_vec.indices, sparse_vec.values))
             elif isinstance(sparse_vec, dict):
                 return sparse_vec
@@ -89,7 +89,7 @@ class HybridSearcher:
                     f"Unexpected sparse vector format: {type(sparse_vec)}"
                 )
                 return {}
-                
+
         except Exception as e:
             log.error(f"Failed to generate sparse vector: {e}")
             # Non-fatal: return empty sparse vector, fall back to dense only
@@ -108,7 +108,7 @@ class HybridSearcher:
     ) -> list[dict]:
         """
         Perform hybrid search combining dense and sparse retrieval.
-        
+
         Args:
             vector_store: VectorStore instance
             query_vector: Dense embedding vector
@@ -118,14 +118,12 @@ class HybridSearcher:
             product: Product filter
             doc_type: Document type filter
             version: Version filter (PHASE 13)
-        
+
         Returns:
             List of results sorted by fused score
         """
-        log.info(
-            f"Hybrid search: query='{query_text[:50]}...', top_k={top_k}"
-        )
-        
+        log.info(f"Hybrid search: query='{query_text[:50]}...', top_k={top_k}")
+
         # Step 1: Dense search (retrieve more for fusion)
         retrieve_k = min(top_k * 4, 50)  # Get 4x results for better fusion
         dense_results = await vector_store.search(
@@ -136,18 +134,18 @@ class HybridSearcher:
             doc_type=doc_type,
             version=version,  # PHASE 13: Pass version filter
         )
-        
+
         log.info(f"Dense search returned {len(dense_results)} results")
-        
+
         # Step 2: Generate sparse vector
         sparse_vector = await self.generate_sparse_vector(query_text)
-        
+
         if not sparse_vector:
             log.warning(
                 "Sparse vector empty, falling back to dense-only search"
             )
             return dense_results[:top_k]
-        
+
         # Step 3: Sparse search via Qdrant BM25 sparse vectors
         log.info("Performing sparse (BM25) search")
         sparse_results = await vector_store.search_sparse(
@@ -165,7 +163,7 @@ class HybridSearcher:
             dense_results=dense_results,
             sparse_results=sparse_results,
         )
-        
+
         return fused_results[:top_k]
 
     def _rrf_fusion(
@@ -175,20 +173,20 @@ class HybridSearcher:
     ) -> list[dict]:
         """
         Reciprocal Rank Fusion of dense and sparse results.
-        
+
         RRF score = sum(1 / (k + rank)) for each result list
         where k is a constant (default 60) and rank is 0-indexed.
-        
+
         Args:
             dense_results: Results from dense vector search
             sparse_results: Results from sparse BM25 search
-        
+
         Returns:
             Fused results sorted by combined score
         """
         scores: dict[str, float] = {}
         result_map: dict[str, dict] = {}
-        
+
         # Process dense results
         for rank, result in enumerate(dense_results):
             chunk_id = result["chunk_id"]
@@ -197,7 +195,7 @@ class HybridSearcher:
                 rrf_score * self.dense_weight
             )
             result_map[chunk_id] = result
-        
+
         # Process sparse results
         for rank, result in enumerate(sparse_results):
             chunk_id = result["chunk_id"]
@@ -207,10 +205,10 @@ class HybridSearcher:
             )
             if chunk_id not in result_map:
                 result_map[chunk_id] = result
-        
+
         # Sort by fused score
         sorted_ids = sorted(scores.items(), key=lambda x: -x[1])
-        
+
         # Build result list with fused scores
         fused_results = []
         for chunk_id, score in sorted_ids:
@@ -218,12 +216,12 @@ class HybridSearcher:
             result["score"] = score  # Replace with fused score
             result["fusion"] = "rrf"  # Mark as fused result
             fused_results.append(result)
-        
+
         log.info(
             f"RRF fusion: {len(dense_results)} dense + "
             f"{len(sparse_results)} sparse -> {len(fused_results)} fused"
         )
-        
+
         return fused_results
 
 
@@ -305,7 +303,9 @@ def merge_multi_collection_results(
 
     log.info(
         "Multi-collection merge: %d collections, %d unique chunks → %d results",
-        len(per_collection), len(score_map), len(merged),
+        len(per_collection),
+        len(score_map),
+        len(merged),
     )
     return merged
 

@@ -30,6 +30,7 @@ class TestCrossEncoderReranker:
     @pytest.fixture
     def reranker(self):
         from kb_server.retrieval.reranker import CrossEncoderReranker
+
         r = CrossEncoderReranker()
         r.model = None  # ensure clean state
         return r
@@ -115,9 +116,7 @@ class TestRerankerIntegration:
         from unittest.mock import AsyncMock, patch
 
         # Mock dependencies
-        with patch(
-            "kb_server.server.get_embedding", return_value=[0.1] * 768
-        ):
+        with patch("kb_server.server.get_embedding", return_value=[0.1] * 768):
             with patch("kb_server.server.store") as mock_store:
                 mock_store.search = AsyncMock(
                     return_value=[
@@ -132,11 +131,13 @@ class TestRerankerIntegration:
                     ]
                 )
 
-                result = await _search_kb({
-                    "query": "test",
-                    "top_k": 5,
-                    "rerank": True,
-                })
+                result = await _search_kb(
+                    {
+                        "query": "test",
+                        "top_k": 5,
+                        "rerank": True,
+                    }
+                )
 
                 assert len(result) == 1
                 assert "Results for:" in result[0].text

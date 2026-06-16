@@ -3,6 +3,7 @@ E2E test for Grafana dashboard JSON structure.
 
 Validates that the dashboard definition is valid and complete.
 """
+
 import json
 import pytest
 from pathlib import Path
@@ -53,5 +54,6 @@ def test_dashboard_panels_have_queries():
         targets = panel.get("targets", [])
         assert len(targets) > 0, f"Panel '{panel.get('title')}' has no targets"
         for target in targets:
-            assert "expr" in target or "datasource" in target, \
-                f"Panel '{panel.get('title')}' target missing expr/datasource"
+            assert (
+                "expr" in target or "datasource" in target
+            ), f"Panel '{panel.get('title')}' target missing expr/datasource"

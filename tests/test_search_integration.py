@@ -1,6 +1,7 @@
 """Integration tests for ingest→search_kb MCP path (TEST-02).
 Uses mocked VectorStore — no live Qdrant required.
 """
+
 import pytest
 from unittest.mock import AsyncMock, patch
 
@@ -28,9 +29,11 @@ def patch_server_globals():
 
     with (
         patch.object(server_module, "store", mock_store),
-        patch.object(server_module, "get_embedding", new=AsyncMock(
-            return_value=[0.1] * 384
-        )),
+        patch.object(
+            server_module,
+            "get_embedding",
+            new=AsyncMock(return_value=[0.1] * 384),
+        ),
         patch.object(server_module, "collection_router", None),
         patch.object(server_module, "query_logger", None),
     ):

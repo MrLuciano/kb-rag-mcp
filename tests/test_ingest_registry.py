@@ -33,8 +33,9 @@ class TestIngestRegistryDedup:
         rel = "docs/doc_a.txt"
         assert not reg.is_indexed(rel, checksum=sha_a)
         reg.mark_indexed(rel, checksum=sha_a, chunks=3)
-        assert reg.is_indexed(rel, checksum=sha_a), \
-            "should be indexed with same checksum (dedup)"
+        assert reg.is_indexed(
+            rel, checksum=sha_a
+        ), "should be indexed with same checksum (dedup)"
         reg.close()
 
     def test_deduplication_different_checksum(self, tmp_path):
@@ -55,8 +56,9 @@ class TestIngestRegistryDedup:
         rel = "docs/shared_path.txt"
         reg.mark_indexed(rel, checksum=sha_a, chunks=2)
 
-        assert not reg.is_indexed(rel, checksum=sha_b), \
-            "different checksum must not match as indexed"
+        assert not reg.is_indexed(
+            rel, checksum=sha_b
+        ), "different checksum must not match as indexed"
         reg.close()
 
 
@@ -79,9 +81,7 @@ class TestConnectorState:
             local_path="/tmp/staged/page-123.md",
         )
 
-        state = store.get_connector_state(
-            "confluence://myspace", "page-123"
-        )
+        state = store.get_connector_state("confluence://myspace", "page-123")
         assert state is not None
         assert state["source_key"] == "confluence://myspace"
         assert state["remote_id"] == "page-123"
@@ -128,9 +128,7 @@ class TestConnectorState:
         store = MetadataStore(db_path=db)
         store.connect()
 
-        state = store.get_connector_state(
-            "confluence://nope", "page-999"
-        )
+        state = store.get_connector_state("confluence://nope", "page-999")
         assert state is None
 
         store.close()
@@ -165,9 +163,7 @@ class TestConnectorState:
         )
         assert len(confluence_states) == 2
 
-        jira_states = store.list_connector_state(
-            connector_type="jira"
-        )
+        jira_states = store.list_connector_state(connector_type="jira")
         assert len(jira_states) == 1
 
         store.close()
@@ -183,16 +179,16 @@ class TestConnectorState:
             remote_id="page-to-delete",
             connector_type="confluence",
         )
-        assert store.get_connector_state(
-            "confluence://space", "page-to-delete"
-        ) is not None
-
-        store.delete_connector_state(
-            "confluence://space", "page-to-delete"
+        assert (
+            store.get_connector_state("confluence://space", "page-to-delete")
+            is not None
         )
-        assert store.get_connector_state(
-            "confluence://space", "page-to-delete"
-        ) is None
+
+        store.delete_connector_state("confluence://space", "page-to-delete")
+        assert (
+            store.get_connector_state("confluence://space", "page-to-delete")
+            is None
+        )
 
         store.close()
 

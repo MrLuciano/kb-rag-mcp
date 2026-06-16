@@ -42,8 +42,7 @@ class AuthRegistry:
     def _init_db(self) -> None:
         with self._lock:
             conn = self._conn()
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS api_keys (
                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
                     key_hash    TEXT NOT NULL UNIQUE,
@@ -55,8 +54,7 @@ class AuthRegistry:
                     created_at  TEXT NOT NULL,
                     revoked_at  TEXT
                 )
-                """
-            )
+                """)
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_api_keys_prefix "
                 "ON api_keys(prefix)"

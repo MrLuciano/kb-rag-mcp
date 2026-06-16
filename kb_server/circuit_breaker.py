@@ -18,6 +18,7 @@ log = logging.getLogger("kb-mcp.circuit_breaker")
 
 class CircuitState(enum.Enum):
     """Circuit breaker state."""
+
     CLOSED = "closed"
     OPEN = "open"
     HALF_OPEN = "half_open"
@@ -234,7 +235,11 @@ class CircuitBreaker:
                 "cooldown_multiplier": 1,
             }
         now = time.monotonic()
-        remaining = max(0.0, info.get("open_until", 0) - now) if info["state"] == CircuitState.OPEN else 0.0
+        remaining = (
+            max(0.0, info.get("open_until", 0) - now)
+            if info["state"] == CircuitState.OPEN
+            else 0.0
+        )
         return {
             "state": info["state"].value,
             "consecutive_failures": info["consecutive_failures"],
@@ -252,7 +257,9 @@ class CircuitBreaker:
         result = []
         now = time.monotonic()
         for provider, info in self._state.items():
-            if info["state"] == CircuitState.OPEN and now < info.get("open_until", 0):
+            if info["state"] == CircuitState.OPEN and now < info.get(
+                "open_until", 0
+            ):
                 result.append(provider)
         return result
 

@@ -28,7 +28,7 @@ def e2e_test_docs_dir(e2e_test_data_dir: Path) -> Path:
     """Create test documents directory."""
     docs_dir = e2e_test_data_dir / "docs"
     docs_dir.mkdir(exist_ok=True)
-    
+
     # Create test documents
     (docs_dir / "test.txt").write_text(
         "This is a test document about Python programming."
@@ -36,7 +36,7 @@ def e2e_test_docs_dir(e2e_test_data_dir: Path) -> Path:
     (docs_dir / "README.md").write_text(
         "# Test Project\n\nThis is a test README file."
     )
-    
+
     # Create product directory
     product_dir = docs_dir / "TestProduct"
     product_dir.mkdir(exist_ok=True)
@@ -45,7 +45,7 @@ def e2e_test_docs_dir(e2e_test_data_dir: Path) -> Path:
         "Step 1: Download the software\n"
         "Step 2: Run the installer\n"
     )
-    
+
     return docs_dir
 
 
@@ -53,7 +53,7 @@ def e2e_test_docs_dir(e2e_test_data_dir: Path) -> Path:
 def e2e_temp_db(tmp_path: Path) -> Generator[Path, None, None]:
     """Create temporary SQLite database for testing."""
     db_path = tmp_path / "test_jobs.db"
-    
+
     # Create database with schema
     conn = sqlite3.connect(db_path)
     conn.execute("""
@@ -67,9 +67,9 @@ def e2e_temp_db(tmp_path: Path) -> Generator[Path, None, None]:
     """)
     conn.commit()
     conn.close()
-    
+
     yield db_path
-    
+
     # Cleanup
     if db_path.exists():
         db_path.unlink()
@@ -93,21 +93,22 @@ def e2e_temp_registry(tmp_path: Path) -> Generator[Path, None, None]:
 @pytest.fixture
 async def e2e_mock_embedding_service():
     """Mock embedding service that returns fixed vectors."""
+
     class MockEmbeddingService:
         def __init__(self):
             self.call_count = 0
-        
+
         async def embed_text(self, text: str) -> list[float]:
             """Return mock embedding vector."""
             self.call_count += 1
             # Return 384-dim vector (common embedding size)
             return [0.1] * 384
-        
+
         async def embed_batch(self, texts: list[str]) -> list[list[float]]:
             """Return mock embeddings for batch."""
             self.call_count += len(texts)
             return [[0.1] * 384 for _ in texts]
-    
+
     return MockEmbeddingService()
 
 
@@ -139,7 +140,7 @@ def e2e_health_response() -> dict:
                 "healthy": True,
                 "latency_ms": pytest.approx(float, rel=100),
             },
-        }
+        },
     }
 
 
@@ -150,7 +151,7 @@ def e2e_search_params() -> dict:
         "query": "Python programming",
         "top_k": 5,
         "product": None,
-        "doc_type": None
+        "doc_type": None,
     }
 
 

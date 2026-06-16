@@ -54,13 +54,13 @@ def test_metrics_contains_help_and_type_comments(client):
 def test_metrics_response_is_valid_prometheus_format(client):
     """Test that response is parseable as Prometheus text format."""
     response = client.get("/metrics")
-    
+
     # Parse the response - this will raise if format is invalid
     metrics = list(text_string_to_metric_families(response.text))
-    
+
     # Should have multiple metric families
     assert len(metrics) > 0
-    
+
     # Check for expected metric declarations in raw text
     # (Counter metrics with labels won't have data points until used)
     assert "# TYPE kb_ingest_jobs_created_total counter" in response.text
@@ -126,11 +126,11 @@ def test_metrics_contains_help_for_provider_metrics(client):
 def test_provider_resilience_metrics_in_valid_format(client):
     """Test that provider metrics are parseable Prometheus format."""
     response = client.get("/metrics")
-    
+
     # Parse the response - this will raise if format is invalid
     metrics = list(text_string_to_metric_families(response.text))
     metric_names = {m.name for m in metrics}
-    
+
     # Note: parser strips _total suffix from Counter names
     assert "kb_provider_requests" in metric_names
     assert "kb_provider_errors" in metric_names

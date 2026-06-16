@@ -41,7 +41,9 @@ def temp_dir(tmp_path):
 def sample_text_file(temp_dir):
     """Create a sample text file."""
     file_path = temp_dir / "sample.txt"
-    file_path.write_text("Hello, world! This is a test file.", encoding="utf-8")
+    file_path.write_text(
+        "Hello, world! This is a test file.", encoding="utf-8"
+    )
     return file_path
 
 

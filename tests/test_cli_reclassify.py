@@ -56,7 +56,10 @@ def test_sessions_subcommand_exists():
     runner = CliRunner()
     result = runner.invoke(cli, ["reclassify", "sessions", "--help"])
     assert result.exit_code == 0
-    assert "sessions" in result.output.lower() or "session" in result.output.lower()
+    assert (
+        "sessions" in result.output.lower()
+        or "session" in result.output.lower()
+    )
 
 
 def test_rollback_subcommand_exists():
@@ -70,11 +73,12 @@ def test_rollback_subcommand_exists():
 
 # Step 2 tests
 
+
 def test_parse_filter_expr_quoted_value():
     """Filter parser handles quoted values."""
     result = _parse_filter_expr('vendor=""')
     assert result == {"vendor": ""}
-    
+
     result = _parse_filter_expr('vendor="OpenText"')
     assert result == {"vendor": "OpenText"}
 
@@ -102,14 +106,17 @@ def test_show_aggregated_preview():
     changes = [
         {
             "source_file": "docs/test1.pdf",
-            "fields_changed": {"vendor": ("", "OpenText"), "subsystem": ("", "Admin")},
-            "chunk_count": 5
+            "fields_changed": {
+                "vendor": ("", "OpenText"),
+                "subsystem": ("", "Admin"),
+            },
+            "chunk_count": 5,
         },
         {
             "source_file": "docs/test2.pdf",
             "fields_changed": {"vendor": ("", "OpenText")},
-            "chunk_count": 3
-        }
+            "chunk_count": 3,
+        },
     ]
     # Should not crash
     _show_aggregated_preview(changes)
@@ -117,56 +124,70 @@ def test_show_aggregated_preview():
 
 # Step 3 tests
 
+
 @pytest.mark.asyncio
 async def test_verify_command_shows_no_mismatches_message():
     """RECLASSIFY-05: verify shows success message when no mismatches."""
     from ingest.cli.reclassify import _verify_impl
-    
-    with patch("ingest.cli.reclassify.detect_changed_classifications") as mock_detect:
-        with patch("kb_server.collections.router.CollectionRouter") as mock_router_class:
+
+    with patch(
+        "ingest.cli.reclassify.detect_changed_classifications"
+    ) as mock_detect:
+        with patch(
+            "kb_server.collections.router.CollectionRouter"
+        ) as mock_router_class:
             # Mock router instance
             mock_router = AsyncMock()
             mock_router.resolve = AsyncMock(return_value="kb-default")
             mock_router_class.return_value = mock_router
-            
+
             mock_detect.return_value = []
-            
+
             # Should not crash, prints success message
-            await _verify_impl(pattern="docs/*.pdf", collection=None, filter_expr=None)
+            await _verify_impl(
+                pattern="docs/*.pdf", collection=None, filter_expr=None
+            )
 
 
 @pytest.mark.asyncio
 async def test_verify_command_shows_mismatches_table():
     """RECLASSIFY-05: verify shows per-document mismatches in table."""
     from ingest.cli.reclassify import _verify_impl
-    
+
     changes = [
         {
             "source_file": "docs/test.pdf",
             "fields_changed": {"vendor": ("", "OpenText")},
-            "chunk_count": 5
+            "chunk_count": 5,
         }
     ]
-    
-    with patch("ingest.cli.reclassify.detect_changed_classifications") as mock_detect:
-        with patch("kb_server.collections.router.CollectionRouter") as mock_router_class:
+
+    with patch(
+        "ingest.cli.reclassify.detect_changed_classifications"
+    ) as mock_detect:
+        with patch(
+            "kb_server.collections.router.CollectionRouter"
+        ) as mock_router_class:
             # Mock router instance
             mock_router = AsyncMock()
             mock_router.resolve = AsyncMock(return_value="kb-default")
             mock_router_class.return_value = mock_router
-            
+
             mock_detect.return_value = changes
-            
+
             # Should not crash, prints mismatch table
-            await _verify_impl(pattern="docs/*.pdf", collection=None, filter_expr=None)
+            await _verify_impl(
+                pattern="docs/*.pdf", collection=None, filter_expr=None
+            )
 
 
 # Step 4 tests
 
+
 def test_sessions_command_shows_no_sessions_message():
     """RECLASSIFY-06: sessions shows message when no backups exist."""
     from ingest.cli.reclassify import _sessions_impl
-    
+
     with patch("ingest.cli.reclassify.MetadataStore") as mock_store_class:
         # Mock store with empty results
         mock_store = MagicMock()
@@ -176,7 +197,7 @@ def test_sessions_command_shows_no_sessions_message():
         mock_store.__enter__.return_value = mock_store
         mock_store.__exit__.return_value = None
         mock_store_class.return_value = mock_store
-        
+
         # Should not crash, prints empty message
         _sessions_impl()
 
@@ -184,55 +205,55 @@ def test_sessions_command_shows_no_sessions_message():
 def test_sessions_command_shows_sessions_table():
     """RECLASSIFY-06: sessions shows table with backup sessions."""
     from ingest.cli.reclassify import _sessions_impl
-    
+
     with patch("ingest.cli.reclassify.MetadataStore") as mock_store_class:
         # Mock store with session data
         mock_store = MagicMock()
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = [
-            ("2026-05-27T15-30-00", 10, 25),  # session_timestamp, doc_count, field_count
+            (
+                "2026-05-27T15-30-00",
+                10,
+                25,
+            ),  # session_timestamp, doc_count, field_count
             ("2026-05-27T14-00-00", 5, 12),
         ]
         mock_store.conn.execute.return_value = mock_cursor
         mock_store.__enter__.return_value = mock_store
         mock_store.__exit__.return_value = None
         mock_store_class.return_value = mock_store
-        
+
         # Should not crash, prints session table
         _sessions_impl()
 
 
 # Step 5 tests
 
+
 @pytest.mark.asyncio
 async def test_rollback_session_validation():
     """RECLASSIFY-06: rollback validates arguments."""
     from ingest.cli.reclassify import _rollback_impl
-    
+
     # Test: --session and pattern cannot be combined
     with pytest.raises(SystemExit):
         await _rollback_impl(
             pattern="docs/*.pdf",
             session="2026-05-27T15-30-00",
             before=None,
-            yes=True
+            yes=True,
         )
-    
+
     # Test: either --session or (pattern + --before) required
     with pytest.raises(SystemExit):
-        await _rollback_impl(
-            pattern=None,
-            session=None,
-            before=None,
-            yes=True
-        )
+        await _rollback_impl(pattern=None, session=None, before=None, yes=True)
 
 
 @pytest.mark.asyncio
 async def test_rollback_session_not_found():
     """RECLASSIFY-06: rollback shows error for non-existent session."""
     from ingest.cli.reclassify import _rollback_impl
-    
+
     with patch("ingest.cli.reclassify.MetadataStore") as mock_store_class:
         # Mock store with empty results
         mock_store = MagicMock()
@@ -242,13 +263,13 @@ async def test_rollback_session_not_found():
         mock_store.__enter__.return_value = mock_store
         mock_store.__exit__.return_value = None
         mock_store_class.return_value = mock_store
-        
+
         with pytest.raises(SystemExit):
             await _rollback_impl(
                 pattern=None,
                 session="2026-05-27T15-30-00",
                 before=None,
-                yes=True
+                yes=True,
             )
 
 
@@ -256,7 +277,7 @@ async def test_rollback_session_not_found():
 async def test_rollback_session_restores_metadata():
     """RECLASSIFY-06: rollback --session restores full session."""
     from ingest.cli.reclassify import _rollback_impl
-    
+
     with patch("ingest.cli.reclassify.MetadataStore") as mock_store_class:
         with patch("ingest.cli.reclassify._apply_rollback") as mock_apply:
             # Mock store with backup data
@@ -269,13 +290,13 @@ async def test_rollback_session_restores_metadata():
             mock_store.__enter__.return_value = mock_store
             mock_store.__exit__.return_value = None
             mock_store_class.return_value = mock_store
-            
+
             await _rollback_impl(
                 pattern=None,
                 session="2026-05-27T15-30-00",
                 before=None,
-                yes=True
+                yes=True,
             )
-            
+
             # Verify _apply_rollback was called
             mock_apply.assert_called_once()

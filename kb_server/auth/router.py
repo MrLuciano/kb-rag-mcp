@@ -27,7 +27,8 @@ log = logging.getLogger("kb-mcp.auth.router")
 
 _JWT_SECRET = os.getenv("JWT_SECRET", "")
 _JWT_SECURE = os.getenv("JWT_SECURE", "false").lower() in (
-    "true", "1",
+    "true",
+    "1",
 )
 
 router = APIRouter(prefix="/api/v1", tags=["auth"])
@@ -228,9 +229,7 @@ async def approve_erasure(
     admin: User = Depends(require_admin),
 ):
     mgr = _get_erasure_manager(request)
-    success = mgr.approve_erasure(
-        request_id=request_id, approved_by=admin.id
-    )
+    success = mgr.approve_erasure(request_id=request_id, approved_by=admin.id)
     if not success:
         raise HTTPException(
             status_code=400,

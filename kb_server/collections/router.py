@@ -1,4 +1,5 @@
 """CollectionRouter — resolves and ensures Qdrant collections for MCP tool calls."""
+
 from __future__ import annotations
 
 import logging
@@ -23,10 +24,14 @@ class CollectionRouter:
     - ``ensure()`` creates the collection if it does not exist (for ingest paths).
     """
 
-    def __init__(self, manager: "CollectionManager", default_collection: str) -> None:
+    def __init__(
+        self, manager: "CollectionManager", default_collection: str
+    ) -> None:
         self.manager = manager
         self.default = default_collection
-        log.info("CollectionRouter initialized: default='%s'", default_collection)
+        log.info(
+            "CollectionRouter initialized: default='%s'", default_collection
+        )
 
     async def resolve(self, collection: str | None) -> str:
         """Return the effective collection name, raising if it is missing."""
@@ -74,9 +79,7 @@ class CollectionRouter:
         for kb_id in kb_ids:
             name = kb_id if kb_id is not None else self.default
             if not await self.manager.collection_exists(name):
-                log.warning(
-                    "Collection for kb_id '%s' does not exist", name
-                )
+                log.warning("Collection for kb_id '%s' does not exist", name)
                 raise CollectionNotFoundError(
                     f"Knowledge base '{name}' does not exist. "
                     "Use list_collections to see available collections."

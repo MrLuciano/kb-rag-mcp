@@ -97,7 +97,9 @@ def get_documents(
         order_clause = "ORDER BY indexed_at DESC"
         if sort_by and sort_by in sort_columns:
             col = sort_columns[sort_by]
-            order = "ASC" if sort_order and sort_order.upper() == "ASC" else "DESC"
+            order = (
+                "ASC" if sort_order and sort_order.upper() == "ASC" else "DESC"
+            )
             order_clause = f"ORDER BY {col} {order}"
 
         query = f"""
@@ -192,9 +194,7 @@ async def document_detail(
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,)
-        )
+        cursor.execute("SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,))
         row = cursor.fetchone()
 
         if not row:
@@ -273,9 +273,7 @@ async def document_chunks(
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,)
-        )
+        cursor.execute("SELECT rowid, * FROM files WHERE rowid = ?", (doc_id,))
         row = cursor.fetchone()
     if not row:
         return HTMLResponse("")
