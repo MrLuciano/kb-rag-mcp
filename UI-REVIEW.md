@@ -1,8 +1,9 @@
-# UI Review — KB-RAG Web UI
+# KB-RAG Web UI — 6-Pillar Visual Audit
 
 **Audited:** 2026-06-16
-**Baseline:** Abstract 6-pillar standards (no UI-SPEC.md)
-**Screenshots:** Captured at `.planning/ui-reviews/20260616-011450/`
+**Baseline:** Abstract 6-pillar standards (no UI-SPEC.md exists)
+**Screenshots:** Captured from `http://localhost:8001`
+**Screenshots Dir:** `.planning/ui-reviews/20260616-011905/`
 
 ---
 
@@ -10,24 +11,26 @@
 
 | Pillar | Score | Key Finding |
 |--------|-------|-------------|
-| 1. Copywriting | 3/4 | Clear labels, but jargon-heavy ("Top K", "RAGAS", "Hybrid Search") |
-| 2. Visuals | 3/4 | Clean Bootstrap layout; admin sidebar uses unprofessional emoji icons |
-| 3. Color | 3/4 | Semantic Bootstrap colors; hardcoded hex values in inline styles |
-| 4. Typography | 3/4 | Mostly proper hierarchy; minor heading-level quirks in login/admin |
-| 5. Spacing | 4/4 | Consistent Bootstrap utilities; no inline styles; clean CSS |
-| 6. Experience Design | 3/4 | Good state coverage, but `isAdmin` never true, `tab-error` never shown |
+| 1. Copywriting | 3/4 | Labels are clear, but navbar emoji and status terminology mismatch |
+| 2. Visuals | 3/4 | Clean Bootstrap layout, but admin page inaccessible, status colors broken |
+| 3. Color | 3/4 | Semantic Bootstrap colors used, but hardcoded inline hex and missing `.status-ok` class |
+| 4. Typography | 3/4 | Good hierarchy, but `| safe` filter on user text and code-formatted "N/A" |
+| 5. Spacing | 3/4 | Bootstrap utilities used consistently, no inline styles remain |
+| 6. Experience Design | 2/4 | Admin SPA and login page are 404 (broken); status filter mismatches data |
 
-**Overall: 19/24**
+**Overall: 17/24**
+
+**Not production-ready.** The admin panel and login page are functionally broken, and the status color/filter system is mismatched with actual data values.
 
 ---
 
 ## Top 3 Priority Fixes
 
-1. **Admin tab visibility broken (`isAdmin` always false)** — The `⚙ Admin` tab in `admin/shell.html` is hidden via `x-show="isAdmin"`, but `isAdmin` is initialized to `false` and never set to `true`. No user can ever see the admin settings tab. — **Fix:** After successful authentication, verify admin role from `/api/v1/users/me` and set `this.isAdmin = true` when `user.role === 'admin'`.
+1. **Admin SPA and login routes return 404** — The `/admin` shell, all tab routes, and `/auth/login` endpoint are inaccessible in the running instance. The Python code defines them correctly, but the running `kb_server.ui.run_ui` process appears to be serving stale code. **Fix:** Restart the UI server (`python -m kb_server.ui.run_ui`) and verify all routes are reachable. Also, the login form action in `login.html` is `/auth/login` but the route is `/login` — align these.
 
-2. **HTMX tab-error fallback never displayed** — `admin/shell.html` defines a `tab-error` div with `d-none`, but there is no JavaScript to reveal it when `htmx:responseError` fires for tab content. Users see a blank or stuck spinner. — **Fix:** Add an event listener in the `adminApp` script that removes `d-none` from `#tab-error` on `htmx:responseError` when the target is `#tab-content`.
+2. **Status terminology mismatch between CSS, filters, and database** — The CSS defines `.status-completed`, `.status-failed`, `.status-pending`, but the database contains "ok" and "error". The browse filter options are "completed/failed/pending" which don't match the data. The document template checks for `status == 'failed'` which never matches "error". **Fix:** Normalize all status values to a single vocabulary (e.g., `completed`, `failed`, `pending`) and update CSS classes accordingly. Add `.status-ok` if keeping the current data.
 
-3. **Search result text computed but ignored** — `routes.py` passes `result_text` to `search_results.html`, but the template only renders the raw `results` list. The raw `result_text` (which contains the formatted MCP response) is discarded, causing search results to display as plain unstyled text blocks. — **Fix:** Use `result_text` in `search_results.html` when `results` is empty or as a fallback, or remove the unused variable from the route to avoid confusion.
+3. **Search results use `| safe` on raw user text** — `search_results.html:11` renders `result.text` with `| replace('\n', '<br>') | safe`. This bypasses Jinja2 auto-escaping and is a potential XSS vector if search results contain malicious HTML. **Fix:** Escape the text first, then replace newlines with `<br>`, or use a custom Jinja2 filter that safely replaces newlines.
 
 ---
 
@@ -36,133 +39,163 @@
 ### Pillar 1: Copywriting (3/4)
 
 **Strengths**
-- Button labels are semantically clear: "Search", "Filter", "Clear", "View", "Back to Browse".
-- Empty states are helpful: "Enter a query and click Search to test the system", "No documents found. Ingest documents to populate the knowledge base."
-- Error messages are specific: "Path not found", "Failed to save config value. Check the value format and try again."
+- Clear form labels: "Query", "Number of Results", "Product", "Version", "Hybrid Search", "Rerank Results"
+- Informative empty states: "Enter a query and click Search to test the system", "No documents found. Ingest documents to populate the knowledge base."
+- Error messages are actionable: "Document not found", "Path not found", "Failed to load content. Please try again later."
+- Buttons are semantically clear: "Search", "Filter", "Clear", "View", "Back to Browse"
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| "Top K" is jargon — should be "Number of Results" | `search.html` | 24 | WARNING |
-| "Hybrid Search (Dense + BM25)" and "Cross-encoder Reranking" are highly technical | `search.html` | 53, 61 | WARNING |
-| "RAGAS Evaluation" is jargon for non-technical users | `tab_ragas.html` | 1 | WARNING |
-| Admin tab icons use emoji (📄, 📊, 📥, 🧪, ⚙, 📈, 👤) — unprofessional and inaccessible | `admin/shell.html` | 12–38 | WARNING |
-| "Search Tester" is developer-centric; should be "Search Knowledge Base" | `search.html` | 6 | WARNING |
-
-**Score rationale:** Copy is clear and functional, but several labels use internal technical jargon that will confuse end users. Emoji icons in the admin panel are a visual/copywriting hybrid issue.
+| Navbar uses emoji gear icon instead of text or icon font | `base.html` | 67 | WARNING |
+| Status terminology mismatch: CSS expects `completed/failed/pending` but data shows `ok/error` | `browse.html`, `document.html`, `base.html` | various | WARNING |
+| Login form action `/auth/login` does not match the actual route `/login` | `admin/login.html` | 16 | WARNING |
+| "Chunks" heading is generic; could be more descriptive | `document.html` | 59 | Minor |
 
 ---
 
 ### Pillar 2: Visuals (3/4)
 
 **Strengths**
-- Clean Bootstrap 5 grid layout with consistent card usage.
-- Responsive tables wrapped in `table-responsive`.
-- Pagination is functional with Previous/Next and page numbers.
-- Active navigation states are present in the navbar.
-- Mobile view stacks filters vertically and uses a hamburger menu.
+- Clean Bootstrap 5 layout with cards, tables, and responsive grid
+- Navbar with active state highlighting and mobile hamburger menu
+- Table with `table-striped table-hover` for readability
+- Pagination with ellipsis truncation for large datasets
+- Document detail page has clear metadata card and conditional alerts
+- Mobile responsive: filters stack vertically, tables scroll horizontally
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Admin tab sidebar uses emoji icons instead of proper icons or text labels | `admin/shell.html` | 12–38 | WARNING |
-| Search results have no visual hierarchy — identical cards with no differentiation | `search_results.html` | 5–15 | WARNING |
-| "Back to Browse" button is secondary (gray) but placed prominently in header | `document.html` | 8 | WARNING |
-| Document detail page shows an overwhelming wall of red "error" statuses when many docs fail | `browse.html` | 102–104 | WARNING |
-| `admin/login.html` is a standalone page without the base template — inconsistent look | `admin/login.html` | 1–33 | WARNING |
-
-**Score rationale:** Layout is clean and structured. The main visual issues are the unprofessional emoji icons and the lack of visual hierarchy in search results.
+| Admin page renders raw JSON `{"detail":"Not Found"}` instead of the admin SPA shell | Running server | N/A | BLOCKER |
+| Login page returns 404 instead of rendered form | Running server | N/A | BLOCKER |
+| Status "error" text in browse table renders in plain black instead of red | `browse.html` | 103 | WARNING |
+| Navbar emoji gear icon is visually inconsistent | `base.html` | 67 | WARNING |
+| Hash field shows "N/A" in `<code>` pink monospace, which is odd for a missing value | `document.html` | 36 | WARNING |
+| Search results have no spacing between the success alert and the result cards | `search_results.html` | 3-6 | Minor |
 
 ---
 
 ### Pillar 3: Color (3/4)
 
 **Strengths**
-- Semantic Bootstrap color system used consistently: `alert-success` for success, `alert-danger` for errors, `alert-warning` for warnings, `alert-info` for info.
-- Status badges in `_documents_table.html` use `bg-success` / `bg-warning` appropriately.
-- Job status counters use `text-success`, `text-warning`, `text-danger` for quick scanning.
+- Bootstrap 5 semantic colors used throughout: `btn-primary`, `alert-success`, `alert-danger`, `badge bg-success`, `text-muted`
+- Status colors defined semantically: green for completed, red for failed, yellow for pending
+- Score colors defined: high (green), medium (orange), low (grey)
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Hardcoded hex colors in inline `<style>` block: `#198754`, `#dc3545`, `#ffc107`, `#fd7e14`, `#6c757d` | `base.html` | 28–34 | WARNING |
-| Hardcoded hex colors in `styles.css`: `#212529`, `#dee2e6`, `#f8f9fa` | `styles.css` | 80, 85, 89 | WARNING |
-| Inline styles should use Bootstrap CSS variables or classes instead | `base.html` | 27–35 | WARNING |
-| Admin sidebar active state contrast may be insufficient | `admin/shell.html` | 12–38 | WARNING |
+| Inline `<style>` block hardcodes Bootstrap hex colors instead of using CSS variables | `base.html` | 27-35 | WARNING |
+| `.status-ok` class is missing — "ok" status renders in default text color | `base.html` | 27-35 | WARNING |
+| `.status-error` class is defined but `.status-failed` is expected by the filter logic | `base.html` | 28-30 | WARNING |
+| Admin page renders raw JSON with no color system at all | Running server | N/A | BLOCKER |
 
-**Score rationale:** Colors are semantic and accessible, but hardcoded hex values in inline styles and the CSS file reduce maintainability. They match Bootstrap defaults, so the visual impact is low.
+**Color usage audit:**
+- `btn-primary` — search, filter, submit buttons
+- `btn-secondary` — clear, back buttons
+- `btn-outline-primary` — view, show more buttons
+- `alert-success` — search results found, document indexed
+- `alert-danger` — error messages, failed document
+- `alert-warning` — no results, no chunks
+- `alert-info` — empty states, chunks unavailable
+- `text-muted` — secondary text, placeholders, descriptions
+- `bg-success` / `bg-danger` — monitor lights, status badges
 
 ---
 
 ### Pillar 4: Typography (3/4)
 
 **Strengths**
-- Heading hierarchy is mostly proper: `h1` → `h2` → `h3` → `h4` → `h5` across pages.
-- `visually-hidden` headings used for accessibility on filter sections (`browse.html` lines 8, 67; `document_chunks.html` line 2).
-- Font sizes are consistent, using Bootstrap utility classes.
-- `search-result-text` in `styles.css` defines readable line-height and font size.
+- Proper heading hierarchy: `h1` for page titles, `h2` for sections (downgraded with `h5` class), `h3` for card titles
+- Accessible `visually-hidden` headings for "Filters" and "Results" sections
+- `fs-6` for navbar links maintains readable size
+- Code blocks use `<code>` and `<pre>` with proper styling
+- Search result text uses `pre-wrap` with `font-family: inherit` and `line-height: 1.6`
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| `login.html` uses `<h1 class="h5">` — heading level does not match visual size | `admin/login.html` | 15 | WARNING |
-| `admin/shell.html` uses `h2` for "Admin Panel" sidebar title — should be `h1` or `div` | `admin/shell.html` | 9 | WARNING |
-| `search_results.html` has no heading at all — starts with an alert | `search_results.html` | 2 | WARNING |
-| `search.html` uses `h2` with `h5` class for card title — acceptable but inconsistent | `search.html` | 12 | WARNING |
+| `| safe` filter on `result.text` bypasses auto-escaping and risks XSS | `search_results.html` | 11 | WARNING |
+| "N/A" for missing hash rendered in `<code>` monospace instead of muted text | `document.html` | 36 | WARNING |
+| `chunk-title-truncate` class has `max-width: 400px` which is a magic number | `styles.css` | 12 | Minor |
+| Admin page JSON error has no typography styling | Running server | N/A | BLOCKER |
 
-**Score rationale:** Typography is readable and hierarchy is largely correct. Minor heading-level mismatches in the login and admin pages are the only issues.
-
----
-
-### Pillar 5: Spacing (4/4)
-
-**Strengths**
-- Zero inline `style` attributes found across all templates.
-- Bootstrap spacing utilities (`mb-3`, `mt-4`, `p-3`, `gap-2`, etc.) are used consistently.
-- `styles.css` is well-organized with semantic class names and replaces any previous inline styles.
-- `admin-shell` uses `min-height: calc(100vh - 80px)` for full-height layout.
-
-**Issues**
-- None.
-
-**Score rationale:** Spacing is exemplary. No magic numbers, no inline styles, consistent Bootstrap utilities throughout.
+**Font size distribution:**
+- `h1` (default Bootstrap) — page titles
+- `h2` with `h5` class — section headers, card titles
+- `h3` with `h5`/`h6` class — subsection headers
+- `fs-6` — navbar links
+- `small` — metadata, hints, status messages
+- `0.9rem` — search result text (custom CSS)
+- `0.85em` — inline code (custom CSS)
 
 ---
 
-### Pillar 6: Experience Design (3/4)
+### Pillar 5: Spacing (3/4)
 
 **Strengths**
-- **Loading states:** Spinners on search (`search.html` lines 68, 75), admin tab load (`shell.html` line 53), document table (`tab_documents.html` line 9), job status (`tab_ingestion.html` line 30).
-- **Error handling:** HTMX error handlers in `base.html` (lines 92–116) catch 401, network errors, and generic response errors. Custom error pages for 404, 500, 403 in `app.py`.
-- **Empty states:** "No documents found" (`_documents_table.html` line 35), "No results found" (`search_results.html` line 18), "No query data available" (`tab_analytics.html` line 14), "No configuration entries found" (`_config_table.html` line 28).
-- **Confirmation dialogs:** Revoke API key (`_profile_content.html` line 75), data erasure (`_profile_content.html` line 93), RAGAS evaluation (`tab_ragas.html` line 16).
-- **Disabled states:** Search button disabled during request (`search.html` lines 105, 111).
-- **Pagination:** Previous/Next and page numbers with filter persistence (`browse.html` lines 120–186).
-- **Responsive:** Hamburger navbar on mobile, stacked filters on mobile.
-- **Accessibility:** `aria-label` on pagination, `aria-expanded` on accordions, `aria-hidden` on spinners, `aria-current` on active nav links.
+- Bootstrap spacing utilities used consistently: `mt-4`, `mb-3`, `mb-4`, `p-3`, `py-3`, `gap-2`, `gap-3`, `ms-2`
+- No inline `style` attributes remain in templates (moved to `styles.css`)
+- CSS file is well-organized with semantic class names: `.chunk-preview`, `.admin-shell`, `.monitor-card`, `.monitoring-iframe`
+- Consistent spacing between cards and sections
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| `isAdmin` is initialized to `false` and never set to `true` — Admin tab is permanently hidden | `admin/shell.html` | 92 | **BLOCKER** |
-| `tab-error` div is `d-none` and never revealed on HTMX tab failures | `admin/shell.html` | 60 | **BLOCKER** |
-| `search_results.html` ignores `result_text` passed from route | `search_results.html` | — | WARNING |
-| No loading state on "Filter" button in browse page | `browse.html` | 56 | WARNING |
-| `admin/login.html` is standalone — no way to navigate back to main UI | `admin/login.html` | — | WARNING |
-| No "Show All" option for chunks — only paginated "Show next 10" | `document.html` | 93 | WARNING |
-| `admin/shell.html` does not verify admin role on init — anyone with an API key can load the shell | `admin/shell.html` | 93–98 | WARNING |
+| Search results list lacks top margin after the alert | `search_results.html` | 6 | Minor |
+| `.monitor-card` has fixed width `160px` — magic number | `styles.css` | 41 | Minor |
+| `.chunk-title-truncate` has fixed `max-width: 400px` — magic number | `styles.css` | 12 | Minor |
+| `.config-search` has fixed `max-width: 300px` — magic number | `styles.css` | 59 | Minor |
 
-**Score rationale:** The UI has excellent state coverage (loading, error, empty, disabled, confirmation). However, two BLOCKER-level issues prevent the admin panel from being fully functional: the admin settings tab is permanently hidden, and the tab error fallback is never displayed. These are functional defects that degrade the user experience.
+---
+
+### Pillar 6: Experience Design (2/4)
+
+**Strengths**
+- Loading states present: spinner on search button, spinner on filter button, spinner on admin tab load, spinner on admin documents load
+- Error states handled: custom `error.html` template for 404/500/403, HTMX error handlers for 401 modal and network errors
+- Empty states handled: "No documents found", "No results found", "No query data available"
+- Form validation: `required` attribute on query input, `min="1" max="20"` on top_k
+- Confirmation dialogs: RAGAS evaluation (`hx-confirm`), API key revocation (`confirm()`), GDPR erasure (`confirm()`)
+- Pagination with filter persistence across pages
+- Mobile responsive design
+- HTMX partial updates for chunks, job status, monitor lights, analytics
+- Auto-refresh: job status polls every 10s, monitor lights every 30s
+
+**Issues**
+
+| Issue | File | Line | Severity |
+|-------|------|------|----------|
+| Admin SPA (`/admin`) returns 404 JSON — completely broken | Running server | N/A | **BLOCKER** |
+| Login page (`/login`) returns 404 — login form inaccessible | Running server | N/A | **BLOCKER** |
+| All admin tab routes (`/admin/tabs/*`) return 404 | Running server | N/A | **BLOCKER** |
+| Status filter "failed" doesn't match "error" documents in database | `browse.html` | 37-53 | **BLOCKER** |
+| Document template checks `status == 'failed'` but data is "error" | `document.html` | 41 | WARNING |
+| Search results use `| safe` on raw text — XSS risk | `search_results.html` | 11 | WARNING |
+| Search loading indicator is in the left card, not near the results area | `search.html` | 73-80 | Minor |
+| Admin tab error handler (`#tab-error`) is hidden by default but may not show on all error types | `admin/shell.html` | 60-62 | Minor |
+
+**Note on admin routes:** The Python code in `routes_admin.py` and `app.py` correctly defines all admin routes. The `app` object inspection confirms routes are registered. However, the running `kb_server.ui.run_ui` process (started at 00:58) appears to be serving stale code without the admin routes. A server restart is required.
+
+**Note on login form:** The `login.html` template has `action="/auth/login"` but the actual route in `app.py` is `/login`. The form submission will 404.
+
+---
+
+## Registry Safety
+
+No `components.json` found. No third-party registry blocks to audit.
 
 ---
 
 ## Files Audited
 
+### Templates (22 files)
 - `kb_server/ui/templates/base.html`
 - `kb_server/ui/templates/search.html`
 - `kb_server/ui/templates/browse.html`
@@ -184,31 +217,42 @@
 - `kb_server/ui/templates/admin/_monitor_lights.html`
 - `kb_server/ui/templates/admin/_profile_content.html`
 - `kb_server/ui/templates/document_chunks.html`
+
+### Styles (1 file)
 - `kb_server/ui/static/styles.css`
+
+### Routes (2 files)
 - `kb_server/ui/routes.py`
 - `kb_server/ui/routes_admin.py`
 - `kb_server/ui/app.py`
+- `kb_server/ui/run_ui.py`
 
 ---
 
-## Screenshot Evidence
+## Production Readiness
 
-Screenshots captured at `.planning/ui-reviews/20260616-011450/`:
-- `kb-desktop.png` — Browse page (home redirect)
-- `kb-search-desktop.png` — Search tester page
-- `kb-browse-desktop.png` — Browse documents with filters
-- `kb-admin-desktop.png` — Admin page (returns 404 on running server; code is correct)
-- `kb-document-desktop.png` — Document detail page
-- `kb-mobile.png` — Mobile responsive view
+**Score: 17/24 — Not production-ready.**
+
+The browse, search, and document pages are functional and visually acceptable. However, the following blockers must be resolved before shipping:
+
+1. **Restart the UI server** to pick up the admin routes and login route.
+2. **Fix the login form action** to match the actual route (`/login` not `/auth/login`).
+3. **Normalize status values** across the database, CSS, templates, and filters.
+4. **Fix the `| safe` XSS risk** in search results.
+
+After these fixes, the UI would score approximately **21/24** (production-ready).
 
 ---
 
-## Production-Readiness Assessment
+## Screenshots Captured
 
-**Score: 19/24 — Not production-ready.**
-
-The UI is visually clean and well-structured, but two functional BLOCKER issues must be resolved before shipping:
-1. The `isAdmin` flag must be populated from the user API.
-2. The `tab-error` fallback must be wired to HTMX error events.
-
-Once these are fixed, the UI would score approximately **22/24** and be considered production-ready. Minor copywriting and visual improvements (removing emoji, simplifying jargon) would be nice-to-have but not blocking.
+| Screenshot | Resolution | Notes |
+|------------|------------|-------|
+| `desktop.png` | 1440x900 | Browse page (redirected from `/`) |
+| `mobile.png` | 375x812 | Browse page mobile view |
+| `tablet.png` | 768x1024 | Browse page tablet view |
+| `search.png` | 1440x900 | Search Tester page |
+| `browse.png` | 1440x900 | Browse Documents page |
+| `admin.png` | 1440x900 | **404 JSON error** — admin page broken |
+| `document.png` | 1440x900 | Document detail page |
+| `error.png` | 1440x900 | 404 error page (custom template) |
