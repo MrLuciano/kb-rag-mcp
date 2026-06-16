@@ -1,8 +1,8 @@
-# Phase — UI Review
+# Phase UI — UI Review
 
 **Audited:** 2026-06-16
-**Baseline:** Abstract 6-pillar standards (no UI-SPEC.md)
-**Screenshots:** Captured (desktop, mobile, tablet)
+**Baseline:** Abstract 6-pillar standards (no UI-SPEC.md exists)
+**Screenshots:** Captured at `.planning/ui-reviews/20260616-013431/`
 
 ---
 
@@ -10,161 +10,173 @@
 
 | Pillar | Score | Key Finding |
 |--------|-------|-------------|
-| 1. Copywriting | 4/4 | Domain-specific, clear labels; empty/error states well-written |
-| 2. Visuals | 2/4 | Search results lack metadata cards; status display inconsistent between browse and admin |
-| 3. Color | 3/4 | Bootstrap palette consistent; minor hardcoded hex values in CSS instead of vars |
-| 4. Typography | 3/4 | Good heading hierarchy; minor jump from h3 to h6 in profile page |
-| 5. Spacing | 3/4 | Bootstrap utilities used well; some arbitrary fixed widths/heights in CSS |
-| 6. Experience Design | 2/4 | Search results omit critical source/score metadata; no skeleton loading states |
+| 1. Copywriting | 3/4 | Clear labels and helpful placeholders; minor branding inconsistency |
+| 2. Visuals | 2/4 | Search results are plain text dumps; malformed HTML in ingestion form |
+| 3. Color | 3/4 | Bootstrap semantic colors used well; hardcoded hex values in CSS |
+| 4. Typography | 3/4 | Bootstrap scale mostly followed; custom sizes in CSS |
+| 5. Spacing | 3/4 | Bootstrap utilities used well; arbitrary CSS values present |
+| 6. Experience Design | 2/4 | Search results lack critical metadata; config save uses `alert()` |
 
-**Overall: 17/24**
+**Overall: 16/24**
 
 ---
 
 ## Top 3 Priority Fixes
 
-1. **Add source metadata to search results** — Search results show only raw chunk text with no source document, relevance score, or "View Document" link. In a RAG system, provenance is critical for user trust. Add a card header showing `source_file`, `score`, `chunk_id`, and a link to `/ui/document/{doc_id}`. Score: 2/4 → 3/4 for Visuals and Experience Design.
-
-2. **Standardize status display across tables** — `browse.html` uses plain text `<span class="status-{status}">` while `admin/_documents_table.html` uses Bootstrap badges (`bg-success`, `bg-danger`, `bg-warning`). Unify on badges for consistency and stronger visual scanning. Score: bumps Visuals.
-
-3. **Replace `alert()` in config editor with inline toast** — `admin/_config_table.html` uses `alert()` for save errors. Browser alerts block the UI and feel jarring. Use an inline Bootstrap `alert` or toast component. Score: bumps Experience Design.
+1. **Search results lack source metadata, scores, and chunk index** — Users cannot see which document a result came from, its relevance score, or the chunk index. This is a critical RAG UI failure. — Add document source link, score badge, and chunk index to `search_results.html`.
+2. **Malformed HTML and missing label in tab ingestion form** — The `<script>` tag in `tab_ingestion.html` is placed inside the `<form>` after a `</div>` and before the `<button>`, which is invalid structure. The path input also has no `<label>`. — Move the script to `extra_scripts` block and add a proper `<label for="path">`.
+3. **Config save uses browser `alert()`** — `_config_table.html` uses `alert('Failed to save config value...')` which interrupts the user flow. — Replace with a Bootstrap inline alert or toast notification.
 
 ---
 
 ## Detailed Findings
 
-### Pillar 1: Copywriting (4/4)
+### Pillar 1: Copywriting (3/4)
 
-**Strengths:**
-- All CTA labels are domain-specific: "Search Tester", "Browse Documents", "Run Evaluation", "Start Ingest".
-- Empty states are helpful and actionable: "No documents found matching the current filters. Clear filters or ingest documents." (`browse.html:121`)
-- Error recovery is clear: "Try searching or browse documents." (`error.html:12`)
-- Admin panel labels are precise: "Query Analytics", "RAGAS Evaluation", "System configuration (admin only)."
-- Accessibility labels use `visually-hidden` for screen readers (`browse.html:8`, `search_results.html:2`, `document_chunks.html:2`).
+**Strengths**
+- All form labels are descriptive and contextual: "Query", "Number of Results", "Product", "Version"
+- Placeholders are helpful: `placeholder="How to install..."`, `placeholder="e.g., ArchiveCenter"`
+- Empty states are actionable: "No documents found matching the current filters. Clear filters or ingest documents."
+- Error messages are descriptive: "Chunk data could not be loaded from the vector store. Please try again later."
+- No generic "Submit" or "Click Here" buttons found.
 
-**Issues:**
+**Issues**
+
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| "Start Ingest" is slightly awkward phrasing | `admin/tab_ingestion.html` | 40 | MINOR |
-| Unicode refresh symbol `↻` may not render on all systems | `admin/tab_analytics.html` | 8 | MINOR |
+| Branding inconsistency: error page title says "Knowledge Base" while rest of app says "KB-RAG" | `error.html` | 3 | WARNING |
+| Config save error uses generic browser `alert()` | `admin/_config_table.html` | 71 | WARNING |
 
-**Score Rationale:** Minor phrasing quirks do not affect comprehension. All user-facing text is specific, actionable, and appropriately friendly for an internal admin tool.
+**Score Rationale:** Copywriting is generally strong with contextual labels and helpful empty states. Minor branding inconsistency and one generic `alert()` prevent a 4.
 
 ---
 
 ### Pillar 2: Visuals (2/4)
 
-**Strengths:**
-- Clean Bootstrap 5 admin shell with sidebar navigation (`admin/shell.html`).
-- Monitor lights provide an at-a-glance health dashboard (`admin/_monitor_lights.html`).
-- Document detail page uses accordion chunks with progressive disclosure (`document.html`).
-- Pagination on browse page is well-structured with ellipsis truncation (`browse.html:153`).
-- Login modal is centered and focused (`admin/shell.html:65`).
+**Strengths**
+- Clear visual hierarchy with h1/h2/h3 and Bootstrap cards
+- Status badges use semantic colors (success/danger/warning) consistently across `browse.html`, `document.html`, `admin/_documents_table.html`
+- Loading spinners on buttons (search, filter, ingest, ragas) with `btn-text` / spinner swap pattern
+- Monitor lights in `_monitor_lights.html` provide clear color-coded status indicators
+- Accordion for chunk display with smart collapse/expand (first 10 open, rest closed)
+- Pagination with smart ellipsis logic (`browse.html` lines 132-198)
+- Responsive tables with `table-responsive` wrapper
 
-**Issues:**
+**Issues**
+
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| **Search results show only raw text with no source, score, or provenance** — critical gap for RAG trust | `search_results.html` | 7-14 | **BLOCKER** |
-| Status in browse table uses plain colored text instead of badges (inconsistent with admin table) | `browse.html` | 103 | WARNING |
-| Profile config section lacks visual grouping/card (raw text with badges) | `admin/tab_profile.html` | 4-29 | WARNING |
-| Search results lack any heading/title per result card | `search_results.html` | 7-14 | WARNING |
-| RAGAS "Last Run" card is plain text with no visual prominence when empty | `admin/tab_ragas.html` | 28 | MINOR |
+| Search results are plain text dumps with no cards, metadata, scores, or source links | `search_results.html` | 6-10 | BLOCKER |
+| Malformed HTML: `<script>` tag is inside `<form>` but after `</div>` and before `<button>` | `admin/tab_ingestion.html` | 17-43 | BLOCKER |
+| Path input has no `<label>` — only a placeholder | `admin/tab_ingestion.html` | 14-15 | BLOCKER |
+| Leftover badge examples with no context in admin settings | `admin/tab_admin.html` | 4-7 | WARNING |
+| `admin/login.html` heading is `h1 class="h5"` — semantic/visual mismatch | `admin/login.html` | 15 | WARNING |
 
-**Score Rationale:** The **BLOCKER** issue is significant. Search results are the primary output of a RAG system; presenting them as anonymous text blocks without source attribution or confidence scores undermines the entire value proposition. The status inconsistency and profile page rawness are notable secondary issues.
+**Score Rationale:** The search results presentation is a critical visual failure — users are dumped raw text without any context. The malformed HTML in the ingestion form and missing label are also serious. These structural issues outweigh the otherwise good hierarchy.
 
 ---
 
 ### Pillar 3: Color (3/4)
 
-**Strengths:**
-- Uses Bootstrap 5 semantic color classes (`btn-primary`, `alert-success`, `bg-danger`, `text-muted`) consistently.
-- Status colors map to Bootstrap palette: `#198754` (success), `#dc3545` (danger), `#ffc107` (warning), `#6c757d` (gray), `#fd7e14` (orange), `#212529` (dark).
-- Admin badges use proper semantic backgrounds: `bg-success`, `bg-danger`, `bg-warning`, `bg-info`.
+**Strengths**
+- Bootstrap semantic colors (`bg-success`, `bg-danger`, `bg-warning`, `text-primary`, etc.) used consistently
+- Monitor lights use semantic colors for health status
+- Admin sidebar uses `bg-dark` with `text-white` for good contrast
+- Status badges are color-coded correctly across all tables
 
-**Issues:**
+**Issues**
+
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Hardcoded hex values in CSS instead of Bootstrap CSS variables (`--bs-success`, `--bs-danger`) | `styles.css` | 34-39 | WARNING |
-| `.search-result-text h2` hardcodes `#212529` instead of inheriting | `styles.css` | 54 | MINOR |
-| `.search-result-text code` hardcodes `#f8f9fa` | `styles.css` | 63 | MINOR |
+| Hardcoded hex colors in CSS that map to Bootstrap but bypass the token system | `styles.css` | 34-39, 54, 59, 63 | WARNING |
+| No dark mode support | — | — | WARNING |
 
-**Score Rationale:** Colors are consistent and on-brand, but the hardcoded hex values reduce theme flexibility. If the project ever switches to a dark mode or custom Bootstrap theme, these colors will not adapt. This is a maintainability issue, not a user-facing one.
+**Score Rationale:** Color usage is mostly correct and semantic. Hardcoded hex values in CSS (e.g., `#198754`, `#dc3545`) are Bootstrap color mappings but bypass the Bootstrap token system. No dark mode support is a minor gap.
 
 ---
 
 ### Pillar 4: Typography (3/4)
 
-**Strengths:**
-- Good heading hierarchy: `h1` for page titles, `h2` with `.h5` for card titles, `h3` with `.h5` for sub-sections.
-- `search-result-text` uses `font-size: 0.9rem` and `line-height: 1.6` for readability.
-- `code` elements inside search results use `font-size: 0.85em` for subtle differentiation.
-- System font stack (Bootstrap default) ensures fast rendering and native feel.
+**Strengths**
+- Bootstrap heading classes (`h1` through `h6`) used consistently
+- `font-family: inherit` on `.search-result-text` prevents monospace intrusion — good choice
+- `line-height: 1.6` on search results improves readability
+- `fs-6` used for nav links in `base.html`
+- `visually-hidden` used for accessible headings (e.g., "Filters", "Results", "Search Results")
 
-**Issues:**
+**Issues**
+
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Large heading jump from `h3` to `h6` in profile page | `admin/tab_profile.html` | 5 | MINOR |
-| Search result cards have no internal heading hierarchy (no title or metadata label) | `search_results.html` | 7-14 | WARNING |
-| `h4` used for large stat numbers in job status — semantically odd but visually okay | `admin/_job_status.html` | 6, 10, 14 | MINOR |
+| Custom font sizes in CSS (`0.9rem`, `1.1rem`, `0.85em`) outside Bootstrap type scale | `styles.css` | 46, 51, 66 | WARNING |
+| Inconsistent heading levels for card titles: `h2 class="h5"` vs `h3 class="h5"` | `search.html`, `tab_ingestion.html` | 12, 8 | WARNING |
 
-**Score Rationale:** Typography is generally solid and consistent with Bootstrap's scale. The main gap is the lack of headings within search result cards, which hurts scannability. The `h3` → `h6` jump is a minor hierarchy violation.
+**Score Rationale:** Typography is mostly consistent with Bootstrap's scale. Custom font sizes in CSS and minor heading-level inconsistency prevent a 4.
 
 ---
 
 ### Pillar 5: Spacing (3/4)
 
-**Strengths:**
-- Heavy use of Bootstrap utility spacing: `mt-4`, `mb-4`, `mb-3`, `mb-2`, `p-3`, `p-4`, `py-3`, `gap-2`, `gap-3`, `ms-2`.
-- Consistent card padding and margin rhythm across pages.
-- `table-responsive` wrappers used correctly for data tables.
+**Strengths**
+- Bootstrap spacing utilities (`p-3`, `p-4`, `mb-3`, `mt-2`, `gap-2`, `gap-3`) used consistently
+- `flex-grow-1` and `flex-column` used correctly in admin shell layout
+- Cards and tables have adequate internal padding
 
-**Issues:**
+**Issues**
+
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Arbitrary fixed widths: `220px` sidebar, `160px` monitor cards, `300px` config search | `styles.css` | 22, 75, 93 | MINOR |
-| Arbitrary iframe height `600px` | `styles.css` | 29 | MINOR |
-| `max-width: 400px` on chunk titles | `styles.css` | 12 | MINOR |
+| Arbitrary width values in CSS (`220px`, `160px`, `400px`, `300px`) | `styles.css` | 12, 22, 75, 93 | WARNING |
+| `min-height: calc(100vh - 80px)` is fragile if navbar height changes | `styles.css` | 17 | WARNING |
+| `monitoring-iframe` has fixed height `600px` | `styles.css` | 29 | WARNING |
 
-**Score Rationale:** The arbitrary values are reasonable for the layout (220px is a standard sidebar, 600px is a reasonable iframe height). However, using Bootstrap's spacing scale or CSS `clamp()` would improve responsiveness. No spacing inconsistencies that break layouts.
+**Score Rationale:** Spacing is well-structured with Bootstrap utilities. Some arbitrary CSS values for layout dimensions are documented but not part of the Bootstrap spacing system.
 
 ---
 
 ### Pillar 6: Experience Design (2/4)
 
-**Strengths:**
-- **Loading states:** Spinners on search, filter, ingest, and RAGAS buttons. Button disabled during load.
-- **Empty states:** Excellent coverage across browse, search, analytics, documents table, config table, and profile.
-- **Error states:** HTMX error handlers show contextual messages (`base.html:82`, `search.html:116`).
-- **Confirmation dialogs:** `confirm()` used for destructive actions: revoke API key and request data erasure (`admin/_profile_content.html:75`, `93`).
-- **Auto-refresh:** Job status refreshes every 10s, monitor lights every 30s.
-- **Progressive disclosure:** Accordion chunks with "Show next 10 chunks" and "Show less" pagination.
-- **Auth flow:** Login modal, API key storage, logout, admin role gating.
+**Strengths**
+- **Loading states:** Button spinners on search, filter, ingest, ragas; HTMX loading indicators in admin tabs
+- **Empty states:** Handled in browse, documents table, analytics, config table, search results
+- **Error states:** HTMX `responseError` and `sendError` handlers with fallback messages; error page with recovery links
+- **Confirmations:** Config save, API key revocation, data erasure, and RAGAS run all use confirmation dialogs
+- **Disabled states:** Buttons disabled during async operations
+- **Pagination:** Smart ellipsis with filter preservation
+- **Chunk lazy loading:** HTMX-powered "Show next 10 chunks" with "Show less" fallback
+- **Auth flow:** Login modal with localStorage API key, auto-prompt on 401
+- **Accessibility:** `aria-hidden` on decorative spinners, `visually-hidden` on screen-reader text, `aria-expanded` on accordions, `role="alert"` on alerts
 
-**Issues:**
+**Issues**
+
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| **Search results omit critical metadata (source, score, chunk ID)** — users cannot verify provenance | `search_results.html` | 7-14 | **BLOCKER** |
-| `alert()` blocks UI thread for config save errors | `admin/_config_table.html` | 71 | WARNING |
-| No skeleton loading states (only generic spinners) | Multiple | — | WARNING |
-| Search results do not indicate if hybrid/rerank was applied | `search_results.html` | — | MINOR |
-| No error boundary for chunk loading failures beyond `alert` | `document.html` | 106-110 | MINOR |
+| Search results lack source document, score, and chunk index — users cannot trace results | `search_results.html` | 6-10 | BLOCKER |
+| Malformed HTML in ingestion form may cause JS errors | `admin/tab_ingestion.html` | 17-43 | BLOCKER |
+| Config save error uses browser `alert()` — interrupts flow | `admin/_config_table.html` | 71 | WARNING |
+| Ingestion path input has no label — accessibility failure | `admin/tab_ingestion.html` | 14-15 | WARNING |
+| No visual feedback for successful config save | `admin/_config_table.html` | — | WARNING |
+| No undo for destructive actions (revoke key, data erasure) | `admin/_profile_content.html` | — | WARNING |
+| `tab_admin.html` has non-functional badge examples | `admin/tab_admin.html` | 4-7 | WARNING |
 
-**Score Rationale:** The search results **BLOCKER** is an experience design failure: a RAG system that cannot show where an answer came from is fundamentally incomplete. The `alert()` usage and lack of skeleton screens are notable gaps. The empty state coverage is excellent, which prevents the score from dropping to 1.
+**Score Rationale:** Many good UX patterns are in place (loading, empty, error states, confirmations, pagination). However, the search results lack critical metadata which is a BLOCKER for a RAG system. The malformed HTML and `alert()` usage are notable gaps. The score is pulled down by the primary user flow failure.
+
+---
+
+## Registry Safety
+
+`components.json` not found — shadcn not initialized. Registry audit skipped.
 
 ---
 
 ## Files Audited
 
-### Core Templates
 - `kb_server/ui/templates/base.html`
 - `kb_server/ui/templates/search.html`
 - `kb_server/ui/templates/browse.html`
 - `kb_server/ui/templates/document.html`
 - `kb_server/ui/templates/error.html`
 - `kb_server/ui/templates/search_results.html`
-- `kb_server/ui/templates/document_chunks.html`
-
-### Admin Templates
 - `kb_server/ui/templates/admin/shell.html`
 - `kb_server/ui/templates/admin/login.html`
 - `kb_server/ui/templates/admin/tab_documents.html`
@@ -179,18 +191,16 @@
 - `kb_server/ui/templates/admin/_config_table.html`
 - `kb_server/ui/templates/admin/_monitor_lights.html`
 - `kb_server/ui/templates/admin/_profile_content.html`
-
-### Styles
+- `kb_server/ui/templates/document_chunks.html`
 - `kb_server/ui/static/styles.css`
-
-### Backend (reference for result schema)
-- `kb_server/ui/routes.py`
-- `kb_server/server.py`
 
 ---
 
-## Production Readiness
+## Summary
 
-**Not production-ready.** Score is **17/24**, below the 22/24 threshold.
+The UI is **not production-ready** (score 16/24, below 22 threshold). While the admin panel, browse page, and document detail page have good UX patterns, the search results page — the primary user flow for a RAG system — is critically inadequate. It dumps raw text without source attribution, relevance scores, or chunk metadata. Additionally, the ingestion form has malformed HTML and a missing label that could break functionality or fail accessibility audits.
 
-The UI is functional and well-structured for an admin tool, but the **search results lack source attribution and scores**, which is a critical gap for a RAG system. Users cannot verify where answers come from, which undermines trust and utility. Fixing the top 3 issues (especially #1) would raise the score to approximately **21/24**.
+### Fix Completeness Assessment
+- **Status badge fixes:** Complete — badges are consistent across all templates.
+- **Search results layout fixes:** Incomplete — the `search-result-text` class improves rendering but the layout still lacks source metadata, scores, and chunk index. This is a partial fix, not a complete resolution.
+- **New issues found:** Malformed HTML in `tab_ingestion.html`, missing label on ingestion path input, `alert()` in config table, leftover badge examples in `tab_admin.html`.
