@@ -30,40 +30,6 @@
     border: none;
 }
 
-/* Search result text (replaces inline white-space/font-family) */
-.search-result-text {
-    white-space: pre-wrap;
-    font-family: inherit;
-}
-
-/* Monitor lights card (replaces inline width) */
-.monitor-card {
-    width: 160px;
-}
-
-/* Monitor light indicator (replaces inline circle styles) */
-.monitor-light {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin: 0 auto;
-}
-
-/* Analytics table (replaces inline width: auto) */
-.analytics-table {
-    width: auto;
-}
-
-/* Config search input (replaces inline max-width) */
-.config-search {
-    max-width: 300px;
-}
-
-/* Editable field cursor (replaces inline cursor:pointer) */
-.editable-field {
-    cursor: pointer;
-}
-
 /* Search result text (replaces <pre> with styled div) */
 .search-result-text {
     white-space: pre-wrap;
@@ -94,4 +60,32 @@
 
 .search-result-text strong {
     font-weight: 600;
+}
+
+/* Monitor lights card (replaces inline width) */
+.monitor-card {
+    width: 160px;
+}
+
+/* Monitor light indicator (replaces inline circle styles) */
+.monitor-light {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+
+/* Analytics table (replaces inline width: auto) */
+.analytics-table {
+    width: auto;
+}
+
+/* Config search input (replaces inline max-width) */
+.config-search {
+    max-width: 300px;
+}
+
+/* Editable field cursor (replaces inline cursor:pointer) */
+.editable-field {
+    cursor: pointer;
 }

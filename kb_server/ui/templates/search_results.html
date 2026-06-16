@@ -7,9 +7,7 @@
     {% for result in results %}
     <div class="card mb-3">
         <div class="card-body">
-            <div class="search-result-text">
-                {{ result.text | replace('\n', '<br>') | safe }}
-            </div>
+            <div class="search-result-text">{{ result.text }}</div>
         </div>
     </div>
     {% endfor %}
