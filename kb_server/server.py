@@ -24,22 +24,27 @@ from config.bootstrap_env import bootstrap_env
 bootstrap_env()
 
 import mcp.types as types
-from kb_server.embed_client import get_embedding
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from mcp.server.stdio import stdio_server
-from kb_server.vector_store import VectorStore
-from kb_server.observability.percentiles import get_percentile_tracker
-from kb_server.telemetry.query_logger import QueryLogger
-from kb_server.collections.manager import CollectionManager
-from kb_server.collections.router import (
-    CollectionRouter,
-    CollectionNotFoundError,
-)
+
+from kb_server.auth.erasure import ErasureManager
 from kb_server.auth.router import router as auth_router
 from kb_server.auth.service import AuthService
-from kb_server.auth.erasure import ErasureManager
+from kb_server.cache.request_cache import RetrievalCache  # PHASE 37
+from kb_server.collections.manager import CollectionManager
+from kb_server.collections.router import (
+    CollectionNotFoundError,
+    CollectionRouter,
+)
+from kb_server.config import config
+from kb_server.embed_client import get_embedding
 from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
+from kb_server.observability.percentiles import get_percentile_tracker
+from kb_server.telemetry.query_logger import QueryLogger
+from kb_server.vector_store import VectorStore
+from observability.metrics import record_active_sessions  # PHASE 28
+from observability.metrics import record_session_evicted  # PHASE 28
 from observability.metrics import (
     record_query,
     record_query_error,
@@ -47,13 +52,10 @@ from observability.metrics import (
     record_rate_limit_rejected,
     record_retrieval_cache_op,
     update_rate_limit_subjects,
-    record_active_sessions,  # PHASE 28
-    record_session_evicted,  # PHASE 28
 )
-from kb_server.cache.request_cache import RetrievalCache  # PHASE 37
 
 # ── Logging ───────────────────────────────────────────────────────
-_log_path = os.getenv("LOG_PATH", "/tmp/kb-mcp.log")
+_log_path = config.get("LOG_PATH", "/tmp/kb-mcp.log")
 os.makedirs(os.path.dirname(_log_path), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -72,19 +74,21 @@ def _hash_subject(subject: str) -> str:
 
 
 # ── Config ────────────────────────────────────────────────────────
-TRANSPORT = os.getenv("MCP_TRANSPORT", "stdio")  # stdio | sse
-SSE_HOST = os.getenv("SSE_HOST", "127.0.0.1")
-SSE_PORT = int(os.getenv("SSE_PORT", "8765"))
-TOP_K = int(os.getenv("DEFAULT_TOP_K", "5"))
+TRANSPORT = config.get("MCP_TRANSPORT", "stdio")  # stdio | sse
+SSE_HOST = config.get("SSE_HOST", "127.0.0.1")
+SSE_PORT = int(config.get("SSE_PORT", "8765"))
+TOP_K = int(config.get("DEFAULT_TOP_K", "5"))
 
 # PHASE 33: Rate limiting config
-RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "false").lower() in (
+RATE_LIMIT_ENABLED = str(
+    config.get("RATE_LIMIT_ENABLED", "false")
+).lower() in (
     "true",
     "1",
     "yes",
 )
-RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
-RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+RATE_LIMIT_REQUESTS = int(config.get("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(config.get("RATE_LIMIT_WINDOW", "60"))
 
 # Per-subject tracking for rate limiting across transport sessions
 _current_subject: contextvars.ContextVar[str | None] = contextvars.ContextVar(
@@ -95,25 +99,82 @@ _current_transport: contextvars.ContextVar[str] = contextvars.ContextVar(
 )
 
 # PHASE 37: Retrieval cache configuration
-RLCACHE_ENABLED = os.getenv("RLCACHE_ENABLED", "true").lower() in (
+RLCACHE_ENABLED = str(config.get("RLCACHE_ENABLED", "true")).lower() in (
     "true",
     "1",
     "yes",
 )
-RLCACHE_TTL = int(os.getenv("RLCACHE_TTL", "300"))
-RLCACHE_MAX_ENTRIES = int(os.getenv("RLCACHE_MAX_ENTRIES", "1000"))
+RLCACHE_TTL = int(config.get("RLCACHE_TTL", "300"))
+RLCACHE_MAX_ENTRIES = int(config.get("RLCACHE_MAX_ENTRIES", "1000"))
 
 # PHASE 14: Query logging configuration
-QUERY_LOG_ENABLED = os.getenv("QUERY_LOG_ENABLED", "true").lower() in (
+QUERY_LOG_ENABLED = str(config.get("QUERY_LOG_ENABLED", "true")).lower() in (
     "true",
     "1",
     "yes",
 )
-QUERY_LOG_PATH = Path(os.getenv("QUERY_LOG_PATH", "data/kb_metadata.db"))
-QUERY_LOG_RETENTION_DAYS = int(os.getenv("QUERY_LOG_RETENTION_DAYS", "90"))
+QUERY_LOG_PATH = Path(config.get("QUERY_LOG_PATH", "data/kb_metadata.db"))
+QUERY_LOG_RETENTION_DAYS = int(config.get("QUERY_LOG_RETENTION_DAYS", "90"))
 QUERY_LOG_CLEANUP_INTERVAL_HOURS = int(
-    os.getenv("QUERY_LOG_CLEANUP_INTERVAL_HOURS", "24")
+    config.get("QUERY_LOG_CLEANUP_INTERVAL_HOURS", "24")
 )
+
+
+# ── Hot-reload callbacks ────────────────────────────────────────
+@config.on_change("RATE_LIMIT_ENABLED")
+def _on_rate_limit_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for rate limiter)",
+        key,
+        value,
+    )
+
+
+@config.on_change("QUERY_LOG_ENABLED")
+def _on_query_log_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for query logger)",
+        key,
+        value,
+    )
+
+
+@config.on_change("RLCACHE_ENABLED")
+def _on_cache_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for retrieval cache)",
+        key,
+        value,
+    )
+
+
+@config.on_change("SSE_PORT")
+def _on_sse_port_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for SSE server)", key, value
+    )
+
+
+@config.on_change("SSE_HOST")
+def _on_sse_host_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for SSE server)", key, value
+    )
+
+
+@config.on_change("MCP_PORT")
+def _on_mcp_port_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for MCP server)", key, value
+    )
+
+
+@config.on_change("MCP_HOST")
+def _on_mcp_host_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for MCP server)", key, value
+    )
+
 
 # ── Initialization ────────────────────────────────────────────────
 app = Server("kb-rag")
@@ -278,8 +339,7 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "PHASE 11.1: Filter by subsystem/module "
-                            "within a product. "
-                            + _fmt("subsystem", "")
+                            "within a product. " + _fmt("subsystem", "")
                         ),
                     },
                     "module": {
@@ -1441,7 +1501,7 @@ async def main():
     # Initialize auth service
     from pathlib import Path
 
-    auth_db_path = Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
+    auth_db_path = Path(config.get("AUTH_DB_PATH", "data/auth.db"))
     auth_service = AuthService(db_path=auth_db_path)
     erasure_manager = ErasureManager(auth_service.session)
 
@@ -1616,38 +1676,38 @@ async def main():
 
         log.info("Auth router mounted on SSE transport")
         log.info(f"SSE server at http://{SSE_HOST}:{SSE_PORT}/sse")
-        config = uvicorn.Config(
+        _uvicorn_config = uvicorn.Config(
             starlette_app, host=SSE_HOST, port=SSE_PORT, log_level="info"
         )
-        server = uvicorn.Server(config)
+        server = uvicorn.Server(_uvicorn_config)
         await server.serve()
     elif TRANSPORT == "streamable-http":
         import uvicorn
+        from mcp.server.streamable_http_manager import (
+            StreamableHTTPSessionManager,
+            TransportSecuritySettings,
+        )
         from starlette.applications import Starlette
         from starlette.middleware import Middleware
         from starlette.middleware.cors import CORSMiddleware
         from starlette.responses import Response
         from starlette.routing import Mount, Route
-        from mcp.server.streamable_http_manager import (
-            StreamableHTTPSessionManager,
-            TransportSecuritySettings,
-        )
 
-        MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
-        MCP_PORT = int(os.getenv("MCP_PORT", "8765"))
-        MCP_ENDPOINT = os.getenv("MCP_ENDPOINT", "/mcp")
-        MCP_JSON_RESPONSE = os.getenv(
-            "MCP_JSON_RESPONSE", "false"
+        MCP_HOST = config.get("MCP_HOST", "127.0.0.1")
+        MCP_PORT = int(config.get("MCP_PORT", "8765"))
+        MCP_ENDPOINT = config.get("MCP_ENDPOINT", "/mcp")
+        MCP_JSON_RESPONSE = str(
+            config.get("MCP_JSON_RESPONSE", "false")
         ).lower() in (
             "true",
             "1",
         )
-        MCP_STATELESS = os.getenv("MCP_STATELESS", "false").lower() in (
+        MCP_STATELESS = str(config.get("MCP_STATELESS", "false")).lower() in (
             "true",
             "1",
         )
-        MCP_SESSION_TIMEOUT = float(os.getenv("MCP_SESSION_TIMEOUT", "300"))
-        MCP_MAX_SESSIONS = int(os.getenv("MCP_MAX_SESSIONS", "50"))
+        MCP_SESSION_TIMEOUT = float(config.get("MCP_SESSION_TIMEOUT", "300"))
+        MCP_MAX_SESSIONS = int(config.get("MCP_MAX_SESSIONS", "50"))
 
         security = TransportSecuritySettings(
             enable_dns_rebinding_protection=True,
@@ -1792,13 +1852,13 @@ async def main():
             f"(json_response={MCP_JSON_RESPONSE}, stateless={MCP_STATELESS})"
         )
         async with session_mgr.run():
-            config = uvicorn.Config(
+            _uvicorn_config = uvicorn.Config(
                 starlette_app,
                 host=MCP_HOST,
                 port=MCP_PORT,
                 log_level="info",
             )
-            server = uvicorn.Server(config)
+            server = uvicorn.Server(_uvicorn_config)
             await server.serve()
     else:
         log.info("stdio transport active")
