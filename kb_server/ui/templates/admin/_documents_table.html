@@ -9,6 +9,7 @@
                 <th>Type</th>
                 <th>Status</th>
                 <th>Chunks</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -28,6 +29,9 @@
                     {% endif %}
                 </td>
                 <td>{{ doc.chunks }}</td>
+                <td>
+                    <a href="/ui/document/{{ doc.rowid }}" class="btn btn-sm btn-outline-primary">View</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

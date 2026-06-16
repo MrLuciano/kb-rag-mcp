@@ -23,6 +23,31 @@
     flex-shrink: 0;
 }
 
+/* Admin content area */
+.admin-content {
+    min-width: 0;
+    overflow-x: auto;
+}
+
+/* Mobile responsive admin shell */
+@media (max-width: 768px) {
+    .admin-shell {
+        flex-direction: column;
+    }
+    .admin-sidebar {
+        width: 100%;
+        min-height: auto;
+        padding: 1rem;
+    }
+    .admin-sidebar .nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .admin-sidebar .nav-item {
+        margin-right: 0.5rem;
+    }
+}
+
 /* Monitoring iframe (replaces HTML width/height/frameborder attributes) */
 .monitoring-iframe {
     width: 100%;
@@ -49,6 +74,7 @@
     padding: 1rem;
     border-radius: 0.375rem;
     border: 1px solid #dee2e6;
+    margin-bottom: 1rem;
 }
 
 .search-result-text h2 {
