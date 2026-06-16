@@ -115,8 +115,8 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [38-01-PLAN.md](phases/38-grafana-embed/38-01-PLAN.md) — 1 task
 - [ ] Phase 39: Observability Backlog — OBS-01 (Grafana health check), OBS-02 (request ID middleware), METRICS-01 (percentile metrics)
   - Plans: [39-01-PLAN.md](phases/39-observability/39-01-PLAN.md) — 4 tasks
-- [ ] Phase 40: Configuration Backlog — CONF-01 (config table + ConfigLoader), CONF-02 (config REST API)
-  - Plans: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks
+- [ ] Phase 40: Configuration Backlog — CONF-01 (config table + ConfigLoader), CONF-02 (config REST API), CONF-03-08 (hot-reload, seeding, os.getenv replacement)
+  - Plans: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks, [40-02-PLAN.md](phases/40-config-backlog/40-02-PLAN.md) — 3 tasks
 - [-] Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload)
   - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks (ConfigLoader alias methods + EmbedClient integration)
 - [ ] Phase 42: Query Logging Analytics Dashboard — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution)
@@ -212,7 +212,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   3. Config loader resolves values via chain: SQLite → `.env` file → `os.getenv` defaults
   4. Hot-reload event bus with version-based change detection notifies components via synchronous `reload_if_changed()` hooks
   5. System falls back gracefully if SQLite unavailable (→ `.env` → hardcoded defaults)
-**Plans**: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks
+**Plans**: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks (table, loader, router), [40-02-PLAN.md](phases/40-config-backlog/40-02-PLAN.md) — 3 tasks (mount, hot-reload, os.getenv replacement)
 
 ### Phase 41: Provider Alias
 **Goal**: Configurable provider name aliases for multi-backend embedding resolution with hot-reload
