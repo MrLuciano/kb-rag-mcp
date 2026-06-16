@@ -4,7 +4,7 @@ import secrets
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -121,3 +121,54 @@ async def root():
     """Root redirect to browse page."""
 
     return RedirectResponse(url="/ui/browse")
+
+
+# ---------------------------------------------------------------------------
+# Error handlers
+# ---------------------------------------------------------------------------
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    """Render user-friendly 404 page."""
+    return templates.TemplateResponse(
+        request,
+        "error.html",
+        {
+            "request": request,
+            "code": 404,
+            "title": "Not Found",
+            "detail": "The page you requested does not exist.",
+        },
+        status_code=404,
+    )
+
+
+@app.exception_handler(500)
+async def server_error_handler(request: Request, exc: HTTPException):
+    """Render user-friendly 500 page."""
+    return templates.TemplateResponse(
+        request,
+        "error.html",
+        {
+            "request": request,
+            "code": 500,
+            "title": "Server Error",
+            "detail": "An internal server error occurred. Please try again later.",
+        },
+        status_code=500,
+    )
+
+
+@app.exception_handler(403)
+async def forbidden_handler(request: Request, exc: HTTPException):
+    """Render user-friendly 403 page."""
+    return templates.TemplateResponse(
+        request,
+        "error.html",
+        {
+            "request": request,
+            "code": 403,
+            "title": "Forbidden",
+            "detail": "You do not have permission to access this resource.",
+        },
+        status_code=403,
+    )

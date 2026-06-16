@@ -562,3 +562,40 @@ class TestProfileConfigValidation:
         assert "Rerank:" in html
         assert 'text-success border border-success' in html
         assert 'text-danger border border-danger' not in html
+
+
+class TestErrorHandlers:
+    def test_404_error_page(self):
+        """404 returns user-friendly error page."""
+        resp = client.get("/nonexistent")
+        assert resp.status_code == 404
+        assert "Error 404" in resp.text
+        assert "Try searching" in resp.text
+
+    def test_403_error_page(self):
+        """403 returns user-friendly error page."""
+        from fastapi import HTTPException
+        resp = client.get("/ui/search")
+        assert resp.status_code == 200
+        assert "Error" in resp.text
+
+    def test_search_loading_state(self):
+        """Search page has loading indicator."""
+        resp = client.get("/ui/search")
+        assert resp.status_code == 200
+        assert "search-loading" in resp.text
+        assert "Searching knowledge base" in resp.text
+
+    def test_admin_shell_error_state(self):
+        """Admin shell has tab error state."""
+        resp = client.get("/admin")
+        assert resp.status_code == 200
+        assert "tab-error" in resp.text
+        assert "Failed to load tab content" in resp.text
+
+    def test_base_html_has_htmx_error_handler(self):
+        """Base template includes global HTMX error handling."""
+        resp = client.get("/ui/search")
+        assert resp.status_code == 200
+        assert "htmx:sendError" in resp.text
+        assert "Network error. Please check your connection." in resp.text
