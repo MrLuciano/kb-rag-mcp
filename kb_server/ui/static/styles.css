@@ -56,12 +56,12 @@
 }
 
 /* Status colors (replaces inline <style> in base.html) */
-.status-completed, .status-ok { color: #198754; }
-.status-failed, .status-error { color: #dc3545; }
-.status-pending { color: #ffc107; }
-.score-high { color: #198754; font-weight: bold; }
-.score-medium { color: #fd7e14; }
-.score-low { color: #6c757d; }
+.status-completed, .status-ok { color: var(--bs-success); }
+.status-failed, .status-error { color: var(--bs-danger); }
+.status-pending { color: var(--bs-warning); }
+.score-high { color: var(--bs-success); font-weight: bold; }
+.score-medium { color: var(--bs-warning); }
+.score-low { color: var(--bs-secondary); }
 
 /* Search result text (replaces <pre> with styled div) */
 .search-result-text {
@@ -70,10 +70,10 @@
     font-family: inherit;
     font-size: 0.9rem;
     line-height: 1.6;
-    background: #f8f9fa;
+    background: var(--bs-light);
     padding: 1rem;
     border-radius: 0.375rem;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--bs-border-color);
     margin-bottom: 1rem;
 }
 
@@ -81,7 +81,7 @@
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
-    color: #212529;
+    color: var(--bs-body-color);
 }
 
 .search-result-text h3 {
@@ -89,16 +89,16 @@
     font-weight: 600;
     margin-top: 1rem;
     margin-bottom: 0.5rem;
-    color: #495057;
+    color: var(--bs-secondary-color);
 }
 
 .search-result-text hr {
     margin: 0.75rem 0;
-    border-color: #dee2e6;
+    border-color: var(--bs-border-color);
 }
 
 .search-result-text code {
-    background: #e9ecef;
+    background: var(--bs-secondary-bg);
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
     font-size: 0.85em;
@@ -109,7 +109,7 @@
 }
 
 .search-result-text em {
-    color: #6c757d;
+    color: var(--bs-secondary-color);
 }
 
 /* Monitor lights card (replaces inline width) */
