@@ -23,6 +23,11 @@ class AuthService:
         self._db_path = db_path
         self._session = create_session(db_path)
 
+    @property
+    def session(self):
+        """Expose the SQLAlchemy session for shared use by ErasureManager."""
+        return self._session
+
     # ── User CRUD ────────────────────────────────────────────────
 
     def create_user(self, username: str, role: str = "user") -> User:
