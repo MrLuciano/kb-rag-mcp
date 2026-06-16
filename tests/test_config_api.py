@@ -38,6 +38,13 @@ def client(app):
     return TestClient(app)
 
 
+def test_server_imports_config_loader():
+    """Verify server.py can import and use ConfigLoader without errors."""
+    from kb_server.server import config
+
+    assert config is not None
+
+
 # ── ConfigLoader Tests ──────────────────────────────────────────
 
 
@@ -353,8 +360,7 @@ async def test_observer_hook_error_caught(loader, caplog):
     assert changes_good == [("HOOK_KEY", "hook_value")]
     assert changes_bad == [("HOOK_KEY", "hook_value")]
     assert any(
-        "observer hook failed" in record.message
-        for record in caplog.records
+        "observer hook failed" in record.message for record in caplog.records
     )
 
 
