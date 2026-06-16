@@ -26,8 +26,8 @@
 | 🟡 High (Security) | 7 | 7 | 0 |
 | 🟡 High (Database) | 6 | 5 | 1 (HW-14 f-string — fixed) |
 | 🟡 High (Quality) | 4 | 3 | 1 (HW-18 flake8 → 174 remaining) |
-| 🟢 Info | 6 | 4 | 2 (INF-04 shared session by design) |
-| **Total** | **33** | **28** | **5** |
+| 🟢 Info | 6 | 5 | 1 (INF-06 WAL per-connection — standard pattern) |
+| **Total** | **33** | **30** | **3** |
 
 ---
 
