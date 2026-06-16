@@ -112,6 +112,18 @@
     color: var(--bs-secondary-color);
 }
 
+/* Search result excerpt */
+.search-result-excerpt pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: inherit;
+    font-size: 0.85rem;
+    background: var(--bs-light);
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--bs-border-color);
+}
+
 /* Monitor lights card (replaces inline width) */
 .monitor-card {
     width: 160px;
