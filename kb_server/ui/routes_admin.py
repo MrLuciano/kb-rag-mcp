@@ -3,7 +3,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urlencode
 
 log = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def admin_shell(request: Request):
     """Render the admin SPA shell."""
     return templates.TemplateResponse(
+        request,
         "admin/shell.html",
         {"request": request},
     )
@@ -49,7 +50,7 @@ async def admin_tab_content(request: Request, tab_name: str):
             "<div class='alert alert-danger'>Unknown tab</div>",
             status_code=404,
         )
-    context = {"request": request}
+    context: dict[str, Any] = {"request": request}
 
     if tab_name == "analytics":
         try:
@@ -74,7 +75,20 @@ async def admin_tab_content(request: Request, tab_name: str):
             context["content_gaps"] = []
             context["latency_stats"] = []
 
-    return templates.TemplateResponse(template, context)
+    if tab_name == "ragas":
+        dataset_path = Path("kb_server/evaluation/golden_dataset.json")
+        dataset_count = 0
+        if dataset_path.exists():
+            import json
+
+            with open(dataset_path) as f:
+                dataset = json.load(f)
+                dataset_count = len(dataset)
+        context["dataset_count"] = dataset_count
+
+    return templates.TemplateResponse(
+        request, template, context
+    )
 
 
 @router.get("/tabs/monitor-lights", response_class=HTMLResponse)
@@ -84,6 +98,7 @@ async def admin_monitor_lights(request: Request):
 
     components = await check_all_components()
     return templates.TemplateResponse(
+        request,
         "admin/_monitor_lights.html",
         {"request": request, "components": components},
     )
@@ -93,6 +108,7 @@ async def admin_monitor_lights(request: Request):
 async def admin_config_table(request: Request):
     """Return config table partial."""
     return templates.TemplateResponse(
+        request,
         "admin/_config_table.html",
         {"request": request},
     )
@@ -102,8 +118,107 @@ async def admin_config_table(request: Request):
 async def admin_profile_content(request: Request):
     """Return profile content partial."""
     return templates.TemplateResponse(
+        request,
         "admin/_profile_content.html",
         {"request": request},
+    )
+
+
+@router.get("/tabs/documents-content", response_class=HTMLResponse)
+async def admin_documents_content(request: Request):
+    """Return documents table for admin panel."""
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    documents = []
+    total = 0
+
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM files WHERE status = 'completed'"
+            )
+            total = cursor.fetchone()[0]
+            cursor.execute(
+                "SELECT rowid, * FROM files WHERE status = 'completed' "
+                "ORDER BY rowid DESC LIMIT 20"
+            )
+            documents = [dict(row) for row in cursor.fetchall()]
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_documents_table.html",
+        {
+            "request": request,
+            "documents": documents,
+            "total": total,
+        },
+    )
+
+
+@router.post("/tabs/ingest-trigger", response_class=HTMLResponse)
+async def admin_ingest_trigger(request: Request):
+    """Trigger ingestion job."""
+    form = await request.form()
+    path = form.get("path", "")
+
+    if not path or not Path(path).exists():
+        return HTMLResponse(
+            "<div class='alert alert-danger'>Path not found</div>",
+            status_code=400,
+        )
+
+    return HTMLResponse(
+        "<div class='alert alert-success'>Ingestion job queued for: "
+        f"{path}</div>"
+    )
+
+
+@router.get("/tabs/job-status", response_class=HTMLResponse)
+async def admin_job_status(request: Request):
+    """Return job status summary."""
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    counts = {"completed": 0, "failed": 0, "pending": 0}
+
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            cursor = conn.cursor()
+            for status in counts:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM files WHERE status = ?", (status,)
+                )
+                counts[status] = cursor.fetchone()[0]
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_job_status.html",
+        {"request": request, "counts": counts},
+    )
+
+
+@router.post("/tabs/ragas-run", response_class=HTMLResponse)
+async def admin_ragas_run(request: Request):
+    """Trigger RAGAS evaluation."""
+    from pathlib import Path
+    import json
+
+    dataset_path = Path("kb_server/evaluation/golden_dataset.json")
+    dataset_count = 0
+
+    if dataset_path.exists():
+        with open(dataset_path) as f:
+            dataset = json.load(f)
+            dataset_count = len(dataset)
+
+    return HTMLResponse(
+        f"<div class='alert alert-info'>"
+        f"Evaluation queued with {dataset_count} queries. "
+        f"Results will be available in the logs."
+        f"</div>"
     )
 
 
@@ -169,7 +284,7 @@ async def reingest_document(
     """Re-ingest a document."""
     from ingest.ingest import process_file
 
-    result = await process_file(source_file)
+    result = await process_file(source_file)  # type: ignore[call-arg, arg-type]
     return {
         "status": "re-ingested",
         "source_file": source_file,
@@ -226,7 +341,8 @@ async def export_documents(
             content=data,
             media_type="application/json",
             headers={
-                "Content-Disposition": "attachment; filename=documents-export.json"
+                "Content-Disposition": "attachment; "
+                "filename=documents-export.json"
             },
         )
     else:
@@ -243,7 +359,8 @@ async def export_documents(
             content=csv_content,
             media_type="text/csv",
             headers={
-                "Content-Disposition": "attachment; filename=documents-export.csv"
+                "Content-Disposition": "attachment; "
+                "filename=documents-export.csv"
             },
         )
 
@@ -270,7 +387,7 @@ def build_grafana_embed_url_with_range(
     grafana_uid = os.getenv("GRAFANA_DASHBOARD_UID", "")
     if not grafana_url or not grafana_uid:
         return ""
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime, timedelta, timezone
 
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     range_map = {

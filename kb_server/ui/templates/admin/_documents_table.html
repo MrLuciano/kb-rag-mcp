@@ -1,0 +1,37 @@
+{% if documents %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Source</th>
+                <th>Product</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Chunks</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documents %}
+            <tr>
+                <td>{{ doc.rowid }}</td>
+                <td>{{ doc.path }}</td>
+                <td>{{ doc.product or 'N/A' }}</td>
+                <td>{{ doc.doc_type or 'N/A' }}</td>
+                <td>
+                    <span class="badge bg-{{ 'success' if doc.status == 'completed' else 'warning' }}">
+                        {{ doc.status }}
+                    </span>
+                </td>
+                <td>{{ doc.chunks }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="text-muted small">Showing {{ documents|length }} of {{ total }} documents</p>
+{% else %}
+<div class="alert alert-info">
+    No documents found. Ingest documents to populate the knowledge base.
+</div>
+{% endif %}
