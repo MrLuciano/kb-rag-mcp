@@ -12,6 +12,15 @@ echo "[entrypoint] Starting kb-rag-mcp services..."
 echo "[entrypoint] Health server will listen on port ${HEALTH_PORT}"
 echo "[entrypoint] MCP SSE server will listen on port ${SSE_PORT}"
 
+# GPU detection — install GPU-accelerated packages if NVIDIA GPU is available
+if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+    echo "[entrypoint] NVIDIA GPU detected — installing GPU-accelerated packages"
+    pip install --no-cache-dir -r /app/requirements.gpu.txt || \
+        echo "[entrypoint] WARNING: GPU package install failed — continuing without GPU acceleration"
+else
+    echo "[entrypoint] No NVIDIA GPU detected — using CPU-only configuration"
+fi
+
 # Start health/metrics HTTP server in background
 echo "[entrypoint] Starting health server..."
 python -m kb_server.health_server &
