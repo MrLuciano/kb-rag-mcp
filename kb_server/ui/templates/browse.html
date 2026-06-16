@@ -53,8 +53,9 @@
                 </select>
             </div>
             <div class="col-12">
-                <button type="submit" class="btn btn-primary">
-                    Filter
+                <button type="submit" class="btn btn-primary" id="filter-btn">
+                    <span class="btn-text">Filter</span>
+                    <span class="spinner-border spinner-border-sm d-none" id="filter-spinner" role="status" aria-hidden="true"></span>
                 </button>
                 <a href="/ui/browse" class="btn btn-secondary">
                     Clear
@@ -185,4 +186,21 @@
 </nav>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    var filterForm = document.querySelector('form[action="/ui/browse"]');
+    var filterBtn = document.getElementById('filter-btn');
+    var filterSpinner = document.getElementById('filter-spinner');
+    var filterBtnText = filterBtn.querySelector('.btn-text');
+
+    if (filterForm) {
+        filterForm.addEventListener('submit', function() {
+            filterBtn.disabled = true;
+            filterBtnText.classList.add('d-none');
+            filterSpinner.classList.remove('d-none');
+        });
+    }
+</script>
 {% endblock %}

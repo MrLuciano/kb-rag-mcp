@@ -10,31 +10,31 @@
         <ul class="nav nav-pills flex-column">
             <li class="nav-item">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'documents' }"
-                   href="#" @click.prevent="switchTab('documents')">📄 Documents</a>
+                   href="#" @click.prevent="switchTab('documents')">Documents</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'monitoring' }"
-                   href="#" @click.prevent="switchTab('monitoring')">📊 Monitoring</a>
+                   href="#" @click.prevent="switchTab('monitoring')">Monitoring</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'ingestion' }"
-                   href="#" @click.prevent="switchTab('ingestion')">📥 Ingestion</a>
+                   href="#" @click.prevent="switchTab('ingestion')">Ingestion</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'ragas' }"
-                   href="#" @click.prevent="switchTab('ragas')">🧪 RAGAS</a>
+                   href="#" @click.prevent="switchTab('ragas')">Evaluation</a>
             </li>
             <li class="nav-item" x-show="isAdmin">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'admin' }"
-                   href="#" @click.prevent="switchTab('admin')">⚙ Admin</a>
+                   href="#" @click.prevent="switchTab('admin')">Settings</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'analytics' }"
-                   href="#" @click.prevent="switchTab('analytics')">📈 Analytics</a>
+                   href="#" @click.prevent="switchTab('analytics')">Analytics</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'profile' }"
-                   href="#" @click.prevent="switchTab('profile')">👤 Profile</a>
+                   href="#" @click.prevent="switchTab('profile')">Profile</a>
             </li>
         </ul>
         <div class="mt-auto">
@@ -84,18 +84,44 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script nonce="{{ get_nonce(request) }}">
-    function adminApp() {
-        return {
-            activeTab: 'documents',
-            isAuthenticated: false,
-            isAdmin: false,
-            init() {
-                var key = localStorage.getItem('kb_api_key');
-                if (key) {
-                    this.isAuthenticated = true;
+    <script nonce="{{ get_nonce(request) }}">
+        document.addEventListener('htmx:responseError', function(event) {
+            if (event.detail.target && event.detail.target.id === 'tab-content') {
+                var tabError = document.getElementById('tab-error');
+                if (tabError) {
+                    tabError.classList.remove('d-none');
                 }
-            },
+            }
+        });
+        document.addEventListener('htmx:beforeRequest', function(event) {
+            if (event.detail.target && event.detail.target.id === 'tab-content') {
+                var tabError = document.getElementById('tab-error');
+                if (tabError) {
+                    tabError.classList.add('d-none');
+                }
+            }
+        });
+
+        function adminApp() {
+            return {
+                activeTab: 'documents',
+                isAuthenticated: false,
+                isAdmin: false,
+                init() {
+                    var key = localStorage.getItem('kb_api_key');
+                    if (key) {
+                        this.isAuthenticated = true;
+                        var headers = { 'Authorization': 'Bearer ' + key };
+                        fetch('/api/v1/users/me', { headers: headers })
+                            .then(r => r.json())
+                            .then(data => {
+                                this.isAdmin = (data.role === 'admin');
+                            })
+                            .catch(() => {
+                                this.isAdmin = false;
+                            });
+                    }
+                },
             switchTab(tab) {
                 this.activeTab = tab;
                 var target = '/admin/tabs/' + tab;
@@ -105,6 +131,15 @@
                 if (!key) return;
                 localStorage.setItem('kb_api_key', key);
                 this.isAuthenticated = true;
+                var headers = { 'Authorization': 'Bearer ' + key };
+                fetch('/api/v1/users/me', { headers: headers })
+                    .then(r => r.json())
+                    .then(data => {
+                        this.isAdmin = (data.role === 'admin');
+                    })
+                    .catch(() => {
+                        this.isAdmin = false;
+                    });
                 var modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
                 if (modal) modal.hide();
             },
