@@ -525,3 +525,40 @@ class TestRunUiModule:
         from kb_server.ui.run_ui import app as run_app
 
         assert run_app is not None
+
+
+class TestAdminBadges:
+    def test_admin_badges_outline(self):
+        """Admin badges use outline style for contrast."""
+        resp = client.get("/admin/tabs/admin")
+        assert resp.status_code == 200
+        html = resp.text
+        assert 'bg-success' not in html
+        assert 'text-success border border-success' in html
+        assert 'bg-danger' not in html
+        assert 'text-danger border border-danger' in html
+        assert 'bg-warning' not in html
+        assert 'text-warning border border-warning' in html
+
+
+class TestLoginFormLabels:
+    def test_login_form_labels(self):
+        """Login form has visible labels."""
+        resp = client.get("/login")
+        assert resp.status_code == 200
+        html = resp.text
+        assert '<label for="username"' in html
+        assert '<label for="password"' in html
+
+
+class TestProfileConfigValidation:
+    def test_profile_config_validation(self):
+        """Profile tab shows config validation badges."""
+        resp = client.get("/admin/tabs/profile")
+        assert resp.status_code == 200
+        html = resp.text
+        assert "K:" in html
+        assert "BM25:" in html
+        assert "Rerank:" in html
+        assert 'text-success border border-success' in html
+        assert 'text-danger border border-danger' not in html
