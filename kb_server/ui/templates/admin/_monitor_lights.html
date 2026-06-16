@@ -13,18 +13,18 @@
     } %}
     {% for key, label in labels.items() %}
         {% set status = components.get(key) %}
-        <div class="card" style="width: 160px;">
+        <div class="card monitor-card">
             <div class="card-body text-center py-3">
                 {% if status and status.healthy %}
-                    <div class="mb-1" style="width:12px;height:12px;border-radius:50%;background:#198754;margin:0 auto;"></div>
+                    <div class="mb-1 monitor-light" style="background:#198754;"></div>
                     <small class="text-success d-block">{{ label }}</small>
                     <small class="text-muted">{{ status.message[:30] }}</small>
                 {% elif status and not status.healthy %}
-                    <div class="mb-1" style="width:12px;height:12px;border-radius:50%;background:#dc3545;margin:0 auto;"></div>
+                    <div class="mb-1 monitor-light" style="background:#dc3545;"></div>
                     <small class="text-danger d-block">{{ label }}</small>
                     <small class="text-muted">{{ status.message[:30] }}</small>
                 {% else %}
-                    <div class="mb-1" style="width:12px;height:12px;border-radius:50%;background:#6c757d;margin:0 auto;"></div>
+                    <div class="mb-1 monitor-light" style="background:#6c757d;"></div>
                     <small class="text-secondary d-block">{{ label }}</small>
                     <small class="text-muted">Not configured</small>
                 {% endif %}

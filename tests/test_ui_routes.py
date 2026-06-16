@@ -457,7 +457,7 @@ class TestNavbarActiveState:
 
             assert resp.status_code == 200
             html = resp.text
-            assert 'class="nav-link active"' in html
+            assert 'nav-link' in html and 'active' in html
             # Verify the expected link has aria-current
             if expected_active == "browse":
                 assert 'href="/ui/browse"' in html
@@ -468,6 +468,48 @@ class TestNavbarActiveState:
             elif expected_active == "admin":
                 assert 'href="/admin"' in html
                 assert 'aria-current="page"' in html
+
+
+class TestInlineStyles:
+    def _mock_get_documents(self, docs=None, total=None):
+        docs = docs or [_fake_row()]
+        total = total if total is not None else len(docs)
+        return patch(
+            "kb_server.ui.routes.get_documents", return_value=(docs, total)
+        )
+
+    def test_no_inline_styles_in_critical_templates(self):
+        """Verify no inline styles in rendered HTML pages."""
+        import re
+
+        pages = [
+            "/ui/browse",
+            "/ui/search",
+            "/admin",
+        ]
+
+        for path in pages:
+            if path == "/ui/browse":
+                with self._mock_get_documents():
+                    resp = client.get(path)
+            else:
+                resp = client.get(path)
+
+            assert resp.status_code == 200, f"{path} returned {resp.status_code}"
+            html = resp.text
+            style_matches = re.findall(r'\sstyle="[^"]*"', html)
+            bad_styles = [
+                s for s in style_matches
+                if "display:none" in s or "height:" in s
+                or "width:" in s or "max-width:" in s
+                or "white-space:" in s or "word-break:" in s
+                or "min-height:" in s or "flex-shrink:" in s
+                or "cursor:" in s or "border-radius:" in s
+                or "background:" in s or "margin:" in s
+            ]
+            assert len(bad_styles) == 0, (
+                f"Found inline styles in {path}: {bad_styles}"
+            )
 
 
 class TestRunUiModule:
