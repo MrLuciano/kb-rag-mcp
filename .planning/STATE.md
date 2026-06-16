@@ -806,3 +806,9 @@ All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete 
 | Phase | Plan | Duration | Notes |
 |-------|------|----------|-------|
 | Phase 28-mcp-streamable-http P02 | 15 min | 2 tasks | 3 files |
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 20260616-001 | Fix missing SQLAlchemy dependency in Docker | 2026-06-16 | — | [20260616-fix-sqlalchemy-dep](./quick/20260616-fix-sqlalchemy-dep/) |
