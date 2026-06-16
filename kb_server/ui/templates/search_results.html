@@ -17,8 +17,8 @@
                 {% if result.doc_type %} | Type: {{ result.doc_type }}{% endif %}
                 {% if result.page %} | Page: {{ result.page }}{% endif %}
             </p>
-            <div class="search-result-excerpt">
-                <pre class="mb-0">{{ result.text[:500] }}{% if result.text|length > 500 %}...{% endif %}</pre>
+            <div class="search-result-text">
+                {{ result.text[:500] }}{% if result.text|length > 500 %}...{% endif %}
             </div>
         </div>
     </div>
