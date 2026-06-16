@@ -1,4 +1,4 @@
-<h3>Monitoring</h3>
+<h2 class="h3">Monitoring</h2>
 <p class="text-muted">System health and Grafana dashboards.</p>
 
 <!-- Monitor Lights -->
@@ -14,7 +14,7 @@
 {% if grafana_url %}
 <div x-data="{ timeRange: '6h', url: '{{ build_grafana_embed_url_with_range("6h") }}' }">
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">Grafana Dashboard</h5>
+        <h3 class="h5 mb-0">Grafana Dashboard</h3>
         <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-secondary"
                     :class="{ 'active': timeRange === '1h' }"

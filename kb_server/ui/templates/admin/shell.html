@@ -6,7 +6,7 @@
 <div x-data="adminApp()" class="d-flex" style="min-height: calc(100vh - 80px);">
     <!-- Sidebar -->
     <div class="d-flex flex-column bg-dark text-white p-3" style="width: 220px; flex-shrink: 0;">
-        <h5 class="text-center mb-4">Admin Panel</h5>
+        <h2 class="h5 text-center mb-4">Admin Panel</h2>
         <ul class="nav nav-pills flex-column">
             <li class="nav-item">
                 <a class="nav-link text-white" :class="{ 'active': activeTab === 'documents' }"
@@ -60,7 +60,7 @@
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Authentication Required</h5>
+                <h3 class="h5 modal-title">Authentication Required</h3>
             </div>
             <div class="modal-body">
                 <p class="text-muted small">Enter your API key to access the admin panel.</p>

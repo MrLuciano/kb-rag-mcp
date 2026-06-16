@@ -12,7 +12,7 @@
 
 <div class="card mb-4">
     <div class="card-header">
-        <h5 class="mb-0">{{ document.source_file }}</h5>
+        <h2 class="h5 mb-0">{{ document.source_file }}</h2>
     </div>
     <div class="card-body">
         <dl class="row">
@@ -56,7 +56,7 @@
 {% endif %}
 
 {% if chunks and chunks|length > 0 %}
-<h3 class="mt-4">Chunks ({{ chunks|length }} total)</h3>
+<h2 class="h4 mt-4">Chunks ({{ chunks|length }} total)</h2>
 {% if search_query %}
 <p class="text-muted mb-3">
     Showing results with highlighted matches for: <strong>{{ search_query }}</strong>
