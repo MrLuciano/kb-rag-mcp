@@ -10,8 +10,59 @@ from fastapi import Form, Query, Request
 from fastapi.responses import HTMLResponse
 
 from kb_server.ui.app import app, templates
-
 log = logging.getLogger("kb-mcp.ui")
+
+
+def _parse_search_results(text: str) -> list[dict[str, Any]]:
+    """Parse markdown search results into structured dicts."""
+    import re
+
+    results: list[dict[str, Any]] = []
+    # Split on ### [N] heading
+    sections = re.split(r'\n###\s*\[\d+\]\s+', text)
+    for section in sections[1:]:  # Skip header
+        lines = section.strip().split('\n')
+        if not lines:
+            continue
+        # First line: source_file (relevance: XX.X%)
+        header = lines[0]
+        source_match = re.match(r'(.+?)\s+\(relevance:\s+([\d.]+)%\)', header)
+        source_file = source_match.group(1) if source_match else header
+        score = float(source_match.group(2)) / 100 if source_match else 0.0
+        # Extract metadata from bold lines
+        chunk_id = ''
+        product = ''
+        doc_type = ''
+        page = ''
+        for line in lines[1:]:
+            if line.startswith('**ID:**'):
+                id_match = re.search(r'`([^`]+)`', line)
+                if id_match:
+                    chunk_id = id_match.group(1)
+            elif line.startswith('**Product:**'):
+                product = line.replace('**Product:**', '').strip()
+            elif line.startswith('**Type:**'):
+                doc_type = line.replace('**Type:**', '').strip()
+            elif line.startswith('**Page/section:**'):
+                page = line.replace('**Page/section:**', '').strip()
+        # Text is everything after the first --- or blank line
+        text_content = '\n'.join(lines)
+        # Find the chunk text (after metadata and before ---)
+        text_parts = text_content.split('\n\n')
+        chunk_text = ''
+        if len(text_parts) > 1:
+            chunk_text = text_parts[1]
+        results.append({
+            'source_file': source_file,
+            'score': score,
+            'chunk_id': chunk_id,
+            'product': product,
+            'doc_type': doc_type,
+            'page': page,
+            'text': chunk_text,
+        })
+    return results
+
 
 # Database path configuration
 DB_PATH = Path(os.getenv("KB_METADATA_DB", "data/kb_metadata.db"))
@@ -210,6 +261,7 @@ async def search_kb(
     }
     results = await _search_kb(args)
     result_text = results[0].text if results else "No results found."
+    parsed_results = _parse_search_results(result_text) if results else []
 
     return templates.TemplateResponse(
         request,
@@ -219,6 +271,7 @@ async def search_kb(
             "query": query,
             "results": results,
             "result_text": result_text,
+            "parsed_results": parsed_results,
         },
     )
 
