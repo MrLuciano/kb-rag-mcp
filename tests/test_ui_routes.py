@@ -222,6 +222,85 @@ class TestUIEndpoints:
             resp = client.get("/ui/search")
         assert resp.status_code == 200
 
+    def test_search_endpoint_returns_results(self):
+        """POST /ui/search returns HTML results."""
+        from mcp.types import TextContent
+
+        fake_result = TextContent(
+            type="text",
+            text="## Results for: 'test query'\n\n### [1] doc.md (relevance: 95.0%)",
+        )
+
+        with (
+            patch(
+                "kb_server.server._search_kb",
+                return_value=[fake_result],
+            ) as mock_search,
+            _mock_template_response(),
+        ):
+            resp = client.post(
+                "/ui/search",
+                data={"query": "test query", "top_k": "5"},
+            )
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers["content-type"]
+        mock_search.assert_called_once()
+        args = mock_search.call_args[0][0]
+        assert args["query"] == "test query"
+        assert args["top_k"] == 5
+
+    def test_search_endpoint_no_results(self):
+        """POST /ui/search handles empty results gracefully."""
+        from mcp.types import TextContent
+
+        with (
+            patch(
+                "kb_server.server._search_kb",
+                return_value=[
+                    TextContent(
+                        type="text",
+                        text="No results found in the knowledge base",
+                    )
+                ],
+            ),
+            _mock_template_response(),
+        ):
+            resp = client.post(
+                "/ui/search",
+                data={"query": "missing query"},
+            )
+        assert resp.status_code == 200
+
+    def test_search_endpoint_passes_all_params(self):
+        """POST /ui/search passes all form params to _search_kb."""
+        from mcp.types import TextContent
+
+        with (
+            patch(
+                "kb_server.server._search_kb",
+                return_value=[TextContent(type="text", text="ok")],
+            ) as mock_search,
+            _mock_template_response(),
+        ):
+            client.post(
+                "/ui/search",
+                data={
+                    "query": "q",
+                    "top_k": "10",
+                    "product": "myproduct",
+                    "version": "1.0",
+                    "hybrid": "true",
+                    "rerank": "true",
+                },
+            )
+        args = mock_search.call_args[0][0]
+        assert args["query"] == "q"
+        assert args["top_k"] == 10
+        assert args["product"] == "myproduct"
+        assert args["version"] == "1.0"
+        assert args["hybrid"] is True
+        assert args["rerank"] is True
+
     def test_document_detail_not_found_returns_404(self):
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = None
@@ -292,6 +371,65 @@ class TestChunkPreview:
         import os
 
         assert os.path.exists("kb_server/ui/templates/document_chunks.html")
+
+
+class TestHeadingHierarchy:
+    def test_heading_hierarchy(self):
+        """Verify no skipped heading levels in rendered HTML."""
+        import re
+
+        pages = [
+            "/ui/browse",
+            "/ui/search",
+            "/admin",
+            "/admin/tabs/analytics",
+            "/admin/tabs/monitoring",
+        ]
+
+        # Inject missing template globals for routes_admin templates
+        from kb_server.ui import routes_admin
+
+        routes_admin.templates.env.globals["build_grafana_embed_url"] = (
+            routes_admin.build_grafana_embed_url
+        )
+        routes_admin.templates.env.globals[
+            "build_grafana_embed_url_with_range"
+        ] = routes_admin.build_grafana_embed_url_with_range
+
+        for path in pages:
+            if path == "/ui/browse":
+                with self._mock_get_documents():
+                    resp = client.get(path)
+            elif path == "/admin/tabs/analytics":
+                with patch(
+                    "kb_server.analytics.query_analyzer.QueryAnalyzer",
+                ) as mock_analyzer:
+                    instance = mock_analyzer.return_value
+                    instance.get_most_common_queries.return_value = []
+                    instance.get_zero_result_queries.return_value = []
+                    instance.get_latency_stats.return_value = []
+                    resp = client.get(path)
+            else:
+                resp = client.get(path)
+
+            assert resp.status_code == 200, f"{path} returned {resp.status_code}"
+            html = resp.text
+            headings = re.findall(r"<h([1-6])", html)
+            if headings:
+                levels = [int(h) for h in headings]
+                for i in range(1, len(levels)):
+                    if levels[i] > levels[i - 1] + 1:
+                        assert False, (
+                            f"Heading skip at {path}: "
+                            f"h{levels[i - 1]} -> h{levels[i]}"
+                        )
+
+    def _mock_get_documents(self, docs=None, total=None):
+        docs = docs or [_fake_row()]
+        total = total if total is not None else len(docs)
+        return patch(
+            "kb_server.ui.routes.get_documents", return_value=(docs, total)
+        )
 
 
 class TestRunUiModule:

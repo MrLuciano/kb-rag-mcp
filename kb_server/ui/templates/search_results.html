@@ -1,0 +1,14 @@
+{% if results %}
+<div class="alert alert-success">
+    Found {{ results|length }} result(s) for "<strong>{{ query }}</strong>"
+</div>
+<div class="card">
+    <div class="card-body">
+        <pre class="search-result-text" style="white-space: pre-wrap; font-family: inherit;">{{ result_text }}</pre>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    No results found for "<strong>{{ query }}</strong>"
+</div>
+{% endif %}
