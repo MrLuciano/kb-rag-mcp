@@ -1,9 +1,9 @@
 # Phase 15 — UI Review
 
 **Audited:** 2026-06-16
-**Baseline:** Abstract 6-pillar standards (no UI-SPEC.md exists)
-**Screenshots:** Captured at `.planning/ui-reviews/20260616-015734/`
-**Server:** Port 8002 (`python -m kb_server.ui.run_ui`)
+**Baseline:** Abstract 6-pillar standards (no UI-SPEC.md)
+**Screenshots:** Captured from http://localhost:8002
+**Screen:** Desktop (1440×900), Mobile (375×812)
 
 ---
 
@@ -11,22 +11,26 @@
 
 | Pillar | Score | Key Finding |
 |--------|-------|-------------|
-| 1. Copywriting | 3/4 | Mostly clear labels; error page template variable mismatch causes empty "Error :" display |
-| 2. Visuals | 3/4 | Clean Bootstrap 5 layout; admin panel shows generic error on 401 instead of login modal |
-| 3. Color | 4/4 | Bootstrap semantic colors used consistently; no hardcoded colors; good 60/30/10 distribution |
-| 4. Typography | 3/4 | Good heading hierarchy; search results use `<pre>` instead of styled `.search-result-text` class |
-| 5. Spacing | 4/4 | Bootstrap spacing utilities used consistently; no arbitrary values; responsive breakpoints present |
-| 6. Experience Design | 3/4 | Loading, error, empty states present; admin 401 flow broken; login form unreachable via GET |
+| 1. Copywriting | 3/4 | Actionable labels and empty states are solid; jargon-heavy admin labels and inconsistent tab naming drag it down. |
+| 2. Visuals | 3/4 | Clean card-based layout, but login page is isolated from the brand shell and search results lack focal hierarchy. |
+| 3. Color | 3/4 | Bootstrap semantic palette used correctly, but zero brand identity; everything is default blue/gray/white. |
+| 4. Typography | 2/4 | Heading hierarchy is broken on multiple pages (h1.h5, h2.h5 vs h2.h4, h3.h6) — screen-reader hostile. |
+| 5. Spacing | 3/4 | Bootstrap scale is respected, no arbitrary values. Minor double-container padding bug on error page. |
+| 6. Experience Design | 3/4 | Good loading/error/empty state coverage. Admin auth flow requires an unnecessary 401 round-trip. |
 
-**Overall: 20/24**
+**Overall: 17/24**
+
+**Production-ready:** Yes, with minor fixes. Not 22+/24.
 
 ---
 
 ## Top 3 Priority Fixes
 
-1. **Error page template variable mismatch** — `error.html` expects `code` and `title` but `routes.py` passes `error`. Users see blank "Error :" with no status code or message. — Fix: Pass `code` and `title` from the route, or update template to use `error`.
-2. **Admin panel unauthenticated experience broken** — Initial HTMX tab load returns 401, which triggers base.html's generic "Failed to load content" alert instead of the login modal in `shell.html`. The login modal code exists but is never reached. — Fix: In the 401 handler, check if the target is `#tab-content` and show `#loginModal` instead of the generic alert.
-3. **Search results render in monospace `<pre>`** — The `search_results.html` template uses `<pre>` for result text, which renders in monospace and looks like code rather than readable content. The `.search-result-text` CSS class exists with proper styling but is unused. — Fix: Replace `<pre>` with a `<div class="search-result-text">`.
+1. **Admin shell defers login modal until a 401 error occurs** — Unauthenticated users visiting `/admin` see the full sidebar and can click tabs. Only after a failed HTMX request does the modal appear. This creates a confusing "why is nothing loading?" moment. The modal should be shown immediately on `init()` if `kb_api_key` is missing.
+
+2. **Heading hierarchy is contradictory across pages** — `login.html` uses `h1.h5` (semantic page title visually smaller than a section). `document.html` has two `h2` elements with different visual classes (`h5` and `h4`). `tab_profile.html` uses `h3.h6` for subsections. This breaks the document outline for screen readers and degrades visual hierarchy.
+
+3. **Search results lack query-term highlighting and the score badge is low-contrast** — `search_results.html` truncates raw text at 500 chars with no `highlight_term()` call (unlike `document.html`). The match score uses `badge bg-secondary` which is low-contrast gray. Users cannot see *why* a result matched.
 
 ---
 
@@ -35,138 +39,120 @@
 ### Pillar 1: Copywriting (3/4)
 
 **Strengths**
-- No generic labels like "Submit", "Click Here", or "OK" found.
-- CTA labels are domain-specific: "Search", "Filter", "Clear", "Start Ingest", "Run Evaluation", "Generate New Key".
-- Empty states are actionable: "No documents found matching the current filters. [Clear filters] or ingest documents." (`browse.html:125-128`).
-- Error copy is human-friendly: "Failed to load content. Please try again later." (`base.html:94-95`).
+- Empty states are helpful and actionable: *"No documents found matching the current filters. Clear filters or ingest documents."* (`browse.html:126`)
+- Error page includes useful next-step links: *"Try searching or browse documents."* (`error.html:12`)
+- GDPR labels in profile are precise: *"Export My Data (GDPR Art. 20)"* (`admin/_profile_content.html:32`)
+- Confirmation dialogs for destructive actions: *"Run evaluation? This may take several minutes."* (`admin/tab_ragas.html:16`)
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Error page renders blank "Error :" because template expects `code`/`title` but route passes `error` | `error.html` | 8 | **BLOCKER** |
-| "Query *" label is terse; could be "Search query" | `search.html` | 15 | WARNING |
-| Browse page shows "Page 1 of 0" when empty — confusing copy | `browse.html` | 71 | WARNING |
-
-**Score rationale:** The template variable mismatch is a real user-facing defect. Otherwise copy is solid and domain-appropriate.
+| "RAGAS Evaluation" is jargon-heavy; sidebar calls the same tab "Evaluation" | `admin/tab_ragas.html` | 1 | WARNING |
+| Technical abbreviations in profile config: "K", "BM25", "Rerank" | `admin/tab_profile.html` | 7, 15, 23 | WARNING |
+| "Search Tester" is an odd product-facing name for the primary search interface | `search.html` | 6 | WARNING |
+| "Chunk Loading Failed" is overly technical for an end-user message | `document.html` | 114 | WARNING |
+| "Login" heading is generic; no brand context or "Sign in to KB-RAG" | `admin/login.html` | 15 | MINOR |
 
 ---
 
 ### Pillar 2: Visuals (3/4)
 
 **Strengths**
-- Clear visual hierarchy: dark navbar (focal point), white content area, cards for grouped content.
-- Two-column search layout (form left, results right) is task-oriented.
-- Status badges use consistent semantic colors (success/danger/warning).
-- Admin sidebar + content area is a recognizable dashboard pattern.
-- Mobile view stacks correctly to single column (`mobile-search.png`).
-- Pagination with smart ellipsis (`browse.html:157-177`).
-- Document chunks use accordion with "Show next 10" progressive disclosure.
+- Card-based layouts provide clear visual grouping on search, browse, and admin pages.
+- Status badges use semantic color (green/red/yellow) for immediate status recognition.
+- Monitor light cards give an at-a-glance system health view.
+- Accordion chunks conserve vertical space on the document page.
+- Responsive tables use `table-responsive` for horizontal scroll on mobile.
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Admin panel shows generic error alert on 401 instead of login modal | `shell.html` + `base.html` | 60, 91 | **WARNING** |
-| Search results use raw `<pre>` — looks like code, not prose | `search_results.html` | 21 | WARNING |
-| No favicon defined in `base.html` | `base.html` | — | WARNING |
-| Navbar `aria-current` quotes are malformed: `active" aria-current="page{% endif %}` | `base.html` | 43, 49, 55 | WARNING |
-| Login form at `login.html` is unreachable via GET (route returns 405) | `login.html` | — | WARNING |
-
-**Score rationale:** The admin 401 flow is a notable UX gap. The search results `<pre>` styling degrades readability. Otherwise visual structure is solid.
+| Login page is isolated — no navbar, no logo, no way back to the main site | `admin/login.html` | 1 | WARNING |
+| Admin sidebar on mobile becomes a tall full-width bar that pushes content far down | `admin/shell.html` + `styles.css` | 8, 34 | WARNING |
+| Search results have no focal point; score badge is low-contrast secondary gray | `search_results.html` | 12 | WARNING |
+| Matching query terms are not highlighted in search results (unlike document chunks) | `search_results.html` | 21 | WARNING |
+| Job status counters in admin are left-aligned in a wide card; no centering or distribution | `admin/_job_status.html` | 4 | MINOR |
 
 ---
 
-### Pillar 3: Color (4/4)
+### Pillar 3: Color (3/4)
 
 **Strengths**
-- Zero hardcoded hex or rgb colors in templates.
-- CSS uses Bootstrap CSS variables exclusively: `var(--bs-success)`, `var(--bs-light)`, `var(--bs-border-color)`, etc. (`styles.css:59-77`).
-- Semantic color usage is consistent:
-  - `bg-success` / `text-success` for completed/ok states
-  - `bg-danger` / `text-danger` for failed/error states
-  - `bg-warning` / `text-warning` for pending states
-  - `alert-info` for neutral empty states
-  - `alert-success` for positive search results
-- Approximate 60/30/10 distribution: white page (60), dark navbar/sidebar (30), blue primary accent (10).
-
-**Issues**
-- None found.
-
-**Score rationale:** Color discipline is excellent. All colors derive from Bootstrap's semantic system.
-
----
-
-### Pillar 4: Typography (3/4)
-
-**Strengths**
-- Heading hierarchy is clear and consistent:
-  - `h1` for page titles (Search Tester, Browse Documents)
-  - `h2` for major sections (with `h3`/`h4`/`h5` utility classes for sizing)
-  - `h5` for card titles (Search Parameters, Quick Ingest, Evaluation Dataset)
-  - `h6` for sub-headings (Config in Profile)
-- `text-muted` used consistently for secondary/meta text.
-- `small` class used for metadata lines (chunk IDs, product, type, page).
-- `<code>` used appropriately for IDs, hashes, and query text.
-- No custom font families or arbitrary font sizes.
+- Zero hardcoded hex or RGB values in templates.
+- `styles.css` uses Bootstrap CSS variables (`var(--bs-success)`, `var(--bs-danger)`, etc.) for all status colors.
+- Semantic color usage is consistent: `bg-success` for completed, `bg-danger` for failed, `bg-warning` for pending.
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Search result text rendered in `<pre>` (monospace) instead of `.search-result-text` | `search_results.html` | 21 | WARNING |
-| `font-size: 0.85rem` and `font-size: 0.9rem` in CSS are slightly off the Bootstrap scale but acceptable | `styles.css` | 71, 120 | MINOR |
-
-**Score rationale:** The `<pre>` issue is the only notable gap. Otherwise typography is clean and hierarchical.
+| Entirely Bootstrap default palette — no brand identity or custom accent | All | — | WARNING |
+| Admin sidebar is flat dark gray with no visual texture or depth | `admin/shell.html` | 8 | MINOR |
+| Login page is completely devoid of brand color (white card on gray) | `admin/login.html` | 9 | MINOR |
 
 ---
 
-### Pillar 5: Spacing (4/4)
+### Pillar 4: Typography (2/4)
 
 **Strengths**
-- Bootstrap spacing utilities used consistently: `mb-3`, `mb-4`, `mt-4`, `mt-2`, `mb-2`, `mb-0`, `py-3`, `p-3`, `p-4`, `gap-2`, `gap-3`.
-- Zero inline `style="..."` attributes found in templates.
-- Zero arbitrary Tailwind-like bracket values (`[10px]`) found.
-- CSS spacing is systematic: `1rem` padding for result blocks, `0.75rem` for excerpts, `0.375rem` border radius.
-- Responsive breakpoints in CSS for admin sidebar (`@media (max-width: 768px)` at `styles.css:33`).
-- Monitor cards have fixed width (`160px`) for consistent grid layout.
+- `visually-hidden` headings provide screen-reader context for filter and result sections (`browse.html:8,68`).
+- `aria-label` on pagination nav (`browse.html:133`).
+- `small` and `text-muted` utilities are used consistently for metadata.
 
 **Issues**
-- None found.
 
-**Score rationale:** Spacing is disciplined and consistent throughout.
+| Issue | File | Line | Severity |
+|-------|------|------|----------|
+| `h1` styled as `h5` — semantic page title is visually smaller than a section heading | `admin/login.html` | 15 | WARNING |
+| Two `h2` elements on the same page with different visual sizes (`h5` vs `h4`) | `document.html` | 15, 65 | WARNING |
+| `h3.h6` used for a subsection under an `h2` — should be `h3` or `h4` without size override | `admin/tab_profile.html` | 5 | WARNING |
+| `h3.h5` used for data section titles under `h2.h3` — creates a skipped/confused outline | `admin/tab_analytics.html` | 20, 41, 63 | WARNING |
+| `h2.h5` used for card header inside the document detail card | `document.html` | 15 | WARNING |
+
+**Rationale:** The project consistently uses Bootstrap heading utility classes (`.h1`–`.h6`) to override visual size while preserving semantic `h1`–`h6` tags. This is an acceptable pattern when applied consistently, but the same page often contains multiple headings at the same semantic level with *different* visual classes, which breaks the expected outline for screen-reader users and creates a confusing visual hierarchy.
+
+---
+
+### Pillar 5: Spacing (3/4)
+
+**Strengths**
+- Bootstrap spacing utilities are used consistently (`mt-4`, `mb-3`, `p-4`, `gap-2`, `py-3`).
+- No arbitrary Tailwind-style values (e.g., no `[10px]`, `[2rem]`).
+- Grid system (`col-md-4`, `col-md-8`, etc.) provides a responsive layout.
+- CSS custom values are reasonable: `220px` sidebar, `160px` monitor cards, `600px` iframe height.
+
+**Issues**
+
+| Issue | File | Line | Severity |
+|-------|------|------|----------|
+| `error.html` nests `<div class="container">` inside base's `container`, creating double horizontal padding | `error.html` | 6 | WARNING |
+| Pagination `href` attributes contain whitespace and newlines from Jinja2 formatting | `browse.html` | 138–146 | MINOR |
+| Mobile search page stacks the alert flush against the card bottom (no `mt-3` on results area) | `search.html` | 86 | MINOR |
 
 ---
 
 ### Pillar 6: Experience Design (3/4)
 
 **Strengths**
-- **Loading states:** Spinners in search button, filter button, ingest button, RAGAS button, admin tab loader, and inline `#search-loading` div.
-- **Error states:** HTMX responseError handlers for 401 (modal), generic errors, and network errors. Tab-specific error div in `shell.html`. Config save error in `_config_table.html`. Document chunk loading failures handled with `alert-warning`.
-- **Empty states:** Browse, search results, analytics, documents table, and config table all have contextual empty messages with next steps.
-- **Disabled states:** Search, filter, ingest, and RAGAS buttons disable during submission.
-- **Confirmations:** RAGAS evaluation has `hx-confirm`. Profile key revocation and data erasure use `confirm()` dialogs.
-- **Partial updates:** HTMX used for search results, tab content, chunk pagination, job status, monitor lights, and analytics refresh.
-- **Pagination:** Browse has numbered pagination with ellipsis. Document chunks have "Show next 10" / "Show less".
-- **Accessibility:** `visually-hidden` headings for screen readers (Search Results, Filters, Results, Document Chunks). `aria-label` on pagination nav.
+- Loading states on almost every async action: spinner in search button, filter button, ingest button, RAGAS button, tab content, admin documents.
+- Empty states are informative: search, browse, analytics, documents table, RAGAS.
+- Error states are covered: network errors, 401 auth, tab load failures, chunk load failures, config save failures.
+- Confirmation dialogs for destructive actions: RAGAS run, API key revoke, GDPR erasure.
+- HTMX global error handlers in `base.html` catch 401, generic errors, and network failures.
+- Accordion chunks are paginated ("Show next 10 chunks") to avoid overwhelming the user.
 
 **Issues**
 
 | Issue | File | Line | Severity |
 |-------|------|------|----------|
-| Admin 401 flow: base.html generic alert overrides shell.html login modal | `base.html` | 91-98 | **WARNING** |
-| Login page template exists but route only accepts POST (405 on GET) | `login.html` | — | WARNING |
-| Search results show 500-character raw `<pre>` excerpt; no "Read more" or link to full document | `search_results.html` | 21 | WARNING |
-| No skeleton/shimmer loaders — only spinners | — | — | MINOR |
-| No error boundary for unhandled JS exceptions in Alpine.js components | — | — | MINOR |
-
-**Score rationale:** Most states are covered, but the broken 401 flow and unreachable login page are notable gaps. The search result truncation is also a mild UX issue.
-
----
-
-## Registry Safety
-
-No `components.json` found. Project uses Bootstrap 5 CDN, HTMX CDN, and Alpine.js CDN — no shadcn or third-party registry blocks. Registry audit skipped.
+| Admin login modal is not shown on initial load; user must trigger a 401 first | `admin/shell.html` | 113–126 | **BLOCKER** |
+| Search results do not highlight matching terms; users can't see *why* a result matched | `search_results.html` | 21 | WARNING |
+| No dismissible alerts anywhere — users can't close info/warning banners | Multiple | — | WARNING |
+| Config table edit interaction is undiscoverable (double-click is not hinted) | `admin/_config_table.html` | 14 | WARNING |
+| RAGAS evaluation shows no progress indication beyond the button spinner | `admin/tab_ragas.html` | 12–19 | WARNING |
+| No pagination on search results; large result sets will scroll indefinitely | `search_results.html` | 6–26 | WARNING |
 
 ---
 
@@ -195,25 +181,16 @@ No `components.json` found. Project uses Bootstrap 5 CDN, HTMX CDN, and Alpine.j
 - `kb_server/ui/templates/admin/_profile_content.html`
 - `kb_server/ui/templates/document_chunks.html`
 
-### Styles & Routes
+### Styles
 - `kb_server/ui/static/styles.css`
-- `kb_server/ui/routes.py`
-- `kb_server/ui/run_ui.py`
 
 ### Screenshots
-- `.planning/ui-reviews/20260616-015734/desktop-search.png`
-- `.planning/ui-reviews/20260616-015734/desktop-browse.png`
-- `.planning/ui-reviews/20260616-015734/desktop-admin.png`
-- `.planning/ui-reviews/20260616-015734/mobile-search.png`
-- `.planning/ui-reviews/20260616-015734/error-404.png`
-- `.planning/ui-reviews/20260616-015734/admin-analytics.png`
-- `.planning/ui-reviews/20260616-015734/admin-monitoring.png`
-- `.planning/ui-reviews/20260616-015734/search-results-query.png`
-
----
-
-## Production Readiness
-
-**Score: 20/24 — Not production-ready.**
-
-The UI is structurally sound and visually clean, but the **error page template bug** (BLOCKER) and the **broken admin unauthenticated flow** (WARNING) must be fixed before shipping. The search results `<pre>` rendering should also be addressed. With these three fixes, the UI would score 22+/24 and be production-ready.
+- `.planning/ui-reviews/phase-20260616-020015/search.png`
+- `.planning/ui-reviews/phase-20260616-020015/search-mobile.png`
+- `.planning/ui-reviews/phase-20260616-020015/browse.png`
+- `.planning/ui-reviews/phase-20260616-020015/browse-mobile.png`
+- `.planning/ui-reviews/phase-20260616-020015/admin.png`
+- `.planning/ui-reviews/phase-20260616-020015/admin-mobile.png`
+- `.planning/ui-reviews/phase-20260616-020015/document.png`
+- `.planning/ui-reviews/phase-20260616-020015/error-page.png`
+- `.planning/ui-reviews/phase-20260616-020015/login.png`

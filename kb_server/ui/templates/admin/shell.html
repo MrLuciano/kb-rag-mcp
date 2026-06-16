@@ -123,6 +123,9 @@
                             .catch(() => {
                                 this.isAdmin = false;
                             });
+                    } else {
+                        var modal = new bootstrap.Modal(document.getElementById('loginModal'));
+                        modal.show();
                     }
                 },
             switchTab(tab) {
