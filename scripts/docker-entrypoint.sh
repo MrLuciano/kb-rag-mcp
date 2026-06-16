@@ -12,13 +12,18 @@ echo "[entrypoint] Starting kb-rag-mcp services..."
 echo "[entrypoint] Health server will listen on port ${HEALTH_PORT}"
 echo "[entrypoint] MCP SSE server will listen on port ${SSE_PORT}"
 
-# GPU detection — install GPU-accelerated packages if NVIDIA GPU is available
+# GPU detection — install GPU-accelerated packages based on GPU vendor
 if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
-    echo "[entrypoint] NVIDIA GPU detected — installing GPU-accelerated packages"
+    echo "[entrypoint] NVIDIA GPU detected — installing CUDA-accelerated packages"
     pip install --no-cache-dir -r /app/requirements.gpu.txt || \
         echo "[entrypoint] WARNING: GPU package install failed — continuing without GPU acceleration"
+elif command -v rocm-smi &> /dev/null && rocm-smi &> /dev/null; then
+    echo "[entrypoint] AMD GPU detected — installing ROCm-accelerated packages"
+    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/rocm6.2 && \
+    pip install --no-cache-dir sentence-transformers || \
+        echo "[entrypoint] WARNING: GPU package install failed — continuing without GPU acceleration"
 else
-    echo "[entrypoint] No NVIDIA GPU detected — using CPU-only configuration"
+    echo "[entrypoint] No supported GPU detected — using CPU-only configuration"
 fi
 
 # Start health/metrics HTTP server in background
