@@ -64,13 +64,34 @@
     cursor: pointer;
 }
 
-/* Search result excerpt */
-.search-result-excerpt pre {
+/* Search result text (replaces <pre> with styled div) */
+.search-result-text {
     white-space: pre-wrap;
     word-break: break-word;
     font-family: inherit;
     font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.search-result-text h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #212529;
+}
+
+.search-result-text hr {
+    margin: 0.75rem 0;
+    border-color: #dee2e6;
+}
+
+.search-result-text code {
     background: #f8f9fa;
-    padding: 0.75rem;
+    padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
+    font-size: 0.85em;
+}
+
+.search-result-text strong {
+    font-weight: 600;
 }
