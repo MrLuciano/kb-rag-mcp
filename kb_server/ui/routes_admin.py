@@ -92,6 +92,27 @@ async def admin_tab_content(request: Request, tab_name: str):
                 dataset_count = len(dataset)
         context["dataset_count"] = dataset_count
 
+    if tab_name == "profile":
+        qdrant_k = int(os.getenv("DEFAULT_TOP_K", "5"))
+        bm25_enabled = os.getenv("HYBRID_ENABLED", "true").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+        reranker_enabled = os.getenv("RERANK_ENABLED", "true").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+        context["qdrant_k"] = qdrant_k
+        context["bm25_enabled"] = bm25_enabled
+        context["reranker_enabled"] = reranker_enabled
+        context["config_validation"] = {
+            "qdrant_k": 1 <= qdrant_k <= 100,
+            "bm25_enabled": isinstance(bm25_enabled, bool),
+            "reranker_enabled": isinstance(reranker_enabled, bool),
+        }
+
     return templates.TemplateResponse(
         request, template, context
     )

@@ -5,7 +5,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -102,6 +102,18 @@ templates.env.globals["highlight_term"] = highlight_term
 async def health():
     """Health check endpoint."""
     return {"status": "ok", "service": "kb-rag-ui"}
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Render the login page."""
+    return templates.TemplateResponse(
+        request,
+        "admin/login.html",
+        {
+            "request": request,
+        },
+    )
 
 
 @app.get("/")
