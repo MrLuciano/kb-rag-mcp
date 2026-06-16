@@ -10,63 +10,74 @@
         <div class="card">
             <div class="card-body">
                 <h2 class="h5 card-title">Search Parameters</h2>
-                <form id="searchForm" hx-post="/ui/search" hx-target="#results" hx-swap="innerHTML">
+                <form id="searchForm" hx-post="/ui/search" hx-target="#results" hx-swap="innerHTML" hx-indicator="#search-loading">
                     <div class="mb-3">
                         <label for="query" class="form-label">
                             Query *
                         </label>
-                        <input type="text" class="form-control" 
+                        <input type="text" class="form-control"
                                id="query" name="query" required
                                placeholder="How to install...">
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="top_k" class="form-label">
                             Top K
                         </label>
-                        <input type="number" class="form-control" 
-                               id="top_k" name="top_k" 
+                        <input type="number" class="form-control"
+                               id="top_k" name="top_k"
                                value="5" min="1" max="20">
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="product" class="form-label">
                             Product
                         </label>
-                        <input type="text" class="form-control" 
+                        <input type="text" class="form-control"
                                id="product" name="product"
                                placeholder="Optional filter">
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="version" class="form-label">
                             Version
                         </label>
-                        <input type="text" class="form-control" 
+                        <input type="text" class="form-control"
                                id="version" name="version"
                                placeholder="e.g., 23.4">
                     </div>
-                    
+
                     <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" 
+                        <input class="form-check-input" type="checkbox"
                                id="hybrid" name="hybrid">
                         <label class="form-check-label" for="hybrid">
                             Hybrid Search (Dense + BM25)
                         </label>
                     </div>
-                    
+
                     <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" 
+                        <input class="form-check-input" type="checkbox"
                                id="rerank" name="rerank">
                         <label class="form-check-label" for="rerank">
                             Cross-encoder Reranking
                         </label>
                     </div>
-                    
+
                     <button type="submit" class="btn btn-primary w-100">
                         Search
+                        <span class="spinner-border spinner-border-sm d-none" id="search-spinner" role="status" aria-hidden="true"></span>
                     </button>
                 </form>
+
+                <!-- Loading indicator -->
+                <div id="search-loading" class="d-none">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Searching...</span>
+                        </div>
+                        <p class="text-muted mt-2">Searching knowledge base...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

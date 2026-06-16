@@ -47,12 +47,18 @@
     <div class="flex-grow-1 p-4" id="tab-content"
          hx-get="/admin/tabs/documents"
          hx-trigger="load"
-         hx-swap="innerHTML">
+         hx-swap="innerHTML"
+         hx-target="#tab-content">
         <div class="text-center text-muted py-5">
             <div class="spinner-border" role="status"></div>
             <p class="mt-2">Loading...</p>
         </div>
     </div>
+</div>
+
+<!-- Error target for tab loading failures -->
+<div id="tab-error" class="d-none alert alert-danger" role="alert">
+    Failed to load tab content. <a href="/admin" class="alert-link">Refresh</a>
 </div>
 
 <!-- Login Modal -->

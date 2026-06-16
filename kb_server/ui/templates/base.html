@@ -97,6 +97,22 @@
                 }
             }
         });
+        document.addEventListener('htmx:responseError', function(event) {
+            var target = event.detail.target;
+            if (target && event.detail.xhr.status !== 401) {
+                target.innerHTML = '<div class="alert alert-danger" role="alert">' +
+                    'Failed to load content. Please try again later.' +
+                    '</div>';
+            }
+        });
+        document.addEventListener('htmx:sendError', function(event) {
+            var target = event.detail.target;
+            if (target) {
+                target.innerHTML = '<div class="alert alert-danger" role="alert">' +
+                    'Network error. Please check your connection.' +
+                    '</div>';
+            }
+        });
     </script>
 
     {% block extra_scripts %}{% endblock %}
