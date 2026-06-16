@@ -174,7 +174,10 @@ class JiraConnector(ConnectorBase):
         jql_filter: Optional[str] = None,
         start_at: int = 0,
         max_results: int = 100,
-        fields: str = "summary,description,priority,status,assignee,labels,project,updated,created",
+        fields: str = (
+            "summary,description,priority,status,"
+            "assignee,labels,project,updated,created"
+        ),
     ) -> str:
         jql = self._build_jql(
             project=project, since=since, jql_filter=jql_filter

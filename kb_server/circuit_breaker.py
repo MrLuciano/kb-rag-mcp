@@ -11,7 +11,7 @@ PHASE 36: Provider Budget & Circuit Breaker
 import enum
 import logging
 import time
-from typing import Any, Callable
+from typing import Dict, cast
 
 log = logging.getLogger("kb-mcp.circuit_breaker")
 
@@ -91,7 +91,7 @@ class CircuitBreaker:
                 info["state"] = CircuitState.HALF_OPEN
                 info["test_request_allowed"] = True
 
-        return info["state"]
+        return cast(CircuitState, info["state"])
 
     def record_success(self, provider: str) -> None:
         """
@@ -179,7 +179,7 @@ class CircuitBreaker:
         Returns:
             Number of consecutive failures.
         """
-        return self._get_or_create(provider)["consecutive_failures"]
+        return cast(int, self._get_or_create(provider)["consecutive_failures"])
 
     def is_open(self, provider: str) -> bool:
         """
@@ -301,4 +301,4 @@ class CircuitBreaker:
             info["backoff_multiplier"] * 2,
             int(self._cooldown_max / self._cooldown_base) + 1,
         )
-        return duration
+        return cast(float, duration)

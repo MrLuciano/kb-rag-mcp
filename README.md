@@ -16,14 +16,19 @@ MCP client.
 
 - 🔍 **Semantic search** over technical documentation
 - 📚 **Multi-format support**: PDF, DOCX, XLSX, PPTX, TXT, code
-- ✅ **585+ tests** — Full mock isolation, no external deps needed
-- ✅ **CI/CD pipeline** — 90% branch coverage gate, logging audit, Helm lint
+- ✅ **1284+ tests** — Full mock isolation, no external deps needed
+- ✅ **CI/CD pipeline** — 72% branch coverage gate, logging audit, Helm lint
 - ✅ **Auto-classification** — Vendor, product, subsystem, version inference
 - ✅ **Kubernetes/Helm** — Helm chart for multi-replica deployment
 - 📊 **Real-time monitoring** — Grafana + Prometheus with 6-tab dashboard
 - 🔄 **Cache system** — LRU with RAM auto-tuning or Redis (80%+ hit rate)
 - 🔧 **Multi-backend** — LM Studio, Ollama, or OpenAI-compatible APIs
 - 🛠️ **Operations** — Automated install, backup/restore, updates
+- 🛡️ **Auth system** — API key authentication with scope management
+- ⚙️ **Config API** — REST CRUD for server configuration
+- 🔄 **Streamable HTTP** — Alternative MCP transport with session management
+- 🛡️ **Rate limiting** — Per-subject token bucket with burst protection
+- ⚡ **Provider resilience** — Circuit breaker + budget system with auto-fallback
 
 ---
 
@@ -598,6 +603,11 @@ Semantic search over knowledge base.
 - `product` (optional): Filter by product
 - `vendor` (optional): Filter by vendor (auto-classified from filenames)
 - `subsystem` (optional): Filter by subsystem (auto-classified from filenames)
+- `module` (optional): Filter by module
+- `collection` (optional): Target specific Qdrant collection
+- `kb_ids` (optional): Specific KB document IDs to search
+- `hybrid` (optional): Enable hybrid search (dense + sparse) (default: true)
+- `rerank` (optional): Enable cross-encoder reranking (default: false)
 - `doc_type` (optional): Filter by document type
 - `filter_type` (optional): Filter by file format (pdf, docx, xlsx, pptx, txt, code)
 - `version` (optional): Filter by document version
@@ -613,6 +623,8 @@ List indexed documents with optional filters.
 - `product` (optional): Filter by product
 - `vendor` (optional): Filter by vendor
 - `subsystem` (optional): Filter by subsystem
+- `module` (optional): Filter by module
+- `collection` (optional): Target specific Qdrant collection
 - `doc_type` (optional): Filter by document type
 - `filter_type` (optional): Filter by file format
 
@@ -633,6 +645,30 @@ Retrieve full chunk with surrounding context.
 Knowledge base statistics.
 
 **Returns:** Total documents, chunks, breakdown by doc_type and file format.
+
+#### `list_collections`
+
+List available Qdrant collections.
+
+**Parameters:**
+- `detail` (optional): Include collection details and stats (default: false)
+
+**Returns:** List of collection names with optional metadata.
+
+#### `invalidate_retrieval_cache`
+
+Clear the retrieval cache for a specific collection or all collections.
+
+**Parameters:**
+- `collection` (optional): Collection to invalidate (default: all collections)
+
+**Returns:** Confirmation of cache invalidation.
+
+#### `kb_graph_tools`
+
+Knowledge graph integration tools for exploring document relationships.
+
+See [docs/SEARCH_QUALITY.md](docs/SEARCH_QUALITY.md) for full documentation.
 
 ---
 
@@ -677,14 +713,14 @@ pytest tests/ -v
 # With coverage
 pytest tests/ --cov=kb_server --cov=ingest --cov=observability --cov-branch --cov-report=term-missing
 
-# Coverage with threshold enforcement (90% branch coverage required)
-pytest tests/ --cov=kb_server --cov=ingest --cov-branch --cov-fail-under=90
+# Coverage with threshold enforcement (72% branch coverage required)
+pytest tests/ --cov=kb_server --cov=ingest --cov-branch --cov-fail-under=72
 
 # Specific test file
 pytest tests/test_job_system.py -v
 ```
 
-**Test baseline:** 585 core tests (excluding SSE handler and e2e tests)
+**Test baseline:** 1284 core tests (excluding SSE handler and e2e tests)
 
 #### Code Quality
 
@@ -746,7 +782,7 @@ KB-RAG provides comprehensive monitoring through Prometheus metrics, health chec
 
 Metrics are exposed at `http://localhost:8000/metrics` (health server).
 
-**Available Metrics (28 total):**
+**Available Metrics (42 total):**
 
 ```bash
 # Job Management (4 metrics)
@@ -788,6 +824,26 @@ kb_rag_batch_upsert_points_total      # Points upserted in batches
 kb_rag_batch_upsert_duration_seconds  # Batch upsert duration
 kb_rag_http_pool_connections          # HTTP connection pool size
 kb_rag_batch_processing_throughput    # Processing throughput gauge
+
+# Rate Limiting (4 metrics)
+kb_rag_rate_limit_tokens_available   # Available tokens per subject
+kb_rag_rate_limit_tokens_refilled    # Tokens refilled counter
+kb_rag_rate_limit_requests_burst     # Burst request counter
+kb_rag_rate_limit_requests_throttled # Throttled request counter
+
+# Provider Resilience (6 metrics)
+kb_rag_provider_requests_total       # Provider request counter
+kb_rag_provider_errors_total         # Provider error counter
+kb_rag_provider_circuit_state        # Circuit breaker state gauge
+kb_rag_provider_fallbacks_total      # Fallback provider counter
+kb_rag_provider_budget_remaining     # Provider budget remaining gauge
+kb_rag_provider_skipped_total        # Skipped requests due to budget/circuit
+
+# Retrieval Cache (4 metrics)
+kb_rag_retrieval_cache_hits_total    # Retrieval cache hit counter
+kb_rag_retrieval_cache_misses_total  # Retrieval cache miss counter
+kb_rag_retrieval_cache_entries       # Retrieval cache entry count gauge
+kb_rag_retrieval_cache_size_bytes    # Retrieval cache size gauge
 ```
 
 #### Prometheus Configuration
@@ -1153,8 +1209,8 @@ TXT, Markdown e código-fonte (~7 GB+). Compatível com **Claude Code**,
 
 - 🔍 **Busca semântica** em documentação técnica
 - 📚 **Suporte multi-formato**: PDF, DOCX, XLSX, PPTX, TXT, código
-- ✅ **585+ testes** — Isolamento completo com mocks, sem dependências externas
-- ✅ **Pipeline CI/CD** — Gate de cobertura (90%), lint Helm, auditoria de inglês
+- ✅ **1284+ testes** — Isolamento completo com mocks, sem dependências externas
+- ✅ **Pipeline CI/CD** — Gate de cobertura (72%), lint Helm, auditoria de inglês
 - 🎯 **Classificação automática** — Vendor, produto, subsistema, versão
 - 📊 **Monitoramento em tempo real** — Grafana + Prometheus (6 abas)
 - 🔧 **Multi-backend** — LM Studio, Ollama ou APIs compatíveis com OpenAI

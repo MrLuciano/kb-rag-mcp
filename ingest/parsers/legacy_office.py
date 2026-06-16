@@ -4,7 +4,7 @@ Legacy Office format extractors.
 Supported formats:
 - .doc  — via docx2txt (handles old binary Word via zip/xml fallback)
 - .xls  — via xlrd (Excel 97-2003)
-- .ppt  — via python-pptx text extraction (best-effort; binary .ppt not supported)
+- .ppt  — via python-pptx (best-effort; binary .ppt unsupported)
 - .odt, .ods, .odp — via odfpy (OpenDocument formats)
 - .wpd  — text extraction only (WordPerfect; no reliable Python parser)
 
@@ -114,7 +114,8 @@ def extract_ppt(path: Path) -> list[dict]:
         return results
     except Exception as e:
         log.warning(
-            f"  Could not extract .ppt {path.name} (binary format not supported): {e}"
+            f"  Could not extract .ppt {path.name} "
+            f"(binary format not supported): {e}"
         )
         return []
 
@@ -156,7 +157,7 @@ def extract_ods(path: Path) -> list[dict]:
         return []
     try:
         from odf.opendocument import load
-        from odf.table import Table, TableRow, TableCell
+        from odf.table import Table, TableCell, TableRow
         from odf.text import P
 
         doc = load(str(path))
@@ -201,8 +202,8 @@ def extract_odp(path: Path) -> list[dict]:
     if not path.exists():
         return []
     try:
-        from odf.opendocument import load
         from odf.draw import Page
+        from odf.opendocument import load
         from odf.text import P
 
         doc = load(str(path))
@@ -247,7 +248,8 @@ def extract_wpd(path: Path) -> list[dict]:
         text = text.strip()
         if text:
             log.warning(
-                f"  .wpd extracted with heuristic text strip (low quality): {path.name}"
+                f"  .wpd extracted with heuristic text strip "
+                f"(low quality): {path.name}"
             )
             return [{"text": text, "page": None}]
     except Exception as e:

@@ -8,10 +8,10 @@ RAGAS's ``evaluate(llm=...)`` parameter.
 Text-generation endpoints per backend
 ─────────────────────────────────────
 lmstudio-rest  →  POST {LMS_BASE_URL}/v1/chat/completions
-                  Body: {"model": "...", "messages": [{"role":"user","content":"..."}]}
-                  Response: {"choices": [{"message": {"content": "..."}}]}
+                  Request body: {model, messages}
+                  Response: {choices[0].message.content}
 
-openai-compat  →  Same as lmstudio-rest (OpenAI-compatible format)
+openai-compat  →  Same as lmstudio-rest (OpenAI-compat format)
 
 ollama         →  POST {OLLAMA_HOST}/api/generate
                   Body: {"model": "...", "prompt": "...", "stream": false}
@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 
 import httpx
 
@@ -104,7 +104,7 @@ class LMStudioRestWrapper(BaseLLMWrapper):
         resp = await client.post(url, json=body)
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"].strip()
+        return cast(str, data["choices"][0]["message"]["content"].strip())
 
 
 class OpenAICompatWrapper(BaseLLMWrapper):
@@ -133,7 +133,7 @@ class OpenAICompatWrapper(BaseLLMWrapper):
         resp = await client.post(url, json=body, headers=headers)
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"].strip()
+        return cast(str, data["choices"][0]["message"]["content"].strip())
 
 
 class OllamaWrapper(BaseLLMWrapper):
@@ -158,7 +158,7 @@ class OllamaWrapper(BaseLLMWrapper):
         resp = await client.post(url, json=body)
         resp.raise_for_status()
         data = resp.json()
-        return data.get("response", "").strip()
+        return cast(str, data.get("response", "").strip())
 
 
 class LMStudioSDKWrapper(BaseLLMWrapper):
@@ -170,10 +170,10 @@ class LMStudioSDKWrapper(BaseLLMWrapper):
 
     async def invoke(self, prompt: str, **kwargs: Any) -> str:
         try:
-            import lmstudio as lms  # type: ignore[import]
-
             # SDK is synchronous; run in thread to avoid blocking
             import asyncio
+
+            import lmstudio as lms  # type: ignore[import]
 
             def _call():
                 # Use chat completion via SDK
@@ -228,7 +228,7 @@ def create_llm_wrapper(backend: str, **kwargs: Any) -> BaseLLMWrapper:
             f"Unsupported LLM backend: '{backend}'. "
             f"Options: {list(BACKEND_MAP.keys())}"
         )
-    return cls(**kwargs)
+    return cast(BaseLLMWrapper, cls(**kwargs))
 
 
 # ── Langchain adapter for RAGAS ─────────────────────────────────────────

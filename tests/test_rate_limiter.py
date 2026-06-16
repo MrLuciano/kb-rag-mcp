@@ -153,7 +153,8 @@ class TestCallToolRateLimit:
         text = result[0].text
         assert "Rate limit exceeded" in text
         assert "30" in text
-        mock_limiter.check.assert_awaited_once_with("test-subject")
+        expected_subject = srv._hash_subject("test-subject")
+        mock_limiter.check.assert_awaited_once_with(expected_subject)
 
     @patch("kb_server.server.rate_limiter")
     async def test_passes_when_within_limit(
@@ -170,7 +171,8 @@ class TestCallToolRateLimit:
             result = await srv.call_tool("search_kb", {"query": "test"})
             # Should proceed to handler, not return rate-limit error
             assert "Rate limit exceeded" not in result[0].text
-            mock_limiter.check.assert_awaited_once_with("test-subject")
+            expected_subject = srv._hash_subject("test-subject")
+            mock_limiter.check.assert_awaited_once_with(expected_subject)
 
     @patch("kb_server.server.rate_limiter")
     async def test_disabled_when_rate_limiting_off(

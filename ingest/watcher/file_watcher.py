@@ -277,11 +277,11 @@ def main():
         log.info(f"Additional ignore patterns: {ignore_patterns}")
 
     # Initialize components
-    from ingest.core.metadata import MetadataStore
+    import asyncio
+
+    from ingest.core.metadata import IngestRegistry, MetadataStore
     from ingest.job.manager import JobManager
     from kb_server.vector_store import VectorStore
-    from ingest.core.metadata import IngestRegistry
-    import asyncio
 
     db_path = Path(os.getenv("KB_METADATA_DB", "kb_metadata.db"))
     store = MetadataStore(db_path)

@@ -1,10 +1,10 @@
 """Registry export functionality for observability."""
 
-import json
 import csv
+import json
 import sqlite3
 from pathlib import Path
-from typing import Optional, TextIO, List, Dict, Any
+from typing import Any, Dict, List, Optional, TextIO
 
 
 def export_registry_json(

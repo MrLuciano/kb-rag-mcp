@@ -1,5 +1,7 @@
 import uuid
 from contextvars import ContextVar
+from typing import cast
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -27,7 +29,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
         token = _request_id_ctx.set(request_id)
         try:
-            response = await call_next(request)
+            response = cast(Response, await call_next(request))
             response.headers["X-Request-Id"] = request_id
             return response
         finally:

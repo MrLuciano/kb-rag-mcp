@@ -11,7 +11,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 log = logging.getLogger("kb-mcp.optimization")
 
@@ -85,7 +85,7 @@ class ExperimentResultStore:
         """
         path = self.output_dir / f"{run_id}.json"
         with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            return cast(dict[str, Any], json.load(f))
 
     def list_runs(self) -> List[Dict[str, Any]]:
         """Return metadata for all stored runs, newest first.
@@ -200,7 +200,7 @@ class ExperimentResultStore:
         baseline_path = self.output_dir / "baseline.json"
         if baseline_path.exists():
             with open(baseline_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                return cast(dict[str, Any] | None, json.load(f))
 
         # Fallback to oldest run
         all_paths = sorted(
@@ -211,7 +211,7 @@ class ExperimentResultStore:
             return None
 
         with open(all_paths[0], "r", encoding="utf-8") as f:
-            return json.load(f)
+            return cast(dict[str, Any] | None, json.load(f))
 
 
 # ── Convenience module-level helpers ────────────────────────────────

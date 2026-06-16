@@ -15,7 +15,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, cast
 
 import httpx
 
@@ -50,7 +50,7 @@ def _storage_to_markdown(html_content: str) -> str:
         converter.ignore_links = False
         converter.ignore_images = False
         converter.ignore_emphasis = False
-        return converter.handle(html_content).strip()
+        return cast(str, converter.handle(html_content).strip())
     except ImportError:
         pass
 

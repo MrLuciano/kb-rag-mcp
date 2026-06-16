@@ -168,7 +168,7 @@ class TestHealthAggregation:
             healthy = is_system_healthy(components)
 
         assert healthy is True
-        assert len(components) == 5
+        assert len(components) == 6
         assert all(c.healthy for c in components.values())
 
     @pytest.mark.asyncio

@@ -8,6 +8,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.1.5] 2026-06-15
+
+### Fixed
+
+- **Phase 44: Auth Security Hardening** (2026-06-15)
+  - SEC-01: Mount auth router to fix unauthenticated SSE access
+  - SEC-02: Erasure separation — `revoke_key` deletes only caller's keys
+  - SEC-03: API key ownership checks on CRUD operations
+  - SEC-04: Secure cookie flags (HttpOnly, Secure, SameSite=Lax)
+  - SEC-05: `verify_key` batch dedup to prevent timing oracle
+  - SEC-06: Rate-limit hashing uses SHA-256 of prefix, never raw keys
+
+- **Phase 45: DB Reliability** (2026-06-15)
+  - Consistent context manager usage for all SQLite connections
+  - Foreign key enforcement enabled on all databases
+  - Missing indexes added for query performance
+  - Migration DDL hardened with IF NOT EXISTS / IF EXISTS guards
+
+- **Phase 46: Code Quality** (2026-06-15)
+  - `datetime.utcnow()` → `datetime.now(timezone.utc)` across 24 sites
+  - Removed 16 unused imports (F401)
+  - Tagged 5 tests with `@pytest.mark.integration`
+
+- **Phase 50: SSE Test Consolidation** (2026-06-15)
+  - Removed module-level stubs from `test_smoke.py` that polluted global state
+  - Consolidated SSE transport tests into dedicated test module
+
+- **REVIEW.md Resolution** (2026-06-15)
+  - All 33 REVIEW.md findings resolved (25→28→30→33 across 4 passes)
+  - Split dev dependencies from production requirements (HW-17)
+  - Exposed session via property instead of `_session` direct access (INF-04)
+
+### Added
+
+- **Phase 28 Extensions: Session Management & Admin SPA** (2026-06-03)
+  - 28-02: Session lifecycle management, max concurrent session enforcement with oldest-idle eviction, Prometheus session metrics (`active_sessions`, `session_evictions_total`), 60-second background sweep
+  - 28c: Admin SPA panel — shell/auth/CSP, tab-based content layout, advanced search filters, document export/cleanup
+
+- **Phase 40: Config API** (2026-06-10)
+  - SQLite-backed config table with nonce-based locking
+  - `ConfigLoader` with env override and live reload support
+  - REST API endpoints for config CRUD
+
+- **Phase 41: Provider Alias** (2026-06-10)
+  - PROV-01: Embedding provider alias resolution (nickname → backend URL)
+  - PROV-02: CLI support for provider alias create/list/delete
+
+- **Phase 42: Query Logging Analytics Dashboard** (2026-06-15)
+  - Analytics dashboard integrated into Admin SPA
+  - Query volume, latency, top queries, and error rate visualizations
+  - Date range filtering and export
+  - 1284 passing tests, 0 failures
+
+- **Phase 43: Chunk Preview with HTMX** (2026-06-15)
+  - Accordion-based chunk browser with keyword highlighting
+  - HTMX progressive loading for large result sets
+  - Inline metadata display (score, source, position)
+
+- **Phase 47: LM Studio Deprecation — Graceful Fallback** (2026-06-15)
+  - Graceful embedding backend fallback with clear error message when LM Studio is unavailable
+  - Fallback chain configuration
+
 ## [0.1.4]
 
 ### Changed

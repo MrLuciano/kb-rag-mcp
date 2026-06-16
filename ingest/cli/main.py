@@ -18,18 +18,19 @@ bootstrap_env()
 # Add server/ to path for imports
 sys.path.insert(0, str(_project_root / "server"))
 
+from ingest.cli.auth import auth_group  # noqa: E402
+from ingest.cli.check import check_group  # noqa: E402
+from ingest.cli.connectors import connectors_group  # noqa: E402
+
 # Import subcommands after path setup (noqa to ignore E402)
 from ingest.cli.db import db_group  # noqa: E402
 from ingest.cli.evaluate import evaluate  # noqa: E402
 from ingest.cli.job import job_group  # noqa: E402
-from ingest.cli.progress import progress_group  # noqa: E402
-from ingest.cli.status import status_group  # noqa: E402
-from ingest.cli.check import check_group  # noqa: E402
-from ingest.cli.reclassify import reclassify_group  # noqa: E402
-from ingest.cli.connectors import connectors_group  # noqa: E402
-from ingest.cli.auth import auth_group  # noqa: E402
-from ingest.cli.quota import quota_group  # noqa: E402
 from ingest.cli.optimize import optimize  # noqa: E402
+from ingest.cli.progress import progress_group  # noqa: E402
+from ingest.cli.quota import quota_group  # noqa: E402
+from ingest.cli.reclassify import reclassify_group  # noqa: E402
+from ingest.cli.status import status_group  # noqa: E402
 
 
 @click.group()
@@ -63,7 +64,7 @@ def info(ctx: click.Context) -> None:
     db_path = ctx.obj["db_path"]
     click.echo("KB-RAG System Information")
     click.echo("=" * 50)
-    click.echo(f"Version: 2.0.0")
+    click.echo("Version: 2.0.0")
     click.echo(f"Database: {db_path}")
     click.echo(f"Exists: {db_path.exists()}")
 
@@ -71,7 +72,7 @@ def info(ctx: click.Context) -> None:
         # MetadataStore expects Path, not str
         with MetadataStore(db_path) as store:
             stats = store.get_stats()
-            click.echo(f"\nDatabase Statistics:")
+            click.echo("\nDatabase Statistics:")
             click.echo(f"  Total jobs: {stats.get('total_jobs', 0)}")
             click.echo(f"  Active jobs: {stats.get('active_jobs', 0)}")
             click.echo(f"  Total files: {stats.get('total_files', 0)}")

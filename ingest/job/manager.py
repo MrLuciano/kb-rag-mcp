@@ -332,8 +332,8 @@ class JobManager:
             processed_files: Files processed so far
             total_chunks: Total chunks generated
         """
-        updates = []
-        params = []
+        updates: list[str] = []
+        params: list[str | int] = []
 
         if total_files is not None:
             updates.append("total_files = ?")

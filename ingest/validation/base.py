@@ -37,7 +37,9 @@ class ValidationResult:
     validator_name: str
 
     @classmethod
-    def success(cls, validator_name: str, message: str = "Valid"):
+    def success(
+        cls, validator_name: str, message: str = "Valid"
+    ) -> "ValidationResult":
         """Create a successful validation result."""
         return cls(
             valid=True,
@@ -52,7 +54,7 @@ class ValidationResult:
         validator_name: str,
         message: str,
         severity: ValidationSeverity = ValidationSeverity.ERROR,
-    ):
+    ) -> "ValidationResult":
         """Create a failed validation result."""
         return cls(
             valid=False,

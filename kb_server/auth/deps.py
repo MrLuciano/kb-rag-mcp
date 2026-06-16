@@ -18,7 +18,7 @@ def _get_service(request: Request) -> AuthService:
         raise HTTPException(
             status_code=503, detail="Auth service not available"
         )
-    return svc
+    return svc  # type: ignore[no-any-return]
 
 
 async def get_current_user(

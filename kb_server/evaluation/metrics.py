@@ -19,72 +19,64 @@ log = logging.getLogger("kb-mcp.eval")
 
 # ── Prompt templates ─────────────────────────────────────────────────────
 
-_FAITHFULNESS_PROMPT = """You are an expert evaluator. Your task is to rate how well the provided answer is supported by the given context.
+_FAITHFULNESS_PROMPT = (
+    "You are an expert evaluator. Your task is to rate "
+    "how well the provided answer is supported by the given context.\n"
+    "\nContext:\n"
+    "{contexts}\n"
+    "\nAnswer:\n"
+    "{answer}\n"
+    "\nRate from 0.0 to 1.0 where:\n"
+    "- 1.0 = the answer is fully and directly supported by the context\n"
+    "- 0.0 = the answer is completely unsupported or contradicts the context\n"
+    "- 0.5 = partially supported\n"
+    "\nRespond with ONLY a decimal number between 0.0 and 1.0.\n"
+)
 
-Context:
-{contexts}
+_ANSWER_RELEVANCY_PROMPT = (
+    "You are an expert evaluator. Your task is to rate "
+    "how well the answer addresses the question.\n"
+    "\nQuestion:\n"
+    "{question}\n"
+    "\nAnswer:\n"
+    "{answer}\n"
+    "\nRate from 0.0 to 1.0 where:\n"
+    "- 1.0 = the answer directly and completely addresses the question\n"
+    "- 0.0 = the answer is completely irrelevant\n"
+    "- 0.5 = partially relevant\n"
+    "\nRespond with ONLY a decimal number between 0.0 and 1.0.\n"
+)
 
-Answer:
-{answer}
+_CONTEXT_PRECISION_PROMPT = (
+    "You are an expert evaluator. Your task is to rate "
+    "what fraction of the provided contexts are relevant to the question.\n"
+    "\nQuestion:\n"
+    "{question}\n"
+    "\nContexts:\n"
+    "{contexts}\n"
+    "\nRate from 0.0 to 1.0 where:\n"
+    "- 1.0 = every context is relevant\n"
+    "- 0.0 = none of the contexts are relevant\n"
+    "- 0.5 = about half are relevant\n"
+    "\nRespond with ONLY a decimal number between 0.0 and 1.0.\n"
+)
 
-Rate from 0.0 to 1.0 where:
-- 1.0 = the answer is fully and directly supported by the context
-- 0.0 = the answer is completely unsupported or contradicts the context
-- 0.5 = partially supported
-
-Respond with ONLY a decimal number between 0.0 and 1.0.
-"""
-
-_ANSWER_RELEVANCY_PROMPT = """You are an expert evaluator. Your task is to rate how well the answer addresses the question.
-
-Question:
-{question}
-
-Answer:
-{answer}
-
-Rate from 0.0 to 1.0 where:
-- 1.0 = the answer directly and completely addresses the question
-- 0.0 = the answer is completely irrelevant
-- 0.5 = partially relevant
-
-Respond with ONLY a decimal number between 0.0 and 1.0.
-"""
-
-_CONTEXT_PRECISION_PROMPT = """You are an expert evaluator. Your task is to rate what fraction of the provided contexts are relevant to the question.
-
-Question:
-{question}
-
-Contexts:
-{contexts}
-
-Rate from 0.0 to 1.0 where:
-- 1.0 = every context is relevant
-- 0.0 = none of the contexts are relevant
-- 0.5 = about half are relevant
-
-Respond with ONLY a decimal number between 0.0 and 1.0.
-"""
-
-_CONTEXT_RECALL_PROMPT = """You are an expert evaluator. Your task is to rate what fraction of facts in the expected answer are present in the provided contexts.
-
-Question:
-{question}
-
-Expected Answer (ground truth):
-{ground_truth}
-
-Retrieved Contexts:
-{contexts}
-
-Rate from 0.0 to 1.0 where:
-- 1.0 = all facts from the expected answer are present in the contexts
-- 0.0 = none of the facts are present
-- 0.5 = about half are present
-
-Respond with ONLY a decimal number between 0.0 and 1.0.
-"""
+_CONTEXT_RECALL_PROMPT = (
+    "You are an expert evaluator. Your task is to rate "
+    "what fraction of facts in the expected answer "
+    "are present in the provided contexts.\n"
+    "\nQuestion:\n"
+    "{question}\n"
+    "\nExpected Answer (ground truth):\n"
+    "{ground_truth}\n"
+    "\nRetrieved Contexts:\n"
+    "{contexts}\n"
+    "\nRate from 0.0 to 1.0 where:\n"
+    "- 1.0 = all facts from the expected answer are present\n"
+    "- 0.0 = no facts from the expected answer are present\n"
+    "- 0.5 = about half are present\n"
+    "\nRespond with ONLY a decimal number between 0.0 and 1.0.\n"
+)
 
 
 # ── Score parsing ─────────────────────────────────────────────────────────

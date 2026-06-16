@@ -107,7 +107,8 @@ def health(verbose: bool) -> None:
 
     if critical_unhealthy > 0:
         console.print(
-            f"[red]✗ {critical_unhealthy} critical component(s) unhealthy[/red]"
+            f"[red]✗ {critical_unhealthy} critical "
+            f"component(s) unhealthy[/red]"
         )
         sys.exit(1)
     else:

@@ -105,8 +105,8 @@ def _semantic_chunker(
     try:
         from docling.chunking import HybridChunker
 
-        chunker = HybridChunker(max_tokens=chunk_size)
-        chunks = chunker.chunk(text)
+        chunker = HybridChunker(max_tokens=chunk_size)  # type: ignore[call-arg]
+        chunks = chunker.chunk(text)  # type: ignore[arg-type]
         return [c.text for c in chunks]
     except Exception:
         log.warning("Semantic chunker unavailable; falling back to recursive")

@@ -239,3 +239,80 @@ End-to-end evaluation: query log analysis, a versioned golden dataset, RAGAS met
 - `kb_server/evaluation/ragas_pipeline.py` — RAGAS evaluator stub (LLM integration optional)
 
 **Status:** ✅ Implemented
+
+---
+
+## 17. Admin SPA Panel
+
+FastAPI + Jinja2 admin dashboard with: document browser, search tester, Config API management, Auth key management, Document export, Cleanup & re-ingest operations.
+
+**Key files:**
+- `kb_server/admin/` — FastAPI + Jinja2 admin dashboard
+
+**Status:** ✅ Implemented
+
+---
+
+## 18. Auth & API Key Management
+
+Optional Bearer token authentication with API key create/list/revoke, scope management, SHA-256 hashed keys.
+
+**Key files:**
+- `kb_server/auth/` — Bearer token auth, API key management
+
+**Status:** ✅ Implemented
+
+---
+
+## 19. Config Management REST API
+
+Five CRUD endpoints for server configuration stored in SQLite, with reload support.
+
+**Key files:**
+- `kb_server/admin/config_api.py` — Config CRUD endpoints
+
+**Status:** ✅ Implemented
+
+---
+
+## 20. Provider Resilience
+
+Circuit breaker (CLOSED/OPEN/HALF-OPEN) + sliding window budget per provider, auto-fallback between embedding backends.
+
+**Key files:**
+- `kb_server/providers/` — Circuit breaker, budget tracking, auto-fallback
+
+**Status:** ✅ Implemented
+
+---
+
+## 21. Rate Limiting
+
+Per-subject token bucket rate limiter with configurable requests/minute and burst capacity.
+
+**Key files:**
+- `kb_server/middleware/rate_limiter.py` — Token bucket rate limiter
+
+**Status:** ✅ Implemented
+
+---
+
+## 22. MCP Streamable HTTP Transport
+
+Alternative to stdio/SSE transport using MCP's Streamable HTTP protocol with session management.
+
+**Key files:**
+- `kb_server/transport/http_transport.py` — Streamable HTTP transport
+
+**Status:** ✅ Implemented
+
+---
+
+## 23. Advanced Search Filters
+
+Filter by vendor, subsystem, module parameters on search_kb and list_documents tools.
+
+**Key files:**
+- `kb_server/retrieval/filters.py` — Search filter logic
+
+**Status:** ✅ Implemented

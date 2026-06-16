@@ -45,7 +45,10 @@ def show(ctx: click.Context) -> None:
     click.echo("Upload / Index Quotas")
     click.echo("=" * 50)
     click.echo(
-        f"  Max files per upload:    {_fmt(quotas.get('max_files_per_upload'))}"
+        (
+            f"  Max files per upload:    "
+            f"{_fmt(quotas.get('max_files_per_upload'))}"
+        )
     )
     click.echo(
         f"  Max bytes per upload:    "
@@ -78,7 +81,8 @@ def show(ctx: click.Context) -> None:
     updated = usage.get("updated_at")
     if updated:
         click.echo(
-            f"  Updated:    {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(updated))}"
+            f"  Updated:    "
+            f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(updated))}"
         )
 
 

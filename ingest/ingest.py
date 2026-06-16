@@ -349,12 +349,12 @@ def extract_code(path: Path) -> list[dict]:
 
 from ingest.parsers.legacy_office import (
     extract_doc,
-    extract_xls,
-    extract_ppt,
-    extract_odt,
-    extract_ods,
     extract_odp,
+    extract_ods,
+    extract_odt,
+    extract_ppt,
     extract_wpd,
+    extract_xls,
 )
 from ingest.parsers.zip_handler import extract_zip
 
@@ -485,7 +485,8 @@ async def process_file(
             return 0, "skipped"
         vendor_tag = f"[{vendor:10}] " if vendor else ""
         log.info(
-            f"{vendor_tag}[{doc_type:16}] [{product:20}] {source_file}  ({reason})"
+            f"{vendor_tag}[{doc_type:16}] [{product:20}] "
+            f"{source_file}  ({reason})"
         )
     else:
         log.info(f"[{doc_type:16}] [{product:20}] {source_file}  (forced)")
@@ -559,7 +560,7 @@ async def process_file(
             )
             return 0, "error"
 
-        texts = [c["text"] for c in all_chunks_data]
+        texts: list[str] = [str(c["text"]) for c in all_chunks_data]
         vectors = await get_embeddings_batch(texts, batch_size=32)
         for chunk_data, vector in zip(all_chunks_data, vectors):
             chunk_data["vector"] = vector
@@ -615,8 +616,8 @@ async def run_ingest(
         connector_source: Connector source key when processing staged
             files. Used to associate chunk metadata with the source.
     """
-    from ingest.core.metadata import IngestRegistry, MetadataStore
     from ingest.connectors.staging import resolve_staged_metadata
+    from ingest.core.metadata import IngestRegistry, MetadataStore
     from kb_server.vector_store import VectorStore
 
     store = VectorStore()
@@ -627,6 +628,7 @@ async def run_ingest(
 
     if clean:
         log.info("Cleaning KB and registry before re-ingesting...")
+        assert store.client is not None
         await store.client.delete_collection(store.collection)
         await store._ensure_collection()
         registry.reset()

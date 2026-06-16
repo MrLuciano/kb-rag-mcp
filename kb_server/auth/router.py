@@ -1,10 +1,11 @@
+from datetime import datetime
 import hashlib
 import hmac
 import logging
 import os
 import secrets
-from typing import Optional
 import time
+from typing import Optional, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response as FastAPIResponse
@@ -40,7 +41,7 @@ def _get_service(request: Request) -> AuthService:
         raise HTTPException(
             status_code=503, detail="Auth service not available"
         )
-    return svc
+    return svc  # type: ignore[no-any-return]
 
 
 def _get_erasure_manager(request: Request) -> ErasureManager:
@@ -88,8 +89,8 @@ async def create_session(
     )
     return SessionResponse(
         id=str(current_user.id),
-        username=current_user.username,
-        role=current_user.role,
+        username=cast(str, current_user.username),
+        role=cast(str, current_user.role),
         expires_in=28800,
     )
 
@@ -160,11 +161,11 @@ async def create_api_key(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return ApiKeyCreatedResponse(
-        id=api_key.id,
-        prefix=api_key.prefix,
-        description=api_key.description,
-        is_revoked=api_key.is_revoked,
-        created_at=api_key.created_at,
+        id=cast(str, api_key.id),
+        prefix=cast(str, api_key.prefix),
+        description=cast(str, api_key.description),
+        is_revoked=cast(bool, api_key.is_revoked),
+        created_at=cast(datetime, api_key.created_at),
         raw_key=raw_key,
     )
 
@@ -176,7 +177,7 @@ async def list_api_keys(
     user_id: Optional[str] = None,
 ):
     service = _get_service(request)
-    target_id = user_id or current_user.id
+    target_id = user_id or cast(str, current_user.id)
     if target_id != current_user.id and current_user.role != "admin":
         raise HTTPException(
             status_code=403,
@@ -214,7 +215,7 @@ async def request_erasure(
     try:
         er = mgr.request_erasure(
             user_id=user_id,
-            requested_by=current_user.id,
+            requested_by=cast(str, current_user.id),
             reason="User requested erasure",
         )
     except ValueError as e:
@@ -229,7 +230,7 @@ async def approve_erasure(
     admin: User = Depends(require_admin),
 ):
     mgr = _get_erasure_manager(request)
-    success = mgr.approve_erasure(request_id=request_id, approved_by=admin.id)
+    success = mgr.approve_erasure(request_id=request_id, approved_by=cast(str, admin.id))
     if not success:
         raise HTTPException(
             status_code=400,

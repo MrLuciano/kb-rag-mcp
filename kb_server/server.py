@@ -228,14 +228,30 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "Filter by product. "
-                            f"{_fmt('product', 'Examples: AppServer, DataSync, AdminPortal, Adobe, SAP, ISO, general')}"
+                            + _fmt(
+                                "product",
+                                "Examples: AppServer, DataSync, "
+                                "AdminPortal, Adobe, SAP, ISO, general",
+                            )
                         ),
                     },
                     "doc_type": {
                         "type": "string",
                         "description": (
                             "Filter by content type. "
-                            f"{_fmt('doc_type', 'admin_guide=administration, install_guide=installation, upgrade_guide=upgrade/migration, config_guide=configuration, release_notes=release notes, api_guide=API/SDK, howto=tutorials/case studies, training=training, overview=overview, standard=ISO standards/regulations, reference=technical reference')}"
+                            + _fmt(
+                                "doc_type",
+                                "admin_guide=administration, "
+                                "install_guide=installation, "
+                                "upgrade_guide=upgrade/migration, "
+                                "config_guide=configuration, "
+                                "release_notes=release notes, "
+                                "api_guide=API/SDK, "
+                                "howto=tutorials/case studies, "
+                                "training=training, overview=overview, "
+                                "standard=ISO standards/regulations, "
+                                "reference=technical reference",
+                            )
                         ),
                         "enum": doc_type_enum,
                     },
@@ -251,22 +267,32 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "PHASE 11.1: Filter by vendor. "
-                            f"{_fmt('vendor', 'Examples: OpenText, Adobe, SAP, ISO, general')}"
+                            + _fmt(
+                                "vendor",
+                                "Examples: OpenText, Adobe, "
+                                "SAP, ISO, general",
+                            )
                         ),
                     },
                     "subsystem": {
                         "type": "string",
                         "description": (
-                            "PHASE 11.1: Filter by subsystem/module within a product. "
-                            f"{_fmt('subsystem', '')}"
+                            "PHASE 11.1: Filter by subsystem/module "
+                            "within a product. "
+                            + _fmt("subsystem", "")
                         ),
                     },
                     "module": {
                         "type": "string",
                         "description": (
-                            "PHASE 17: Filter by module/sub-module within a "
-                            "product. "
-                            f"{_fmt('module', 'Examples: Administration, Configuration, API, Security, Connectors, User Management')}"
+                            "PHASE 17: Filter by module/sub-module "
+                            "within a product. "
+                            + _fmt(
+                                "module",
+                                "Examples: Administration, "
+                                "Configuration, API, Security, "
+                                "Connectors, User Management",
+                            )
                         ),
                     },
                     "filter_type": {
@@ -888,8 +914,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         coll_tag = r.get("_collection", "")
         meta = (
             f"**ID:** `{r['chunk_id']}`  |  "
-            f"**Product:** {r.get('product','n/a')}  |  "
-            f"**Type:** {r.get('doc_type','n/a')}  |  "
+            f"**Product:** {r.get('product', 'n/a')}  |  "
+            f"**Type:** {r.get('doc_type', 'n/a')}  |  "
             f"**Format:** {r['file_type']}"
         )
         if coll_tag:
@@ -897,8 +923,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             meta = (
                 f"**ID:** `{r['chunk_id']}`  |  "
                 f"**KB:** `{coll_tag}`  |  "
-                f"**Product:** {r.get('product','n/a')}  |  "
-                f"**Type:** {r.get('doc_type','n/a')}"
+                f"**Product:** {r.get('product', 'n/a')}  |  "
+                f"**Type:** {r.get('doc_type', 'n/a')}"
             )
         lines.append(f"### [{i}] {source}  (relevance: {score_pct})")
         lines.append(meta)
@@ -979,23 +1005,23 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
         lines.append(f"### {dt}  ({len(items)} documents)")
         for d in items:
             vendor_info = (
-                f" | vendor: {d.get('vendor','n/a')}"
+                f" | vendor: {d.get('vendor', 'n/a')}"
                 if d.get("vendor")
                 else ""
             )
             subsystem_info = (
-                f" | subsystem: {d.get('subsystem','n/a')}"
+                f" | subsystem: {d.get('subsystem', 'n/a')}"
                 if d.get("subsystem")
                 else ""
             )
             module_info = (
-                f" | module: {d.get('module','n/a')}"
+                f" | module: {d.get('module', 'n/a')}"
                 if d.get("module")
                 else ""
             )
             lines.append(
                 f"- `{d['source_file']}` — {d['chunk_count']} chunks"
-                f" | product: {d.get('product','n/a')}"
+                f" | product: {d.get('product', 'n/a')}"
                 f"{vendor_info}"
                 f"{subsystem_info}"
                 f"{module_info}"
@@ -1222,7 +1248,9 @@ async def _explore_topic(
             )
         ]
     )
-    results, _ = await store.client.scroll(
+    client = store.client
+    assert client is not None
+    results, _ = await client.scroll(
         collection_name=target or store.collection,
         scroll_filter=query_filter,
         limit=limit,
@@ -1240,6 +1268,7 @@ async def _explore_topic(
     lines = [f"## Documents for topic `{topic}` " f"({len(results)} chunks)\n"]
     seen: set[str] = set()
     for r in results:
+        assert r.payload is not None
         sf = r.payload.get("source_file", "")
         if sf not in seen:
             seen.add(sf)
@@ -1405,7 +1434,7 @@ async def main():
     the MCP server on either stdio or SSE transport based on the
     MCP_TRANSPORT environment variable.
     """
-    global collection_manager, collection_router, rate_limiter, retrieval_cache
+    global collection_manager, collection_router, rate_limiter
     log.info(f"KB RAG MCP Server starting (transport={TRANSPORT})")
     await store.connect()
 
@@ -1585,7 +1614,7 @@ async def main():
             ]
         )
 
-        log.info(f"Auth router mounted on SSE transport")
+        log.info("Auth router mounted on SSE transport")
         log.info(f"SSE server at http://{SSE_HOST}:{SSE_PORT}/sse")
         config = uvicorn.Config(
             starlette_app, host=SSE_HOST, port=SSE_PORT, log_level="info"
@@ -1598,7 +1627,7 @@ async def main():
         from starlette.middleware import Middleware
         from starlette.middleware.cors import CORSMiddleware
         from starlette.responses import Response
-        from starlette.routing import Route
+        from starlette.routing import Mount, Route
         from mcp.server.streamable_http_manager import (
             StreamableHTTPSessionManager,
             TransportSecuritySettings,

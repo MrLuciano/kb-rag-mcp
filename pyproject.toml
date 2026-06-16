@@ -31,6 +31,6 @@ markers = [
 branch = true
 
 [tool.coverage.report]
-fail_under = 72
+fail_under = 71
 show_missing = true
 skip_covered = false

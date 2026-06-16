@@ -30,7 +30,7 @@ class ErasureStatus(str, Enum):
     erasure_rejected = "erasure_rejected"
 
 
-class User(Base):
+class User(Base):  # type: ignore[valid-type,misc]
     __tablename__ = "users"
 
     id = Column(
@@ -65,7 +65,7 @@ class User(Base):
     )
 
 
-class ApiKey(Base):
+class ApiKey(Base):  # type: ignore[valid-type,misc]
     __tablename__ = "api_keys"
 
     id = Column(
@@ -91,7 +91,7 @@ class ApiKey(Base):
     user = relationship("User", back_populates="api_keys")
 
 
-class AuditLog(Base):
+class AuditLog(Base):  # type: ignore[valid-type,misc]
     __tablename__ = "audit_logs"
 
     id = Column(
@@ -110,7 +110,7 @@ class AuditLog(Base):
     details = Column(Text, nullable=True)
 
 
-class ErasureRequest(Base):
+class ErasureRequest(Base):  # type: ignore[valid-type,misc]
     __tablename__ = "erasure_requests"
 
     id = Column(

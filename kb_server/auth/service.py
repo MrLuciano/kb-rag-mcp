@@ -1,9 +1,9 @@
 import hashlib
 import logging
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 from sqlalchemy import delete as sa_delete
 
@@ -42,17 +42,17 @@ class AuthService:
         self._session.flush()
 
         self._write_audit_log(
-            actor_id=user.id,
+            actor_id=cast(str, user.id),
             action="user.created",
             resource_type="user",
-            resource_id=user.id,
+            resource_id=cast(str, user.id),
         )
         self._session.commit()
         log.info("Created user: %s (role=%s)", username, role)
         return user
 
     def list_users(self) -> list[User]:
-        return (
+        return (  # type: ignore[no-any-return]
             self._session.query(User)
             .filter(User.erasure_status != ErasureStatus.erasure_completed)
             .order_by(User.created_at.desc())
@@ -60,10 +60,10 @@ class AuthService:
         )
 
     def get_user(self, user_id: str) -> Optional[User]:
-        return self._session.query(User).filter(User.id == user_id).first()
+        return self._session.query(User).filter(User.id == user_id).first()  # type: ignore[no-any-return]
 
     def get_user_by_username(self, username: str) -> Optional[User]:
-        return (
+        return (  # type: ignore[no-any-return]
             self._session.query(User).filter(User.username == username).first()
         )
 
@@ -72,8 +72,8 @@ class AuthService:
         if user is None:
             return False
         short_id = user.id[:8]
-        user.username = f"deleted-user-{short_id}"
-        user.is_active = False
+        user.username = f"deleted-user-{short_id}"  # type: ignore[assignment]
+        user.is_active = False  # type: ignore[assignment]
         for key in user.api_keys:
             self._session.delete(key)
         self._session.flush()
@@ -113,14 +113,14 @@ class AuthService:
             actor_id=user_id,
             action="api_key.created",
             resource_type="api_key",
-            resource_id=api_key.id,
+            resource_id=cast(str, api_key.id),
         )
         self._session.commit()
         log.info("Created API key for user: %s", user_id)
         return raw_key, api_key
 
     def list_api_keys(self, user_id: str) -> list[ApiKey]:
-        return (
+        return (  # type: ignore[no-any-return]
             self._session.query(ApiKey)
             .filter(ApiKey.user_id == user_id)
             .order_by(ApiKey.created_at.desc())
@@ -134,7 +134,7 @@ class AuthService:
         key.is_revoked = True
         self._session.flush()
         self._write_audit_log(
-            actor_id=key.user_id,
+            actor_id=cast(str, key.user_id),
             action="api_key.revoked",
             resource_type="api_key",
             resource_id=key_id,
@@ -144,7 +144,7 @@ class AuthService:
         return True
 
     def record_key_usage(self, raw_key: str) -> None:
-        """Record last_used_at for a key (called on explicit auth, not every verify)."""
+        """Record last_used_at for a key (called on explicit auth)."""
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         api_key = (
             self._session.query(ApiKey)
@@ -213,7 +213,7 @@ class AuthService:
             result.rowcount,
             days,
         )
-        return result.rowcount
+        return result.rowcount  # type: ignore[no-any-return]
 
     def get_audit_logs(
         self,
@@ -225,4 +225,4 @@ class AuthService:
         )
         if actor_id:
             query = query.filter(AuditLog.actor_id == actor_id)
-        return query.limit(limit).all()
+        return query.limit(limit).all()  # type: ignore[no-any-return]

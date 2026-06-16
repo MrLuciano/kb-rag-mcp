@@ -10,7 +10,11 @@ from pathlib import Path
 
 import click
 
-from ingest.connectors.models import ConnectorConfig
+from ingest.connectors.factory import list_supported_types
+from ingest.connectors.staging import (
+    cleanup_stale_staging,
+    get_staging_root,
+)
 
 log = logging.getLogger("kb-ingest.cli.connectors")
 
@@ -103,14 +107,6 @@ def stage_connector(
 
     staging_root = staging_dir or get_staging_root()
     click.echo(f"Staging directory: {staging_root}")
-
-    config = ConnectorConfig(
-        source_key=source_key,
-        connector_type=connector_type,
-        endpoint=endpoint,
-        auth_method=auth_method,
-        auth_credentials=auth_credentials,
-    )
 
     click.echo(
         f"Connector '{connector_type}' configured for {source_key}\n"

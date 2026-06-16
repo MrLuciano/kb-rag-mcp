@@ -4,17 +4,13 @@ import json
 import csv
 import tempfile
 import sqlite3
-import sys
-import importlib.util
 from pathlib import Path
 from io import StringIO
+
 import pytest
 
-# Load export module directly to avoid rich dependency
-export_path = Path(__file__).parent.parent / "ingest" / "cli" / "export.py"
-spec = importlib.util.spec_from_file_location("export", export_path)
-export = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(export)
+# Load export module via normal import (stdlib-only, no heavy deps)
+from ingest.cli import export as export
 
 
 @pytest.fixture
@@ -167,3 +163,30 @@ def test_export_registry_csv(temp_metadata_db):
     assert rows[0]["source_file"] == "doc1.pdf"
     assert rows[0]["product"] == "Product A"
     assert "chunks_stored" in rows[0]
+
+
+def test_export_registry_csv_empty(temp_metadata_db):
+    """Test CSV export with no matching records returns 0."""
+    output = StringIO()
+    count = export.export_registry_csv(
+        db_path=temp_metadata_db,
+        output=output,
+        product="NonExistentProduct",
+    )
+    assert count == 0
+    assert output.getvalue() == ""
+
+
+def test_export_registry_json_filtered_by_doc_type(temp_metadata_db):
+    """Test filtering by document type."""
+    output = StringIO()
+    export.export_registry_json(
+        db_path=temp_metadata_db,
+        output=output,
+        doc_type="api_guide",
+    )
+    output.seek(0)
+    data = json.load(output)
+    assert len(data) == 1
+    assert data[0]["doc_type"] == "api_guide"
+    assert data[0]["source_file"] == "doc2.pdf"

@@ -7,7 +7,7 @@ Supports both JSON and CSV formats:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from kb_server.evaluation.csv_loader import CSVDatasetLoader
 
@@ -56,7 +56,7 @@ class GoldenDataset:
     def _load_json(self) -> List[Dict[str, Any]]:
         """Load dataset from JSON file."""
         with open(self.dataset_path, "r") as f:
-            return json.load(f)
+            return cast(List[Dict[str, Any]], json.load(f))
 
     @classmethod
     def from_csv(cls, path: Path) -> "GoldenDataset":

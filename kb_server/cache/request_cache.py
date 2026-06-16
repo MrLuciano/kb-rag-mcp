@@ -186,7 +186,7 @@ class RetrievalCache:
         collection_param: Optional[str] = None,
         kb_ids: Optional[list[str]] = None,
     ) -> str:
-        """Build a deterministic cache key (delegates to module-level function).
+        """Build a deterministic cache key (delegates to module-level).
 
         See :func:`make_cache_key` for details.
         """

@@ -512,10 +512,13 @@ def infer_subsystem(file_path: Path, docs_root: Path) -> str:
         relative = file_path.relative_to(docs_root)
         parts = list(relative.parts)
 
-        # If there are at least 3 parts: [product_dir, subsystem_dir, ..., filename]
-        # OR at least 2 parts where the first is not a skip-dir and not the file
+        # If there are at least 3 parts:
+        # [product_dir, subsystem_dir, ..., filename]
+        # OR at least 2 parts where the first is not a skip-dir
+        # and not the file
         if len(parts) >= 2:
-            # Find the first real directory (skip "varios", "templates", "archive")
+            # Find the first real directory
+            # (skip "varios", "templates", "archive")
             candidate_idx = 0
             while (
                 candidate_idx < len(parts) - 1
@@ -650,7 +653,8 @@ def infer_product(
 
 def extract_document_metadata(file_path: Path) -> dict[str, str]:
     """
-    Extract metadata fields from PDF/DOCX documents for gap-filling classification.
+    Extract metadata fields from PDF/DOCX documents
+    for gap-filling classification.
 
     Uses PyMuPDF for PDFs and python-docx for DOCX files. Returns empty dict
     for unsupported formats or on any error (always degrades gracefully).

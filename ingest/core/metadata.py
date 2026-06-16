@@ -200,7 +200,8 @@ class MetadataStore:
                 field_name TEXT NOT NULL,
                 old_value TEXT,
                 chunk_index INTEGER,
-                PRIMARY KEY (session_timestamp, source_file, field_name, chunk_index)
+                PRIMARY KEY (session_timestamp, source_file,
+                             field_name, chunk_index)
             );
 
             -- Reclassification audit history
@@ -212,11 +213,14 @@ class MetadataStore:
                 old_value TEXT,
                 new_value TEXT,
                 session_timestamp TEXT NOT NULL,
-                FOREIGN KEY (session_timestamp) REFERENCES reclassify_backups(session_timestamp)
+                FOREIGN KEY (session_timestamp)
+                    REFERENCES reclassify_backups(session_timestamp)
             );
 
-            CREATE INDEX idx_reclassify_history_session ON reclassify_history(session_timestamp);
-            CREATE INDEX idx_reclassify_history_timestamp ON reclassify_history(timestamp);
+            CREATE INDEX idx_reclassify_history_session
+                ON reclassify_history(session_timestamp);
+            CREATE INDEX idx_reclassify_history_timestamp
+                ON reclassify_history(timestamp);
         """)
 
         self._set_schema_version(SCHEMA_VERSION)
@@ -1049,7 +1053,7 @@ class IngestRegistry:
                 SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END)    AS ok,
                 SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) AS errors,
                 COALESCE(SUM(chunks), 0)                          AS chunks,
-                MAX(indexed_at)                                   AS last_indexed
+                MAX(indexed_at) AS last_indexed
             FROM files
             GROUP BY source
             ORDER BY source

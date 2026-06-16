@@ -112,12 +112,15 @@ Multi-collection search flows through `kb_ids` → `resolve_multi()` → `multi_
 | **Enterprise Connectors** | `ingest/connectors/` | Factory + Confluence/JIRA/Git sources |
 | **Knowledge Graph** | `ingest/graph_builder.py` | Document graph metadata derivation |
 | **MCP Prompts** | `kb_server/prompts.py` | extract_answer + summarize_documents |
-| **Auth** | `kb_server/auth.py` | Optional Bearer token auth on SSE |
+| **Auth** | `kb_server/auth/` | Optional Bearer token auth, API key management, erasure |
 | **Rate Limiter** | `kb_server/rate_limiter.py` | Per-subject token bucket |
 | **Circuit Breaker** | `kb_server/circuit_breaker.py` | Provider resilience state machine |
 | **Provider Budget** | `kb_server/provider_budget.py` | Sliding window budget tracking |
 | **Retrieval Cache** | `kb_server/cache/request_cache.py` | Request-level search caching |
 | **Health** | `kb_server/health_server.py` | HTTP health check endpoint |
+| **Admin UI** | `kb_server/ui/` | FastAPI + HTMX admin SPA (browse, search, config, auth) |
+| **Config API** | `kb_server/config/` | REST CRUD for server configuration |
+| **Filter Terms** | `kb_server/filter_terms_cache.py` | Dynamic filter suggestions for MCP tools |
 
 ---
 
@@ -132,4 +135,4 @@ See also: [REFERENCE.md](REFERENCE.md), [OPERATIONS.md](OPERATIONS.md)
 
 ---
 
-*Last updated: 2026-06-11*
+*Last updated: 2026-06-15*

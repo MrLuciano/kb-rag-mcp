@@ -9,7 +9,7 @@ improving precision and NDCG@5 by scoring query-document pairs directly.
 
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 
 log = logging.getLogger("kb-mcp.reranker")
 
@@ -154,7 +154,7 @@ class CrossEncoderReranker:
             cached = await cache_manager.get(cache_key)
             if cached is not None:
                 log.info(f"Reranking cache hit for key: {cache_key}")
-                return cached
+                return cast(list[dict[Any, Any]], cached)
 
         # Compute reranking
         reranked = await self.rerank(query, results, top_k)
@@ -178,7 +178,8 @@ def get_reranker() -> CrossEncoderReranker:
     if _reranker is None:
         log.info("Creating global CrossEncoderReranker instance")
         log.info(
-            "Cross-encoder model: lazy-loaded (first predict() loads ~500MB on rerank)"
+            "Cross-encoder model: lazy-loaded "
+            "(first predict() loads ~500MB on rerank)"
         )
         _reranker = CrossEncoderReranker()
     return _reranker
