@@ -124,14 +124,14 @@ class ErasureManager:
         return True
 
     def get_erasure_request(self, request_id: str) -> Optional[ErasureRequest]:
-        return (
+        return (  # type: ignore[no-any-return]
             self._session.query(ErasureRequest)
             .filter(ErasureRequest.id == request_id)
             .first()
         )
 
     def get_user_erasure_requests(self, user_id: str) -> list[ErasureRequest]:
-        return (
+        return (  # type: ignore[no-any-return]
             self._session.query(ErasureRequest)
             .filter(ErasureRequest.user_id == user_id)
             .order_by(ErasureRequest.created_at.desc())

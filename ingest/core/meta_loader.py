@@ -36,6 +36,7 @@ Usage:
 import json
 import logging
 from pathlib import Path
+from typing import cast
 
 log = logging.getLogger("kb-ingest.meta")
 
@@ -92,7 +93,7 @@ class MetaLoader:
         self._validate_meta(meta, meta_file)
 
         log.info(f"Loaded metadata overrides from {meta_file}")
-        return meta
+        return cast(dict, meta)
 
     def _validate_meta(self, meta: dict, meta_file: Path):
         """

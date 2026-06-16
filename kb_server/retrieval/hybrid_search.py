@@ -9,7 +9,7 @@ sparse retrieval for improved recall on technical terms and exact matches.
 
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 
 from fastembed import SparseTextEmbedding
 
@@ -66,6 +66,7 @@ class HybridSearcher:
         Returns dict mapping token index to score.
         """
         self._load_sparse_model()
+        assert self.sparse_model is not None
 
         try:
             # fastembed returns list of sparse vectors
@@ -77,7 +78,8 @@ class HybridSearcher:
             # Convert sparse vector to dict format
             sparse_vec = result[0]
 
-            # sparse_vec is typically a SparseEmbedding with .indices and .values
+            # sparse_vec is typically a SparseEmbedding
+            # with .indices and .values
             if hasattr(sparse_vec, "indices") and hasattr(
                 sparse_vec, "values"
             ):
@@ -144,7 +146,7 @@ class HybridSearcher:
             log.warning(
                 "Sparse vector empty, falling back to dense-only search"
             )
-            return dense_results[:top_k]
+            return cast(list[dict], dense_results[:top_k])
 
         # Step 3: Sparse search via Qdrant BM25 sparse vectors
         log.info("Performing sparse (BM25) search")
@@ -250,7 +252,8 @@ def merge_multi_collection_results(
     top_k: int,
     rrf_k: int = 60,
 ) -> list[dict]:
-    """Merge results from multiple collections with score normalization and RRF.
+    """Merge results from multiple collections
+    with score normalization and RRF.
 
     Steps:
     1. Normalize scores to [0,1] per collection (min-max scaling)
@@ -302,7 +305,8 @@ def merge_multi_collection_results(
         merged.append(entry)
 
     log.info(
-        "Multi-collection merge: %d collections, %d unique chunks → %d results",
+        "Multi-collection merge: %d collections, %d unique chunks "
+        "→ %d results",
         len(per_collection),
         len(score_map),
         len(merged),

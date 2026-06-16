@@ -3,9 +3,9 @@
 import json
 import logging
 import sqlite3
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 log = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ class QueryLogger:
         """
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("""
-                SELECT 
+                SELECT
                     COUNT(*) as total_queries,
                     AVG(latency_ms) as avg_latency_ms,
                     AVG(result_count) as avg_results,

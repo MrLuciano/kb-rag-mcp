@@ -19,15 +19,14 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+# Import custom metrics (prompt-based, no ragas dependency)
+from kb_server.evaluation import metrics as custom_metrics
 from kb_server.evaluation.dataset import GoldenDataset
 from kb_server.evaluation.llm_wrapper import (
     BaseLLMWrapper,
     RAGASLLMAdapter,
     create_llm_wrapper,
 )
-
-# Import custom metrics (prompt-based, no ragas dependency)
-from kb_server.evaluation import metrics as custom_metrics
 
 log = logging.getLogger("kb-mcp.eval")
 
@@ -52,7 +51,8 @@ class RAGASEvaluator:
         """Initialize evaluator.
 
         Args:
-            dataset: Golden dataset with query / expected_answer / expected_docs.
+            dataset: Golden dataset with query / expected_answer /
+                expected_docs.
             llm_provider: Optional pre-configured LLM wrapper.
                           If None, one is created from the backend env var.
             model: Model name for LLM-as-judge.
@@ -82,7 +82,8 @@ class RAGASEvaluator:
 
         Returns:
             Dict mapping metric_name -> mean_score.
-            Keys: faithfulness, answer_relevancy, context_precision, context_recall.
+            Keys: faithfulness, answer_relevancy,
+                context_precision, context_recall.
 
         Raises:
             ValueError: If dataset is empty.

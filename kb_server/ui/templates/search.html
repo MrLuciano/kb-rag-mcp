@@ -63,8 +63,8 @@
                         </label>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">
-                        Search
+                    <button type="submit" class="btn btn-primary w-100" id="search-btn">
+                        <span class="btn-text">Search</span>
                         <span class="spinner-border spinner-border-sm d-none" id="search-spinner" role="status" aria-hidden="true"></span>
                     </button>
                 </form>
@@ -102,6 +102,15 @@ form.addEventListener('htmx:beforeRequest', function() {
     resultsDiv.innerHTML = '<div class="spinner-border" role="status">' +
                           '<span class="visually-hidden">Loading...</span>' +
                           '</div>';
+    document.getElementById('search-btn').disabled = true;
+    document.querySelector('.btn-text').classList.add('d-none');
+    document.getElementById('search-spinner').classList.remove('d-none');
+});
+
+form.addEventListener('htmx:afterRequest', function() {
+    document.getElementById('search-btn').disabled = false;
+    document.querySelector('.btn-text').classList.remove('d-none');
+    document.getElementById('search-spinner').classList.add('d-none');
 });
 
 form.addEventListener('htmx:responseError', function(evt) {
@@ -110,6 +119,9 @@ form.addEventListener('htmx:responseError', function(evt) {
             Error: ${evt.detail.xhr.status} ${evt.detail.xhr.statusText}
         </div>
     `;
+    document.getElementById('search-btn').disabled = false;
+    document.querySelector('.btn-text').classList.remove('d-none');
+    document.getElementById('search-spinner').classList.add('d-none');
 });
 </script>
 {% endblock %}

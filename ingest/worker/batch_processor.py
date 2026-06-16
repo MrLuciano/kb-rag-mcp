@@ -175,6 +175,7 @@ class BatchDocumentProcessor:
                     # Skipped (validation failed or already indexed)
                     log.debug(f"Skipped: {file_path.name}")
                 else:
+                    assert isinstance(result, list)
                     all_chunks.extend(result)
                     success_count += 1
 
@@ -246,7 +247,7 @@ class BatchDocumentProcessor:
             else:
                 await self.vector_store.upsert_chunks(qdrant_chunks)
 
-            log.info(f"Upsert complete")
+            log.info("Upsert complete")
 
         except Exception as e:
             log.error(f"Batch upsert failed: {e}", exc_info=True)
@@ -316,7 +317,7 @@ class BatchDocumentProcessor:
         """
         # Validation
         if not self.skip_validation:
-            result = self.validation_pipeline.validate_file(file_path)
+            result = self.validation_pipeline.validate_file(file_path)  # type: ignore[attr-defined]
             if not result.is_valid():
                 log.debug(
                     f"Validation failed: {file_path.name}: "
@@ -332,8 +333,8 @@ class BatchDocumentProcessor:
 
         # Parse document
         try:
-            from ingest.ingest import parse_document
             from ingest.classifier import classify_document
+            from ingest.ingest import parse_document
 
             # Classify document
             doc_info = classify_document(file_path)

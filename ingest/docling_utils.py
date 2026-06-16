@@ -6,8 +6,8 @@ enables GPU batch inference.
 
 Environment variables (set before first call or in .env):
 
-    DOCLING_ARTIFACTS_PATH=/persistent/path/models  # avoid re-download
-    DOCLING_DEVICE=cuda                              # force GPU (auto/cpu/cuda/mps)
+    DOCLING_ARTIFACTS_PATH=/persistent/path/models  # avoid re-dl
+    DOCLING_DEVICE=cuda  # force GPU (auto/cpu/cuda/mps)
     DOCLING_NUM_THREADS=8                             # CPU thread count
     HF_HUB_ENABLE_HF_TRANSFER=1                      # faster downloads
 """
@@ -30,7 +30,6 @@ def get_docling_converter():
     """
     try:
         from docling.datamodel.accelerator_options import (
-            AcceleratorDevice,
             AcceleratorOptions,
         )
         from docling.datamodel.base_models import InputFormat

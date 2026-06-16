@@ -1,11 +1,11 @@
 <div x-data="profilePage()" x-init="initProfile()">
-    <h5>Account</h5>
+    <h3 class="h5">Account</h3>
     <p>Username: <strong x-text="user.username"></strong><br>
        Role: <span class="badge bg-info" x-text="user.role"></span><br>
        Created: <span x-text="user.created_at"></span></p>
 
     <hr>
-    <h5>API Keys</h5>
+    <h3 class="h5">API Keys</h3>
     <div class="mb-2">
         <button class="btn btn-sm btn-primary" @click="generateKey()">Generate New Key</button>
     </div>
@@ -28,7 +28,7 @@
     </table>
 
     <hr>
-    <h5>GDPR</h5>
+    <h3 class="h5">GDPR</h3>
     <button class="btn btn-sm btn-outline-primary me-2" @click="exportData()">Export My Data (GDPR Art. 20)</button>
     <button class="btn btn-sm btn-outline-danger" @click="requestErasure()">Request Data Erasure</button>
     <div x-show="erasureStatus" class="mt-2">

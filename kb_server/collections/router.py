@@ -1,4 +1,4 @@
-"""CollectionRouter — resolves and ensures Qdrant collections for MCP tool calls."""
+"""CollectionRouter — resolves and ensures Qdrant collections for MCP."""
 
 from __future__ import annotations
 
@@ -21,7 +21,8 @@ class CollectionRouter:
     - If ``collection`` is ``None``, the default collection is used.
     - ``resolve()`` raises ``CollectionNotFoundError`` if the collection does
       not exist (strict — for read paths).
-    - ``ensure()`` creates the collection if it does not exist (for ingest paths).
+    - ``ensure()`` creates the collection if it does not exist "
+        "(for ingest paths).
     """
 
     def __init__(

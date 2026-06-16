@@ -13,7 +13,7 @@ import time
 from collections import OrderedDict
 from dataclasses import dataclass
 from threading import RLock
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, cast
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class LRUCache:
                 auto_mb,
                 available_mb,
             )
-            return auto_mb
+            return cast(int, auto_mb)
         except ImportError:
             logger.warning("psutil not available, using default 512 MB cache")
             return 512

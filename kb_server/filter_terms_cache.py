@@ -50,7 +50,7 @@ class FilterTermsCache:
         self._scan_lock = asyncio.Lock()
 
     async def reindex(self) -> None:
-        """Scan Qdrant and rebuild the terms table for all advertised fields."""
+        """Scan Qdrant and rebuild terms table for all advertised fields."""
         if self.store is None:
             return
 
@@ -97,7 +97,8 @@ class FilterTermsCache:
         """Get a compact, formatted string of top values for a field.
 
         Returns something like:
-            "Available products: AppServer (142), DataSync (89), ... (+12 more)"
+            "Available products: AppServer (142), DataSync (89), "
+            "... (+12 more)"
 
         Args:
             field: The attribute field name.

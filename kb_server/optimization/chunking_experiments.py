@@ -123,8 +123,8 @@ class SemanticStrategy(ChunkingStrategy):
         try:
             from docling.chunking import HybridChunker
 
-            chunker = HybridChunker(max_tokens=self.max_tokens)
-            chunks = chunker.chunk(text)
+            chunker = HybridChunker(max_tokens=self.max_tokens)  # type: ignore[call-arg]
+            chunks = chunker.chunk(text)  # type: ignore[arg-type]
             return [c.text for c in chunks]
         except Exception:
             log.warning("HybridChunker unavailable; falling back to recursive")

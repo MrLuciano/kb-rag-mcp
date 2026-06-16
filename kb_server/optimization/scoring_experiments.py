@@ -9,7 +9,7 @@ against an existing indexed collection without re-ingesting.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from kb_server.embed_client import get_embedding
 from kb_server.evaluation.dataset import GoldenDataset
@@ -100,10 +100,10 @@ class DenseOnlyVariant(ScoringVariant):
             self.distance_metric,
         )
         query_vector = await get_embedding(query)
-        return await vector_store.search(
+        return cast(List[dict], await vector_store.search(
             vector=query_vector,
             top_k=top_k,
-        )
+        ))
 
 
 # ── HybridVariant ───────────────────────────────────────────────────

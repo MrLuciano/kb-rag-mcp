@@ -3,7 +3,7 @@
 import logging
 import sqlite3
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List, cast
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class QueryAnalyzer:
         cursor = conn.cursor()
 
         if time_range_days > 0:
-            from datetime import datetime, timezone, timedelta
+            from datetime import datetime, timedelta, timezone
 
             cutoff = (
                 datetime.now(timezone.utc).replace(tzinfo=None)
@@ -154,7 +154,7 @@ class QueryAnalyzer:
         cursor = conn.cursor()
 
         if time_range_days > 0:
-            from datetime import datetime, timezone, timedelta
+            from datetime import datetime, timedelta, timezone
 
             cutoff = (
                 datetime.now(timezone.utc).replace(tzinfo=None)
@@ -200,7 +200,7 @@ class QueryAnalyzer:
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta, timezone
 
         cutoff = (
             datetime.now(timezone.utc).replace(tzinfo=None)
@@ -232,7 +232,7 @@ class QueryAnalyzer:
             f = int(idx)
             c = min(f + 1, n - 1)
             frac = idx - f
-            return sorted_vals[f] + (sorted_vals[c] - sorted_vals[f]) * frac
+            return cast(float, sorted_vals[f] + (sorted_vals[c] - sorted_vals[f]) * frac)
 
         result = {
             "operation": "All queries",

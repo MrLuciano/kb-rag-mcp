@@ -34,7 +34,7 @@ def extract_zip(path: Path, _depth: int = 0) -> list[dict]:
         list[dict] with text, page, source_path keys
     """
     # Lazy import to avoid circular dependency — ingest.ingest imports parsers
-    from ingest.ingest import EXTRACTORS, EXT_TYPE_MAP
+    from ingest.ingest import EXT_TYPE_MAP, EXTRACTORS
 
     path = Path(path)
     if not path.exists():
@@ -59,7 +59,8 @@ def extract_zip(path: Path, _depth: int = 0) -> list[dict]:
                 if info.file_size > MAX_ENTRY_BYTES:
                     log.warning(
                         f"  Skipping oversized entry {info.filename} "
-                        f"({info.file_size / 1024 / 1024:.0f} MB > 500 MB limit)"
+                        f"({info.file_size / 1024 / 1024:.0f} MB"
+                        f" > 500 MB limit)"
                     )
                     continue
 
@@ -75,12 +76,14 @@ def extract_zip(path: Path, _depth: int = 0) -> list[dict]:
                             nested = extract_zip(extracted, _depth=_depth + 1)
                             for item in nested:
                                 item["source_path"] = (
-                                    f"{info.filename}/{item.get('source_path', '')}"
+                                    f"{info.filename}/"
+                                    f"{item.get('source_path', '')}"
                                 )
                             results.extend(nested)
                     else:
                         log.debug(
-                            f"  Skipping nested ZIP at max depth: {info.filename}"
+                            f"  Skipping nested ZIP at max depth: "
+                            f"{info.filename}"
                         )
                     continue
 

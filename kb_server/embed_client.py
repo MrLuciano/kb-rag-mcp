@@ -26,7 +26,7 @@ import logging
 import os
 import re
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 import httpx
 
@@ -216,7 +216,7 @@ async def _embed_lmstudio_rest(text: str) -> list[float]:
     log.debug("lmstudio-rest → POST %s", url)
     resp = await client.post(url, json={"model": MODEL, "input": text})
     resp.raise_for_status()
-    return resp.json()["data"][0]["embedding"]
+    return cast(list[float], resp.json()["data"][0]["embedding"])
 
 
 async def _embed_openai_compat(text: str) -> list[float]:
@@ -235,7 +235,7 @@ async def _embed_openai_compat(text: str) -> list[float]:
         json={"model": MODEL, "input": [text]},
     )
     resp.raise_for_status()
-    return resp.json()["data"][0]["embedding"]
+    return cast(list[float], resp.json()["data"][0]["embedding"])
 
 
 async def _embed_openai_compat_batch(
@@ -285,7 +285,7 @@ async def _embed_ollama(text: str) -> list[float]:
         json={"model": MODEL, "prompt": text},
     )
     resp.raise_for_status()
-    return resp.json()["embedding"]
+    return cast(list[float], resp.json()["embedding"])
 
 
 async def _embed_ollama_batch(texts: list[str]) -> list[list[float]]:
@@ -493,10 +493,10 @@ async def _resolve_alias(alias_name: str) -> Optional[str]:
 
 
 async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
-    """Return the embedding vector for the given text using the configured backend.
+    """Return embedding vector for the given text using configured backend.
 
     Checks the embedding cache first before calling the backend.
-    Backend is selected via the EMBED_BACKEND environment variable.
+    Backend selected via EMBED_BACKEND environment variable.
 
     Supports fallback chains via `EMBED_BACKEND=primary;secondary` —
     if the primary provider is unavailable (circuit open, budget
@@ -517,7 +517,7 @@ async def get_embedding(text: str, use_cache: bool = True) -> list[float]:
         cached = _embed_cache.get(cache_key)
         if cached is not None:
             log.debug("Cache hit for text (len=%d)", len(text))
-            return cached
+            return cast(list[float], cached)
 
     validate_providers()
 

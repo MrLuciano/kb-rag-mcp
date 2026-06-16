@@ -11,16 +11,13 @@ import os
 import time
 import uuid
 
-
-from kb_server.embed_client import get_embed_dim
-from observability.metrics import record_batch_upsert
 from qdrant_client import AsyncQdrantClient  # type: ignore[import]
 from qdrant_client import models as qmodels  # type: ignore[import]
-from qdrant_client.models import Distance  # type: ignore[import]
 from qdrant_client.http.models import (  # type: ignore[import]
     NamedSparseVector,
     SparseVector,
 )
+from qdrant_client.models import Distance  # type: ignore[import]
 from qdrant_client.models import (
     FieldCondition,
     Filter,
@@ -29,6 +26,9 @@ from qdrant_client.models import (
     PointStruct,
     VectorParams,
 )
+
+from kb_server.embed_client import get_embed_dim
+from observability.metrics import record_batch_upsert
 
 log = logging.getLogger("kb-mcp.store")
 
@@ -42,12 +42,12 @@ SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.35"))
 # PHASE 8: Connection pool and batch config
 QDRANT_GRPC = os.getenv("QDRANT_GRPC", "false").lower() == "true"
 QDRANT_GRPC_PORT = int(os.getenv("QDRANT_GRPC_PORT", "6334"))
-QDRANT_TIMEOUT = float(os.getenv("QDRANT_TIMEOUT", "60.0"))
+QDRANT_TIMEOUT = int(os.getenv("QDRANT_TIMEOUT", "60"))
 QDRANT_BATCH_SIZE = int(os.getenv("QDRANT_BATCH_SIZE", "100"))
 
 
 class VectorStore:
-    """Abstraction over Qdrant for vector storage, search, and metadata management.
+    """Abstraction over Qdrant for vector storage, search, and metadata.
 
     Provides semantic search with optional filtering by product, doc_type,
     version, and file_type. Supports batch upsert operations, sparse vector
@@ -221,7 +221,7 @@ class VectorStore:
                 FieldCondition(key="module", match=MatchValue(value=module))
             )
 
-        query_filter = Filter(must=conditions) if conditions else None
+        query_filter = Filter(must=conditions) if conditions else None  # type: ignore[arg-type]
 
         response = await self.client.query_points(
             collection_name=collection_name or self.collection,
@@ -232,24 +232,27 @@ class VectorStore:
             with_payload=True,
         )
 
-        return [
-            {
-                "chunk_id": str(r.id),
-                "score": r.score,
-                "text": r.payload.get("text", ""),
-                "source_file": r.payload.get("source_file", ""),
-                "file_type": r.payload.get("file_type", ""),
-                "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
-                "product": r.payload.get("product", ""),
-                "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
-                "module": r.payload.get("module", ""),  # PHASE 17
-                "doc_type": r.payload.get("doc_type", "document"),
-                "version": r.payload.get("version", ""),  # PHASE 13
-                "page": r.payload.get("page"),
-                "chunk_index": r.payload.get("chunk_index", 0),
-            }
-            for r in response.points
-        ]
+        search_results = []
+        for r in response.points:
+            assert r.payload is not None
+            search_results.append(
+                {
+                    "chunk_id": str(r.id),
+                    "score": r.score,
+                    "text": r.payload.get("text", ""),
+                    "source_file": r.payload.get("source_file", ""),
+                    "file_type": r.payload.get("file_type", ""),
+                    "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
+                    "product": r.payload.get("product", ""),
+                    "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
+                    "module": r.payload.get("module", ""),  # PHASE 17
+                    "doc_type": r.payload.get("doc_type", "document"),
+                    "version": r.payload.get("version", ""),  # PHASE 13
+                    "page": r.payload.get("page"),
+                    "chunk_index": r.payload.get("chunk_index", 0),
+                }
+            )
+        return search_results
 
     async def multi_search(
         self,
@@ -362,7 +365,7 @@ class VectorStore:
                 FieldCondition(key="module", match=MatchValue(value=module))
             )
 
-        query_filter = Filter(must=conditions) if conditions else None
+        query_filter = Filter(must=conditions) if conditions else None  # type: ignore[arg-type]
         indices = list(sparse_vector.keys())
         values = list(sparse_vector.values())
         named_sparse = NamedSparseVector(
@@ -373,28 +376,31 @@ class VectorStore:
         try:
             response = await self.client.query_points(
                 collection_name=collection_name or self.collection,
-                query=named_sparse,
+                query=named_sparse,  # type: ignore[arg-type]
                 limit=top_k,
                 query_filter=query_filter,
                 with_payload=True,
             )
-            return [
-                {
-                    "chunk_id": str(r.id),
-                    "score": r.score,
-                    "text": r.payload.get("text", ""),
-                    "source_file": r.payload.get("source_file", ""),
-                    "file_type": r.payload.get("file_type", ""),
-                    "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
-                    "product": r.payload.get("product", ""),
-                    "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
-                    "doc_type": r.payload.get("doc_type", "document"),
-                    "version": r.payload.get("version", ""),  # PHASE 13
-                    "page": r.payload.get("page"),
-                    "chunk_index": r.payload.get("chunk_index"),
-                }
-                for r in response.points
-            ]
+            sparse_results = []
+            for r in response.points:
+                assert r.payload is not None
+                sparse_results.append(
+                    {
+                        "chunk_id": str(r.id),
+                        "score": r.score,
+                        "text": r.payload.get("text", ""),
+                        "source_file": r.payload.get("source_file", ""),
+                        "file_type": r.payload.get("file_type", ""),
+                        "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
+                        "product": r.payload.get("product", ""),
+                        "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
+                        "doc_type": r.payload.get("doc_type", "document"),
+                        "version": r.payload.get("version", ""),  # PHASE 13
+                        "page": r.payload.get("page"),
+                        "chunk_index": r.payload.get("chunk_index"),
+                    }
+                )
+            return sparse_results
         except Exception as e:
             log.warning(
                 "Sparse search failed "
@@ -557,7 +563,7 @@ class VectorStore:
                 FieldCondition(key="module", match=MatchValue(value=module))
             )
 
-        query_filter = Filter(must=conditions) if conditions else None
+        query_filter = Filter(must=conditions) if conditions else None  # type: ignore[arg-type]
 
         docs: dict[str, dict] = {}
         offset = None
@@ -572,6 +578,7 @@ class VectorStore:
                 with_vectors=False,
             )
             for r in results:
+                assert r.payload is not None
                 sf = r.payload.get("source_file", "")
                 if sf not in docs:
                     docs[sf] = {
@@ -627,6 +634,7 @@ class VectorStore:
             return []
 
         target = results[0].payload
+        assert target is not None
         source_file = target.get("source_file", "")
         target_index = int(target.get("chunk_index", 0))
 
@@ -648,16 +656,20 @@ class VectorStore:
             with_vectors=False,
         )
 
-        chunks = [
-            {
-                "chunk_id": str(n.id),
-                "text": n.payload.get("text", ""),
-                "source_file": n.payload.get("source_file", ""),
-                "chunk_index": int(n.payload.get("chunk_index", 0)),
-            }
-            for n in neighbors
-            if min_idx <= int(n.payload.get("chunk_index", 0)) <= max_idx
-        ]
+        neighbor_chunks = []
+        for n in neighbors:
+            assert n.payload is not None
+            idx = int(n.payload.get("chunk_index", 0))
+            if min_idx <= idx <= max_idx:
+                neighbor_chunks.append(
+                    {
+                        "chunk_id": str(n.id),
+                        "text": n.payload.get("text", ""),
+                        "source_file": n.payload.get("source_file", ""),
+                        "chunk_index": idx,
+                    }
+                )
+        chunks = neighbor_chunks
         chunks.sort(key=lambda c: c["chunk_index"])
         return chunks
 
@@ -701,6 +713,7 @@ class VectorStore:
                     with_vectors=False,
                 )
                 for record in records:
+                    assert record.payload is not None
                     val = record.payload.get(field)
                     if val and isinstance(val, str) and val.strip():
                         all_values[val] = all_values.get(val, 0) + 1
@@ -761,6 +774,7 @@ class VectorStore:
         by_type: dict[str, set] = {}
         by_doc_type: dict[str, set] = {}
         for r in sample:
+            assert r.payload is not None
             ft = r.payload.get("file_type", "unknown")
             dt = r.payload.get("doc_type", "document")
             sf = r.payload.get("source_file", "")
@@ -769,11 +783,13 @@ class VectorStore:
 
         from kb_server.embed_client import BACKEND, MODEL
 
+        source_files = set()
+        for r in sample:
+            assert r.payload is not None
+            source_files.add(r.payload.get("source_file"))
         return {
             "total_chunks": count,
-            "total_documents": len(
-                {r.payload.get("source_file") for r in sample}
-            ),
+            "total_documents": len(source_files),
             "index_size_mb": count * self.dim * 4 / 1024 / 1024,
             "embed_model": MODEL,
             "embed_backend": BACKEND,
@@ -833,6 +849,7 @@ class VectorStore:
                 batch_num: Batch number (for logging).
                 batch: List of PointStruct points to upload.
             """
+            assert self.client is not None
             batch_start = time.time()
             await self.client.upsert(
                 collection_name=self.collection,
@@ -908,7 +925,7 @@ class VectorStore:
                 )
             )
 
-        filter_query = Filter(must=must_conditions)
+        filter_query = Filter(must=must_conditions)  # type: ignore[arg-type]
 
         # Scroll to get point IDs
         points, _ = await self.client.scroll(
@@ -970,7 +987,9 @@ class VectorStore:
             with_payload=True,
             with_vectors=False,
         )
-        return [r.payload for r in results]
+        return [
+            p for r in results if r.payload is not None for p in (r.payload,)
+        ]
 
     async def get_graph_topic_summary(
         self,
@@ -991,7 +1010,7 @@ class VectorStore:
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
         counts: dict[str, int] = {}
-        offset: str | None = None
+        offset = None
         while True:
             results, offset = await self.client.scroll(
                 collection_name=collection_name or self.collection,
@@ -1001,6 +1020,7 @@ class VectorStore:
                 with_vectors=False,
             )
             for r in results:
+                assert r.payload is not None
                 topics = r.payload.get("graph_topics", [])
                 if isinstance(topics, list):
                     for t in topics:

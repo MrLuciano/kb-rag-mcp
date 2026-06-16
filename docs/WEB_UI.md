@@ -237,15 +237,13 @@ curl http://localhost:8001/health
 - **Fast**: HTMX for dynamic updates without full page reloads
 - **Efficient**: Direct SQLite queries with indexes
 
-## Future Enhancements
+## Implemented Enhancements
 
-Potential improvements:
-- Real-time search integration with MCP server
-- Query logging analytics dashboard
-- Chunk preview in document detail
-- Export filtered results to CSV/JSON
-- Dark mode toggle
-- Advanced filters (date range, file type)
+The following features previously listed as future work are now implemented:
+
+- ✅ **Query logging analytics dashboard** — `/ui/admin/query-analytics` with charts, top queries, slow queries, zero-result analysis (Phase 42)
+- ✅ **Chunk preview with accordion** — Document detail page shows expandable chunk previews with keyword highlighting (Phase 43)
+- ✅ **Real-time search integration** — The search tester now integrates with the MCP server via the Streamable HTTP transport (Phase 28c)
 
 ## Related Documentation
 

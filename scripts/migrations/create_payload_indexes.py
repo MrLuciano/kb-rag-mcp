@@ -76,7 +76,7 @@ async def check_existing_indexes(
     
     # Check payload schema for existing indexes
     existing_indexes = {}
-    payload_schema = collection_info.config.params.payload_schema or {}
+    payload_schema = getattr(collection_info.config.params, 'payload_schema', {}) or {}
     
     for field in INDEXED_FIELDS:
         # Field is indexed if it appears in payload_schema
@@ -132,7 +132,7 @@ async def get_collection_stats(
         collection_info = await client.get_collection(collection)
         return {
             "points_count": collection_info.points_count,
-            "vectors_count": collection_info.vectors_count,
+            "vectors_count": getattr(collection_info, 'vectors_count', 0),
             "status": collection_info.status,
         }
     except Exception as e:

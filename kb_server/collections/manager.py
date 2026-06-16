@@ -65,8 +65,9 @@ class CollectionManager:
     ) -> bool:
         """Create a collection if it does not exist.
 
-        ``vectors_config`` and ``hnsw_config`` are optional; if omitted they are
-        built from qdrant_client.models using ``vector_size``.
+        ``vectors_config`` and ``hnsw_config`` are optional;
+        if omitted they are built from qdrant_client.models
+        using ``vector_size``.
 
         Returns:
             True  — collection was created now.
@@ -107,7 +108,7 @@ class CollectionManager:
                 await self.client.create_payload_index(
                     collection_name=name,
                     field_name=field,
-                    field_schema="keyword",
+                    field_schema="keyword",  # type: ignore[arg-type]
                 )
             except Exception as exc:  # pylint: disable=broad-except
                 log.warning(

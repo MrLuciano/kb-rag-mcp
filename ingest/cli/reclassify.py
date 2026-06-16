@@ -15,13 +15,13 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from ingest.core.metadata import MetadataStore
 from ingest.reclassify_engine import (
     backup_metadata,
     cleanup_old_backups,
     detect_changed_classifications,
     log_changes,
 )
-from ingest.core.metadata import MetadataStore
 from kb_server.vector_store import VectorStore
 
 log = logging.getLogger("kb-ingest")
@@ -72,13 +72,16 @@ def reclassify_command(
     """
     Reclassify documents by updating metadata in-place.
 
-    Detects changed classifications, shows aggregated preview, backs up old metadata,
-    updates Qdrant payloads, and logs changes for audit/rollback.
+    Detects changed classifications, shows aggregated preview,
+    backs up old metadata, updates Qdrant payloads,
+    and logs changes for audit/rollback.
 
     Examples:
         kb-ingest reclassify run "docs/OT*.pdf"
-        kb-ingest reclassify run "**/*.pdf" --filter 'vendor=""' --yes
-        kb-ingest reclassify run "docs/**/*" --collection kb-custom --allow-missing
+        kb-ingest reclassify run "**/*.pdf" \
+            --filter 'vendor=""' --yes
+        kb-ingest reclassify run "docs/**/*" \
+            --collection kb-custom --allow-missing
     """
     asyncio.run(
         _reclassify_impl(
@@ -112,6 +115,7 @@ async def _reclassify_impl(
 
     store = VectorStore()
     await store.connect()
+    assert store.client is not None
     manager = CollectionManager(store.client, vector_size=store.dim)
     router = CollectionRouter(
         manager,
@@ -141,7 +145,10 @@ async def _reclassify_impl(
 
     # Step 2: Show aggregated preview
     console.print(
-        f"\n[bold]Found {len(changes)} documents with classification changes:[/bold]\n"
+        (
+            f"\n[bold]Found {len(changes)} documents "
+            f"with classification changes:[/bold]\n"
+        )
     )
     _show_aggregated_preview(changes)
 
@@ -175,7 +182,10 @@ async def _reclassify_impl(
     # Summary
     total_chunks = sum(c["chunk_count"] for c in changes)
     console.print(
-        f"\n[bold green]✓ Updated {len(changes)} documents ({total_chunks} chunks)[/bold green]"
+        (
+            f"\n[bold green]✓ Updated {len(changes)} documents "
+            f"({total_chunks} chunks)[/bold green]"
+        )
     )
     console.print(f"[dim]Session: {session_timestamp}[/dim]")
 
@@ -196,7 +206,8 @@ def verify_command(
     """
     Verify current Qdrant metadata matches expected classify() output.
 
-    Shows mismatches without making changes. Useful before/after reclassification.
+    Shows mismatches without making changes.
+    Useful before/after reclassification.
 
     Examples:
         kb-ingest reclassify verify "docs/**/*.pdf"
@@ -218,6 +229,7 @@ async def _verify_impl(
 
     store = VectorStore()
     await store.connect()
+    assert store.client is not None
     manager = CollectionManager(store.client, vector_size=store.dim)
     router = CollectionRouter(
         manager,
@@ -249,7 +261,10 @@ async def _verify_impl(
 
     # Show mismatches
     console.print(
-        f"\n[bold yellow]Found {len(changes)} documents with mismatches:[/bold yellow]\n"
+        (
+            f"\n[bold yellow]Found {len(changes)} documents "
+            f"with mismatches:[/bold yellow]\n"
+        )
     )
 
     # Detailed table (not aggregated — show per-document for verify)
@@ -275,7 +290,10 @@ async def _verify_impl(
 
     # Hint
     console.print(
-        f"\n[dim]Tip: Run 'kb-ingest reclassify run \"{pattern}\"' to apply these changes.[/dim]"
+        (
+            "\n[dim]Tip: Run 'kb-ingest reclassify run \"{pattern}\"' "
+            "to apply these changes.[/dim]"
+        )
     )
 
 
@@ -297,7 +315,7 @@ def _sessions_impl() -> None:
     with MetadataStore() as store:
         # Query distinct sessions with stats
         cursor = store.conn.execute("""
-            SELECT 
+            SELECT
                 session_timestamp,
                 COUNT(DISTINCT source_file) as doc_count,
                 COUNT(*) as field_count
@@ -331,7 +349,10 @@ def _sessions_impl() -> None:
 
     console.print(table)
     console.print(
-        f"\n[dim]Tip: Rollback a session with 'kb-ingest reclassify rollback --session <timestamp>'[/dim]"
+        (
+            "\n[dim]Tip: Rollback a session with "
+            "'kb-ingest reclassify rollback --session <timestamp>'[/dim]"
+        )
     )
 
 
@@ -365,7 +386,8 @@ def rollback_command(
 
     Examples:
         kb-ingest reclassify rollback --session 2026-05-26T15-30-00
-        kb-ingest reclassify rollback "docs/OT*.pdf" --before 2026-05-26T16-00-00
+        kb-ingest reclassify rollback "docs/OT*.pdf" \
+            --before 2026-05-26T16-00-00
     """
     asyncio.run(_rollback_impl(pattern, session, before, yes))
 
@@ -380,13 +402,15 @@ async def _rollback_impl(
     # Validate arguments
     if session and (pattern or before):
         console.print(
-            "[red]Error: --session cannot be combined with pattern or --before[/red]"
+            "[red]Error: --session cannot be combined "
+            "with pattern or --before[/red]"
         )
         raise SystemExit(1)
 
     if not session and not (pattern and before):
         console.print(
-            "[red]Error: Either --session or (pattern + --before) required[/red]"
+            "[red]Error: Either --session or "
+            "(pattern + --before) required[/red]"
         )
         raise SystemExit(1)
 
@@ -395,7 +419,8 @@ async def _rollback_impl(
         if session:
             # Query backups for session
             cursor = store.conn.execute(
-                "SELECT source_file, field_name, old_value, chunk_index FROM reclassify_backups WHERE session_timestamp=?",
+                "SELECT source_file, field_name, old_value, chunk_index "
+                "FROM reclassify_backups WHERE session_timestamp=?",
                 (session,),
             )
             backups = cursor.fetchall()
@@ -414,7 +439,8 @@ async def _rollback_impl(
 
             if not yes:
                 response = console.input(
-                    "\n[bold yellow]Restore this session? [y/N]:[/bold yellow] "
+                    "\n[bold yellow]Restore this session?"
+                    " [y/N]:[/bold yellow] "
                 )
                 if response.lower() != "y":
                     console.print("[red]Aborted.[/red]")
@@ -428,8 +454,9 @@ async def _rollback_impl(
             for backup in backups:
                 store.conn.execute(
                     """
-                    INSERT INTO reclassify_history 
-                    (timestamp, source_file, field_name, old_value, new_value, session_timestamp)
+                    INSERT INTO reclassify_history
+                    (timestamp, source_file, field_name, old_value,
+                     new_value, session_timestamp)
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     (
@@ -454,7 +481,8 @@ async def _rollback_impl(
             # Query backups matching pattern before timestamp
             # For now, simplified version using session_timestamp filter
             cursor = store.conn.execute(
-                "SELECT source_file, field_name, old_value, chunk_index FROM reclassify_backups WHERE session_timestamp < ?",
+                "SELECT source_file, field_name, old_value, chunk_index "
+                "FROM reclassify_backups WHERE session_timestamp < ?",
                 (before,),
             )
             all_backups = cursor.fetchall()
@@ -474,13 +502,14 @@ async def _rollback_impl(
 
             if not backups:
                 console.print(
-                    f"[yellow]No backups found matching pattern '{pattern}' before {before}[/yellow]"
+                    f"[yellow]No backups found matching pattern "
+                    f"'{pattern}' before {before}[/yellow]"
                 )
                 return
 
             # Show preview
             doc_count = len(set(b[0] for b in backups))
-            console.print(f"\n[bold]Selective Rollback[/bold]")
+            console.print("\n[bold]Selective Rollback[/bold]")
             console.print(f"Pattern: {pattern}")
             console.print(f"Before: {before}")
             console.print(f"Documents: {doc_count}")
@@ -488,7 +517,8 @@ async def _rollback_impl(
 
             if not yes:
                 response = console.input(
-                    "\n[bold yellow]Restore these documents? [y/N]:[/bold yellow] "
+                    "\n[bold yellow]Restore these documents?"
+                    " [y/N]:[/bold yellow] "
                 )
                 if response.lower() != "y":
                     console.print("[red]Aborted.[/red]")
@@ -502,8 +532,9 @@ async def _rollback_impl(
             for backup in backups:
                 store.conn.execute(
                     """
-                    INSERT INTO reclassify_history 
-                    (timestamp, source_file, field_name, old_value, new_value, session_timestamp)
+                    INSERT INTO reclassify_history
+                    (timestamp, source_file, field_name, old_value,
+                     new_value, session_timestamp)
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     (
@@ -512,7 +543,8 @@ async def _rollback_impl(
                         backup[1],  # field_name
                         backup[2],  # old_value
                         "(selective-rollback)",  # marker
-                        f"selective-{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}",
+                        "selective-"
+                        f"{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}",
                     ),
                 )
             store.conn.commit()
@@ -528,7 +560,7 @@ async def _apply_rollback(backups: list[tuple]) -> None:
     await store.connect()
 
     # Group by source_file
-    by_file = {}
+    by_file: dict[str, dict[str, str]] = {}
     for source_file, field_name, old_value, chunk_index in backups:
         if source_file not in by_file:
             by_file[source_file] = {}
@@ -577,7 +609,7 @@ def _parse_filter_expr(filter_expr: str) -> dict[str, str]:
 def _show_aggregated_preview(changes: list[dict]) -> None:
     """Show aggregated summary by field using Rich table."""
     # Group changes by field
-    field_stats = {}  # field_name -> {(old, new): count}
+    field_stats: dict[str, dict[tuple[str, str], int]] = {}
 
     for change in changes:
         for field_name, (old_val, new_val) in change["fields_changed"].items():
