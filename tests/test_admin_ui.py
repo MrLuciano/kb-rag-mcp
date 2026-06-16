@@ -118,3 +118,26 @@ class TestAdminTemplates:
 
     def test_shell_template_exists(self):
         assert os.path.exists("kb_server/ui/templates/admin/shell.html")
+
+
+class TestAdminTabs:
+    def test_admin_documents_tab(self, client):
+        """Documents tab returns real content."""
+        response = client.get("/admin/tabs/documents")
+        assert response.status_code == 200
+        assert "Documents" in response.text
+        assert "alert alert-info" not in response.text  # No placeholder
+
+    def test_admin_ingestion_tab(self, client):
+        """Ingestion tab returns real content."""
+        response = client.get("/admin/tabs/ingestion")
+        assert response.status_code == 200
+        assert "Ingestion" in response.text
+        assert "Quick Ingest" in response.text
+
+    def test_admin_ragas_tab(self, client):
+        """RAGAS tab returns real content."""
+        response = client.get("/admin/tabs/ragas")
+        assert response.status_code == 200
+        assert "RAGAS Evaluation" in response.text
+        assert "Run Evaluation" in response.text
