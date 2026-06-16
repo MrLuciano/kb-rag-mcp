@@ -30,7 +30,7 @@
                     @click="timeRange = '7d'; url = '{{ build_grafana_embed_url_with_range("7d") }}'">7d</button>
         </div>
     </div>
-    <iframe :src="url" width="100%" height="600" frameborder="0"></iframe>
+    <iframe :src="url" class="monitoring-iframe"></iframe>
 </div>
 {% else %}
 <div class="alert alert-info">

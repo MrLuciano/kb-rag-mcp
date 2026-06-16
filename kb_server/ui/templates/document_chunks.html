@@ -8,7 +8,7 @@
                 data-bs-target="#collapse-p-{{ offset + loop.index }}"
                 aria-expanded="false">
             Chunk {{ chunk.chunk_index }}
-            <small class="text-muted ms-2 text-truncate" style="max-width:400px;">
+            <small class="text-muted ms-2 text-truncate chunk-title-truncate">
                 {{ highlight_term(chunk.text[:80], search_query) }}
             </small>
         </button>
@@ -18,7 +18,7 @@
          aria-labelledby="heading-p-{{ offset + loop.index }}"
          data-bs-parent="#chunksAccordion">
         <div class="accordion-body">
-            <pre class="mb-0" style="white-space:pre-wrap;word-break:break-word;">{{ highlight_term(chunk.text, search_query) }}</pre>
+            <pre class="mb-0 chunk-preview">{{ highlight_term(chunk.text, search_query) }}</pre>
         </div>
     </div>
 </div>

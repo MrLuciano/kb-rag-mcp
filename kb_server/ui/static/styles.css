@@ -1,0 +1,65 @@
+/* kb_server/ui/static/styles.css */
+/* Project-specific styles to replace inline styles across templates */
+
+/* Document chunk preview (replaces inline style on <pre> tags) */
+.chunk-preview {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Chunk title truncation (replaces inline max-width) */
+.chunk-title-truncate {
+    max-width: 400px;
+}
+
+/* Admin shell layout (replaces inline min-height) */
+.admin-shell {
+    min-height: calc(100vh - 80px);
+}
+
+/* Admin sidebar (replaces inline width/flex-shrink) */
+.admin-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+}
+
+/* Monitoring iframe (replaces HTML width/height/frameborder attributes) */
+.monitoring-iframe {
+    width: 100%;
+    height: 600px;
+    border: none;
+}
+
+/* Search result text (replaces inline white-space/font-family) */
+.search-result-text {
+    white-space: pre-wrap;
+    font-family: inherit;
+}
+
+/* Monitor lights card (replaces inline width) */
+.monitor-card {
+    width: 160px;
+}
+
+/* Monitor light indicator (replaces inline circle styles) */
+.monitor-light {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+
+/* Analytics table (replaces inline width: auto) */
+.analytics-table {
+    width: auto;
+}
+
+/* Config search input (replaces inline max-width) */
+.config-search {
+    max-width: 300px;
+}
+
+/* Editable field cursor (replaces inline cursor:pointer) */
+.editable-field {
+    cursor: pointer;
+}

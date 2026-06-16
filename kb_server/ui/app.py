@@ -1,11 +1,12 @@
 """FastAPI application for KB-RAG Web UI."""
 
 import secrets
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -53,6 +54,10 @@ templates.env.globals["get_nonce"] = lambda request: getattr(
 
 # CSP middleware
 app.add_middleware(CSPMiddleware)
+
+# Static files
+static_dir = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 # Admin routes
 from kb_server.ui import routes_admin  # noqa: E402, F811
