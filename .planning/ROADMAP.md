@@ -111,6 +111,8 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [28b-01-PLAN.md](phases/28b-auth-api/28b-01-PLAN.md) — 7 tasks
 - [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, tab content (config, monitoring, ingestion, RAGAS, browser cleanup, profile), advanced filters (date range, file type, vendor, product), document export (CSV/JSON)
   - Plans: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 2 tasks (shell), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 6 tasks (tab content), [28c-03-PLAN.md](phases/28c-admin-spa-panel/28c-03-PLAN.md) — TBD (advanced filters), [28c-04-PLAN.md](phases/28c-admin-spa-panel/28c-04-PLAN.md) — TBD (document export)
+- [ ] Phase 28c-fixes: Admin SPA Gap Closure — Fix UAT failures from Phase 28c (auth flow, document browse, CSP/SRI, monitor lights, config editor, partials, copy/spacing)
+  - Plans: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth, documents, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 3 tasks (monitor, config, partials + spacing)
 - [ ] Phase 38: Grafana Dashboard Embedding — iframe embed helper, time range selector, Jinja2 globals
   - Plans: [38-01-PLAN.md](phases/38-grafana-embed/38-01-PLAN.md) — 1 task
 - [ ] Phase 39: Observability Backlog — OBS-01 (Grafana health check), OBS-02 (request ID middleware), METRICS-01 (percentile metrics)
@@ -179,6 +181,21 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
    6. CSP middleware uses Alpine.js CSP build with nonce-based script-src and `frame-src` for Grafana; all CDN scripts have SRI integrity hashes
 **Plans**: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 3 tasks (shell + auth + CSP), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 3 tasks (monitor lights, config, profile + browse cleanup), [28c-03-PLAN.md](phases/28c-admin-spa-panel/28c-03-PLAN.md) — 3 tasks (filter-values API, get_documents enhancement, filter UI), [28c-04-PLAN.md](phases/28c-admin-spa-panel/28c-04-PLAN.md) — 2 tasks (export endpoint, export button wiring)
 **UI hint**: yes
+
+### Phase 28c-fixes: Admin SPA Gap Closure
+**Goal**: Fix all UAT-verified gaps from Phase 28c so the Admin SPA matches the approved 28c-UI-SPEC.md design contract
+**Depends on**: Phase 28c (core shell and tabs already built), Phase 28b (auth session endpoint), Phase 40 (config REST API)
+**Requirements**: SPA-02, SPA-03, SPA-04, SPA-06, SPA-07, SPA-08, SPA-09, SPA-12
+**Success Criteria** (what must be TRUE):
+   1. Auth flow exchanges API key for JWT session cookie via POST /api/v1/auth/session; login modal uses Alpine.js x-show
+   2. Document browse table has checkbox column, bulk toolbar, and per-document Actions dropdown with hx-confirm
+   3. All inline scripts have CSP nonces; all CDN resources have SRI integrity hashes
+   4. Monitor lights show 7 components with latency, click-to-expand details, ARIA labels, and warning state
+   5. Config editor has Reset All button, Group badges, HTMX PUT save, and aria-live error announcements
+   6. Missing ingestion and RAGAS partials exist and are loaded by parent tabs
+   7. Sidebar width is 280px with icon-only (md) and hamburger (sm) responsive behavior
+   8. All copywriting matches 28c-UI-SPEC.md (labels, empty states, placeholders, tab names)
+**Plans**: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth flow, document browse, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 3 tasks (monitor lights, config editor, partials + copy/spacing)
 
 ### Phase 38: Grafana Dashboard Embedding
 **Goal**: Embed the existing Grafana monitoring dashboard inside the admin SPA Monitoring tab with configurable time ranges
