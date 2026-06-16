@@ -28,7 +28,10 @@ async def admin_shell(request: Request):
     return templates.TemplateResponse(
         request,
         "admin/shell.html",
-        {"request": request},
+        {
+            "request": request,
+            "active_page": "admin",
+        },
     )
 
 
@@ -50,7 +53,10 @@ async def admin_tab_content(request: Request, tab_name: str):
             "<div class='alert alert-danger'>Unknown tab</div>",
             status_code=404,
         )
-    context: dict[str, Any] = {"request": request}
+    context: dict[str, Any] = {
+        "request": request,
+        "active_page": "admin",
+    }
 
     if tab_name == "analytics":
         try:

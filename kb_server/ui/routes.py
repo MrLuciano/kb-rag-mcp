@@ -4,9 +4,11 @@ import logging
 import os
 import sqlite3
 from pathlib import Path
-from typing import Optional, List, Dict, Any
-from fastapi import Request, Query
+from typing import Any, Dict, List, Optional
+
+from fastapi import Form, Query, Request
 from fastapi.responses import HTMLResponse
+
 from kb_server.ui.app import app, templates
 
 log = logging.getLogger("kb-mcp.ui")
@@ -172,6 +174,7 @@ async def browse_documents(
                 "file_type": file_type,
                 "vendor": vendor,
             },
+            "active_page": "browse",
         },
     )
 
@@ -180,7 +183,43 @@ async def browse_documents(
 async def search_tester(request: Request):
     """Search testing page."""
     return templates.TemplateResponse(
-        request, "search.html", {"request": request}
+        request, "search.html", {"request": request, "active_page": "search"}
+    )
+
+
+@app.post("/ui/search", response_class=HTMLResponse)
+async def search_kb(
+    request: Request,
+    query: str = Form(...),
+    top_k: int = Form(5),
+    product: Optional[str] = Form(None),
+    version: Optional[str] = Form(None),
+    hybrid: bool = Form(False),
+    rerank: bool = Form(False),
+):
+    """Execute search and return HTML results."""
+    from kb_server.server import _search_kb
+
+    args = {
+        "query": query,
+        "top_k": top_k,
+        "product": product,
+        "version": version,
+        "hybrid": hybrid,
+        "rerank": rerank,
+    }
+    results = await _search_kb(args)
+    result_text = results[0].text if results else "No results found."
+
+    return templates.TemplateResponse(
+        request,
+        "search_results.html",
+        {
+            "request": request,
+            "query": query,
+            "results": results,
+            "result_text": result_text,
+        },
     )
 
 
@@ -214,13 +253,21 @@ async def document_detail(
         and document.get("status") != "failed"
     ):
         try:
+            from qdrant_client.models import (
+                FieldCondition,
+                Filter,
+                MatchValue,
+            )
+
             from kb_server.vector_store import VectorStore
 
             store = VectorStore()
             await store.connect()
             try:
                 source_file = row["path"]
-                results, _ = await store.client.scroll(
+                client = store.client
+                assert client is not None
+                results, _ = await client.scroll(
                     collection_name=store.collection,
                     scroll_filter=Filter(
                         must=[
@@ -234,14 +281,14 @@ async def document_detail(
                     with_payload=True,
                     with_vectors=False,
                 )
-                chunks = [
-                    {
+                chunks = []
+                for r in results:
+                    assert r.payload is not None
+                    chunks.append({
                         "chunk_id": str(r.id),
                         "text": r.payload.get("text", ""),
                         "chunk_index": int(r.payload.get("chunk_index", 0)),
-                    }
-                    for r in results
-                ]
+                    })
                 chunks.sort(key=lambda c: c["chunk_index"])
             except Exception as e:
                 log.error("Failed to load chunks for doc %s: %s", doc_id, e)
@@ -258,6 +305,7 @@ async def document_detail(
             "document": document,
             "chunks": chunks,
             "search_query": q,
+            "active_page": "browse",
         },
     )
 
@@ -278,14 +326,24 @@ async def document_chunks(
     if not row:
         return HTMLResponse("")
 
+    page: list[dict] = []
+    total = 0
     try:
+        from qdrant_client.models import (
+            FieldCondition,
+            Filter,
+            MatchValue,
+        )
+
         from kb_server.vector_store import VectorStore
 
         store = VectorStore()
         await store.connect()
         try:
             source_file = row["path"]
-            results, _ = await store.client.scroll(
+            client = store.client
+            assert client is not None
+            results, _ = await client.scroll(
                 collection_name=store.collection,
                 scroll_filter=Filter(
                     must=[
@@ -299,23 +357,24 @@ async def document_chunks(
                 with_payload=True,
                 with_vectors=False,
             )
-            all_chunks = [
-                {
+            chunks = []
+            for r in results:
+                assert r.payload is not None
+                chunks.append({
                     "chunk_id": str(r.id),
                     "text": r.payload.get("text", ""),
                     "chunk_index": int(r.payload.get("chunk_index", 0)),
-                }
-                for r in results
-            ]
-            all_chunks.sort(key=lambda c: c["chunk_index"])
+                })
+            chunks.sort(key=lambda c: c["chunk_index"])
+            page = chunks[offset : offset + 50]
+            total = len(chunks)
+        except Exception as e:
+            log.error("Failed to load chunks for doc %s: %s", doc_id, e)
         finally:
             await store.close()
     except Exception as e:
-        log.error("Failed to load chunks for doc %s: %s", doc_id, e)
-        return HTMLResponse("")
+        log.error("VectorStore error for doc %s: %s", doc_id, e)
 
-    page = all_chunks[offset : offset + 10]
-    total = len(all_chunks)
     return templates.TemplateResponse(
         request,
         "document_chunks.html",
