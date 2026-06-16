@@ -116,6 +116,12 @@ async def login_page(request: Request):
     )
 
 
+@app.post("/auth/login")
+async def login_submit(request: Request):
+    """Handle login form submission."""
+    return RedirectResponse(url="/admin", status_code=303)
+
+
 @app.get("/")
 async def root():
     """Root redirect to browse page."""
