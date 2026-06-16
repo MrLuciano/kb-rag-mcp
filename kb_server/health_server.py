@@ -25,14 +25,15 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 # Import metrics module to register all metrics with prometheus_client
 import observability.metrics  # noqa: F401
+
+# ── Config ─────────────────────────────────────────────────────
+from kb_server.config import config
+from kb_server.config import router as config_router
 from kb_server.health import (
     check_all_components,
     get_health_summary,
 )
 from kb_server.observability.percentiles import get_percentile_tracker
-
-# ── Config ─────────────────────────────────────────────────────
-from kb_server.config import config, router as config_router
 
 # ── Logging ─────────────────────────────────────────────────────
 _log_path = config.get("LOG_PATH", "/tmp/kb-mcp-health.log")

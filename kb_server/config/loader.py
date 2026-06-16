@@ -280,7 +280,7 @@ class ConfigLoader:
         self,
         key_or_pattern: str,
         callback: Optional[Callable[[str, Any], None]] = None,
-    ) -> Optional[Callable[[str, Any], None]]:
+    ) -> Any:
         """Register an observer callback for config changes.
 
         Supports both direct registration and decorator syntax:
@@ -292,7 +292,9 @@ class ConfigLoader:
         """
         if callback is None:
 
-            def decorator(cb: Callable[[str, Any], None]) -> Callable[[str, Any], None]:
+            def decorator(
+                cb: Callable[[str, Any], None],
+            ) -> Callable[[str, Any], None]:
                 self._observers.append((key_or_pattern, cb))
                 return cb
 
