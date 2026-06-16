@@ -30,6 +30,14 @@
     border: none;
 }
 
+/* Status colors (replaces inline <style> in base.html) */
+.status-completed, .status-ok { color: #198754; }
+.status-failed, .status-error { color: #dc3545; }
+.status-pending { color: #ffc107; }
+.score-high { color: #198754; font-weight: bold; }
+.score-medium { color: #fd7e14; }
+.score-low { color: #6c757d; }
+
 /* Search result text (replaces <pre> with styled div) */
 .search-result-text {
     white-space: pre-wrap;

@@ -24,15 +24,6 @@
             crossorigin="anonymous"
             defer></script>
 
-    <style>
-        .status-completed, .status-ok { color: #198754; }
-        .status-failed, .status-error { color: #dc3545; }
-        .status-pending { color: #ffc107; }
-        .score-high { color: #198754; font-weight: bold; }
-        .score-medium { color: #fd7e14; }
-        .score-low { color: #6c757d; }
-    </style>
-
     {% block extra_head %}{% endblock %}
 </head>
     <body>
@@ -63,7 +54,7 @@
                      <li class="nav-item">
                          <a class="nav-link fs-6 {% if active_page == 'admin' %}active" aria-current="page{% endif %}"
                             href="/admin">
-                             ⚙ Admin
+                             Admin
                          </a>
                      </li>
                 </ul>
