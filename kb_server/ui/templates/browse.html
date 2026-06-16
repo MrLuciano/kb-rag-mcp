@@ -117,6 +117,13 @@
     </table>
 </div>
 
+{% if not documents %}
+<div class="alert alert-info">
+    No documents found matching the current filters.
+    <a href="/ui/browse" class="alert-link">Clear filters</a> or ingest documents.
+</div>
+{% endif %}
+
 <!-- Pagination -->
 {% if total_pages > 1 %}
 <nav aria-label="Page navigation">
