@@ -20,7 +20,13 @@
             <dd class="col-sm-9">{{ document.id }}</dd>
             <dt class="col-sm-3">Status</dt>
             <dd class="col-sm-9">
-                <span class="status-{{ document.status }}">{{ document.status }}</span>
+                {% if document.status == 'completed' or document.status == 'ok' %}
+                <span class="badge bg-success">{{ document.status }}</span>
+                {% elif document.status == 'failed' or document.status == 'error' %}
+                <span class="badge bg-danger">{{ document.status }}</span>
+                {% else %}
+                <span class="badge bg-warning">{{ document.status }}</span>
+                {% endif %}
             </dd>
             <dt class="col-sm-3">Product</dt>
             <dd class="col-sm-9">{{ document.product or 'N/A' }}</dd>
