@@ -47,7 +47,7 @@ def _get_erasure_manager(request: Request) -> ErasureManager:
     svc = _get_service(request)
     erasure = getattr(request.app.state, "erasure_manager", None)
     if erasure is None:
-        erasure = ErasureManager(svc._session)
+        erasure = ErasureManager(svc.session)
         request.app.state.erasure_manager = erasure
     return erasure
 

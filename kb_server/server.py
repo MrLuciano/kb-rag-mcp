@@ -1414,7 +1414,7 @@ async def main():
 
     auth_db_path = Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
     auth_service = AuthService(db_path=auth_db_path)
-    erasure_manager = ErasureManager(auth_service._session)
+    erasure_manager = ErasureManager(auth_service.session)
 
     def _build_auth_app():
         """Build a FastAPI sub-app with mounted auth router."""
