@@ -20,10 +20,12 @@ class ConfigLoader:
     def __init__(self, db_path: Optional[Path] = None):
         self._db_path = db_path or get_db_path()
         self._cache: dict[str, tuple[str, str, float]] = {}
+        self._old_cache: dict[str, tuple[str, str, float]] = {}
         self._cache_version: int = 0
         self._observers: list[tuple[str, Callable[[str, Any], None]]] = []
 
         self._init_db()
+        self.load_from_env()
 
     def _init_db(self) -> None:
         try:
@@ -35,6 +37,75 @@ class ConfigLoader:
                 "ConfigLoader: SQLite unavailable, falling through to env"
             )
 
+    def load_from_env(self) -> None:
+        """Seed known env keys into SQLite config table if not present.
+
+        Iterates over a curated list of known environment keys and inserts
+        them into the config table with group_name="env_default" when the
+        key does not already exist in the database.
+
+        Only seeds the default production database to avoid polluting
+        temporary test databases.
+        """
+        # Skip seeding for non-production databases (e.g. tests)
+        if self._db_path.name != "kb_metadata.db":
+            return
+
+        seed_keys = [
+            "LOG_PATH",
+            "MCP_TRANSPORT",
+            "SSE_HOST",
+            "SSE_PORT",
+            "DEFAULT_TOP_K",
+            "RATE_LIMIT_ENABLED",
+            "RATE_LIMIT_REQUESTS",
+            "RATE_LIMIT_WINDOW",
+            "RLCACHE_ENABLED",
+            "RLCACHE_TTL",
+            "RLCACHE_MAX_ENTRIES",
+            "QUERY_LOG_ENABLED",
+            "QUERY_LOG_PATH",
+            "QUERY_LOG_RETENTION_DAYS",
+            "QUERY_LOG_CLEANUP_INTERVAL_HOURS",
+            "HEALTH_HOST",
+            "HEALTH_PORT",
+            "METADATA_DB",
+        ]
+        try:
+            with get_connection(self._db_path) as conn:
+                ensure_config_table(conn)
+                for key in seed_keys:
+                    row = conn.execute(
+                        "SELECT 1 FROM config WHERE key = ?", (key,)
+                    ).fetchone()
+                    if row is None:
+                        value = os.getenv(key)
+                        if value is not None:
+                            conn.execute(
+                                """
+                                INSERT INTO config (key, value, type,
+                                                    group_name, description,
+                                                    updated_at, updated_by)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                (
+                                    key,
+                                    value,
+                                    "string",
+                                    "env_default",
+                                    "Seeded from .env on startup",
+                                    time.time(),
+                                    "system",
+                                ),
+                            )
+                bump_config_version(conn)
+            self._cache_version = 0
+        except Exception:
+            log.warning(
+                "ConfigLoader.load_from_env: SQLite unavailable, "
+                "skipping env seed"
+            )
+
     def _refresh_cache(self) -> None:
         try:
             with get_connection(self._db_path) as conn:
@@ -44,6 +115,7 @@ class ConfigLoader:
                 rows = conn.execute(
                     "SELECT key, value, type FROM config"
                 ).fetchall()
+                self._old_cache = dict(self._cache)
                 self._cache = {
                     r["key"]: (r["value"], r["type"], time.time())
                     for r in rows
@@ -205,9 +277,51 @@ class ConfigLoader:
         return str(entry["value"])
 
     def on_change(
-        self, key_or_pattern: str, callback: Callable[[str, Any], None]
-    ) -> None:
+        self,
+        key_or_pattern: str,
+        callback: Optional[Callable[[str, Any], None]] = None,
+    ) -> Optional[Callable[[str, Any], None]]:
+        """Register an observer callback for config changes.
+
+        Supports both direct registration and decorator syntax:
+
+            loader.on_change("KEY", callback)
+            @loader.on_change("KEY")
+            def my_callback(key, value):
+                ...
+        """
+        if callback is None:
+
+            def decorator(cb: Callable[[str, Any], None]) -> Callable[[str, Any], None]:
+                self._observers.append((key_or_pattern, cb))
+                return cb
+
+            return decorator
+
         self._observers.append((key_or_pattern, callback))
+        return callback
+
+    def reload_if_changed(self) -> bool:
+        """Check for config changes and notify observers synchronously.
+
+        Returns True if any changes were detected and observers were
+        notified, False otherwise.
+        """
+        self._old_cache = dict(self._cache)
+        self._refresh_cache()
+        changed = False
+        # Detect new or changed keys
+        for key, (new_val, new_type, _) in self._cache.items():
+            old = self._old_cache.get(key)
+            if old is None or old[0] != new_val or old[1] != new_type:
+                self._notify_observers(key, convert_value(new_val, new_type))
+                changed = True
+        # Detect deleted keys
+        for key, (old_val, old_type, _) in self._old_cache.items():
+            if key not in self._cache:
+                self._notify_observers(key, None)
+                changed = True
+        return changed
 
     def _notify_observers(self, key: str, value: Any) -> None:
         for pattern, callback in self._observers:
