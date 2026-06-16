@@ -1,5 +1,6 @@
 from qa.report import render_report
 
+
 def test_report_minimal():
     data = {
         "hit_rate": 0.85,
@@ -7,7 +8,7 @@ def test_report_minimal():
         "zero_result_pct": 0.02,
         "p50_score": 0.51,
         "total": 20,
-        "passed": True
+        "passed": True,
     }
     md = render_report(data)
     assert isinstance(md, str)

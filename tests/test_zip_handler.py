@@ -35,8 +35,11 @@ def test_extract_zip_nested_one_level(tmp_path):
 
     outer_zip_path = _make_zip(
         tmp_path,
-        {"inner.zip": inner_zip_path.read_bytes(), "outer.txt": b"Outer content"},
-        "outer.zip"
+        {
+            "inner.zip": inner_zip_path.read_bytes(),
+            "outer.txt": b"Outer content",
+        },
+        "outer.zip",
     )
 
     result = extract_zip(outer_zip_path)
@@ -49,10 +52,13 @@ def test_extract_zip_skips_unsupported_types(tmp_path):
     """ZIP with .exe files skips them and does not return exe content."""
     from ingest.parsers.zip_handler import extract_zip
 
-    zip_path = _make_zip(tmp_path, {
-        "readme.txt": b"Read me",
-        "binary.exe": b"\x4d\x5a binary data",
-    })
+    zip_path = _make_zip(
+        tmp_path,
+        {
+            "readme.txt": b"Read me",
+            "binary.exe": b"\x4d\x5a binary data",
+        },
+    )
     result = extract_zip(zip_path)
     assert any("Read me" in r["text"] for r in result)
     assert not any(b"\x4d\x5a" in r.get("text", "").encode() for r in result)
@@ -84,5 +90,6 @@ def test_extract_zip_max_depth_two(tmp_path):
 
 def test_extract_zip_missing_file_returns_empty(tmp_path):
     from ingest.parsers.zip_handler import extract_zip
+
     result = extract_zip(tmp_path / "nonexistent.zip")
     assert result == []

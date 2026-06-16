@@ -1,4 +1,5 @@
 """Tests for streamable HTTP transport in the MCP server."""
+
 import os
 import time
 import pytest
@@ -13,7 +14,9 @@ def _setup_server(extra_env=None):
     os.environ["MCP_PORT"] = os.environ.get("MCP_PORT", "18765")
     os.environ["MCP_HOST"] = os.environ.get("MCP_HOST", "127.0.0.1")
     os.environ["MCP_ENDPOINT"] = os.environ.get("MCP_ENDPOINT", "/mcp-test")
-    os.environ["RATE_LIMIT_ENABLED"] = os.environ.get("RATE_LIMIT_ENABLED", "false")
+    os.environ["RATE_LIMIT_ENABLED"] = os.environ.get(
+        "RATE_LIMIT_ENABLED", "false"
+    )
 
     import kb_server.server
 
@@ -31,12 +34,17 @@ async def _run_main(main, mock_mgr_cls, extra_patches=None):
     """Run main() with standard patches plus optional extras."""
     patches = [
         patch("kb_server.server.store.connect", new_callable=AsyncMock),
-        patch("kb_server.health.check_embedding_service", new_callable=AsyncMock),
+        patch(
+            "kb_server.health.check_embedding_service", new_callable=AsyncMock
+        ),
         patch("kb_server.health.check_vector_store", new_callable=AsyncMock),
         patch("kb_server.server.CollectionManager"),
         patch("kb_server.server.CollectionRouter"),
         patch("kb_server.server.FilterTermsCache"),
-        patch("mcp.server.streamable_http_manager.StreamableHTTPSessionManager", mock_mgr_cls),
+        patch(
+            "mcp.server.streamable_http_manager.StreamableHTTPSessionManager",
+            mock_mgr_cls,
+        ),
         patch("uvicorn.Server.serve", new_callable=AsyncMock),
     ]
     if extra_patches:
@@ -89,8 +97,13 @@ async def test_streamable_http_auth_rejection():
     os.environ["MCP_PORT"] = "18766"
     main, mock_mgr_cls = _setup_server({"AUTH_ENABLED": "true"})
 
-    with patch("kb_server.auth.is_auth_enabled", return_value=True), \
-         patch("kb_server.auth.verify_request", return_value=(False, "Missing API key")):
+    with (
+        patch("kb_server.auth.is_auth_enabled", return_value=True),
+        patch(
+            "kb_server.auth.verify_request",
+            return_value=(False, "Missing API key"),
+        ),
+    ):
         mocks = await _run_main(main, mock_mgr_cls)
     assert mocks["serve"].called
 
@@ -101,10 +114,12 @@ async def test_streamable_http_rate_limiting():
     os.environ["MCP_PORT"] = "18767"
     main, mock_mgr_cls = _setup_server()
 
-    with patch("kb_server.server.RATE_LIMIT_ENABLED", True), \
-         patch("kb_server.server.rate_limiter") as mock_rl, \
-         patch("kb_server.server.record_rate_limit_allowed") as mock_allowed, \
-         patch("kb_server.server.record_rate_limit_rejected") as mock_rejected:
+    with (
+        patch("kb_server.server.RATE_LIMIT_ENABLED", True),
+        patch("kb_server.server.rate_limiter") as mock_rl,
+        patch("kb_server.server.record_rate_limit_allowed") as mock_allowed,
+        patch("kb_server.server.record_rate_limit_rejected") as mock_rejected,
+    ):
         mock_rl.check = AsyncMock(return_value=(True, None))
         mocks = await _run_main(main, mock_mgr_cls)
     assert mocks["serve"].called
@@ -200,6 +215,7 @@ def test_session_metrics_import_and_call():
         streamable_http_active_sessions,
         streamable_http_sessions_evicted,
     )
+
     # Call both — should not raise
     record_active_sessions(5, "streamable-http")
     record_session_evicted("streamable-http")
@@ -218,9 +234,10 @@ async def test_session_sweep_wired():
         mocks = await _run_main(main, mock_mgr_cls)
         # Find calls that contain _session_sweep
         sweep_calls = [
-            call for call in mock_create_task.call_args_list
+            call
+            for call in mock_create_task.call_args_list
             if "_session_sweep" in str(call)
         ]
-        assert len(sweep_calls) >= 1, (
-            "Expected asyncio.create_task(_session_sweep()) to be called"
-        )
+        assert (
+            len(sweep_calls) >= 1
+        ), "Expected asyncio.create_task(_session_sweep()) to be called"

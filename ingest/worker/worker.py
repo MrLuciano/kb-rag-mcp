@@ -110,16 +110,14 @@ class FileWorker:
         """
         # Validate file before processing
         if not self.skip_validation:
-            is_valid, validation_results = (
-                self.validation_pipeline.validate(file_path)
+            is_valid, validation_results = self.validation_pipeline.validate(
+                file_path
             )
 
             if not is_valid:
                 # Get failure reasons
-                failure_reasons = (
-                    self.validation_pipeline.get_failure_reasons(
-                        validation_results
-                    )
+                failure_reasons = self.validation_pipeline.get_failure_reasons(
+                    validation_results
                 )
                 log.warning(
                     f"Validation failed for {file_path.name}: "

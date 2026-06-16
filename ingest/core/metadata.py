@@ -233,7 +233,7 @@ class MetadataStore:
             return
 
         # Attach old database
-        self.conn.execute(f"ATTACH DATABASE '{v1_path}' AS old")
+        self.conn.execute("ATTACH DATABASE ? AS old", (str(v1_path),))
 
         # Create new schema
         self._create_schema_v2()
@@ -315,9 +315,7 @@ class MetadataStore:
                     max_chars_per_index INTEGER
                 )
             """)
-            self.conn.execute(
-                "INSERT INTO quota_config (id) VALUES (1)"
-            )
+            self.conn.execute("INSERT INTO quota_config (id) VALUES (1)")
             log.info("Created quota_config table")
         else:
             log.debug("quota_config table already exists")
@@ -445,8 +443,7 @@ class MetadataStore:
         if mbf is not None and file_bytes > mbf:
             return (
                 False,
-                f"File exceeds max bytes per file: "
-                f"{file_bytes} > {mbf}",
+                f"File exceeds max bytes per file: " f"{file_bytes} > {mbf}",
             )
 
         mdi = quotas.get("max_documents_per_index")
@@ -546,9 +543,7 @@ class MetadataStore:
         stats = {}
 
         # Job counts
-        row = self.conn.execute(
-            "SELECT COUNT(*) FROM jobs"
-        ).fetchone()
+        row = self.conn.execute("SELECT COUNT(*) FROM jobs").fetchone()
         stats["total_jobs"] = row[0] if row else 0
 
         row = self.conn.execute(
@@ -628,7 +623,9 @@ class MetadataStore:
         self.conn.commit()
         log.debug(
             "Connector state upserted: %s/%s (type=%s)",
-            source_key, remote_id, connector_type,
+            source_key,
+            remote_id,
+            connector_type,
         )
 
     def get_connector_state(
@@ -686,9 +683,7 @@ class MetadataStore:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def delete_connector_state(
-        self, source_key: str, remote_id: str
-    ) -> None:
+    def delete_connector_state(self, source_key: str, remote_id: str) -> None:
         """Remove a connector state record.
 
         Args:
@@ -701,13 +696,9 @@ class MetadataStore:
             (source_key, remote_id),
         )
         self.conn.commit()
-        log.debug(
-            "Connector state deleted: %s/%s", source_key, remote_id
-        )
+        log.debug("Connector state deleted: %s/%s", source_key, remote_id)
 
-    def get_connector_sync_checkpoint(
-        self, source_key: str
-    ) -> str | None:
+    def get_connector_sync_checkpoint(self, source_key: str) -> str | None:
         """Retrieve the latest sync checkpoint for a connector source.
 
         Uses the most recent ``ingested_at`` record to determine
@@ -755,9 +746,7 @@ class IngestRegistry:
         else:
             reg_env = os.getenv("REGISTRY_DB")
             resolved_db_path = (
-                Path(reg_env)
-                if reg_env is not None
-                else _REGISTRY_DEFAULT_DB
+                Path(reg_env) if reg_env is not None else _REGISTRY_DEFAULT_DB
             )
         self.db_path = resolved_db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -816,9 +805,7 @@ class IngestRegistry:
         """)
         cols = [
             r[1]
-            for r in self._conn.execute(
-                "PRAGMA table_info(files)"
-            ).fetchall()
+            for r in self._conn.execute("PRAGMA table_info(files)").fetchall()
         ]
         if "doc_type" not in cols:
             self._conn.execute(
@@ -888,7 +875,9 @@ class IngestRegistry:
         row = self._conn.execute(
             "SELECT * FROM files WHERE path = ?", (rel_path,)
         ).fetchone()
-        log_reg.debug("get_record '%s': %s", rel_path, "found" if row else "not found")
+        log_reg.debug(
+            "get_record '%s': %s", rel_path, "found" if row else "not found"
+        )
         return dict(row) if row else None
 
     def mark_ok(
@@ -1103,7 +1092,9 @@ class IngestRegistry:
             rows = self._conn.execute(
                 "SELECT * FROM files ORDER BY indexed_at DESC"
             ).fetchall()
-        log_reg.debug("Listed %d files (status=%s)", len(rows), status or "all")
+        log_reg.debug(
+            "Listed %d files (status=%s)", len(rows), status or "all"
+        )
         return [dict(r) for r in rows]
 
     def purge_deleted(self) -> None:
@@ -1123,9 +1114,7 @@ class IngestRegistry:
         self._conn.commit()
         log_reg.info("Registry reset.")
 
-    def is_indexed(
-        self, rel_path: str, checksum: str | None = None
-    ) -> bool:
+    def is_indexed(self, rel_path: str, checksum: str | None = None) -> bool:
         """
         Return True if the file is already indexed with the given checksum.
 
@@ -1149,9 +1138,7 @@ class IngestRegistry:
         log_reg.debug("is_indexed '%s' (checksum): %s", rel_path, indexed)
         return indexed
 
-    def mark_indexed(
-        self, rel_path: str, checksum: str, chunks: int
-    ) -> None:
+    def mark_indexed(self, rel_path: str, checksum: str, chunks: int) -> None:
         """
         Mark a file as successfully indexed with a pre-computed checksum.
         """

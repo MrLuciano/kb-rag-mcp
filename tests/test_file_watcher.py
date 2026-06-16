@@ -248,7 +248,7 @@ class TestDocWatcher:
         # Custom patterns should work
         assert watcher.should_ignore("/path/file.custom")
         assert watcher.should_ignore("/path/backup_file.pdf")
-        
+
         # When custom patterns provided, only those patterns are used
         # (not the defaults, so user has full control)
         # But unsupported extensions are still ignored

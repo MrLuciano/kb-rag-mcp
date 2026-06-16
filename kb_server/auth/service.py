@@ -147,7 +147,9 @@ class AuthService:
             .first()
         )
         if api_key:
-            api_key.last_used_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            api_key.last_used_at = datetime.now(timezone.utc).replace(
+                tzinfo=None
+            )
             self._session.commit()
 
     def verify_key(self, raw_key: str) -> Optional[User]:
@@ -194,7 +196,9 @@ class AuthService:
         self._session.add(entry)
 
     def prune_audit_logs(self, days: int = 90) -> int:
-        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+            days=days
+        )
         result = self._session.execute(
             sa_delete(AuditLog).where(AuditLog.timestamp < cutoff)
         )

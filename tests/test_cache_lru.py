@@ -1,4 +1,5 @@
 """Tests for kb_server/cache/lru.py — LRUCache and CacheEntry."""
+
 from __future__ import annotations
 
 import threading
@@ -7,7 +8,6 @@ import time
 import pytest
 
 from kb_server.cache.lru import CacheEntry, LRUCache
-
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -6,6 +6,7 @@ and get_hybrid_searcher singleton.
 
 fastembed / tokenizers are not installed in CI — stubbed before any import.
 """
+
 from __future__ import annotations
 
 import sys
@@ -24,8 +25,10 @@ for _mod in (
         sys.modules[_mod] = MagicMock()
 
 import kb_server.retrieval.hybrid_search as hs_module
-from kb_server.retrieval.hybrid_search import HybridSearcher, get_hybrid_searcher
-
+from kb_server.retrieval.hybrid_search import (
+    HybridSearcher,
+    get_hybrid_searcher,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers

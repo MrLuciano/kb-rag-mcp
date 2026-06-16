@@ -1,4 +1,5 @@
 """Tests for registry export CLI."""
+
 import json
 import csv
 import tempfile
@@ -19,13 +20,13 @@ spec.loader.exec_module(export)
 @pytest.fixture
 def temp_metadata_db():
     """Create temporary metadata database with sample data."""
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = Path(f.name)
-    
+
     # Create schema and insert sample data
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
     cursor.execute("""
         CREATE TABLE files (
             id INTEGER PRIMARY KEY,
@@ -39,27 +40,54 @@ def temp_metadata_db():
             hash TEXT
         )
     """)
-    
+
     # Insert sample data
     sample_files = [
-        ('doc1.pdf', 'completed', 'Product A', 'install_guide',
-         '1.0.0', 'pdf', 10, 'hash1'),
-        ('doc2.pdf', 'completed', 'Product B', 'api_guide',
-         '2.0.0', 'pdf', 15, 'hash2'),
-        ('doc3.pdf', 'failed', 'Product A', 'install_guide',
-         '1.0.0', 'pdf', 0, 'hash3'),
+        (
+            "doc1.pdf",
+            "completed",
+            "Product A",
+            "install_guide",
+            "1.0.0",
+            "pdf",
+            10,
+            "hash1",
+        ),
+        (
+            "doc2.pdf",
+            "completed",
+            "Product B",
+            "api_guide",
+            "2.0.0",
+            "pdf",
+            15,
+            "hash2",
+        ),
+        (
+            "doc3.pdf",
+            "failed",
+            "Product A",
+            "install_guide",
+            "1.0.0",
+            "pdf",
+            0,
+            "hash3",
+        ),
     ]
-    
-    cursor.executemany("""
+
+    cursor.executemany(
+        """
         INSERT INTO files (
             source_file, status, product, doc_type,
             version, file_type, chunks_stored, hash
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, sample_files)
-    
+    """,
+        sample_files,
+    )
+
     conn.commit()
     conn.close()
-    
+
     yield db_path
     db_path.unlink(missing_ok=True)
 
@@ -72,16 +100,16 @@ def test_export_registry_json_all_records(temp_metadata_db):
         output=output,
         product=None,
         doc_type=None,
-        status=None
+        status=None,
     )
-    
+
     output.seek(0)
     data = json.load(output)
-    
+
     assert len(data) == 3
-    assert data[0]['source_file'] == 'doc1.pdf'
-    assert data[0]['product'] == 'Product A'
-    assert data[1]['source_file'] == 'doc2.pdf'
+    assert data[0]["source_file"] == "doc1.pdf"
+    assert data[0]["product"] == "Product A"
+    assert data[1]["source_file"] == "doc2.pdf"
 
 
 def test_export_registry_json_filtered_by_product(temp_metadata_db):
@@ -90,16 +118,16 @@ def test_export_registry_json_filtered_by_product(temp_metadata_db):
     export.export_registry_json(
         db_path=temp_metadata_db,
         output=output,
-        product='Product A',
+        product="Product A",
         doc_type=None,
-        status=None
+        status=None,
     )
-    
+
     output.seek(0)
     data = json.load(output)
-    
+
     assert len(data) == 2
-    assert all(r['product'] == 'Product A' for r in data)
+    assert all(r["product"] == "Product A" for r in data)
 
 
 def test_export_registry_json_filtered_by_status(temp_metadata_db):
@@ -110,14 +138,14 @@ def test_export_registry_json_filtered_by_status(temp_metadata_db):
         output=output,
         product=None,
         doc_type=None,
-        status='completed'
+        status="completed",
     )
-    
+
     output.seek(0)
     data = json.load(output)
-    
+
     assert len(data) == 2
-    assert all(r['status'] == 'completed' for r in data)
+    assert all(r["status"] == "completed" for r in data)
 
 
 def test_export_registry_csv(temp_metadata_db):
@@ -128,14 +156,14 @@ def test_export_registry_csv(temp_metadata_db):
         output=output,
         product=None,
         doc_type=None,
-        status=None
+        status=None,
     )
-    
+
     output.seek(0)
     reader = csv.DictReader(output)
     rows = list(reader)
-    
+
     assert len(rows) == 3
-    assert rows[0]['source_file'] == 'doc1.pdf'
-    assert rows[0]['product'] == 'Product A'
-    assert 'chunks_stored' in rows[0]
+    assert rows[0]["source_file"] == "doc1.pdf"
+    assert rows[0]["product"] == "Product A"
+    assert "chunks_stored" in rows[0]

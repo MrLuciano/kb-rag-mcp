@@ -16,7 +16,11 @@ from typing import Optional
 
 from ingest.connectors.base import ConnectorBase
 from ingest.connectors.factory import register
-from ingest.connectors.models import ConnectorConfig, RemoteDocument, SyncResult
+from ingest.connectors.models import (
+    ConnectorConfig,
+    RemoteDocument,
+    SyncResult,
+)
 
 log = logging.getLogger("kb-ingest.connectors.git")
 
@@ -82,7 +86,9 @@ class GitConnector(ConnectorBase):
         token_env = self.config.auth_credentials
         creds = os.getenv(token_env, "")
         if creds and url.startswith("https://"):
-            url = url.replace("https://", f"https://x-access-token:{creds}@", 1)
+            url = url.replace(
+                "https://", f"https://x-access-token:{creds}@", 1
+            )
         return url
 
     def _git_env(self) -> dict[str, str]:
@@ -158,9 +164,7 @@ class GitConnector(ConnectorBase):
             check=True,
         )
         return [
-            f.strip()
-            for f in result.stdout.strip().splitlines()
-            if f.strip()
+            f.strip() for f in result.stdout.strip().splitlines() if f.strip()
         ]
 
     def _get_changed_files_since(
@@ -175,9 +179,7 @@ class GitConnector(ConnectorBase):
             check=True,
         )
         return [
-            f.strip()
-            for f in result.stdout.strip().splitlines()
-            if f.strip()
+            f.strip() for f in result.stdout.strip().splitlines() if f.strip()
         ]
 
     def _read_file_at_commit(
@@ -208,7 +210,9 @@ class GitConnector(ConnectorBase):
         return ""
 
     @staticmethod
-    def _build_remote_url(repo_url: str, filepath: str, commit_sha: str) -> str:
+    def _build_remote_url(
+        repo_url: str, filepath: str, commit_sha: str
+    ) -> str:
         base = repo_url.rstrip(".git")
         return f"{base}/blob/{commit_sha}/{filepath}"
 
@@ -230,7 +234,9 @@ class GitConnector(ConnectorBase):
             title=filepath,
             content=content,
             content_type=ctype,
-            remote_url=self._build_remote_url(remote_url, filepath, commit_sha),
+            remote_url=self._build_remote_url(
+                remote_url, filepath, commit_sha
+            ),
             metadata={
                 "commit_sha": commit_sha,
                 "filepath": filepath,
@@ -245,9 +251,7 @@ class GitConnector(ConnectorBase):
         if not self._check_git_available():
             raise RuntimeError("git is not available on this system")
 
-    async def fetch_documents(
-        self, since: Optional[str] = None
-    ) -> SyncResult:
+    async def fetch_documents(self, since: Optional[str] = None) -> SyncResult:
         if not self._check_git_available():
             return SyncResult(
                 source_key=self.source_key,
@@ -273,7 +277,9 @@ class GitConnector(ConnectorBase):
             )
 
         if since:
-            changed = self._get_changed_files_since(workspace, since_commit=since)
+            changed = self._get_changed_files_since(
+                workspace, since_commit=since
+            )
             filepaths = changed
         else:
             filepaths = self._list_repo_files(workspace)
@@ -300,9 +306,7 @@ class GitConnector(ConnectorBase):
             total_fetched=len(documents),
         )
 
-    async def fetch_document(
-        self, remote_id: str
-    ) -> Optional[RemoteDocument]:
+    async def fetch_document(self, remote_id: str) -> Optional[RemoteDocument]:
         ws = self._workspace
         if not ws or not os.path.isdir(os.path.join(ws, ".git")):
             return None

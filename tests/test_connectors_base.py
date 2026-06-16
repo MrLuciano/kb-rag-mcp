@@ -130,11 +130,14 @@ class TestConnectorFactory:
 
     def test_register_and_create(self):
         """Register a mock connector and create it via factory."""
+
         class MockConnector(ConnectorBase):
             async def fetch_documents(self, since=None):
                 return SyncResult(source_key=self.source_key)
+
             async def fetch_document(self, remote_id):
                 return None
+
             async def close(self):
                 pass
 

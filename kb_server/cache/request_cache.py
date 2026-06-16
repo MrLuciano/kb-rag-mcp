@@ -26,7 +26,9 @@ log = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────
 _RLCACHE_ENABLED = os.getenv("RLCACHE_ENABLED", "true").lower() in (
-    "true", "1", "yes"
+    "true",
+    "1",
+    "yes",
 )
 _RLCACHE_TTL = int(os.getenv("RLCACHE_TTL", "300"))
 _RLCACHE_MAX_ENTRIES = int(os.getenv("RLCACHE_MAX_ENTRIES", "1000"))

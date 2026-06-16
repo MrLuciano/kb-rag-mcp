@@ -5,6 +5,7 @@ PHASE 25: Optimization Experiments
 Provides recall@K, MRR, and NDCG via sklearn.  All metrics are
 pure-Python and require no external services (Qdrant, LLM, etc.).
 """
+
 import logging
 from typing import List, Optional
 
@@ -107,9 +108,7 @@ def ndcg_at_k(
         rel_arr = np.asarray([rel])
         ret_arr = np.asarray([ret])
         try:
-            scores.append(
-                float(ndcg_score(rel_arr, ret_arr, k=k))
-            )
+            scores.append(float(ndcg_score(rel_arr, ret_arr, k=k)))
         except Exception:
             scores.append(0.0)
 

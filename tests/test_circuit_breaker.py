@@ -10,7 +10,6 @@ import pytest
 
 from kb_server.circuit_breaker import CircuitBreaker, CircuitState
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

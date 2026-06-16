@@ -29,37 +29,33 @@ class TestPayloadIndexCreation:
         from kb_server.vector_store import VectorStore
 
         store = VectorStore()
-        
+
         # Mock client
         mock_client = AsyncMock()
-        mock_client.get_collections.return_value = MagicMock(
-            collections=[]
-        )
+        mock_client.get_collections.return_value = MagicMock(collections=[])
         mock_client.create_collection = AsyncMock()
         mock_client.create_payload_index = AsyncMock()
         store.client = mock_client
-        
+
         # Trigger collection creation
         await store._ensure_collection()
-        
+
         # Verify collection created
         assert mock_client.create_collection.called
-        
+
         # Verify indexes created for both fields
         assert mock_client.create_payload_index.call_count == 6
-        
+
         # Check that all 6 expected fields are indexed
         calls = mock_client.create_payload_index.call_args_list
-        indexed_fields = [
-            call.kwargs["field_name"] for call in calls
-        ]
+        indexed_fields = [call.kwargs["field_name"] for call in calls]
         assert "product" in indexed_fields
         assert "doc_type" in indexed_fields
         assert "version" in indexed_fields
         assert "doc_graph_id" in indexed_fields
         assert "graph_topics" in indexed_fields
         assert "graph_related" in indexed_fields
-        
+
         # Schema type is PayloadSchemaType.KEYWORD — verified implicitly
         # by the production code; asserting the enum value here is fragile
         # when other test files stub qdrant_client in sys.modules.
@@ -70,21 +66,19 @@ class TestPayloadIndexCreation:
         from kb_server.vector_store import VectorStore
 
         store = VectorStore()
-        
+
         # Mock client that fails on index creation
         mock_client = AsyncMock()
-        mock_client.get_collections.return_value = MagicMock(
-            collections=[]
-        )
+        mock_client.get_collections.return_value = MagicMock(collections=[])
         mock_client.create_collection = AsyncMock()
         mock_client.create_payload_index = AsyncMock(
             side_effect=Exception("Index creation failed")
         )
         store.client = mock_client
-        
+
         # Should not raise, only warn
         await store._ensure_collection()
-        
+
         # Collection still created
         assert mock_client.create_collection.called
 
@@ -94,7 +88,7 @@ class TestPayloadIndexCreation:
         from kb_server.vector_store import VectorStore
 
         store = VectorStore()
-        
+
         # Mock client with existing collection
         mock_collection = MagicMock()
         mock_collection.name = "kb_docs"
@@ -104,10 +98,10 @@ class TestPayloadIndexCreation:
         )
         mock_client.create_payload_index = AsyncMock()
         store.client = mock_client
-        
+
         # Trigger collection check
         await store._ensure_collection()
-        
+
         # Verify NO index creation (collection already existed)
         assert not mock_client.create_payload_index.called
 
@@ -124,7 +118,7 @@ class TestMigrationScript:
             check_existing_indexes,
             create_index,
         )
-        
+
         # Verify functions exist and are callable
         assert callable(check_existing_indexes)
         assert callable(create_index)
@@ -135,20 +129,20 @@ class TestMigrationScript:
         from scripts.migrations.create_payload_indexes import (
             check_existing_indexes,
         )
-        
+
         # Mock client
         mock_client = AsyncMock()
-        
+
         # Mock collection with one index
         mock_collection_info = MagicMock()
         mock_collection_info.config.params.payload_schema = {
             "product": MagicMock()
         }
         mock_client.get_collection.return_value = mock_collection_info
-        
+
         # Check indexes
         result = await check_existing_indexes(mock_client, "kb_docs")
-        
+
         # Should detect product index exists, doc_type doesn't
         assert result["product"] is True
         assert result["doc_type"] is False
@@ -159,7 +153,7 @@ class TestMigrationScript:
 class TestPayloadIndexPerformance:
     """
     Integration tests for payload index performance.
-    
+
     Requires a running Qdrant instance.
     Set QDRANT_HOST and QDRANT_PORT env vars or skip with:
         pytest -m "not integration"
@@ -170,21 +164,21 @@ class TestPayloadIndexPerformance:
         """Create a vector store connected to test Qdrant."""
         if not os.getenv("QDRANT_HOST"):
             pytest.skip("Integration test requires QDRANT_HOST")
-        
+
         from kb_server.vector_store import VectorStore
 
         store = VectorStore()
         store.collection = "test_payload_indexes"
         await store.connect()
-        
+
         # Cleanup test collection if exists
         try:
             await store.client.delete_collection(store.collection)
         except Exception:
             pass
-        
+
         yield store
-        
+
         # Cleanup
         try:
             await store.client.delete_collection(store.collection)
@@ -195,7 +189,7 @@ class TestPayloadIndexPerformance:
     async def test_filtered_query_speed_with_indexes(self, vector_store):
         """
         Benchmark filtered queries with and without indexes.
-        
+
         Should show >10x improvement with indexes on large collections.
         """
         # This test would require:
@@ -204,7 +198,7 @@ class TestPayloadIndexPerformance:
         # 3. Create indexes
         # 4. Query with filters after index creation
         # 5. Compare latencies
-        
+
         # For now, just verify the test structure is correct
         pytest.skip("Requires large test dataset and timing infrastructure")
 
@@ -238,7 +232,7 @@ class TestPayloadIndexPerformance:
                 },
             },
         ]
-        
+
         # Would insert points, query, create indexes, query again,
         # and compare results. Skipped for unit test.
         pytest.skip("Requires full integration test setup")
@@ -251,10 +245,10 @@ class TestCLICommands:
     def test_db_create_indexes_command_exists(self):
         """Test that db create-indexes command exists."""
         from ingest.cli.db import db_group
-        
+
         # Verify command group exists
         assert db_group is not None
-        
+
         # Verify create-indexes subcommand exists
         assert "create-indexes" in [
             cmd.name for cmd in db_group.commands.values()
@@ -263,7 +257,7 @@ class TestCLICommands:
     def test_db_command_integrated_in_main_cli(self):
         """Test that db command group is registered in main CLI."""
         from ingest.cli.main import cli
-        
+
         # Verify db group registered
         assert "db" in [cmd.name for cmd in cli.commands.values()]
 

@@ -70,8 +70,10 @@ def list_keys() -> None:
         click.echo("No API keys found.")
         return
 
-    click.echo(f"{'Prefix':12} {'Scope':8} {'KB':24} {'Revoked':8} "
-               f"{'Created':22} {'Description'}")
+    click.echo(
+        f"{'Prefix':12} {'Scope':8} {'KB':24} {'Revoked':8} "
+        f"{'Created':22} {'Description'}"
+    )
     click.echo("─" * 100)
     for k in keys:
         prefix = k["prefix"]
@@ -80,15 +82,15 @@ def list_keys() -> None:
         revoked = "✓" if k["revoked"] else "—"
         created = k["created_at"][:19] if k["created_at"] else ""
         desc = k["description"] or ""
-        click.echo(f"{prefix:12} {scope:8} {kb:24} {revoked:8} "
-                   f"{created:22} {desc}")
+        click.echo(
+            f"{prefix:12} {scope:8} {kb:24} {revoked:8} "
+            f"{created:22} {desc}"
+        )
 
 
 @auth_group.command(name="revoke")
 @click.argument("prefix")
-@click.confirmation_option(
-    prompt="Are you sure you want to revoke this key?"
-)
+@click.confirmation_option(prompt="Are you sure you want to revoke this key?")
 def revoke_key(prefix: str) -> None:
     """Revoke an API key by its 8-character prefix.
 

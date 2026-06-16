@@ -81,7 +81,7 @@ class TestStageDocument:
         assert "connector_type: confluence" in text
         assert "title: My Page" in text
         assert "remote_url: https://confluence.example.com/pages/123" in text
-        assert "remote_etag: \"etag1\"" in text
+        assert 'remote_etag: "etag1"' in text
         assert "remote_mtime: 5000.0" in text
 
         # Separator and content
@@ -160,9 +160,7 @@ class TestCleanupStaleStaging:
 
     def test_no_op_nonexistent_dir(self, tmp_path):
         """Non-existent staging root does not error."""
-        removed = cleanup_stale_staging(
-            staging_root=tmp_path / "nonexistent"
-        )
+        removed = cleanup_stale_staging(staging_root=tmp_path / "nonexistent")
         assert removed == 0
 
 

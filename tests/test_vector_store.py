@@ -4,6 +4,7 @@ TDD tests for vector_store.py fixes:
   WR-05:    doc_type in get_stats() scroll projection
   IN-07:    list_documents scroll loop must not exit early when len(batch) < limit
 """
+
 import pytest
 import sys
 import os
@@ -13,6 +14,7 @@ import asyncio
 # Provide lightweight stubs to break the circular import chain before importing
 # vector_store. We only need to prevent server.py / embed_client from being
 # fully initialised — VectorStore itself doesn't depend on the full server.
+
 
 def _stub_modules():
     # Import real qdrant_client before stubs so real model classes (Distance,
@@ -30,8 +32,10 @@ def _stub_modules():
 
     # Stub server.cache.manager (pulled in by real embed_client)
     cm = types.ModuleType("kb_server.cache.manager")
+
     class FakeCM:
         pass
+
     cm.CacheManager = FakeCM
     sys.modules.setdefault("kb_server.cache.manager", cm)
 
@@ -60,8 +64,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "server"))
 # Now import VectorStore — will use the stubs above
 from kb_server.vector_store import VectorStore  # noqa: E402
 
-
 # ── WR-01/02: assert → RuntimeError ─────────────────────────────────────────
+
 
 def _run(coro):
     return asyncio.get_event_loop().run_until_complete(coro)
@@ -99,6 +103,7 @@ def test_get_stats_raises_if_not_connected():
 
 # ── WR-05: doc_type in get_stats() scroll projection ────────────────────────
 
+
 def test_get_stats_includes_doc_type_in_scroll_projection():
     """WR-05: get_stats() scroll must request 'doc_type' in with_payload list."""
     vs = VectorStore()
@@ -112,7 +117,9 @@ def test_get_stats_includes_doc_type_in_scroll_projection():
         async def get_collection(self, name):
             return FakeCollection()
 
-        async def scroll(self, collection_name, limit, with_payload, with_vectors, **kw):
+        async def scroll(
+            self, collection_name, limit, with_payload, with_vectors, **kw
+        ):
             scroll_calls.append(with_payload)
             return [], None
 
@@ -122,12 +129,13 @@ def test_get_stats_includes_doc_type_in_scroll_projection():
 
     assert scroll_calls, "scroll() was never called"
     projection = scroll_calls[0]
-    assert "doc_type" in projection, (
-        f"'doc_type' missing from scroll with_payload projection: {projection}"
-    )
+    assert (
+        "doc_type" in projection
+    ), f"'doc_type' missing from scroll with_payload projection: {projection}"
 
 
 # ── IN-07: list_documents scroll must not exit early ─────────────────────────
+
 
 def test_list_documents_continues_scroll_when_batch_smaller_than_page():
     """IN-07: scroll loop must continue when batch size < page limit (500).
@@ -139,8 +147,12 @@ def test_list_documents_continues_scroll_when_batch_smaller_than_page():
 
     def _make_record(name):
         r = types.SimpleNamespace()
-        r.payload = {"source_file": name, "file_type": "md",
-                     "product": "p", "doc_type": "guide"}
+        r.payload = {
+            "source_file": name,
+            "file_type": "md",
+            "product": "p",
+            "doc_type": "guide",
+        }
         return r
 
     page1 = [_make_record(f"doc{i}.md") for i in range(3)]
@@ -158,7 +170,7 @@ def test_list_documents_continues_scroll_when_batch_smaller_than_page():
 
     docs = _run(vs.list_documents(limit=50))
 
-    assert call_count[0] == 2, (
-        f"Expected 2 scroll calls (both pages), got {call_count[0]}"
-    )
+    assert (
+        call_count[0] == 2
+    ), f"Expected 2 scroll calls (both pages), got {call_count[0]}"
     assert len(docs) == 5, f"Expected 5 docs (3+2), got {len(docs)}"

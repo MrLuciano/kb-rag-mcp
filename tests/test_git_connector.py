@@ -65,15 +65,12 @@ def temp_git_repo():
         cwd=tmpdir,
         capture_output=True,
     )
-    first_sha = (
-        subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=tmpdir,
-            capture_output=True,
-            text=True,
-        )
-        .stdout.strip()
-    )
+    first_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmpdir,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
     (tmpdir / "docs").mkdir()
     (tmpdir / "docs" / "guide.md").write_text("# Guide\n\nStep 1.\n")
@@ -84,15 +81,12 @@ def temp_git_repo():
         cwd=tmpdir,
         capture_output=True,
     )
-    second_sha = (
-        subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=tmpdir,
-            capture_output=True,
-            text=True,
-        )
-        .stdout.strip()
-    )
+    second_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmpdir,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
     (tmpdir / "src" / "utils.py").write_text("def util():\n    return 1\n")
     (tmpdir / "README.md").write_text("# My Project\n\nUpdated.\n")
@@ -102,15 +96,12 @@ def temp_git_repo():
         cwd=tmpdir,
         capture_output=True,
     )
-    third_sha = (
-        subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=tmpdir,
-            capture_output=True,
-            text=True,
-        )
-        .stdout.strip()
-    )
+    third_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmpdir,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
     yield tmpdir, first_sha, second_sha, third_sha
 
@@ -211,9 +202,7 @@ class TestGitFileContentReading:
         tmpdir, first_sha, second_sha, third_sha = temp_git_repo
 
         conn = GitConnector(git_config)
-        content = conn._read_file_at_commit(
-            str(tmpdir), "README.md", "HEAD"
-        )
+        content = conn._read_file_at_commit(str(tmpdir), "README.md", "HEAD")
         assert "Updated" in content  # third commit
 
     def test_read_file_at_earlier_commit(self, git_config, temp_git_repo):
@@ -366,15 +355,11 @@ class TestGitFetchDocuments:
         ids = {d.remote_id for d in result.documents}
         assert "README.md" in ids
         assert "src/utils.py" in ids
-        mock_diff.assert_called_once_with(
-            str(tmpdir), since_commit=second_sha
-        )
+        mock_diff.assert_called_once_with(str(tmpdir), since_commit=second_sha)
 
     @pytest.mark.asyncio
     @patch("ingest.connectors.git.GitConnector._check_git_available")
-    async def test_fetch_git_not_available(
-        self, mock_check_git, git_config
-    ):
+    async def test_fetch_git_not_available(self, mock_check_git, git_config):
         from ingest.connectors.git import GitConnector
 
         mock_check_git.return_value = False
@@ -496,7 +481,10 @@ class TestFactoryRegistration:
         assert "git" in types
 
     def test_can_create_via_factory(self, git_config):
-        from ingest.connectors.factory import create_connector, list_supported_types
+        from ingest.connectors.factory import (
+            create_connector,
+            list_supported_types,
+        )
 
         conn = create_connector("git", git_config)
         assert conn is not None

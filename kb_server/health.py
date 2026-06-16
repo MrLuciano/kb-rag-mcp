@@ -445,7 +445,10 @@ async def get_health_summary() -> dict:
     return {
         "status": "ok" if healthy else "degraded",
         "healthy": healthy,
-        "timestamp": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc)
+        .replace(tzinfo=None)
+        .isoformat()
+        + "Z",
         "components": {
             name: status.to_dict() for name, status in components.items()
         },

@@ -70,6 +70,7 @@ def _hash_subject(subject: str) -> str:
     """Produce a stable, non-reversible rate-limit subject identifier."""
     return hashlib.sha256(subject.encode()).hexdigest()[:16]
 
+
 # ── Config ────────────────────────────────────────────────────────
 TRANSPORT = os.getenv("MCP_TRANSPORT", "stdio")  # stdio | sse
 SSE_HOST = os.getenv("SSE_HOST", "127.0.0.1")
@@ -580,9 +581,7 @@ async def call_tool(
 
     # PHASE 33: Rate-limit check for tool calls
     if RATE_LIMIT_ENABLED and rate_limiter is not None:
-        subject = _hash_subject(
-            _current_subject.get() or "unknown"
-        )
+        subject = _hash_subject(_current_subject.get() or "unknown")
         transport = _current_transport.get()
         allowed, retry_after = await rate_limiter.check(subject)
         if not allowed:
@@ -1317,7 +1316,6 @@ def invalidate_retrieval_cache() -> None:
     operation that changes the underlying data so subsequent searches
     reflect the new state.
     """
-    global retrieval_cache
     if retrieval_cache is not None:
         retrieval_cache.invalidate_all()
         log.info("Retrieval cache invalidated by external signal")

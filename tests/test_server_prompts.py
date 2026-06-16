@@ -38,10 +38,12 @@ class TestPromptDefinitions:
 
 class TestRenderExtractAnswer:
     def test_renders_with_question_and_results(self):
-        messages = render_extract_answer({
-            "question": "How to install AppServer?",
-            "search_results": "[doc1: AppServer install guide]",
-        })
+        messages = render_extract_answer(
+            {
+                "question": "How to install AppServer?",
+                "search_results": "[doc1: AppServer install guide]",
+            }
+        )
         assert len(messages) == 1
         assert messages[0].role == "user"
         text = messages[0].content.text
@@ -51,27 +53,33 @@ class TestRenderExtractAnswer:
         assert "Sources:" in text
 
     def test_empty_question(self):
-        messages = render_extract_answer({
-            "question": "",
-            "search_results": "some results",
-        })
+        messages = render_extract_answer(
+            {
+                "question": "",
+                "search_results": "some results",
+            }
+        )
         text = messages[0].content.text
         assert "## User Question" in text
 
     def test_empty_results(self):
-        messages = render_extract_answer({
-            "question": "test",
-            "search_results": "",
-        })
+        messages = render_extract_answer(
+            {
+                "question": "test",
+                "search_results": "",
+            }
+        )
         text = messages[0].content.text
         assert "## Retrieved Document Chunks" in text
 
 
 class TestRenderSummarizeDocuments:
     def test_renders_with_documents(self):
-        messages = render_summarize_documents({
-            "documents": "[doc1, doc2, doc3]",
-        })
+        messages = render_summarize_documents(
+            {
+                "documents": "[doc1, doc2, doc3]",
+            }
+        )
         assert len(messages) == 1
         assert messages[0].role == "user"
         text = messages[0].content.text
@@ -79,36 +87,46 @@ class TestRenderSummarizeDocuments:
         assert "### Overview" in text
 
     def test_renders_with_focus(self):
-        messages = render_summarize_documents({
-            "documents": "[docs]",
-            "focus": "security",
-        })
+        messages = render_summarize_documents(
+            {
+                "documents": "[docs]",
+                "focus": "security",
+            }
+        )
         text = messages[0].content.text
         assert "security" in text
         assert "Area of Focus" in text
 
     def test_empty_documents(self):
-        messages = render_summarize_documents({
-            "documents": "",
-        })
+        messages = render_summarize_documents(
+            {
+                "documents": "",
+            }
+        )
         text = messages[0].content.text
         assert "## Documents to Summarize" in text
 
 
 class TestRenderPrompt:
     def test_render_extract_answer(self):
-        result = render_prompt("extract_answer", {
-            "question": "Q?",
-            "search_results": "results",
-        })
+        result = render_prompt(
+            "extract_answer",
+            {
+                "question": "Q?",
+                "search_results": "results",
+            },
+        )
         assert result.description
         assert len(result.messages) == 1
         assert "Q?" in result.messages[0].content.text
 
     def test_render_summarize_documents(self):
-        result = render_prompt("summarize_documents", {
-            "documents": "[docs]",
-        })
+        result = render_prompt(
+            "summarize_documents",
+            {
+                "documents": "[docs]",
+            },
+        )
         assert result.description
         assert len(result.messages) == 1
 

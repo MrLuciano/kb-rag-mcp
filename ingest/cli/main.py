@@ -12,6 +12,7 @@ import click
 # Load .env before any imports that need env vars
 _project_root = Path(__file__).parent.parent.parent
 from config.bootstrap_env import bootstrap_env
+
 bootstrap_env()
 
 # Add server/ to path for imports

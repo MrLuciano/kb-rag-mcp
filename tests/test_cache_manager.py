@@ -1,4 +1,5 @@
 """Tests for kb_server/cache/manager.py — CacheManager."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -6,7 +7,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from kb_server.cache.manager import CacheManager
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -75,9 +75,11 @@ def test_redis_unavailable_falls_back_to_lru():
     ):
         with patch.dict(
             "sys.modules",
-            {"kb_server.cache.redis": __import__(
-                "kb_server.cache.redis", fromlist=["RedisCache"]
-            )},
+            {
+                "kb_server.cache.redis": __import__(
+                    "kb_server.cache.redis", fromlist=["RedisCache"]
+                )
+            },
         ):
             cm = CacheManager(backend="redis")
     assert cm.backend_type == "lru"

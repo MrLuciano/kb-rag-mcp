@@ -1,11 +1,15 @@
 """Tests for CollectionRouter."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
 import pytest
 
-from kb_server.collections.router import CollectionNotFoundError, CollectionRouter
+from kb_server.collections.router import (
+    CollectionNotFoundError,
+    CollectionRouter,
+)
 
 
 @pytest.fixture
@@ -22,6 +26,7 @@ def router(manager):
 # ------------------------------------------------------------------
 # resolve
 # ------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_resolve_none_returns_default(manager, router):
@@ -55,6 +60,7 @@ async def test_resolve_missing_default_raises_error(manager, router):
 # ------------------------------------------------------------------
 # ensure
 # ------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_ensure_none_uses_default(manager, router):
@@ -116,8 +122,9 @@ async def test_resolve_multi_single_element(manager, router):
 @pytest.mark.asyncio
 async def test_resolve_multi_with_none_uses_default(manager, router):
     """None entries are replaced by the default collection."""
-    manager.collection_exists.side_effect = (
-        lambda n: n in ("kb_eng", "kb_docs")
+    manager.collection_exists.side_effect = lambda n: n in (
+        "kb_eng",
+        "kb_docs",
     )
     result = await router.resolve_multi(["kb_eng", None])
     assert result == ["kb_eng", "kb_docs"]

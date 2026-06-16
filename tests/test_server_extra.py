@@ -13,6 +13,7 @@ Covers:
 - _list_collections: manager None, empty list, results (lines 601-610)
 - _schedule_log_cleanup coroutine (lines 620-631)
 """
+
 from __future__ import annotations
 
 import pytest
@@ -21,7 +22,6 @@ from unittest.mock import AsyncMock, MagicMock, patch, call
 import kb_server.server as srv
 from kb_server.collections.router import CollectionNotFoundError
 import mcp.types as types
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -89,6 +89,7 @@ def test_query_logger_init_failure_continues(tmp_path):
     error_logged = []
 
     import logging
+
     log = logging.getLogger("kb-mcp")
 
     try:
@@ -149,7 +150,9 @@ async def test_list_tools_search_kb_required_fields():
 
 
 @pytest.mark.asyncio
-async def test_call_tool_unknown_name_returns_error_text(mock_store, mock_router):
+async def test_call_tool_unknown_name_returns_error_text(
+    mock_store, mock_router
+):
     """call_tool with unknown name returns 'Unknown tool' message."""
     srv.store = mock_store
     srv.collection_router = mock_router
@@ -169,7 +172,10 @@ async def test_call_tool_exception_returns_error_text(mock_store, mock_router):
     srv.collection_router = mock_router
     srv.query_logger = None
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
         out = await srv.call_tool("search_kb", {"query": "test"})
 
     assert len(out) == 1
@@ -217,9 +223,13 @@ async def test_call_tool_dispatches_kb_stats(mock_store):
 
 
 @pytest.mark.asyncio
-async def test_search_kb_rerank_failure_falls_back_to_original(mock_store, mock_router):
+async def test_search_kb_rerank_failure_falls_back_to_original(
+    mock_store, mock_router
+):
     """When reranker raises, falls back to original results truncated to top_k."""
-    results = [_make_result(text=f"result {i}", score=0.9 - i * 0.1) for i in range(5)]
+    results = [
+        _make_result(text=f"result {i}", score=0.9 - i * 0.1) for i in range(5)
+    ]
     mock_store.search.return_value = results
     srv.store = mock_store
     srv.collection_router = mock_router
@@ -228,9 +238,17 @@ async def test_search_kb_rerank_failure_falls_back_to_original(mock_store, mock_
     mock_reranker = AsyncMock()
     mock_reranker.rerank.side_effect = RuntimeError("reranker unavailable")
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
-        with patch("kb_server.retrieval.reranker.get_reranker", return_value=mock_reranker):
-            out = await srv._search_kb({"query": "test", "rerank": True, "top_k": 3})
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
+        with patch(
+            "kb_server.retrieval.reranker.get_reranker",
+            return_value=mock_reranker,
+        ):
+            out = await srv._search_kb(
+                {"query": "test", "rerank": True, "top_k": 3}
+            )
 
     # Should have fallen back and returned top_k results
     assert len(out) == 1
@@ -251,7 +269,10 @@ async def test_search_kb_zero_results_logs_query(mock_store, mock_router):
     mock_ql = MagicMock()
     srv.query_logger = mock_ql
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
         out = await srv._search_kb({"query": "empty query"})
 
     assert "No results found" in out[0].text
@@ -262,7 +283,9 @@ async def test_search_kb_zero_results_logs_query(mock_store, mock_router):
 
 
 @pytest.mark.asyncio
-async def test_search_kb_zero_results_logger_error_is_swallowed(mock_store, mock_router):
+async def test_search_kb_zero_results_logger_error_is_swallowed(
+    mock_store, mock_router
+):
     """If query_logger.log_query raises on zero results, error is swallowed."""
     mock_store.search.return_value = []
     srv.store = mock_store
@@ -271,7 +294,10 @@ async def test_search_kb_zero_results_logger_error_is_swallowed(mock_store, mock
     mock_ql.log_query.side_effect = Exception("db error")
     srv.query_logger = mock_ql
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
         out = await srv._search_kb({"query": "empty query"})
 
     assert "No results found" in out[0].text  # still returns message
@@ -283,7 +309,9 @@ async def test_search_kb_zero_results_logger_error_is_swallowed(mock_store, mock
 
 
 @pytest.mark.asyncio
-async def test_search_kb_query_logger_receives_filters(mock_store, mock_router):
+async def test_search_kb_query_logger_receives_filters(
+    mock_store, mock_router
+):
     """query_logger is called with product/doc_type/file_type filters."""
     result = _make_result()
     mock_store.search.return_value = [result]
@@ -292,13 +320,18 @@ async def test_search_kb_query_logger_receives_filters(mock_store, mock_router):
     mock_ql = MagicMock()
     srv.query_logger = mock_ql
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
-        await srv._search_kb({
-            "query": "test",
-            "product": "AppServer",
-            "doc_type": "install_guide",
-            "filter_type": "pdf",
-        })
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
+        await srv._search_kb(
+            {
+                "query": "test",
+                "product": "AppServer",
+                "doc_type": "install_guide",
+                "filter_type": "pdf",
+            }
+        )
 
     mock_ql.log_query.assert_called_once()
     call_kwargs = mock_ql.log_query.call_args[1]
@@ -308,7 +341,9 @@ async def test_search_kb_query_logger_receives_filters(mock_store, mock_router):
 
 
 @pytest.mark.asyncio
-async def test_search_kb_query_logger_error_is_swallowed(mock_store, mock_router):
+async def test_search_kb_query_logger_error_is_swallowed(
+    mock_store, mock_router
+):
     """If query_logger.log_query raises after results, error is swallowed."""
     result = _make_result()
     mock_store.search.return_value = [result]
@@ -318,7 +353,10 @@ async def test_search_kb_query_logger_error_is_swallowed(mock_store, mock_router
     mock_ql.log_query.side_effect = Exception("log failed")
     srv.query_logger = mock_ql
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
         out = await srv._search_kb({"query": "test"})
 
     assert len(out) == 1
@@ -326,7 +364,9 @@ async def test_search_kb_query_logger_error_is_swallowed(mock_store, mock_router
 
 
 @pytest.mark.asyncio
-async def test_search_kb_version_filter_passed_to_store(mock_store, mock_router):
+async def test_search_kb_version_filter_passed_to_store(
+    mock_store, mock_router
+):
     """version parameter is passed to store.search."""
     result = _make_result()
     mock_store.search.return_value = [result]
@@ -334,7 +374,10 @@ async def test_search_kb_version_filter_passed_to_store(mock_store, mock_router)
     srv.collection_router = mock_router
     srv.query_logger = None
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
         await srv._search_kb({"query": "test", "version": "22.3"})
 
     call_kwargs = mock_store.search.call_args[1]
@@ -384,7 +427,9 @@ async def test_list_documents_no_router_uses_store_collection(mock_store):
 
 
 @pytest.mark.asyncio
-async def test_list_documents_passes_collection_name_to_store(mock_store, mock_router):
+async def test_list_documents_passes_collection_name_to_store(
+    mock_store, mock_router
+):
     """With router resolved collection, collection_name passed to store."""
     mock_router.resolve.return_value = "my_collection"
     doc = {
@@ -533,7 +578,9 @@ async def test_schedule_log_cleanup_skips_when_no_logger():
 
 
 @pytest.mark.asyncio
-async def test_search_kb_result_with_page_includes_page_info(mock_store, mock_router):
+async def test_search_kb_result_with_page_includes_page_info(
+    mock_store, mock_router
+):
     """When result has 'page' field, page info is included in output."""
     result = _make_result(text="paged content", page=42)
     mock_store.search.return_value = [result]
@@ -541,14 +588,19 @@ async def test_search_kb_result_with_page_includes_page_info(mock_store, mock_ro
     srv.collection_router = mock_router
     srv.query_logger = None
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
         out = await srv._search_kb({"query": "test"})
 
     assert "42" in out[0].text
 
 
 @pytest.mark.asyncio
-async def test_search_kb_hybrid_and_rerank_mode_indicators(mock_store, mock_router):
+async def test_search_kb_hybrid_and_rerank_mode_indicators(
+    mock_store, mock_router
+):
     """hybrid+rerank mode shows combined mode indicator in output."""
     result = _make_result(text="content")
     mock_store.search.return_value = [result]
@@ -561,10 +613,21 @@ async def test_search_kb_hybrid_and_rerank_mode_indicators(mock_store, mock_rout
     mock_hybrid = AsyncMock()
     mock_hybrid.search.return_value = [result]
 
-    with patch("kb_server.server.get_embedding", new=AsyncMock(return_value=[0.1] * 768)):
-        with patch("kb_server.retrieval.hybrid_search.get_hybrid_searcher", return_value=mock_hybrid):
-            with patch("kb_server.retrieval.reranker.get_reranker", return_value=mock_reranker):
-                out = await srv._search_kb({"query": "test", "hybrid": True, "rerank": True})
+    with patch(
+        "kb_server.server.get_embedding",
+        new=AsyncMock(return_value=[0.1] * 768),
+    ):
+        with patch(
+            "kb_server.retrieval.hybrid_search.get_hybrid_searcher",
+            return_value=mock_hybrid,
+        ):
+            with patch(
+                "kb_server.retrieval.reranker.get_reranker",
+                return_value=mock_reranker,
+            ):
+                out = await srv._search_kb(
+                    {"query": "test", "hybrid": True, "rerank": True}
+                )
 
     text = out[0].text
     assert "hybrid" in text

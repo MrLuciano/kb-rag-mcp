@@ -139,7 +139,10 @@ async def detect_changed_classifications(
                 continue
 
         # Check if file matches glob pattern
-        if abs_path_str not in matched_files and source_file not in matched_files:
+        if (
+            abs_path_str not in matched_files
+            and source_file not in matched_files
+        ):
             # File in Qdrant but doesn't match current pattern
             continue
 
@@ -152,7 +155,14 @@ async def detect_changed_classifications(
 
         # Compare classification fields
         fields_changed = {}
-        for field in ["vendor", "product", "subsystem", "module", "doc_type", "version"]:
+        for field in [
+            "vendor",
+            "product",
+            "subsystem",
+            "module",
+            "doc_type",
+            "version",
+        ]:
             old_value = current_meta.get(field, "")
             new_value = expected_meta.get(field, "")
             if old_value != new_value:
@@ -302,7 +312,9 @@ def cleanup_old_backups(retention_days: int | None = None) -> int:
     if retention_days is None:
         retention_days = RECLASSIFY_BACKUP_RETENTION_DAYS
 
-    cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=retention_days)
+    cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+        days=retention_days
+    )
     cutoff_str = cutoff_date.isoformat()[:10]  # YYYY-MM-DD prefix
 
     log.info(
@@ -385,7 +397,11 @@ async def reclassify_documents(
     Raises:
         Exception: If detection, backup, update, or logging fails.
     """
-    session_timestamp = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%dT%H-%M-%S")
+    session_timestamp = (
+        datetime.now(timezone.utc)
+        .replace(tzinfo=None)
+        .strftime("%Y-%m-%dT%H-%M-%S")
+    )
 
     log.info(
         f"Starting reclassification session {session_timestamp} "
@@ -492,6 +508,7 @@ async def reclassify_documents(
     # PHASE 17: Signal MCP server to refresh filter terms
     try:
         from ingest.utils import write_filter_cache_bust
+
         write_filter_cache_bust()
     except Exception:
         pass
@@ -512,4 +529,3 @@ async def reclassify_documents(
         "old_backups_cleaned": old_backups_cleaned,
         "changes": changes,
     }
-

@@ -77,7 +77,11 @@ class ServerRateLimiter:
 
         # Compute approximate wait until next token is available.
         available = limiter.available_tokens()
-        wait = max(1, int((1.0 - available) / limiter.rate)) if available < 1 else 1
+        wait = (
+            max(1, int((1.0 - available) / limiter.rate))
+            if available < 1
+            else 1
+        )
         return False, wait
 
     async def subject_count(self) -> int:

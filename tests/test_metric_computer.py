@@ -2,6 +2,7 @@
 
 FASE 25: Optimization Experiments
 """
+
 import pytest
 
 from kb_server.optimization.metric_computer import (
@@ -68,9 +69,9 @@ class TestMeanReciprocalRank:
     def test_mrr_multiple_queries(self):
         """Averages correctly across multiple queries"""
         retrieved = [
-            ["a", "b", "c"],   # RR = 1.0
-            ["x", "a", "b"],   # RR = 0.5
-            ["x", "y", "z"],   # RR = 0.0
+            ["a", "b", "c"],  # RR = 1.0
+            ["x", "a", "b"],  # RR = 0.5
+            ["x", "y", "z"],  # RR = 0.0
         ]
         expected = [
             ["a"],

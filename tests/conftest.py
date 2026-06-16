@@ -11,19 +11,23 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def load_dotenv_once():
     """Loads .env from project root before any tests execute."""
     try:
         from dotenv import load_dotenv
-        env_path = Path(__file__).parent.parent / '.env'
+
+        env_path = Path(__file__).parent.parent / ".env"
         if env_path.exists():
             load_dotenv(env_path, override=True)
     except ImportError:
-        print('[WARN] python-dotenv not installed; .env vars may be missing in tests', file=sys.stderr)
+        print(
+            "[WARN] python-dotenv not installed; .env vars may be missing in tests",
+            file=sys.stderr,
+        )
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def mock_qdrant_client():
     """Patch AsyncQdrantClient so tests never connect to localhost:6333."""
     with patch("qdrant_client.AsyncQdrantClient") as mock:
@@ -39,7 +43,7 @@ def mock_qdrant_client():
         yield mock
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def mock_embed_client():
     """Patch embed client to return fixed vectors without any backend.
 
@@ -62,7 +66,7 @@ def mock_embed_client():
         yield
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def mock_redis_cache():
     """Patch RedisCache so tests never connect to Redis.
 

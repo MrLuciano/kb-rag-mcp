@@ -76,9 +76,7 @@ class ValidationPipeline:
             TextContentValidator(),
         ]
 
-    def validate(
-        self, file_path: Path
-    ) -> tuple[bool, list[ValidationResult]]:
+    def validate(self, file_path: Path) -> tuple[bool, list[ValidationResult]]:
         """
         Run all validators on a file.
 
@@ -146,9 +144,7 @@ class ValidationPipeline:
         Returns:
             Dict mapping file paths to (success, results) tuples
         """
-        return {
-            path: self.validate(path) for path in file_paths
-        }
+        return {path: self.validate(path) for path in file_paths}
 
     def get_failed_files(
         self, batch_results: dict[Path, tuple[bool, list[ValidationResult]]]
@@ -163,9 +159,7 @@ class ValidationPipeline:
             List of file paths that failed validation
         """
         return [
-            path
-            for path, (success, _) in batch_results.items()
-            if not success
+            path for path, (success, _) in batch_results.items() if not success
         ]
 
     def get_failure_reasons(
@@ -181,9 +175,7 @@ class ValidationPipeline:
             List of failure messages (only failed validations)
         """
         return [
-            f"{r.validator_name}: {r.message}"
-            for r in results
-            if not r.valid
+            f"{r.validator_name}: {r.message}" for r in results if not r.valid
         ]
 
     def add_validator(self, validator: Validator, index: Optional[int] = None):
@@ -235,9 +227,7 @@ def create_default_pipeline(
     Returns:
         Configured ValidationPipeline
     """
-    return ValidationPipeline(
-        fail_fast=fail_fast, skip_warnings=skip_warnings
-    )
+    return ValidationPipeline(fail_fast=fail_fast, skip_warnings=skip_warnings)
 
 
 def create_strict_pipeline() -> ValidationPipeline:

@@ -28,7 +28,9 @@ def register(connector_type: str, cls: type[ConnectorBase]) -> None:
         cls: The connector implementation class.
     """
     _CONNECTOR_REGISTRY[connector_type] = cls
-    log.debug("Registered connector type: %s -> %s", connector_type, cls.__name__)
+    log.debug(
+        "Registered connector type: %s -> %s", connector_type, cls.__name__
+    )
 
 
 def create_connector(
@@ -48,7 +50,9 @@ def create_connector(
     if cls is None:
         log.warning("No connector registered for type: %s", connector_type)
         return None
-    log.info("Creating connector: %s (source=%s)", connector_type, config.source_key)
+    log.info(
+        "Creating connector: %s (source=%s)", connector_type, config.source_key
+    )
     return cls(config)
 
 

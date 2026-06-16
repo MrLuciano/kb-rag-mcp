@@ -39,7 +39,10 @@ def get_docling_converter():
             RapidOcrOptions,
             TableFormerMode,
         )
-        from docling.document_converter import DocumentConverter, PdfFormatOption
+        from docling.document_converter import (
+            DocumentConverter,
+            PdfFormatOption,
+        )
 
         extra_log = []
 
@@ -60,15 +63,17 @@ def get_docling_converter():
             do_table_structure=True,
             accelerator_options=accelerator_options,
         )
-        pdf_pipeline_options.ocr_batch_size = 64        # default 4
-        pdf_pipeline_options.layout_batch_size = 64      # default 4
+        pdf_pipeline_options.ocr_batch_size = 64  # default 4
+        pdf_pipeline_options.layout_batch_size = 64  # default 4
         pdf_pipeline_options.table_structure_options.mode = (
             TableFormerMode.FAST
         )
         pdf_pipeline_options.ocr_options = RapidOcrOptions()
 
         extra_log.append(f"ocr_batch={pdf_pipeline_options.ocr_batch_size}")
-        extra_log.append(f"layout_batch={pdf_pipeline_options.layout_batch_size}")
+        extra_log.append(
+            f"layout_batch={pdf_pipeline_options.layout_batch_size}"
+        )
 
         # ── Build converter once ───────────────────────────────────────
         converter = DocumentConverter(

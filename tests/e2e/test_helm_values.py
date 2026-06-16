@@ -3,6 +3,7 @@ E2E test for Helm chart values.yaml validation.
 
 Validates that values.yaml contains required monitoring configuration.
 """
+
 import yaml
 import pytest
 from pathlib import Path
@@ -24,7 +25,9 @@ def test_monitoring_enabled_key_exists():
         values = yaml.safe_load(f)
     assert "monitoring" in values, "monitoring section missing"
     assert "enabled" in values["monitoring"], "monitoring.enabled missing"
-    assert values["monitoring"]["enabled"] is True, "monitoring.enabled should default to true"
+    assert (
+        values["monitoring"]["enabled"] is True
+    ), "monitoring.enabled should default to true"
 
 
 def test_prometheus_enabled_key_exists():
@@ -32,9 +35,15 @@ def test_prometheus_enabled_key_exists():
     with open(VALUES_PATH) as f:
         values = yaml.safe_load(f)
     assert "monitoring" in values, "monitoring section missing"
-    assert "prometheus" in values["monitoring"], "monitoring.prometheus missing"
-    assert "enabled" in values["monitoring"]["prometheus"], "prometheus.enabled missing"
-    assert values["monitoring"]["prometheus"]["enabled"] is True, "prometheus.enabled should default to true"
+    assert (
+        "prometheus" in values["monitoring"]
+    ), "monitoring.prometheus missing"
+    assert (
+        "enabled" in values["monitoring"]["prometheus"]
+    ), "prometheus.enabled missing"
+    assert (
+        values["monitoring"]["prometheus"]["enabled"] is True
+    ), "prometheus.enabled should default to true"
 
 
 def test_grafana_enabled_key_exists():
@@ -43,8 +52,12 @@ def test_grafana_enabled_key_exists():
         values = yaml.safe_load(f)
     assert "monitoring" in values, "monitoring section missing"
     assert "grafana" in values["monitoring"], "monitoring.grafana missing"
-    assert "enabled" in values["monitoring"]["grafana"], "grafana.enabled missing"
-    assert values["monitoring"]["grafana"]["enabled"] is True, "grafana.enabled should default to true"
+    assert (
+        "enabled" in values["monitoring"]["grafana"]
+    ), "grafana.enabled missing"
+    assert (
+        values["monitoring"]["grafana"]["enabled"] is True
+    ), "grafana.enabled should default to true"
 
 
 def test_prometheus_retention_is_configurable():
@@ -52,9 +65,15 @@ def test_prometheus_retention_is_configurable():
     with open(VALUES_PATH) as f:
         values = yaml.safe_load(f)
     assert "monitoring" in values, "monitoring section missing"
-    assert "prometheus" in values["monitoring"], "monitoring.prometheus missing"
-    assert "retention" in values["monitoring"]["prometheus"], "prometheus.retention missing"
-    assert values["monitoring"]["prometheus"]["retention"] == "15d", "prometheus.retention should default to 15d"
+    assert (
+        "prometheus" in values["monitoring"]
+    ), "monitoring.prometheus missing"
+    assert (
+        "retention" in values["monitoring"]["prometheus"]
+    ), "prometheus.retention missing"
+    assert (
+        values["monitoring"]["prometheus"]["retention"] == "15d"
+    ), "prometheus.retention should default to 15d"
 
 
 def test_prometheus_storage_size_is_configurable():
@@ -62,7 +81,15 @@ def test_prometheus_storage_size_is_configurable():
     with open(VALUES_PATH) as f:
         values = yaml.safe_load(f)
     assert "monitoring" in values, "monitoring section missing"
-    assert "prometheus" in values["monitoring"], "monitoring.prometheus missing"
-    assert "storage" in values["monitoring"]["prometheus"], "prometheus.storage missing"
-    assert "size" in values["monitoring"]["prometheus"]["storage"], "prometheus.storage.size missing"
-    assert values["monitoring"]["prometheus"]["storage"]["size"] == "10Gi", "prometheus.storage.size should default to 10Gi"
+    assert (
+        "prometheus" in values["monitoring"]
+    ), "monitoring.prometheus missing"
+    assert (
+        "storage" in values["monitoring"]["prometheus"]
+    ), "prometheus.storage missing"
+    assert (
+        "size" in values["monitoring"]["prometheus"]["storage"]
+    ), "prometheus.storage.size missing"
+    assert (
+        values["monitoring"]["prometheus"]["storage"]["size"] == "10Gi"
+    ), "prometheus.storage.size should default to 10Gi"

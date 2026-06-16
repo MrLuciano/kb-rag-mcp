@@ -42,7 +42,9 @@ class TestIngestionWorkflow:
         )
 
         # Verify registration
-        record = registry.get_record(str(test_file.relative_to(e2e_test_docs_dir)))
+        record = registry.get_record(
+            str(test_file.relative_to(e2e_test_docs_dir))
+        )
         assert record is not None
         assert record["status"] == "ok"
         assert record["chunks"] == 3
@@ -258,7 +260,7 @@ class TestIngestionStats:
 
 @pytest.mark.skipif(
     os.getenv("SKIP_INTEGRATION_TESTS") == "1",
-    reason="Integration tests disabled"
+    reason="Integration tests disabled",
 )
 class TestRealIngestion:
     """

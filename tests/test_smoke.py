@@ -8,6 +8,7 @@ These tests mock Qdrant and embedding to verify that:
 
 Relies on conftest.py's mock_qdrant_client fixture (session-scoped) for Qdrant isolation.
 """
+
 import asyncio
 
 import pytest
@@ -66,17 +67,23 @@ def test_search_kb_returns_text_content_on_results(monkeypatch):
 
     class FakeStore:
         async def search(
-            self, vector, top_k, filter_type, product,
-            doc_type, version, vendor=None,
-            subsystem=None, module=None, **kw
+            self,
+            vector,
+            top_k,
+            filter_type,
+            product,
+            doc_type,
+            version,
+            vendor=None,
+            subsystem=None,
+            module=None,
+            **kw,
         ):
             return [_make_chunk()]
 
     monkeypatch.setattr(srv, "store", FakeStore())
 
-    results = _run(
-        srv._search_kb({"query": "test query", "hybrid": False})
-    )
+    results = _run(srv._search_kb({"query": "test query", "hybrid": False}))
 
     assert results, "Expected at least one TextContent"
     assert all(r.type == "text" for r in results)
@@ -105,9 +112,7 @@ def test_search_kb_returns_no_results_message_when_store_empty(
 
     monkeypatch.setattr(srv, "store", FakeStore())
 
-    results = _run(
-        srv._search_kb({"query": "nothing", "hybrid": False})
-    )
+    results = _run(srv._search_kb({"query": "nothing", "hybrid": False}))
 
     assert len(results) == 1
     assert "No results found" in results[0].text
@@ -130,9 +135,17 @@ def test_search_kb_passes_filters_to_store(monkeypatch):
 
     class FakeStore:
         async def search(
-            self, vector, top_k, filter_type, product,
-            doc_type, version, vendor=None,
-            subsystem=None, module=None, **kw
+            self,
+            vector,
+            top_k,
+            filter_type,
+            product,
+            doc_type,
+            version,
+            vendor=None,
+            subsystem=None,
+            module=None,
+            **kw,
         ):
             captured["filter_type"] = filter_type
             captured["product"] = product
@@ -142,13 +155,15 @@ def test_search_kb_passes_filters_to_store(monkeypatch):
     monkeypatch.setattr(srv, "store", FakeStore())
 
     _run(
-        srv._search_kb({
-            "query": "q",
-            "hybrid": False,
-            "product": "acme",
-            "doc_type": "guide",
-            "filter_type": "md",
-        })
+        srv._search_kb(
+            {
+                "query": "q",
+                "hybrid": False,
+                "product": "acme",
+                "doc_type": "guide",
+                "filter_type": "md",
+            }
+        )
     )
 
     assert captured["product"] == "acme"

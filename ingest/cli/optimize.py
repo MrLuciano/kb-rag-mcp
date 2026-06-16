@@ -1,4 +1,5 @@
 """Optimize CLI subcommand: `kb-rag optimize`."""
+
 from __future__ import annotations
 
 import asyncio
@@ -144,9 +145,7 @@ def chunk(
     try:
         asyncio.run(store.connect())
     except Exception as e:
-        click.echo(
-            f"WARNING: Could not connect to Qdrant: {e}", err=True
-        )
+        click.echo(f"WARNING: Could not connect to Qdrant: {e}", err=True)
 
     # Create runner and run experiment
     runner = ExperimentRunner(store, golden_dataset)
@@ -294,9 +293,7 @@ def scoring(
     try:
         asyncio.run(store.connect())
     except Exception as e:
-        click.echo(
-            f"WARNING: Could not connect to Qdrant: {e}", err=True
-        )
+        click.echo(f"WARNING: Could not connect to Qdrant: {e}", err=True)
 
     # Build variant kwargs
     variant_kwargs: Dict[str, Any] = {}

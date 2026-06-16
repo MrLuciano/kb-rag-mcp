@@ -153,9 +153,7 @@ class TestJobListCommand:
         with MetadataStore(temp_db):
             pass
 
-        result = cli_runner.invoke(
-            cli, ["--db", str(temp_db), "job", "list"]
-        )
+        result = cli_runner.invoke(cli, ["--db", str(temp_db), "job", "list"])
 
         assert result.exit_code == 0
         assert "No jobs found" in result.output
@@ -172,9 +170,7 @@ class TestJobListCommand:
                 docs_path="/tmp/test2", priority=JobPriority.HIGH
             )
 
-        result = cli_runner.invoke(
-            cli, ["--db", str(temp_db), "job", "list"]
-        )
+        result = cli_runner.invoke(cli, ["--db", str(temp_db), "job", "list"])
 
         assert result.exit_code == 0
         assert "Jobs" in result.output
@@ -472,9 +468,7 @@ class TestCLIIntegration:
             pytest.fail("Could not extract job ID from output")
 
         # List jobs
-        result = cli_runner.invoke(
-            cli, ["--db", str(temp_db), "job", "list"]
-        )
+        result = cli_runner.invoke(cli, ["--db", str(temp_db), "job", "list"])
         assert result.exit_code == 0
         assert "pending" in result.output
 
@@ -499,9 +493,7 @@ class TestCLIIntegration:
             assert result.exit_code == 0
 
         # List all jobs
-        result = cli_runner.invoke(
-            cli, ["--db", str(temp_db), "job", "list"]
-        )
+        result = cli_runner.invoke(cli, ["--db", str(temp_db), "job", "list"])
         assert result.exit_code == 0
         assert "Showing 3 job(s)" in result.output
 

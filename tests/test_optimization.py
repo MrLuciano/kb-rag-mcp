@@ -2,6 +2,7 @@
 
 FASE 25: Optimization Experiments
 """
+
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -194,9 +195,7 @@ class TestExperimentRunner:
         mock_dataset = MagicMock()
         runner = ExperimentRunner(mock_store, mock_dataset)
 
-        with patch.object(
-            runner.store, "list_runs"
-        ) as mock_list:
+        with patch.object(runner.store, "list_runs") as mock_list:
             mock_list.return_value = [
                 {"run_id": "run_1", "strategy": "fixed"},
                 {"run_id": "run_2", "strategy": "hybrid"},
@@ -292,9 +291,7 @@ class TestOptimizeCLI:
 
         runner = CliRunner()
 
-        with patch(
-            "ingest.cli.optimize.ExperimentRunner"
-        ) as mock_runner_cls:
+        with patch("ingest.cli.optimize.ExperimentRunner") as mock_runner_cls:
             mock_runner = AsyncMock()
             mock_runner.run_chunking_experiment.return_value = {
                 "run_id": "cli_chunk",
@@ -307,15 +304,11 @@ class TestOptimizeCLI:
             }
             mock_runner_cls.return_value = mock_runner
 
-            with patch(
-                "ingest.cli.optimize.VectorStore"
-            ) as mock_vs_cls:
+            with patch("ingest.cli.optimize.VectorStore") as mock_vs_cls:
                 mock_vs = MagicMock()
                 mock_vs_cls.return_value = mock_vs
 
-                with patch(
-                    "ingest.cli.optimize.GoldenDataset"
-                ) as mock_ds_cls:
+                with patch("ingest.cli.optimize.GoldenDataset") as mock_ds_cls:
                     mock_ds = MagicMock()
                     mock_ds.examples = [{"query": "q"}]
                     mock_ds.validate.return_value = []
@@ -343,9 +336,7 @@ class TestOptimizeCLI:
 
         runner = CliRunner()
 
-        with patch(
-            "ingest.cli.optimize.ExperimentRunner"
-        ) as mock_runner_cls:
+        with patch("ingest.cli.optimize.ExperimentRunner") as mock_runner_cls:
             mock_runner = AsyncMock()
             mock_runner.run_scoring_experiment.return_value = {
                 "run_id": "cli_score",
@@ -358,15 +349,11 @@ class TestOptimizeCLI:
             }
             mock_runner_cls.return_value = mock_runner
 
-            with patch(
-                "ingest.cli.optimize.VectorStore"
-            ) as mock_vs_cls:
+            with patch("ingest.cli.optimize.VectorStore") as mock_vs_cls:
                 mock_vs = MagicMock()
                 mock_vs_cls.return_value = mock_vs
 
-                with patch(
-                    "ingest.cli.optimize.GoldenDataset"
-                ) as mock_ds_cls:
+                with patch("ingest.cli.optimize.GoldenDataset") as mock_ds_cls:
                     mock_ds = MagicMock()
                     mock_ds.examples = [{"query": "q"}]
                     mock_ds.validate.return_value = []
@@ -394,9 +381,7 @@ class TestOptimizeCLI:
         ) as mock_store_cls:
             mock_store = MagicMock()
             mock_store.compare.return_value = {
-                "runs": [
-                    {"run_id": "r1", "metrics": {"recall_at_k": 0.5}}
-                ],
+                "runs": [{"run_id": "r1", "metrics": {"recall_at_k": 0.5}}],
                 "deltas": {"recall_at_k": [("r1", 0.5)]},
             }
             mock_store_cls.return_value = mock_store
