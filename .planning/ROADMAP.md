@@ -322,7 +322,10 @@ Plans:
   1. SSE tests no longer require a separate pytest process
   2. test_smoke.py uses per-function @patch decorators
   3. All tests pass when run together: `pytest tests/ -x`
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 50-01-PLAN.md — Refactor test_smoke.py from module-level stubs to per-function fixtures
 
 ## Progress
 
