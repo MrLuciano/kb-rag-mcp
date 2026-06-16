@@ -100,9 +100,13 @@
                 <td>{{ doc.doc_type or 'N/A' }}</td>
                 <td>{{ doc.version or 'N/A' }}</td>
                 <td>
-                    <span class="status-{{ doc.status }}">
-                        {{ doc.status }}
-                    </span>
+                    {% if doc.status == 'completed' or doc.status == 'ok' %}
+                    <span class="badge bg-success">{{ doc.status }}</span>
+                    {% elif doc.status == 'failed' or doc.status == 'error' %}
+                    <span class="badge bg-danger">{{ doc.status }}</span>
+                    {% else %}
+                    <span class="badge bg-warning">{{ doc.status }}</span>
+                    {% endif %}
                 </td>
                 <td>{{ doc.chunks_stored or 0 }}</td>
                 <td>

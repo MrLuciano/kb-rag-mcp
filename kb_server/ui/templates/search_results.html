@@ -3,17 +3,11 @@
 <div class="alert alert-success">
     Found {{ results|length }} result{{ 's' if results|length > 1 else '' }} for "<strong>{{ query }}</strong>"
 </div>
-<div class="search-results-list">
-    {% for result in results %}
-    <div class="card mb-3">
-        <div class="card-body">
-            <div class="search-result-text">
-                {{ result.text }}
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+{% for result in results %}
+<div class="search-result-text">
+    {{ result.text }}
 </div>
+{% endfor %}
 {% else %}
 <div class="alert alert-warning">
     No results found for "<strong>{{ query }}</strong>"
