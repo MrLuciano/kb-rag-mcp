@@ -35,6 +35,9 @@ uvicorn>=0.30.0
 starlette>=1.0.0
 fastapi>=0.109.0          # Health check HTTP server
 
+# ── Database ───────────────────────────────────────────────────
+SQLAlchemy>=2.0.0          # Phase 32/44: Auth module ORM
+
 # ── Utils ──────────────────────────────────────────────────────
 python-dotenv>=1.0.0
 psutil>=5.9.0             # System monitoring for cache auto-tuning
