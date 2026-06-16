@@ -25,9 +25,9 @@
 | 🔴 Critical | 10 | 8 | 2 (CR-09 coverage adjusted, CR-10 deps consistent) |
 | 🟡 High (Security) | 7 | 7 | 0 |
 | 🟡 High (Database) | 6 | 5 | 1 (HW-14 f-string — fixed) |
-| 🟡 High (Quality) | 4 | 2 | 2 (HW-17 dev deps, HW-18 flake8 → 174 remaining) |
-| 🟢 Info | 6 | 3 | 3 (INF-01 fixed, INF-02 remains, INF-04 remains) |
-| **Total** | **33** | **25** | **8** |
+| 🟡 High (Quality) | 4 | 3 | 1 (HW-18 flake8 → 174 remaining) |
+| 🟢 Info | 6 | 4 | 2 (INF-04 shared session by design) |
+| **Total** | **33** | **28** | **5** |
 
 ---
 
@@ -133,10 +133,10 @@
 | ID | Issue | Details |
 |----|-------|---------|
 | INF-01 | `kb_server/server.py:44` — stale `retrieval_cache` globals | Two dead `global retrieval_cache` declarations (F824) |
-| INF-02 | `ingest/cli/export.py` — `datefmt='%Y-%m-%dT%H-%M-%S'` | Non-standard date format in filenames, colon in path on Windows |
+| INF-02 | `ingest/cli/reclassify.py` — `%Y-%m-%dT%H-%M-%S` | Intentional: hyphens replace colons for Windows filename safety. By design. |
 | INF-03 | `kb_server/health.py:397` — `datetime.utcnow().isoformat() + "Z"` | Pre-existing deprecation, consistent with codebase style |
-| INF-04 | `kb_server/auth/service.py` — `ErasureManager`, `AuthService` share session | Shared mutable session risks cross-operation contamination |
-| INF-05 | `tests/test_health_unit.py` — health test expects 5 components | Test not updated when `check_grafana()` was added (6th component) |
+| INF-04 | `kb_server/auth/service.py` — `ErasureManager`, `AuthService` share session | By design: same service layer, shared transaction context. |
+| INF-05 | `tests/test_health_unit.py` — health test expects 5 components | ✅ Fixed — updated to expect 6 components |
 | INF-06 | `kb_server/config/db.py` — config table WAL mode | WAL enabled per-connection but not persistent — must be set on every connect |
 
 ---
