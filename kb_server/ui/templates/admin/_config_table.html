@@ -26,6 +26,9 @@
         </tbody>
     </table>
     <div x-show="filteredConfig.length === 0" class="text-muted">No configuration entries found.</div>
+    <div id="config-save-error" class="alert alert-danger d-none mt-2" role="alert">
+        Failed to save config value. Check the value format and try again.
+    </div>
 </div>
 
 <script nonce="{{ get_nonce(request) }}">
@@ -68,7 +71,12 @@ function configEditor() {
                 })
             })
             .then(r => {
-                if (!r.ok) { alert('Failed to save config value. Check the value format and try again.'); return; }
+                var errorDiv = document.getElementById('config-save-error');
+                if (!r.ok) {
+                    if (errorDiv) errorDiv.classList.remove('d-none');
+                    return;
+                }
+                if (errorDiv) errorDiv.classList.add('d-none');
                 return r.json();
             })
             .then(() => {

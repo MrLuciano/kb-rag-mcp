@@ -45,13 +45,25 @@
     font-family: inherit;
     font-size: 0.9rem;
     line-height: 1.6;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
 }
 
 .search-result-text h2 {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
     color: #212529;
+}
+
+.search-result-text h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: #495057;
 }
 
 .search-result-text hr {
@@ -60,7 +72,7 @@
 }
 
 .search-result-text code {
-    background: #f8f9fa;
+    background: #e9ecef;
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
     font-size: 0.85em;
@@ -68,6 +80,10 @@
 
 .search-result-text strong {
     font-weight: 600;
+}
+
+.search-result-text em {
+    color: #6c757d;
 }
 
 /* Monitor lights card (replaces inline width) */
