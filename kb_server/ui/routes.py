@@ -293,7 +293,12 @@ async def document_detail(
             return templates.TemplateResponse(
                 request,
                 "error.html",
-                {"request": request, "error": "Document not found"},
+                {
+                    "request": request,
+                    "code": 404,
+                    "title": "Not Found",
+                    "detail": "Document not found",
+                },
                 status_code=404,
             )
 

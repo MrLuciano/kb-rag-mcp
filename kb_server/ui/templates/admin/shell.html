@@ -87,6 +87,9 @@
     <script nonce="{{ get_nonce(request) }}">
         document.addEventListener('htmx:responseError', function(event) {
             if (event.detail.target && event.detail.target.id === 'tab-content') {
+                if (event.detail.xhr.status === 401) {
+                    return; // Let base.html handle 401 with login modal
+                }
                 var tabError = document.getElementById('tab-error');
                 if (tabError) {
                     tabError.classList.remove('d-none');
