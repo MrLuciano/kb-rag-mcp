@@ -268,3 +268,107 @@ def test_api_upsert_overwrite(client):
     assert resp.status_code == 200
     assert resp.json()["value"] == "second"
     assert resp.json()["description"] == "updated"
+
+
+# ── Hot-reload Tests ───────────────────────────────────────────
+
+
+def test_reload_if_changed_no_changes(loader):
+    changes = []
+
+    def callback(key, value):
+        changes.append((key, value))
+
+    loader.on_change("RELOAD_KEY", callback)
+    result = loader.reload_if_changed()
+    assert result is False
+    assert len(changes) == 0
+
+
+@pytest.mark.asyncio
+async def test_reload_if_changed_triggers_callback(loader):
+    changes = []
+
+    def callback(key, value):
+        changes.append((key, value))
+
+    loader.on_change("RELOAD_KEY", callback)
+    await loader.set("RELOAD_KEY", "initial")
+    # set() already notifies observers; clear changes
+    changes.clear()
+
+    # Simulate external change by modifying DB directly
+    from kb_server.config.db import get_connection
+
+    with get_connection(loader._db_path) as conn:
+        conn.execute(
+            "UPDATE config SET value = ? WHERE key = ?",
+            ("updated", "RELOAD_KEY"),
+        )
+        from kb_server.config.db import bump_config_version
+
+        bump_config_version(conn)
+
+    result = loader.reload_if_changed()
+    assert result is True
+    assert len(changes) == 1
+    assert changes[0] == ("RELOAD_KEY", "updated")
+
+
+def test_reload_if_changed_synchronous(loader):
+    import inspect
+
+    assert not inspect.iscoroutinefunction(loader.reload_if_changed)
+
+
+@pytest.mark.asyncio
+async def test_on_change_decorator(loader):
+    changes = []
+
+    @loader.on_change("DECORATOR_KEY")
+    def my_callback(key, value):
+        changes.append((key, value))
+
+    await loader.set("DECORATOR_KEY", "decorated_value")
+    # set() already notifies observers
+    assert len(changes) >= 1
+    assert changes[0] == ("DECORATOR_KEY", "decorated_value")
+
+
+@pytest.mark.asyncio
+async def test_observer_hook_error_caught(loader, caplog):
+    changes_good = []
+    changes_bad = []
+
+    def bad_callback(key, value):
+        changes_bad.append((key, value))
+        raise RuntimeError("hook error")
+
+    def good_callback(key, value):
+        changes_good.append((key, value))
+
+    loader.on_change("HOOK_KEY", bad_callback)
+    loader.on_change("HOOK_KEY", good_callback)
+    await loader.set("HOOK_KEY", "hook_value")
+    assert changes_good == [("HOOK_KEY", "hook_value")]
+    assert changes_bad == [("HOOK_KEY", "hook_value")]
+    assert any(
+        "observer hook failed" in record.message
+        for record in caplog.records
+    )
+
+
+@pytest.mark.asyncio
+async def test_on_change_wildcard_pattern(loader):
+    changes = []
+
+    def callback(key, value):
+        changes.append((key, value))
+
+    loader.on_change("rate_limit.*", callback)
+    await loader.set("rate_limit.enabled", "true")
+    await loader.set("rate_limit.window", "60")
+    await loader.set("other.key", "value")
+    assert len(changes) == 2
+    assert changes[0] == ("rate_limit.enabled", "true")
+    assert changes[1] == ("rate_limit.window", "60")
