@@ -89,13 +89,16 @@ class MetadataStore:
             self._create_schema_v2()
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
+            self._migrate_v4_to_v5()
         elif current_version == 1:
             self._migrate_v1_to_v2()
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
+            self._migrate_v4_to_v5()
         elif current_version == 2:
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
+            self._migrate_v4_to_v5()
         elif current_version == 3:
             self._migrate_v3_to_v4()
             self._migrate_v4_to_v5()
@@ -868,7 +871,8 @@ class IngestRegistry:
                 error_msg   TEXT,
                 indexed_at  REAL NOT NULL,
                 file_mtime  REAL,
-                file_size   INTEGER
+                file_size   INTEGER,
+                tags        TEXT DEFAULT '[]'
             );
             CREATE INDEX IF NOT EXISTS idx_status   ON files(status);
             CREATE INDEX IF NOT EXISTS idx_product  ON files(product);
@@ -883,6 +887,11 @@ class IngestRegistry:
             self._conn.execute(
                 "ALTER TABLE files ADD COLUMN "
                 "doc_type TEXT DEFAULT 'document'"
+            )
+        if "tags" not in cols:
+            self._conn.execute(
+                "ALTER TABLE files ADD COLUMN "
+                "tags TEXT DEFAULT '[]'"
             )
         self._conn.commit()
 
