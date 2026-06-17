@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v0.1.5
 milestone_name: Streamable HTTP & Management Platform
 status: executing
-last_updated: "2026-06-17T00:42:26.003Z"
+last_updated: "2026-06-17T06:00:00.000Z"
 progress:
   total_phases: 17
-  completed_phases: 13
-  total_plans: 23
-  completed_plans: 18
-  percent: 76
+  completed_phases: 14
+  total_plans: 27
+  completed_plans: 22
+  percent: 81
 ---
 
 # Project State
@@ -24,17 +24,101 @@ See: .planning/PROJECT.md (updated 2026-06-15)
 ## Current Position
 
 Milestone: v0.1.5 (Streamable HTTP & Management Platform) — ACTIVE
-Phase: 28c-fixes (admin-spa-gap-closure) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 28c-fixes
-Next: Phase 40 (Config) + Phase 28 execution → Phase 28b (Auth) → Phase 41 + Phase 39 → Phase 28c (Admin SPA) → Phase 38 (Grafana)
+Phase: 28c-fixes (admin-spa-gap-closure) — COMPLETE
+Status: All 4 plans executed — auth flow, CSP/SRI, doc browse, monitor lights, config editor, partials refactor, route ordering, auth router mount, Alpine.js CDN fix, auth gating, admin seeding, session management, credentials UI
+Next: Phase 40 (Config) + Phase 28 execution → Phase 28b (Auth) → Phase 41 + Phase 39 → Phase 38 (Grafana)
+
+## Phase 28c-fixes Outcomes
+
+### Status
+
+- **Phase:** 28c-fixes (admin-spa-gap-closure)
+- **Status:** Complete — 4 plans, 43 admin UI tests pass
+- **Completed:** 2026-06-17
+
+### Plans Executed
+
+| Plan | Description | Tasks | Status |
+|------|-------------|-------|--------|
+| 28c-fixes-01 | Auth flow rewrite, doc browse, CSP/SRI fixes | 3 | Complete |
+| 28c-fixes-02 | Monitor lights, config editor, partials refactor, route ordering | 4 | Complete |
+| 28c-fixes-03 | Auth infrastructure: router mount, Alpine.js CDN, auth gating, admin seeding | 4 | Complete |
+| 28c-fixes-04 | Session management, credentials UI, configurable timeout | 2 | Complete |
+
+### Requirements Satisfied
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| Admin login with API key via Alpine.js overlay | ✅ | `shell.html` Alpine.js `x-show` login modal; `POST /auth/session` JWT cookie exchange |
+| Document browse with checkboxes, bulk actions | ✅ | `_documents_table.html` select-all checkbox, bulk toolbar with hx-confirm |
+| CSP nonce on inline scripts | ✅ | `tab_ragas.html` script tag has `nonce="{{ get_nonce(request) }}"` |
+| Monitor lights with 7 components | ✅ | `_monitor_lights.html` bar with latency display, click-to-expand |
+| Config editor with HTMX PUT save, Reset All | ✅ | `_config_table.html` inline Alpine.js editor, `:hx-put`, Reset with hx-confirm |
+| Ingestion + RAGAS sub-tab navigation | ✅ | `tab_ingestion.html` Manual/Schedule/Monitor; `tab_ragas.html` Editor/Results |
+| Route ordering: specific /tabs/ paths before generic | ✅ | `routes_admin.py` reordered: all specific routes registered before `{tab_name}` |
+| Auth router mounted on UI app | ✅ | `app.py` includes `auth_router`; `GET /api/v1/auth/session` works on port 8001 |
+| Alpine.js CSP-safe build loads | ✅ | `base.html` now loads `@alpinejs/csp@3.13.3/dist/cdn.min.js` with SRI |
+| Server-side auth gating on all tab endpoints | ✅ | 13 endpoints use `Depends(get_current_user)` |
+| Default admin account seeded on startup | ✅ | `ensure_admin_account()` in `AuthService`, API key logged with banner |
+| Session cookie validation in get_current_user | ✅ | HMAC signature verify, expiry check, `get_user_session()` validity check |
+| Configurable session timeout (default 30 min) | ✅ | `_SESSION_TIMEOUT` env var in `auth/router.py` |
+| Session management UI (list/revoke) | ✅ | `GET /auth/sessions`, `POST /auth/sessions/{id}/revoke`, `_sessions_table.html` |
+| Credential management UI (generate/revoke API keys) | ✅ | `_credentials_section.html` with key list, Generate New Key, Revoke buttons |
+
+### Key Changes
+
+1. **`kb_server/ui/templates/admin/shell.html`** — Alpine.js `x-data` login overlay, hamburger toggle, emoji icons, sidebar state
+2. **`kb_server/ui/templates/admin/tab_documents.html`** — HTMX loading for `_documents_table.html` partial
+3. **`kb_server/ui/templates/admin/tab_ingestion.html`** — Sub-tab nav (Manual/Schedule/Monitor) with HTMX partial loads
+4. **`kb_server/ui/templates/admin/tab_ragas.html`** — Sub-tab nav (Editor/Results) with HTMX partial loads
+5. **`kb_server/ui/templates/admin/tab_admin.html`** — Config table + sessions + credentials HTMX sections
+6. **`kb_server/ui/templates/admin/_monitor_lights.html`** — 7-component health bar with latency, expand, degraded/warning
+7. **`kb_server/ui/templates/admin/_config_table.html`** — HTMX inline editor with group badges, Reset All
+8. **`kb_server/ui/templates/admin/_profile_content.html`** — Revoke confirmation + badge classes
+9. **`kb_server/ui/templates/admin/_documents_table.html`** — Checkboxes, bulk toolbar, select-all
+10. **`kb_server/ui/templates/admin/_ingestion_manual.html`** — Manual form partial
+11. **`kb_server/ui/templates/admin/_ingestion_schedule.html`** — Schedule partial
+12. **`kb_server/ui/templates/admin/_ingestion_monitor.html`** — Monitor partial
+13. **`kb_server/ui/templates/admin/_ragas_editor.html`** — Evaluation dataset + Run Evaluation button
+14. **`kb_server/ui/templates/admin/_ragas_results.html`** — Empty state placeholder
+15. **`kb_server/ui/templates/admin/_sessions_table.html`** — Session list with Alpine.js data fetch + Revoke
+16. **`kb_server/ui/templates/admin/_credentials_section.html`** — API key management with Generate/Revoke
+17. **`kb_server/ui/templates/admin/_job_status.html`** — Job status summary partial (pre-existing)
+18. **`kb_server/ui/templates/base.html`** — Alpine.js CSP build URL, SRI hash, status-code-specific error handler
+19. **`kb_server/ui/static/styles.css`** — Sidebar responsive (280px / 60px icon-only / hamburger)
+20. **`kb_server/ui/routes_admin.py`** — Route reordering + 8 new partial routes + 13x `Depends(get_current_user)`
+21. **`kb_server/ui/app.py`** — Auth router mounted, startup auth init, `/login` + `/auth/login` routes removed
+22. **`kb_server/auth/deps.py`** — Session cookie validation, HMAC verify, `get_user_session()` check, `last_used_at` update
+23. **`kb_server/auth/router.py`** — `_SESSION_TIMEOUT`, `create_session_record()`, session list/revoke endpoints
+24. **`kb_server/auth/service.py`** — `ensure_admin_account()`, session CRUD methods
+25. **`kb_server/auth/models.py`** — `UserSession` table
+26. **`kb_server/ui/templates/admin/login.html`** — **DELETED** (replaced by Alpine.js overlay)
+
+### Commits (9)
+
+1. `bd44ef7` feat(admin): Plan 01 auth flow rewrite, document browse, CSP/SRI fixes
+2. `37cb6d8` test(28c-fixes): UAT results
+3. `5c17da2` feat(admin): Task 1 - complete monitor lights bar
+4. `9618f6d` feat(admin): Task 2 - improve config inline editor
+5. `5b30411` feat: Plan 02 Task 3-4 — partials refactor, route reordering, 5 new partial routes
+6. `a67083d` feat: Plan 03 — auth router mount, server-side gating, Alpine.js CDN fix, admin seeding
+7. `5202846` feat: Plan 04 — session timeout, session management, credentials page
+
+### Verification
+
+- Admin UI tests: 43 passed, 0 failed (43 errors = pre-existing `/app` PermissionError from TestClient teardown)
+- All tab content endpoints return real content (no 401 "Failed to load content")
+- Auth flow: API key → JWT cookie → session validation → 13 gated endpoints
+- Default admin account seeded on startup with banner-logged API key
+- Session timeout configurable via `SESSION_TIMEOUT` env var (default 1800s)
+- Login overlay triggers on 401 via CustomEvent('show-login')
 
 ## Phase 25 Outcomes
 
 ### Status
 
 - **Phase:** 25 (optimization-experiments)
-- **Status:** Executing Phase 28c-fixes
+- **Status:** Complete — 4 plans, 56 tests
 - **Completed:** 2026-06-11
 
 ### Plans Executed
