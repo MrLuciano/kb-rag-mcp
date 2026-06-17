@@ -88,3 +88,21 @@ async def test_search_kb_with_top_k(patch_server_globals):
 
     call_kwargs = patch_server_globals.search.call_args
     assert call_kwargs.kwargs.get("top_k") == 3
+
+
+@pytest.mark.asyncio
+async def test_search_embedding_unavailable_returns_friendly_message(
+    patch_server_globals,
+):
+    """When get_embedding raises, _search_kb should return a user-facing
+    error message, not crash."""
+    server_module.get_embedding.side_effect = RuntimeError(
+        "All providers failed"
+    )
+
+    results = await _search_kb({"query": "test query"})
+
+    assert len(results) == 1
+    assert results[0].type == "text"
+    assert "Embedding backend unavailable" in results[0].text
+    assert "OPERATIONS.md" in results[0].text

@@ -37,7 +37,11 @@ from kb_server.observability.percentiles import get_percentile_tracker
 
 # ── Logging ─────────────────────────────────────────────────────
 _log_path = config.get("LOG_PATH", "/tmp/kb-mcp-health.log")
-os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+try:
+    os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+except PermissionError:
+    _log_path = "/tmp/kb-mcp-health.log"
+    os.makedirs(os.path.dirname(_log_path), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",

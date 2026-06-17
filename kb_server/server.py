@@ -56,7 +56,11 @@ from observability.metrics import (
 
 # ── Logging ───────────────────────────────────────────────────────
 _log_path = config.get("LOG_PATH", "/tmp/kb-mcp.log")
-os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+try:
+    os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+except PermissionError:
+    _log_path = "/tmp/kb-mcp.log"
+    os.makedirs(os.path.dirname(_log_path), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -1537,7 +1541,8 @@ async def main():
     if not embedding_status.healthy:
         log.warning(
             f"Embedding backend unreachable: {embedding_status.message} — "
-            f"queries will fail. Configure EMBED_BACKEND or start LM Studio."
+            f"queries will fail. Configure EMBED_BACKEND, start LM Studio, "
+            f"or see OPERATIONS.md for troubleshooting."
         )
     else:
         log.info(f"Embedding backend healthy: {embedding_status.message}")

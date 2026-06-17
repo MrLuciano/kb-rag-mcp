@@ -113,3 +113,39 @@ def health(verbose: bool) -> None:
         sys.exit(1)
     else:
         console.print("[green]✓ All critical components healthy[/green]")
+
+
+@check_group.command(name="embedding")
+@click.option(
+    "--verbose", "-v", is_flag=True, help="Show detailed backend info"
+)
+def embedding(verbose: bool) -> None:
+    """Validate embedding backend connectivity."""
+    try:
+        from kb_server.health import check_embedding_service
+
+        status = asyncio.run(check_embedding_service())
+    except Exception as e:
+        console.print(
+            f"[red]✗ Embedding backend unavailable — "
+            f"{e}[/red]"
+        )
+        sys.exit(1)
+
+    if status.healthy:
+        details = status.message
+        if verbose and status.details:
+            extra = "; ".join(
+                f"{k}={v}" for k, v in status.details.items()
+            )
+            details = f"{details} | {extra}"
+        console.print(
+            f"[green]✓ Embedding backend: {details}[/green]"
+        )
+        sys.exit(0)
+    else:
+        console.print(
+            f"[red]✗ Embedding backend unavailable — "
+            f"{status.message}[/red]"
+        )
+        sys.exit(1)
