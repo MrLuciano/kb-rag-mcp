@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-15)
 Milestone: v0.1.5 (Streamable HTTP & Management Platform) — ACTIVE
 Phase: All backlog phases COMPLETE — 43-47, 50
 Status: 16/16 phases complete, 28/28 plans executed
-Next: Phase 51 (Document Tag Management) OR milestone completion / v0.1.6 planning
+Next: Phase 51 (Document Tag Management) — PLANNING
 
 ## Phase 28c-fixes Outcomes
 
