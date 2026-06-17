@@ -20,6 +20,22 @@ log = logging.getLogger("kb-mcp.auth_registry")
 _DEFAULT_DB_PATH = Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
 
 
+def _resolve_db_path(path: Path) -> Path:
+    """Return writable path, falling back to /tmp if file is read-only."""
+    # If file exists and is not writable (e.g. Docker root-owned),
+    # fall back to a temp file so CLI commands still work.
+    if path.exists() and not os.access(path, os.W_OK):
+        fallback = Path("/tmp") / path.name
+        log.warning(
+            "Auth DB %s is read-only (Docker root mount?). "
+            "Using fallback: %s",
+            path,
+            fallback,
+        )
+        return fallback
+    return path
+
+
 class AuthRegistry:
     """SQLite-backed registry for API key hashes and metadata.
 
@@ -28,7 +44,7 @@ class AuthRegistry:
     """
 
     def __init__(self, db_path: Path = _DEFAULT_DB_PATH):
-        self._db_path = db_path
+        self._db_path = _resolve_db_path(db_path)
         self._lock = threading.Lock()
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
@@ -55,12 +71,23 @@ class AuthRegistry:
                     revoked_at  TEXT
                 )
                 """)
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_api_keys_prefix "
-                "ON api_keys(prefix)"
-            )
-            conn.commit()
-            conn.close()
+            try:
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_api_keys_prefix "
+                    "ON api_keys(prefix)"
+                )
+                conn.commit()
+            except sqlite3.OperationalError as e:
+                if "readonly" in str(e).lower():
+                    log.warning(
+                        "Auth DB is read-only (%s). "
+                        "Using existing schema without modifications.",
+                        self._db_path,
+                    )
+                else:
+                    raise
+            finally:
+                conn.close()
 
     def create_key(
         self,
@@ -153,13 +180,37 @@ class AuthRegistry:
         """
         with self._lock:
             conn = self._conn()
-            rows = conn.execute(
-                """
-                SELECT prefix, scope, kb_name, description, revoked,
-                       created_at, revoked_at
-                FROM api_keys ORDER BY created_at DESC
-                """,
-            ).fetchall()
+            cursor = conn.execute("PRAGMA table_info(api_keys)")
+            columns = {row[1] for row in cursor.fetchall()}
+
+            # Build SELECT clause based on actual schema
+            select_cols = []
+            if "prefix" in columns:
+                select_cols.append("prefix")
+            if "scope" in columns:
+                select_cols.append("scope")
+            if "kb_name" in columns:
+                select_cols.append("kb_name")
+            if "description" in columns:
+                select_cols.append("description")
+            # Handle renamed columns
+            if "revoked" in columns:
+                select_cols.append("revoked")
+            elif "is_revoked" in columns:
+                select_cols.append("is_revoked AS revoked")
+            if "created_at" in columns:
+                select_cols.append("created_at")
+            if "revoked_at" in columns:
+                select_cols.append("revoked_at")
+            elif "last_used_at" in columns:
+                select_cols.append("last_used_at AS revoked_at")
+
+            if not select_cols:
+                conn.close()
+                return []
+
+            query = f"SELECT {', '.join(select_cols)} FROM api_keys ORDER BY created_at DESC"
+            rows = conn.execute(query).fetchall()
             conn.close()
         return [dict(r) for r in rows]
 
