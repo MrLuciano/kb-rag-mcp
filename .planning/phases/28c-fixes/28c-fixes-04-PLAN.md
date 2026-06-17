@@ -110,7 +110,7 @@ Output: Working session management with configurable timeout, active session lis
     - Test: UserSession model exists with all required columns (id, user_id, session_token, ip_address, user_agent, created_at, last_used_at, is_revoked)
   </behavior>
   <action>
-    1. In kb_server/auth/models.py: Verify `UserSession` table was created by Plan 03 Task 2. If not created (plan 03 was not yet executed), create it now with columns:
+     1. In kb_server/auth/models.py: Add `UserSession` table with columns (plan 03 intentionally defers this to Plan 04 per D-11 session management scope):
        - `id` (String 36, PK, UUID default)
        - `user_id` (String 36, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index)
        - `session_token` (String 64, unique, nullable=False) — HMAC fingerprint of session for lookup

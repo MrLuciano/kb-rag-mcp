@@ -1,57 +1,29 @@
 <h2 class="h3">Ingestion</h2>
 <p class="text-muted">Manual ingest trigger and job status.</p>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h3 class="h5 card-title">Quick Ingest</h3>
-                <p class="text-muted small">Enter a directory path to start ingestion.</p>
-                <form id="ingest-form" hx-post="/admin/tabs/ingest-trigger"
-                      hx-target="#ingest-result"
-                      hx-swap="innerHTML">
-                    <div class="mb-3">
-                        <label for="ingest-path" class="form-label">Directory Path</label>
-                        <input type="text" class="form-control" id="ingest-path" name="path"
-                               placeholder="/path/to/docs" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <span class="btn-text">Start Ingest</span>
-                        <span class="spinner-border spinner-border-sm d-none" id="ingest-spinner" role="status" aria-hidden="true"></span>
-                    </button>
-                </form>
-                <div id="ingest-result" class="mt-2"></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div id="job-status"
-             hx-get="/admin/tabs/job-status"
-             hx-trigger="load, every 10s"
-             hx-swap="innerHTML">
-            <div class="text-muted">Loading job status...</div>
+<div x-data="{ activeIngestionTab: 'manual' }">
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeIngestionTab === 'manual' }" href="#"
+               @click.prevent="activeIngestionTab = 'manual'; htmx.ajax('GET', '/admin/tabs/ingestion-manual', {target: '#ingestion-content', swap: 'innerHTML'})">Manual</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeIngestionTab === 'schedule' }" href="#"
+               @click.prevent="activeIngestionTab = 'schedule'; htmx.ajax('GET', '/admin/tabs/ingestion-schedule', {target: '#ingestion-content', swap: 'innerHTML'})">Schedule</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeIngestionTab === 'monitor' }" href="#"
+               @click.prevent="activeIngestionTab = 'monitor'; htmx.ajax('GET', '/admin/tabs/ingestion-monitor', {target: '#ingestion-content', swap: 'innerHTML'})">Monitor</a>
+        </li>
+    </ul>
+
+    <div id="ingestion-content"
+         hx-get="/admin/tabs/ingestion-manual"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <div class="text-center text-muted py-3">
+            <div class="spinner-border spinner-border-sm" role="status"></div>
+            <span class="ms-2">Loading...</span>
         </div>
     </div>
 </div>
-
-<script nonce="{{ get_nonce(request) }}">
-    var ingestForm = document.getElementById('ingest-form');
-    if (ingestForm) {
-        ingestForm.addEventListener('htmx:beforeRequest', function() {
-            var btn = ingestForm.querySelector('button[type="submit"]');
-            var spinner = document.getElementById('ingest-spinner');
-            var btnText = btn.querySelector('.btn-text');
-            btn.disabled = true;
-            btnText.classList.add('d-none');
-            spinner.classList.remove('d-none');
-        });
-        ingestForm.addEventListener('htmx:afterRequest', function() {
-            var btn = ingestForm.querySelector('button[type="submit"]');
-            var spinner = document.getElementById('ingest-spinner');
-            var btnText = btn.querySelector('.btn-text');
-            btn.disabled = false;
-            btnText.classList.remove('d-none');
-            spinner.classList.add('d-none');
-        });
-    }
-</script>

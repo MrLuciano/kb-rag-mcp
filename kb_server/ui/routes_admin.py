@@ -36,6 +36,200 @@ async def admin_shell(request: Request):
     )
 
 
+# ── Specific tab routes (must be registered before generic /tabs/{tab_name}) ──
+
+
+@router.get("/tabs/monitor-lights", response_class=HTMLResponse)
+async def admin_monitor_lights(request: Request):
+    """Return monitor lights partial with health data."""
+    from kb_server.health import check_all_components
+
+    components = await check_all_components()
+    return templates.TemplateResponse(
+        request,
+        "admin/_monitor_lights.html",
+        {"request": request, "components": components},
+    )
+
+
+@router.get("/tabs/config-table", response_class=HTMLResponse)
+async def admin_config_table(request: Request):
+    """Return config table partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_config_table.html",
+        {"request": request},
+    )
+
+
+@router.get("/tabs/profile-content", response_class=HTMLResponse)
+async def admin_profile_content(request: Request):
+    """Return profile content partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_profile_content.html",
+        {"request": request},
+    )
+
+
+@router.get("/tabs/documents-content", response_class=HTMLResponse)
+async def admin_documents_content(request: Request):
+    """Return documents table for admin panel."""
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    documents = []
+    total = 0
+
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM files WHERE status = 'completed'"
+            )
+            total = cursor.fetchone()[0]
+            cursor.execute(
+                "SELECT rowid, * FROM files WHERE status = 'completed' "
+                "ORDER BY rowid DESC LIMIT 20"
+            )
+            documents = [dict(row) for row in cursor.fetchall()]
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_documents_table.html",
+        {
+            "request": request,
+            "documents": documents,
+            "total": total,
+        },
+    )
+
+
+@router.get("/tabs/ingestion-manual", response_class=HTMLResponse)
+async def admin_ingestion_manual(request: Request):
+    """Return manual ingestion form partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_ingestion_manual.html",
+        {"request": request},
+    )
+
+
+@router.get("/tabs/ingestion-schedule", response_class=HTMLResponse)
+async def admin_ingestion_schedule(request: Request):
+    """Return ingestion schedule partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_ingestion_schedule.html",
+        {"request": request},
+    )
+
+
+@router.get("/tabs/ingestion-monitor", response_class=HTMLResponse)
+async def admin_ingestion_monitor(request: Request):
+    """Return ingestion monitor partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_ingestion_monitor.html",
+        {"request": request},
+    )
+
+
+@router.get("/tabs/ragas-editor", response_class=HTMLResponse)
+async def admin_ragas_editor(request: Request):
+    """Return RAGAS editor partial."""
+    dataset_path = Path("kb_server/evaluation/golden_dataset.json")
+    dataset_count = 0
+    if dataset_path.exists():
+        import json
+        with open(dataset_path) as f:
+            dataset = json.load(f)
+            dataset_count = len(dataset)
+    return templates.TemplateResponse(
+        request,
+        "admin/_ragas_editor.html",
+        {"request": request, "dataset_count": dataset_count},
+    )
+
+
+@router.get("/tabs/ragas-results", response_class=HTMLResponse)
+async def admin_ragas_results(request: Request):
+    """Return RAGAS results partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_ragas_results.html",
+        {"request": request},
+    )
+
+
+@router.post("/tabs/ingest-trigger", response_class=HTMLResponse)
+async def admin_ingest_trigger(request: Request):
+    """Trigger ingestion job."""
+    form = await request.form()
+    path = form.get("path", "")
+
+    if not path or not Path(path).exists():
+        return HTMLResponse(
+            "<div class='alert alert-danger'>Path not found</div>",
+            status_code=400,
+        )
+
+    return HTMLResponse(
+        "<div class='alert alert-success'>Ingestion job queued for: "
+        f"{path}</div>"
+    )
+
+
+@router.get("/tabs/job-status", response_class=HTMLResponse)
+async def admin_job_status(request: Request):
+    """Return job status summary."""
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    counts = {"completed": 0, "failed": 0, "pending": 0}
+
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            cursor = conn.cursor()
+            for status in counts:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM files WHERE status = ?", (status,)
+                )
+                counts[status] = cursor.fetchone()[0]
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_job_status.html",
+        {"request": request, "counts": counts},
+    )
+
+
+@router.post("/tabs/ragas-run", response_class=HTMLResponse)
+async def admin_ragas_run(request: Request):
+    """Trigger RAGAS evaluation."""
+    from pathlib import Path
+    import json
+
+    dataset_path = Path("kb_server/evaluation/golden_dataset.json")
+    dataset_count = 0
+
+    if dataset_path.exists():
+        with open(dataset_path) as f:
+            dataset = json.load(f)
+            dataset_count = len(dataset)
+
+    return HTMLResponse(
+        f"<div class='alert alert-info'>"
+        f"Evaluation queued with {dataset_count} queries. "
+        f"Results will be available in the logs."
+        f"</div>"
+    )
+
+
+# ── Generic tab content route (registered after specific routes) ──
+
+
 @router.get("/tabs/{tab_name}", response_class=HTMLResponse)
 async def admin_tab_content(request: Request, tab_name: str):
     """Render a tab content partial."""
@@ -116,137 +310,6 @@ async def admin_tab_content(request: Request, tab_name: str):
 
     return templates.TemplateResponse(
         request, template, context
-    )
-
-
-@router.get("/tabs/monitor-lights", response_class=HTMLResponse)
-async def admin_monitor_lights(request: Request):
-    """Return monitor lights partial with health data."""
-    from kb_server.health import check_all_components
-
-    components = await check_all_components()
-    return templates.TemplateResponse(
-        request,
-        "admin/_monitor_lights.html",
-        {"request": request, "components": components},
-    )
-
-
-@router.get("/tabs/config-table", response_class=HTMLResponse)
-async def admin_config_table(request: Request):
-    """Return config table partial."""
-    return templates.TemplateResponse(
-        request,
-        "admin/_config_table.html",
-        {"request": request},
-    )
-
-
-@router.get("/tabs/profile-content", response_class=HTMLResponse)
-async def admin_profile_content(request: Request):
-    """Return profile content partial."""
-    return templates.TemplateResponse(
-        request,
-        "admin/_profile_content.html",
-        {"request": request},
-    )
-
-
-@router.get("/tabs/documents-content", response_class=HTMLResponse)
-async def admin_documents_content(request: Request):
-    """Return documents table for admin panel."""
-    import sqlite3
-
-    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
-    documents = []
-    total = 0
-
-    if db_path.exists():
-        with sqlite3.connect(str(db_path)) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT COUNT(*) FROM files WHERE status = 'completed'"
-            )
-            total = cursor.fetchone()[0]
-            cursor.execute(
-                "SELECT rowid, * FROM files WHERE status = 'completed' "
-                "ORDER BY rowid DESC LIMIT 20"
-            )
-            documents = [dict(row) for row in cursor.fetchall()]
-
-    return templates.TemplateResponse(
-        request,
-        "admin/_documents_table.html",
-        {
-            "request": request,
-            "documents": documents,
-            "total": total,
-        },
-    )
-
-
-@router.post("/tabs/ingest-trigger", response_class=HTMLResponse)
-async def admin_ingest_trigger(request: Request):
-    """Trigger ingestion job."""
-    form = await request.form()
-    path = form.get("path", "")
-
-    if not path or not Path(path).exists():
-        return HTMLResponse(
-            "<div class='alert alert-danger'>Path not found</div>",
-            status_code=400,
-        )
-
-    return HTMLResponse(
-        "<div class='alert alert-success'>Ingestion job queued for: "
-        f"{path}</div>"
-    )
-
-
-@router.get("/tabs/job-status", response_class=HTMLResponse)
-async def admin_job_status(request: Request):
-    """Return job status summary."""
-    import sqlite3
-
-    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
-    counts = {"completed": 0, "failed": 0, "pending": 0}
-
-    if db_path.exists():
-        with sqlite3.connect(str(db_path)) as conn:
-            cursor = conn.cursor()
-            for status in counts:
-                cursor.execute(
-                    "SELECT COUNT(*) FROM files WHERE status = ?", (status,)
-                )
-                counts[status] = cursor.fetchone()[0]
-
-    return templates.TemplateResponse(
-        request,
-        "admin/_job_status.html",
-        {"request": request, "counts": counts},
-    )
-
-
-@router.post("/tabs/ragas-run", response_class=HTMLResponse)
-async def admin_ragas_run(request: Request):
-    """Trigger RAGAS evaluation."""
-    from pathlib import Path
-    import json
-
-    dataset_path = Path("kb_server/evaluation/golden_dataset.json")
-    dataset_count = 0
-
-    if dataset_path.exists():
-        with open(dataset_path) as f:
-            dataset = json.load(f)
-            dataset_count = len(dataset)
-
-    return HTMLResponse(
-        f"<div class='alert alert-info'>"
-        f"Evaluation queued with {dataset_count} queries. "
-        f"Results will be available in the logs."
-        f"</div>"
     )
 
 

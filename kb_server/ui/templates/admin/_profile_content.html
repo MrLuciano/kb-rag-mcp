@@ -20,7 +20,7 @@
                 <tr>
                     <td><code x-text="key.prefix"></code></td>
                     <td x-text="key.created_at"></td>
-                    <td><span x-text="key.is_revoked ? 'Revoked' : 'Active'" :class="key.is_revoked ? 'text-danger' : 'text-success'"></span></td>
+                    <td><span x-text="key.is_revoked ? 'Revoked' : 'Active'" :class="'badge ' + (key.is_revoked ? 'bg-danger' : 'bg-success')"></span></td>
                     <td><button class="btn btn-sm btn-outline-danger" @click="revokeKey(key.id)" x-show="!key.is_revoked">Revoke</button></td>
                 </tr>
             </template>
@@ -72,7 +72,7 @@ function profilePage() {
             });
         },
         revokeKey(keyId) {
-            if (!confirm('Revoke this API key?')) return;
+            if (!confirm('Revoke API key: Are you sure you want to revoke this key? Applications using this key will lose access immediately.')) return;
             var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
             fetch('/api/v1/api-keys/' + keyId, { method: 'DELETE', headers: headers })
                 .then(() => { this.loadKeys(); });

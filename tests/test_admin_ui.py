@@ -133,14 +133,17 @@ class TestAdminTabs:
         response = client.get("/admin/tabs/ingestion")
         assert response.status_code == 200
         assert "Ingestion" in response.text
-        assert "Quick Ingest" in response.text
+        assert "Manual" in response.text
+        assert "Schedule" in response.text
+        assert "Monitor" in response.text
 
     def test_admin_ragas_tab(self, client):
         """RAGAS tab returns real content."""
         response = client.get("/admin/tabs/ragas")
         assert response.status_code == 200
         assert "RAGAS Evaluation" in response.text
-        assert "Run Evaluation" in response.text
+        assert "Editor" in response.text
+        assert "Results" in response.text
 
 
 class TestAuthFlow:
@@ -221,8 +224,8 @@ class TestDocTableSelection:
 
 
 class TestCSPFix:
-    def test_tab_ragas_has_csp_nonce(self):
-        with open("kb_server/ui/templates/admin/tab_ragas.html") as f:
+    def test_partial_has_csp_nonce(self):
+        with open("kb_server/ui/templates/admin/_ragas_editor.html") as f:
             content = f.read()
         assert "nonce" in content
 
@@ -232,6 +235,6 @@ class TestCSPFix:
         assert 'integrity="sha384-' in content
 
     def test_ragas_empty_state_text(self):
-        with open("kb_server/ui/templates/admin/tab_ragas.html") as f:
+        with open("kb_server/ui/templates/admin/_ragas_results.html") as f:
             content = f.read()
         assert "No evaluation results yet" in content
