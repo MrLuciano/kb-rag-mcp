@@ -6,10 +6,10 @@ status: executing
 last_updated: "2026-06-17T12:00:00.000Z"
 progress:
   total_phases: 17
-  completed_phases: 14
-  total_plans: 27
-  completed_plans: 22
-  percent: 81
+  completed_phases: 18
+  total_plans: 31
+  completed_plans: 26
+  percent: 84
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-15)
 Milestone: v0.1.5 (Streamable HTTP & Management Platform) — ACTIVE
 Phase: 28c-fixes (admin-spa-gap-closure) — COMPLETE
 Status: All 4 plans executed — auth flow, CSP/SRI, doc browse, monitor lights, config editor, partials refactor, route ordering, auth router mount, Alpine.js CDN fix, auth gating, admin seeding, session management, credentials UI
-Next: Phase 39 (Observability) + Phase 40 (Config) + Phase 41 (Provider Alias) + Phase 42 (Query Analytics)
+Next: Phase 43-47 (Backlog) — Chunk Preview, Auth Security, DB Reliability, Code Quality, LM Studio Dependency
 
 ## Phase 28c-fixes Outcomes
 

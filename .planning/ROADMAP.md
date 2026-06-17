@@ -100,11 +100,11 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 ## v0.1.5 Streamable HTTP & Management Platform
 
 <details open>
-<summary>🔄 v0.1.5 Phase Overview — 5/11 PHASES COMPLETE</summary>
+<summary>🔄 v0.1.5 Phase Overview — 9/11 PHASES COMPLETE</summary>
 
-**Completed:** Phase 28 (Streamable HTTP), Phase 28b (Auth API), Phase 28c (Admin SPA), Phase 28c-fixes (Gap Closure), Phase 38 (Grafana Embed)
+**Completed:** Phase 28, 28b, 28c, 28c-fixes, 38, 39, 40, 41, 42
 
-**Remaining:** 39 (Observability), 40 (Config), 41 (Provider Alias), 42 (Query Analytics), 43-47 (Backlog)
+**Remaining:** 43-47 (Backlog)
 
 - [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
@@ -117,13 +117,13 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks, [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 4 tasks, [28c-fixes-03-PLAN.md](phases/28c-fixes/28c-fixes-03-PLAN.md) — 4 tasks, [28c-fixes-04-PLAN.md](phases/28c-fixes/28c-fixes-04-PLAN.md) — 2 tasks
 - [x] Phase 38: Grafana Dashboard Embedding — iframe embed helper, time range selector, Jinja2 globals (completed 2026-06-16)
   - Plans: [38-01-PLAN.md](phases/38-grafana-embed/38-01-PLAN.md) — 1 task
-- [ ] Phase 39: Observability Backlog — OBS-01 (Grafana health check), OBS-02 (request ID middleware), METRICS-01 (percentile metrics)
+- [x] Phase 39: Observability Backlog — OBS-01 (Grafana health check), OBS-02 (request ID middleware), METRICS-01 (percentile metrics) (completed 2026-06-16)
   - Plans: [39-01-PLAN.md](phases/39-observability/39-01-PLAN.md) — 4 tasks
-- [ ] Phase 40: Configuration Backlog — CONF-01 (config table + ConfigLoader), CONF-02 (config REST API), CONF-03-08 (hot-reload, seeding, os.getenv replacement)
+- [x] Phase 40: Configuration Backlog — CONF-01 (config table + ConfigLoader), CONF-02 (config REST API), CONF-03-08 (hot-reload, seeding, os.getenv replacement) (completed 2026-06-16)
   - Plans: [40-01-PLAN.md](phases/40-config-backlog/40-01-PLAN.md) — 2 tasks, [40-02-PLAN.md](phases/40-config-backlog/40-02-PLAN.md) — 3 tasks
-- [-] Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload)
+- [x] Phase 41: Provider Alias — PROV-01 (provider alias resolution + hot-reload) (completed 2026-06-16)
   - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks (ConfigLoader alias methods + EmbedClient integration)
-- [ ] Phase 42: Query Logging Analytics Dashboard — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution)
+- [x] Phase 42: Query Logging Analytics Dashboard — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution) (completed 2026-06-16)
   - Plans: [42-01-PLAN.md](phases/42-query-analytics-dashboard/42-01-PLAN.md) — 2 tasks (get_latency_stats + analytics route + template + tests)
 - [ ] Phase 43: Chunk Preview in Document Detail — Inline chunk viewer with highlight for matched terms
   - Plans: TBD
