@@ -7,9 +7,23 @@ from fastapi.testclient import TestClient
 from kb_server.ui.app import app
 
 
+@pytest.fixture(autouse=True)
+def cleanup_auth_db():
+    """Remove test auth DB after each test."""
+    yield
+    for p in ["data/auth.db", "data/auth.db-wal", "data/auth.db-shm"]:
+        try:
+            os.remove(p)
+        except FileNotFoundError:
+            pass
+
+
 @pytest.fixture
 def client():
-    return TestClient(app)
+    from kb_server.auth.deps import get_current_user
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 class TestAdminShell:
@@ -121,8 +135,27 @@ class TestAdminTemplates:
 
 
 class TestAdminTabs:
+
+    def _setup_auth(self, client):
+        """Override auth dependency to bypass login for testing."""
+        from unittest.mock import MagicMock
+        from kb_server.auth.deps import get_current_user
+        from kb_server.auth.models import User
+
+        mock_user = MagicMock(spec=User)
+        mock_user.id = "test-admin-id"
+        mock_user.username = "admin"
+        mock_user.role = "admin"
+        mock_user.is_active = True
+
+        async def _mock_get_current_user():
+            return mock_user
+
+        client.app.dependency_overrides[get_current_user] = _mock_get_current_user
+
     def test_admin_documents_tab(self, client):
         """Documents tab returns real content."""
+        self._setup_auth(client)
         response = client.get("/admin/tabs/documents")
         assert response.status_code == 200
         assert "Documents" in response.text
@@ -130,6 +163,7 @@ class TestAdminTabs:
 
     def test_admin_ingestion_tab(self, client):
         """Ingestion tab returns real content."""
+        self._setup_auth(client)
         response = client.get("/admin/tabs/ingestion")
         assert response.status_code == 200
         assert "Ingestion" in response.text
@@ -139,6 +173,7 @@ class TestAdminTabs:
 
     def test_admin_ragas_tab(self, client):
         """RAGAS tab returns real content."""
+        self._setup_auth(client)
         response = client.get("/admin/tabs/ragas")
         assert response.status_code == 200
         assert "RAGAS Evaluation" in response.text
@@ -228,11 +263,6 @@ class TestCSPFix:
         with open("kb_server/ui/templates/admin/_ragas_editor.html") as f:
             content = f.read()
         assert "nonce" in content
-
-    def test_login_html_has_sri_integrity(self):
-        with open("kb_server/ui/templates/admin/login.html") as f:
-            content = f.read()
-        assert 'integrity="sha384-' in content
 
     def test_ragas_empty_state_text(self):
         with open("kb_server/ui/templates/admin/_ragas_results.html") as f:

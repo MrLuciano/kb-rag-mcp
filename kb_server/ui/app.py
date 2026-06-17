@@ -1,11 +1,12 @@
 """FastAPI application for KB-RAG Web UI."""
 
+import os
 import secrets
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -71,6 +72,21 @@ templates.env.globals["build_grafana_embed_url_with_range"] = (
     routes_admin.build_grafana_embed_url_with_range
 )
 
+# Auth router (mounted for session/login endpoints on UI port)
+from kb_server.auth.router import router as auth_router  # noqa: E402, F811
+from kb_server.auth.service import AuthService  # noqa: E402
+
+app.include_router(auth_router)
+
+
+@app.on_event("startup")
+async def startup_init_auth():
+    """Initialize auth service and seed default admin account."""
+    db_path = Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
+    auth_service = AuthService(db_path)
+    app.state.auth_service = auth_service
+    app.state.auth_service.ensure_admin_account()
+
 
 def highlight_term(text: str, query: str | None) -> str:
     """Wrap occurrences of query in <mark> tags (XSS-safe)."""
@@ -102,24 +118,6 @@ templates.env.globals["highlight_term"] = highlight_term
 async def health():
     """Health check endpoint."""
     return {"status": "ok", "service": "kb-rag-ui"}
-
-
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    """Render the login page."""
-    return templates.TemplateResponse(
-        request,
-        "admin/login.html",
-        {
-            "request": request,
-        },
-    )
-
-
-@app.post("/auth/login")
-async def login_submit(request: Request):
-    """Handle login form submission."""
-    return RedirectResponse(url="/admin", status_code=303)
 
 
 @app.get("/")

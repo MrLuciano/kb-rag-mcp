@@ -1,4 +1,8 @@
+import hashlib
+import hmac
 import logging
+import os
+import time
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request
@@ -10,6 +14,8 @@ from kb_server.auth.service import AuthService
 log = logging.getLogger("kb-mcp.auth.deps")
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+_JWT_SECRET = os.getenv("JWT_SECRET", "")
 
 
 def _get_service(request: Request) -> AuthService:
@@ -32,14 +38,49 @@ async def get_current_user(
         if auth_header.startswith("Bearer "):
             api_key = auth_header[7:].strip()
 
-    if not api_key:
+    if api_key:
+        user = service.verify_key(api_key)
+        if user is None:
+            raise HTTPException(
+                status_code=401, detail="Invalid or revoked API key"
+            )
+        return user
+
+    # Fallback: session cookie
+    session_cookie = request.cookies.get("session")
+    if not session_cookie:
         raise HTTPException(status_code=401, detail="Missing API key")
 
-    user = service.verify_key(api_key)
+    parts = session_cookie.split(":")
+    if len(parts) != 3:
+        raise HTTPException(status_code=401, detail="Invalid session cookie")
+
+    user_id, expires_at, signature = parts
+    now = int(time.time())
+
+    try:
+        if int(expires_at) < now:
+            raise HTTPException(status_code=401, detail="Session expired")
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid session cookie")
+
+    secret = _JWT_SECRET or os.environ.get("JWT_SECRET", "")
+    expected = hmac.new(
+        secret.encode(),
+        f"{user_id}:{expires_at}".encode(),
+        hashlib.sha256,
+    ).hexdigest()[:16]
+
+    if not hmac.compare_digest(signature, expected):
+        raise HTTPException(status_code=401, detail="Invalid session cookie")
+
+    user = service.get_user(user_id)
     if user is None:
-        raise HTTPException(
-            status_code=401, detail="Invalid or revoked API key"
-        )
+        raise HTTPException(status_code=401, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="User account is inactive")
+
+    log.debug("Authenticated via session cookie: user=%s", user.id)
     return user
 
 

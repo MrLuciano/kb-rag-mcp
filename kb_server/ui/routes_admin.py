@@ -12,6 +12,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 
+from kb_server.auth.deps import get_current_user
+from kb_server.auth.models import User
+
 template_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(template_dir))
 templates.env.globals["get_nonce"] = lambda request: getattr(
@@ -40,7 +43,10 @@ async def admin_shell(request: Request):
 
 
 @router.get("/tabs/monitor-lights", response_class=HTMLResponse)
-async def admin_monitor_lights(request: Request):
+async def admin_monitor_lights(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return monitor lights partial with health data."""
     from kb_server.health import check_all_components
 
@@ -53,7 +59,10 @@ async def admin_monitor_lights(request: Request):
 
 
 @router.get("/tabs/config-table", response_class=HTMLResponse)
-async def admin_config_table(request: Request):
+async def admin_config_table(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return config table partial."""
     return templates.TemplateResponse(
         request,
@@ -63,7 +72,10 @@ async def admin_config_table(request: Request):
 
 
 @router.get("/tabs/profile-content", response_class=HTMLResponse)
-async def admin_profile_content(request: Request):
+async def admin_profile_content(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return profile content partial."""
     return templates.TemplateResponse(
         request,
@@ -73,7 +85,10 @@ async def admin_profile_content(request: Request):
 
 
 @router.get("/tabs/documents-content", response_class=HTMLResponse)
-async def admin_documents_content(request: Request):
+async def admin_documents_content(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return documents table for admin panel."""
     import sqlite3
 
@@ -107,7 +122,10 @@ async def admin_documents_content(request: Request):
 
 
 @router.get("/tabs/ingestion-manual", response_class=HTMLResponse)
-async def admin_ingestion_manual(request: Request):
+async def admin_ingestion_manual(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return manual ingestion form partial."""
     return templates.TemplateResponse(
         request,
@@ -117,7 +135,10 @@ async def admin_ingestion_manual(request: Request):
 
 
 @router.get("/tabs/ingestion-schedule", response_class=HTMLResponse)
-async def admin_ingestion_schedule(request: Request):
+async def admin_ingestion_schedule(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return ingestion schedule partial."""
     return templates.TemplateResponse(
         request,
@@ -127,7 +148,10 @@ async def admin_ingestion_schedule(request: Request):
 
 
 @router.get("/tabs/ingestion-monitor", response_class=HTMLResponse)
-async def admin_ingestion_monitor(request: Request):
+async def admin_ingestion_monitor(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return ingestion monitor partial."""
     return templates.TemplateResponse(
         request,
@@ -137,7 +161,10 @@ async def admin_ingestion_monitor(request: Request):
 
 
 @router.get("/tabs/ragas-editor", response_class=HTMLResponse)
-async def admin_ragas_editor(request: Request):
+async def admin_ragas_editor(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return RAGAS editor partial."""
     dataset_path = Path("kb_server/evaluation/golden_dataset.json")
     dataset_count = 0
@@ -154,7 +181,10 @@ async def admin_ragas_editor(request: Request):
 
 
 @router.get("/tabs/ragas-results", response_class=HTMLResponse)
-async def admin_ragas_results(request: Request):
+async def admin_ragas_results(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return RAGAS results partial."""
     return templates.TemplateResponse(
         request,
@@ -164,7 +194,10 @@ async def admin_ragas_results(request: Request):
 
 
 @router.post("/tabs/ingest-trigger", response_class=HTMLResponse)
-async def admin_ingest_trigger(request: Request):
+async def admin_ingest_trigger(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Trigger ingestion job."""
     form = await request.form()
     path = form.get("path", "")
@@ -182,7 +215,10 @@ async def admin_ingest_trigger(request: Request):
 
 
 @router.get("/tabs/job-status", response_class=HTMLResponse)
-async def admin_job_status(request: Request):
+async def admin_job_status(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Return job status summary."""
     import sqlite3
 
@@ -206,7 +242,10 @@ async def admin_job_status(request: Request):
 
 
 @router.post("/tabs/ragas-run", response_class=HTMLResponse)
-async def admin_ragas_run(request: Request):
+async def admin_ragas_run(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
     """Trigger RAGAS evaluation."""
     from pathlib import Path
     import json
@@ -231,7 +270,11 @@ async def admin_ragas_run(request: Request):
 
 
 @router.get("/tabs/{tab_name}", response_class=HTMLResponse)
-async def admin_tab_content(request: Request, tab_name: str):
+async def admin_tab_content(
+    request: Request,
+    tab_name: str,
+    _auth: User = Depends(get_current_user),
+):
     """Render a tab content partial."""
     template_map = {
         "documents": "admin/tab_documents.html",
