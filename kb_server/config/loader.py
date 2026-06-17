@@ -70,6 +70,7 @@ class ConfigLoader:
             "HEALTH_HOST",
             "HEALTH_PORT",
             "METADATA_DB",
+            "TAGS_SEARCH_ENABLED",
         ]
         try:
             with get_connection(self._db_path) as conn:
@@ -345,3 +346,15 @@ class ConfigLoader:
                         pattern,
                         key,
                     )
+
+    def is_tag_search_enabled(self) -> bool:
+        """Check if tag search integration is enabled.
+
+        Phase 51: Tags are stored in Qdrant payload but not indexed
+        for search by default. Set TAGS_SEARCH_ENABLED=true to enable.
+
+        Returns:
+            True if tag search is enabled, False otherwise.
+        """
+        val = self.get("TAGS_SEARCH_ENABLED", "false")
+        return str(val).lower() in ("true", "1", "yes", "on")

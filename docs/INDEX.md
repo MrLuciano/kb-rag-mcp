@@ -33,6 +33,7 @@ Choose your deployment mode:
 ## Topic Guides
 
 - [SEARCH_QUALITY.md](SEARCH_QUALITY.md) — Hybrid search, reranking, evaluation methodology
+- [OPERATIONS.md#tag-management-phase-51](OPERATIONS.md) — Document tag management (CLI + Web UI)
 - [AUTO_INGESTION.md](AUTO_INGESTION.md) — File watcher, version extractor, _meta.json overrides
 - [VERSION_FILTERING.md](VERSION_FILTERING.md) — Version extraction and search filtering
 - [METADATA_OVERRIDES.md](METADATA_OVERRIDES.md) — Per-directory metadata overrides
