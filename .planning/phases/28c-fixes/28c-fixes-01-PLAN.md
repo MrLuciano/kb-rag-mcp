@@ -87,14 +87,14 @@ Output: Updated shell, document table, auth router, and base template with passi
     kb_server/auth/router.py
   </files>
   <behavior>
-    - Test: shell.html contains `x-show="!isAuthenticated"` on login overlay (not Bootstrap modal API)
-    - Test: shell.html `authenticate()` sends POST to `/api/v1/auth/session` with Bearer header
-    - Test: shell.html `logout()` calls POST `/api/v1/auth/logout` to clear cookie
-    - Test: base.html 401 handler sets Alpine.js `isAuthenticated = false` instead of calling Bootstrap modal
-    - Test: Auth router has `POST /api/v1/auth/logout` that clears `session` cookie
-    - Test: Login modal heading is "Login to Admin Panel" (not "Authentication Required")
-    - Test: API key placeholder is "kb_xxxxxxxx..."
-    - Test: Sidebar tab labels are "RAGAS Evaluation" and "Admin"
+    - Test: test_shell_html_uses_alpine_xshow — shell.html contains `x-show="!isAuthenticated"` on login overlay (not Bootstrap modal API)
+    - Test: test_authenticate_posts_to_auth_session — `authenticate()` sends POST to `/api/v1/auth/session` with Bearer header
+    - Test: test_logout_calls_auth_logout — `logout()` calls POST `/api/v1/auth/logout` to clear cookie
+    - Test: test_base_html_401_sets_alpine_state — base.html 401 handler sets Alpine.js `isAuthenticated = false` instead of calling Bootstrap modal
+    - Test: test_auth_router_has_logout — Auth router has `POST /api/v1/auth/logout` that clears `session` cookie
+    - Test: test_login_modal_heading — Login modal heading is "Login to Admin Panel" (not "Authentication Required")
+    - Test: test_api_key_placeholder — API key placeholder is "kb_xxxxxxxx..."
+    - Test: test_sidebar_tab_labels — Sidebar tab labels are "RAGAS Evaluation" and "Admin"
   </behavior>
   <action>
     1. In shell.html: Replace the Bootstrap modal markup (`<div class="modal fade" id="loginModal" ...>`) with an Alpine.js-controlled overlay div using `x-show="!isAuthenticated"` and `x-transition`. Use a centered card layout inside a full-viewport backdrop (`position: fixed; inset: 0; background: rgba(0,0,0,0.5)`).
@@ -137,12 +137,12 @@ Output: Updated shell, document table, auth router, and base template with passi
     kb_server/ui/routes_admin.py
   </files>
   <behavior>
-    - Test: _documents_table.html has a checkbox `<input type="checkbox">` in the header row for "select all"
-    - Test: Each data row has a checkbox for individual selection
-    - Test: Bulk toolbar is present with "Delete", "Re-ingest", "Delete Failed" buttons
-    - Test: Per-document Actions dropdown contains "View", "Delete", "Re-ingest"
-    - Test: Delete actions have `hx-confirm` attribute
-    - Test: Empty state reads "No documents match your search filters. Try adjusting your filter criteria or clear all filters."
+    - Test: test_doc_table_select_all_checkbox — _documents_table.html has checkbox `<input type="checkbox">` in header for "select all"
+    - Test: test_doc_table_per_row_checkbox — Each data row has a checkbox for individual selection
+    - Test: test_doc_table_bulk_toolbar — Bulk toolbar present with "Delete", "Re-ingest", "Delete Failed" buttons
+    - Test: test_doc_table_per_row_actions — Per-document Actions dropdown contains "View", "Delete", "Re-ingest"
+    - Test: test_destructive_actions_have_confirm — Delete actions have `hx-confirm` attribute
+    - Test: test_doc_table_empty_state — Empty state reads "No documents match your search filters. Try adjusting your filter criteria or clear all filters."
   </behavior>
   <action>
     1. In _documents_table.html: Add a `<th>` checkbox column as the first column. In the header, use `<input type="checkbox" @click="toggleSelectAll()">`. In each row, use `<input type="checkbox" x-model="selected" :value="{{ doc.rowid }}">`.
@@ -157,7 +157,7 @@ Output: Updated shell, document table, auth router, and base template with passi
     7. In routes_admin.py: Ensure the existing document API endpoints (`delete_document`, `reingest_document`, `delete_failed_documents`) are wired and functional. No new endpoints needed for the bulk actions if using client-side fetch loops; however, if HTMX is preferred for individual actions, add HTMX wrapper endpoints under `/admin/api/documents/{id}/delete` that proxy to the existing JSON endpoints and return HTML fragments. For gap closure, client-side fetch + HTMX refresh is acceptable and minimizes route changes.
   </action>
   <verify>
-    <automated>pytest tests/test_admin_ui.py -v -k "document"</automated>
+    <automated>pytest tests/test_admin_ui.py -v -k "doc_table or doc_bulk or destructive"</automated>
   </verify>
   <done>
     - Document table has checkbox column with select-all
@@ -174,9 +174,9 @@ Output: Updated shell, document table, auth router, and base template with passi
     kb_server/ui/templates/admin/login.html
   </files>
   <behavior>
-    - Test: tab_ragas.html inline `<script>` tag includes `nonce="{{ get_nonce(request) }}"`
-    - Test: login.html Bootstrap CSS link includes `integrity="sha384-..."`
-    - Test: tab_ragas.html empty state reads "No evaluation results yet. Run an evaluation to see results here."
+    - Test: test_tab_ragas_has_csp_nonce — tab_ragas.html inline `<script>` tag includes `nonce="{{ get_nonce(request) }}"`
+    - Test: test_login_html_has_sri_integrity — login.html Bootstrap CSS link includes `integrity="sha384-..."`
+    - Test: test_ragas_empty_state_text — tab_ragas.html empty state reads "No evaluation results yet. Run an evaluation to see results here."
   </behavior>
   <action>
     1. In tab_ragas.html: Add `nonce="{{ get_nonce(request) }}"` to the `<script>` tag at line 36.
