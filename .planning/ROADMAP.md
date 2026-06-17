@@ -185,17 +185,22 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 ### Phase 28c-fixes: Admin SPA Gap Closure
 **Goal**: Fix all UAT-verified gaps from Phase 28c so the Admin SPA matches the approved 28c-UI-SPEC.md design contract
 **Depends on**: Phase 28c (core shell and tabs already built), Phase 28b (auth session endpoint), Phase 40 (config REST API)
-**Requirements**: SPA-02, SPA-03, SPA-04, SPA-06, SPA-07, SPA-08, SPA-09, SPA-12
+**Requirements**: SPA-01, SPA-02, SPA-03, SPA-04, SPA-05, SPA-06, SPA-07, SPA-08, SPA-09, SPA-12
 **Success Criteria** (what must be TRUE):
-   1. Auth flow exchanges API key for JWT session cookie via POST /api/v1/auth/session; login modal uses Alpine.js x-show
-   2. Document browse table has checkbox column, bulk toolbar, and per-document Actions dropdown with hx-confirm
-   3. All inline scripts have CSP nonces; all CDN resources have SRI integrity hashes
-   4. Monitor lights show 7 components with latency, click-to-expand details, ARIA labels, and warning state
-   5. Config editor has Reset All button, Group badges, HTMX PUT save, and aria-live error announcements
-   6. Missing ingestion and RAGAS partials exist and are loaded by parent tabs
-   7. Sidebar width is 280px with icon-only (md) and hamburger (sm) responsive behavior
-   8. All copywriting matches 28c-UI-SPEC.md (labels, empty states, placeholders, tab names)
-**Plans**: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth flow, document browse, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 3 tasks (monitor lights, config editor, partials + copy/spacing)
+    1. Auth flow exchanges API key for JWT session cookie via POST /api/v1/auth/session; login modal uses Alpine.js x-show
+    2. Document browse table has checkbox column, bulk toolbar, and per-document Actions dropdown with hx-confirm
+    3. All inline scripts have CSP nonces; all CDN resources have SRI integrity hashes
+    4. Monitor lights show 7 components with latency, click-to-expand details, ARIA labels, and warning state
+    5. Config editor has Reset All button, Group badges, HTMX PUT save, and aria-live error announcements
+    6. Missing ingestion and RAGAS partials exist and are loaded by parent tabs
+    7. Sidebar width is 280px with icon-only (md) and hamburger (sm) responsive behavior
+    8. All copywriting matches 28c-UI-SPEC.md (labels, empty states, placeholders, tab names)
+    9. Alpine.js loads from valid CDN URL (no 404); error messages distinguish 401 vs 404 vs 500
+   10. Auth router mounted on UI app; all admin tab endpoints server-side gated with Depends(get_current_user)
+   11. Default admin account auto-seeded on first startup with API key logged to stdout
+   12. Session timeout is configurable via env var (default 30 min); session tracking in UserSession table
+   13. Admin can view active sessions and revoke them; Admin tab has API key management (generate/revoke)
+**Plans**: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth flow, document browse, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 3 tasks (monitor lights, config editor, partials + copy/spacing), [28c-fixes-03-PLAN.md](phases/28c-fixes/28c-fixes-03-PLAN.md) — 3 tasks (Alpine.js CDN fix, auth router mount + admin seed, server-side auth gating), [28c-fixes-04-PLAN.md](phases/28c-fixes/28c-fixes-04-PLAN.md) — 2 tasks (session timeout + tracking, session management + settings UI)
 
 ### Phase 38: Grafana Dashboard Embedding
 **Goal**: Embed the existing Grafana monitoring dashboard inside the admin SPA Monitoring tab with configurable time ranges
