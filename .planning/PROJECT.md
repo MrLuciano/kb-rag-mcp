@@ -23,15 +23,16 @@ AI assistants stop hallucinating about closed-source products — every answer i
 - SPA-04: Export Filtered Results — CSV/JSON export from document browse
 - SPA-05: Advanced Filters — date range, file type, vendor, product filters
 
-## Current State (v0.1.5 — active)
+## Current State (v0.1.4 shipped, v0.1.5 active)
 
-- **Tests:** 1165 passing, 5 pre-existing failures, 12 skipped
+- **Tests:** 1339 passing, 7 pre-existing failures, 14 skipped
 - **Coverage:** 90% branch target enforced (kb_server/ + ingest/)
 - **Codebase:** ~251k LOC Python; single canonical module `kb_server/`
 - **Deployment:** Docker Compose + bare metal systemd + Kubernetes/Helm
 - **CI:** GitHub Actions on every push/PR to `master` — English audit, Helm lint, integration checks
 - **Monitoring:** Grafana + Prometheus with 6-tab dashboard, 28 metrics
-- **Phase 28 progress:** Plan 28-01 complete (streamable HTTP transport: server.py + 3 tests + docs)
+- **v0.1.4 shipped:** 15 phases (23-37), 28 plans, 1165 tests — Platform, Analytics & Enterprise
+- **v0.1.5 active:** 16/17 phases complete — Streamable HTTP, Auth API, Admin SPA, Grafana embed, observability, config, provider aliases
 
 ## Requirements
 

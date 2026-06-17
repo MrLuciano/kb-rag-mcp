@@ -118,3 +118,35 @@ English-only codebase with CI enforcement, multilingual README (EN/PT-BR/ES), Gr
 ### Git Tag
 
 `v0.1.3`
+
+---
+
+## v0.1.4 — Platform, Analytics & Enterprise
+
+**Shipped:** 2026-06-11
+**Phases:** 15 (23-37) | **Plans:** 28 | **Tests:** 1165 passing
+
+### Delivered
+
+Transformed kb-rag-mcp from a single-collection RAG server into a multi-tenant, enterprise-ready platform with streaming HTTP transport, knowledge graph, authentication, rate limiting, quotas, circuit breakers, and retrieval caching.
+
+### Key Accomplishments
+
+1. **Documentation overhaul** — Deployment-mode sections in all docs, two-tier README format (EN/PT-BR/ES), CHANGELOG with per-plan detail
+2. **RAGAS Evaluation Pipeline** — 4 custom metrics (faithfulness, answer_relevancy, context_precision, context_recall), CSV/JSON dataset loader, `kb-rag evaluate` CLI, 4 LLM backend wrappers
+3. **Optimization Experiments** — Chunking strategies (fixed, recursive, semantic), scoring variants (dense, hybrid, reranked), IR metrics (Recall@K, MRR, NDCG@K), `kb-rag optimize` CLI
+4. **Enterprise connectors** — Confluence (Cloud + DC), JIRA, Git connectors with CLI staging and SQLite connector_state
+5. **Knowledge Graph** — Cross-document graph metadata (doc_graph_id, entities, topics, related), MCP tools for exploration
+6. **Auth & Resilience** — API key authentication, rate limiting, upload quotas, circuit breakers, budget tracking, retrieval cache
+7. **Multi-KB Search** — Aggregated search across multiple knowledge bases with RRF fusion and deduplication
+
+### Stats
+
+- Timeline: 2026-05-27 → 2026-06-11 (15 days)
+- Files changed: 200+ | Commits: ~150
+- Requirements: 59/59 requirements met (many formally tracked in v0.1.5 planning)
+- Tech debt: 2 info-severity items (datetime.utcnow() deprecation, missing dedicated multi-KB test file)
+
+### Git Tag
+
+`v0.1.4`
