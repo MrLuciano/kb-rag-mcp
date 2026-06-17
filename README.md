@@ -171,6 +171,13 @@ python ingest/ingest.py --docs /path/to/docs --workers 4
 kb-rag status
 kb-rag status --source /path/to/docs
 
+# Tag management (Phase 51)
+kb-rag tags list
+kb-rag tags list --product MyApp
+kb-rag tags update --add "legacy,needs-review" --filter "product=OldApp" --dry-run
+kb-rag tags reingest --filter "type=legacy" --yes
+kb-rag tags delete-tag "obsolete" --dry-run
+
 # Or the legacy status commands
 python ingest/ingest.py --status
 python ingest/ingest.py --status --list    # List all files

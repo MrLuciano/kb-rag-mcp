@@ -1597,6 +1597,135 @@ sudo systemctl restart kb-rag-server
 
 ---
 
+## Tag Management (Phase 51)
+
+Document tags provide a flexible way to categorize and manage documents beyond the automatic classification (product, type, version, vendor, subsystem, module). Tags are free-form strings that administrators can add, remove, or bulk-edit via CLI or Web UI.
+
+### Tag Concepts
+
+- **Free-form**: Any alphanumeric string (max 50 chars, no whitespace, case-insensitive)
+- **Document-level**: Tags apply to all chunks of a document
+- **Complementary**: Tags exist alongside auto-classified fields, never replace them
+- **Maximum**: 20 tags per document
+
+### CLI Commands
+
+#### List Tags
+
+```bash
+kb-rag tags list
+kb-rag tags list --product MyApp --type documentation
+```
+
+Shows tag counts across documents with optional filters.
+
+#### Update Tags
+
+```bash
+# Add tags
+kb-rag tags update --add "legacy,needs-review" --filter "product=OldApp"
+
+# Remove tags
+kb-rag tags update --remove "obsolete" --filter "type=doc"
+
+# Replace all tags
+kb-rag tags update --replace "v2,migrated" --filter "product=MyApp"
+```
+
+Always use `--dry-run` first to preview changes:
+
+```bash
+kb-rag tags update --add "urgent" --filter "product=MyApp" --dry-run
+```
+
+#### Remove Documents
+
+```bash
+kb-rag tags remove --filter "product=BadProduct" --dry-run
+kb-rag tags remove --filter "product=BadProduct" --yes
+```
+
+Deletes documents from both registry and Qdrant.
+
+#### Re-ingest Documents
+
+```bash
+kb-rag tags reingest --filter "type=legacy" --dry-run
+kb-rag tags reingest --filter "type=legacy" --yes
+```
+
+Queues documents for re-ingestion (sets status=pending, deletes Qdrant chunks).
+
+#### Delete Tag (Cascade)
+
+```bash
+kb-rag tags delete-tag "obsolete" --dry-run
+kb-rag tags delete-tag "obsolete" --yes
+```
+
+Removes a tag from ALL documents that have it.
+
+### Web UI
+
+Navigate to `/admin/tags` in the Admin SPA.
+
+#### Browse Tags Tab
+
+- View all documents with their tags
+- Filter by tag name
+- Select documents via checkboxes
+- Bulk actions: Add Tags, Remove Tags, Delete, Re-ingest
+- Edit tags inline per document
+
+#### Bulk Edit Tab
+
+- Filter documents by metadata (e.g., `product=MyApp,type=doc`)
+- Choose operation: Add, Remove, or Replace
+- Enter comma-separated tags
+- Dry-run preview before applying
+
+#### Re-ingest Queue Tab
+
+- View documents with `status=pending`
+- See last error (if any)
+- Cancel re-ingest for individual documents
+
+### Validation Rules
+
+| Rule | Limit |
+|------|-------|
+| Max length | 50 characters |
+| Whitespace | Not allowed |
+| Case | Case-insensitive (stored lowercase) |
+| Max per document | 20 tags |
+| Duplicates | Not allowed on same document |
+
+### Enabling Tag Search
+
+By default, tags are stored in Qdrant payload but not indexed for search. To enable:
+
+```bash
+# Set environment variable
+export TAGS_SEARCH_ENABLED=true
+
+# Or via admin config
+kb-rag config set TAGS_SEARCH_ENABLED true
+```
+
+Restart the server after enabling.
+
+### Audit Trail
+
+All tag mutations are logged to the `tags_history` table in the registry database:
+
+```bash
+sqlite3 data/kb_metadata.db "SELECT * FROM tags_history ORDER BY timestamp DESC LIMIT 10"
+```
+
+Columns: `timestamp`, `user_id`, `source_file`, `action`, `tag_values`
+
+---
+
 ## Emergency Procedures
 
 ### Service Won't Start
