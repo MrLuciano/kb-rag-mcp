@@ -28,6 +28,7 @@ must_haves:
     - Config editor has "Reset All" button, Group badges, HTMX PUT save, and aria-live errors
     - Missing ingestion and RAGAS partials exist and are loaded by their parent tabs
     - Sidebar width is 280px with icon-only 60px at md and hamburger at sm breakpoints
+    - Specific routes like /tabs/documents-content, /tabs/monitor-lights, /tabs/profile-content resolve correctly (not shadowed by /tabs/{tab_name})
   artifacts:
     - path: kb_server/ui/templates/admin/_monitor_lights.html
       provides: 7-component health monitor with latency and ARIA
@@ -99,11 +100,11 @@ Output: Updated monitor lights, config table, new partials, responsive sidebar, 
     kb_server/ui/routes_admin.py
   </files>
   <behavior>
-    - Test: _monitor_lights.html contains "LLM" in the component labels
-    - Test: Each component card shows latency in ms (e.g., `<small class="text-muted">12ms</small>`)
-    - Test: Component cards have `@click` toggle for details expansion
-    - Test: Status badges have `aria-label` with component name and status
-    - Test: Degraded/warning state renders `bg-warning` (yellow) when status is degraded
+    - Test: test_monitor_lights_has_llm — _monitor_lights.html contains "LLM" in the component labels
+    - Test: test_monitor_lights_shows_latency — Each component card shows latency in ms (e.g., `<small class="text-muted">12ms</small>`)
+    - Test: test_monitor_lights_click_to_expand — Component cards have `@click` toggle for details expansion
+    - Test: test_monitor_lights_aria_labels — Status badges have `aria-label` with component name and status
+    - Test: test_monitor_lights_warning_state — Degraded/warning state renders `bg-warning` when status is degraded
   </behavior>
   <action>
     1. In _monitor_lights.html: Add `"llm": "LLM"` to the `labels` map and `all_components` map so 7 components render.
@@ -131,11 +132,11 @@ Output: Updated monitor lights, config table, new partials, responsive sidebar, 
     kb_server/ui/templates/admin/_config_table.html
   </files>
   <behavior>
-    - Test: _config_table.html contains a "Reset All" button with `hx-confirm`
-    - Test: Group column renders `<span class="badge bg-info">` (or equivalent) instead of plain text
-    - Test: Save mechanism uses HTMX `hx-put` on the input (or a wrapping form) instead of `fetch()`
-    - Test: Error container has `aria-live="assertive"` and `role="alert"`
-    - Test: Search placeholder is "Search config keys..."
+    - Test: test_config_has_reset_all — _config_table.html contains a "Reset All" button with `hx-confirm`
+    - Test: test_config_group_badges — Group column renders `<span class="badge bg-info">` instead of plain text
+    - Test: test_config_save_uses_htmx_put — Save mechanism uses HTMX `hx-put` on the input instead of `fetch()`
+    - Test: test_config_error_aria_live — Error container has `aria-live="assertive"` and `role="alert"`
+    - Test: test_config_search_placeholder — Search placeholder is "Search config keys..."
   </behavior>
   <action>
     1. In _config_table.html: Add a "Reset All" button above the search input: `<button class="btn btn-outline-danger btn-sm" hx-post="/api/v1/config/reset" hx-confirm="Reset all config: Reset all configuration to environment defaults? This cannot be undone." hx-target="#tab-content" hx-swap="innerHTML">Reset All</button>`. Wrap it in a flex row with the search input.
@@ -172,16 +173,16 @@ Output: Updated monitor lights, config table, new partials, responsive sidebar, 
     kb_server/ui/routes_admin.py
   </files>
   <behavior>
-    - Test: All 5 new partial templates exist and are referenced by parent tabs
-    - Test: styles.css sets `.admin-sidebar { width: 280px; }`
-    - Test: styles.css has `@media (min-width: 768px) and (max-width: 991px)` for icon-only 60px sidebar
-    - Test: styles.css has `@media (max-width: 767px)` for hamburger-hidden sidebar
-    - Test: shell.html uses `text-light` instead of `text-white` on sidebar
-    - Test: shell.html has `role="navigation"` and `role="tablist"` on sidebar nav
-    - Test: _profile_content.html revoke confirm text matches spec
-    - Test: _profile_content.html status uses `bg-success`/`bg-danger` badges
-    - Test: tab_ingestion.html CTA reads "Ingest Now"
-    - Test: tab_ingestion.html empty state reads "No ingestion jobs found. Start a manual ingestion to create one."
+    - Test: test_new_partials_exist — All 5 new partial templates exist and are referenced by parent tabs
+    - Test: test_sidebar_width_280px — styles.css sets `.admin-sidebar { width: 280px; }`
+    - Test: test_sidebar_md_breakpoint — styles.css has `@media (min-width: 768px) and (max-width: 991px)` for icon-only 60px sidebar
+    - Test: test_sidebar_sm_breakpoint — styles.css has `@media (max-width: 767px)` for hamburger-hidden sidebar
+    - Test: test_sidebar_text_light — shell.html uses `text-light` instead of `text-white` on sidebar
+    - Test: test_sidebar_aria_roles — shell.html has `role="navigation"` and `role="tablist"` on sidebar nav
+    - Test: test_profile_revoke_confirm — _profile_content.html revoke confirm text matches spec
+    - Test: test_profile_status_badges — _profile_content.html status uses `bg-success`/`bg-danger` badges
+    - Test: test_ingestion_cta_text — tab_ingestion.html CTA reads "Ingest Now"
+    - Test: test_ingestion_empty_state — tab_ingestion.html empty state reads "No ingestion jobs found. Start a manual ingestion to create one."
   </behavior>
   <action>
     1. Create `_ingestion_manual.html`: Extract the manual ingestion form from `tab_ingestion.html` into this partial. Keep the form with path input and submit button. Change CTA from "Start Ingest" to "Ingest Now".
@@ -208,6 +209,40 @@ Output: Updated monitor lights, config table, new partials, responsive sidebar, 
     - shell.html uses text-light and has ARIA roles
     - Profile content copy and badge styling match spec
     - Ingestion and RAGAS tab CTAs and empty states match spec
+  </done>
+</task>
+
+<task type="auto" tdd="true">
+  <name>Task 4: Fix route ordering so specific /tabs/ paths resolve before generic /tabs/{tab_name} (UAT Issue 2)</name>
+  <files>
+    kb_server/ui/routes_admin.py
+    tests/test_admin_ui.py
+  </files>
+  <behavior>
+    - Test: test_specific_routes_not_shadowed — GET /admin/tabs/documents-content returns 200 (not "Unknown tab")
+    - Test: test_monitor_lights_route_works — GET /admin/tabs/monitor-lights returns 200
+    - Test: test_profile_content_route_works — GET /admin/tabs/profile-content returns 200
+    - Test: test_config_table_route_works — GET /admin/tabs/config-table returns 200
+    - Test: test_generic_tab_route_still_works — GET /admin/tabs/documents still resolves to admin_tab_content
+  </behavior>
+  <action>
+    1. In routes_admin.py: Reorder route definitions so specific static paths are registered BEFORE the generic `@router.get("/tabs/{tab_name}")` route. Move the specific endpoints (`documents-content`, `monitor-lights`, `config-table`, `profile-content`, `ingest-trigger`, `job-status`, `ragas-run`) to appear before `admin_tab_content`.
+    The cleanest approach: move `admin_tab_content` to the end of the file (or just below the last specific route). Or define specific routes in a separate APIRouter that's included before the main admin router.
+    Simplest fix: in routes_admin.py, define a second router `tab_router = APIRouter()` for specific tab paths and include it before the generic `router`. Or just move the function definitions so specific @router.get decorators are evaluated before the generic one.
+    For Starlette/FastAPI, the order of route registration in the source file determines match priority when routes are on the same router and same path prefix. Moving the specific endpoint definitions above `admin_tab_content` in the source file is sufficient.
+    2. Ensure every specific route path like `/tabs/documents-content` explicitly returns proper HTML content (not "Unknown tab").
+    3. Add behavioral tests that curl each specific route and verify HTTP 200 with expected content fragments.
+  </action>
+  <verify>
+    <automated>pytest tests/test_admin_ui.py -v -k "route"</automated>
+    <manual>curl -s http://localhost:8001/admin/tabs/documents-content | head -5 (should return document table HTML, not "Unknown tab")</manual>
+  </verify>
+  <done>
+    - curl /admin/tabs/documents-content returns document table HTML (not "Unknown tab")
+    - curl /admin/tabs/monitor-lights returns monitor lights HTML
+    - curl /admin/tabs/profile-content returns profile content HTML
+    - curl /admin/tabs/config-table returns config table HTML
+    - curl /admin/tabs/documents still resolves to generic admin_tab_content handler
   </done>
 </task>
 
@@ -244,6 +279,7 @@ Output: Updated monitor lights, config table, new partials, responsive sidebar, 
 - [ ] 5 new partials exist and are loaded by ingestion/RAGAS tabs
 - [ ] Sidebar is 280px with icon-only (md) and hamburger (sm) responsive behavior
 - [ ] All copy/spacing mismatches from UI-REVIEW.md are fixed
+- [ ] Specific routes (documents-content, monitor-lights, profile-content, config-table) resolve correctly, not shadowed by /tabs/{tab_name}
 - [ ] All new tests pass; no regressions in existing 666 tests
 - [ ] Code review passed (black, flake8, mypy clean)
 </success_criteria>
