@@ -4,37 +4,44 @@
 
 {% block content %}
 <div x-data="adminApp()" class="d-flex admin-shell">
+    <!-- Hamburger toggle (visible on mobile) -->
+    <button class="btn btn-dark d-md-none position-fixed top-0 start-0 m-2 z-3"
+            @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
+        &#9776;
+    </button>
+
     <!-- Sidebar -->
-    <div class="d-flex flex-column bg-dark text-light p-3 admin-sidebar" role="navigation">
+    <div class="d-flex flex-column bg-dark text-light p-3 admin-sidebar" role="navigation"
+         :class="{ show: sidebarOpen }">
         <h2 class="h5 text-center mb-4">Admin Panel</h2>
         <ul class="nav nav-pills flex-column" role="tablist">
             <li class="nav-item">
                 <a class="nav-link text-light" :class="{ 'active': activeTab === 'documents' }"
-                   href="#" @click.prevent="switchTab('documents')">Documents</a>
+                   href="#" @click.prevent="switchTab('documents')">&#128196; <span>Documents</span></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-light" :class="{ 'active': activeTab === 'monitoring' }"
-                   href="#" @click.prevent="switchTab('monitoring')">Monitoring</a>
+                   href="#" @click.prevent="switchTab('monitoring')">&#128200; <span>Monitoring</span></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-light" :class="{ 'active': activeTab === 'ingestion' }"
-                   href="#" @click.prevent="switchTab('ingestion')">Ingestion</a>
+                   href="#" @click.prevent="switchTab('ingestion')">&#9889; <span>Ingestion</span></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-light" :class="{ 'active': activeTab === 'ragas' }"
-                   href="#" @click.prevent="switchTab('ragas')">RAGAS Evaluation</a>
+                   href="#" @click.prevent="switchTab('ragas')">&#129514; <span>RAGAS Evaluation</span></a>
             </li>
             <li class="nav-item" x-show="isAdmin">
                 <a class="nav-link text-light" :class="{ 'active': activeTab === 'admin' }"
-                   href="#" @click.prevent="switchTab('admin')">Admin</a>
+                   href="#" @click.prevent="switchTab('admin')">&#9881; <span>Admin</span></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-light" :class="{ 'active': activeTab === 'analytics' }"
-                   href="#" @click.prevent="switchTab('analytics')">Analytics</a>
+                   href="#" @click.prevent="switchTab('analytics')">&#128202; <span>Analytics</span></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-light" :class="{ 'active': activeTab === 'profile' }"
-                   href="#" @click.prevent="switchTab('profile')">Profile</a>
+                   href="#" @click.prevent="switchTab('profile')">&#128100; <span>Profile</span></a>
             </li>
         </ul>
         <div class="mt-auto">
@@ -109,6 +116,7 @@
 
         function adminApp() {
             return {
+                sidebarOpen: false,
                 activeTab: 'documents',
                 isAuthenticated: false,
                 isAdmin: false,

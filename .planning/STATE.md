@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v0.1.5
 milestone_name: Streamable HTTP & Management Platform
-status: completed
-last_updated: "2026-06-16T14:47:23.125Z"
+status: executing
+last_updated: "2026-06-17T00:42:26.003Z"
 progress:
-  total_phases: 16
+  total_phases: 17
   completed_phases: 13
-  total_plans: 18
-  completed_plans: 17
-  percent: 81
+  total_plans: 23
+  completed_plans: 18
+  percent: 76
 ---
 
 # Project State
@@ -19,14 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 28 — mcp-streamable-http
+**Current focus:** Phase 28c-fixes — admin-spa-gap-closure
 
 ## Current Position
 
 Milestone: v0.1.5 (Streamable HTTP & Management Platform) — ACTIVE
-Phase: 28 — COMPLETE
-Plan: 2 of 2
-Status: Phase 28 complete
+Phase: 28c-fixes (admin-spa-gap-closure) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 28c-fixes
 Next: Phase 40 (Config) + Phase 28 execution → Phase 28b (Auth) → Phase 41 + Phase 39 → Phase 28c (Admin SPA) → Phase 38 (Grafana)
 
 ## Phase 25 Outcomes
@@ -34,7 +34,7 @@ Next: Phase 40 (Config) + Phase 28 execution → Phase 28b (Auth) → Phase 41 +
 ### Status
 
 - **Phase:** 25 (optimization-experiments)
-- **Status:** Phase 28 complete
+- **Status:** Executing Phase 28c-fixes
 - **Completed:** 2026-06-11
 
 ### Plans Executed

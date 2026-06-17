@@ -19,7 +19,7 @@
 
 /* Admin sidebar (replaces inline width/flex-shrink) */
 .admin-sidebar {
-    width: 220px;
+    width: 280px;
     flex-shrink: 0;
 }
 
@@ -27,6 +27,32 @@
 .admin-content {
     min-width: 0;
     overflow-x: auto;
+}
+
+/* Sidebar responsive breakpoints */
+@media (min-width: 768px) and (max-width: 991px) {
+    .admin-sidebar {
+        width: 60px;
+    }
+    .admin-sidebar .nav-link span {
+        display: none;
+    }
+    .admin-sidebar h2 {
+        font-size: 0;
+    }
+    .admin-sidebar h2::after {
+        content: "⚙";
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .admin-sidebar {
+        display: none;
+    }
+    .admin-sidebar.show {
+        display: flex;
+    }
 }
 
 /* Mobile responsive admin shell */
