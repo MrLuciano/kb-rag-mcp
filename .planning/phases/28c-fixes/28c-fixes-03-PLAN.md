@@ -14,6 +14,8 @@ files_modified:
   - kb_server/auth/models.py
   - kb_server/ui/routes_admin.py
   - kb_server/server.py
+  - kb_server/ui/templates/admin/login.html
+  - tests/test_admin_ui.py
 autonomous: true
 gap_closure: true
 requirements:
@@ -30,8 +32,8 @@ must_haves:
     - Default admin user exists with auto-generated API key on first startup
   artifacts:
     - path: kb_server/ui/templates/base.html
-      provides: Working Alpine.js CDN URL
-      contains: "cdn.min.js"
+      provides: Working Alpine.js CSP-compatible CDN URL
+      contains: "@alpinejs/csp"
     - path: kb_server/ui/app.py
       provides: Auth router mounted on UI app
       contains: "auth.router"
@@ -45,10 +47,10 @@ must_haves:
       provides: Auth-gated admin endpoints
       contains: "Depends(get_current_user)"
   key_links:
-    - from: base.html Alpine.js script tag
+    - from: base.html Alpine.js CSP script tag
       to: cdn.jsdelivr.net
-      via: correct URL path
-      pattern: "cdn.min.js"
+      via: @alpinejs/csp package (CSP-safe evaluator, no new Function())
+      pattern: "@alpinejs/csp"
     - from: app.py startup
       to: auth/service.py AuthService
       via: app.state.auth_service
@@ -96,14 +98,14 @@ Output: Working admin panel with functional auth flow on the UI server port.
     kb_server/ui/templates/base.html
   </files>
   <behavior>
-    - Test: base.html Alpine.js script src contains `cdn.min.js` instead of `csp.min.js`
-    - Test: base.html Alpine.js script src does not contain a URL that returns 404
-    - Test: base.html htmx:responseError handler shows distinct messages for 401 vs 404 vs 500
-    - Test: base.html CSP middleware script-src directive allows the Alpine.js CDN URL
+    - Test: test_base_html_alpine_csp_url — base.html Alpine.js script src is `@alpinejs/csp@3.13.3/dist/cdn.min.js` (CSP-safe build without `new Function()`)
+    - Test: test_base_html_alpine_csp_200 — the `@alpinejs/csp` CDN URL returns HTTP 200
+    - Test: test_base_html_htmx_error_distinct_messages — htmx:responseError handler shows distinct messages for 401 vs 404 vs 500
+    - Test: test_base_html_csp_allows_alpine_cdn — CSP middleware script-src directive allows the Alpine.js CDN URL
   </behavior>
   <action>
-    1. In base.html line 22: Change Alpine.js script URL from `alpinejs@3.13.3/dist/csp.min.js` to `https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js` (standard Alpine.js build, not the CSP build — the CSP middleware already allows CDN script sources with nonce for inline scripts, and `cdp.min.js` is the correct non-CSP main build path for jsdelivr).
-    2. Remove the `integrity` attribute from the Alpine.js script tag (the existing hash was computed for `csp.min.js` which returns 404; the executor should fetch the correct integrity hash for `cdn.min.js` from `https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js` via `openssl dgst -sha384 -binary | base64` and add it back if possible; if fetching fails, remove integrity entirely so Alpine.js loads).
+    1. In base.html line 22: Change Alpine.js script URL from `alpinejs@3.13.3/dist/csp.min.js` to `https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.13.3/dist/cdn.min.js` (the `@alpinejs/csp` package provides a CSP-safe evaluator that does not use `new Function()` — the non-CSP `alpinejs` build uses `new Function()` internally which is silently blocked by the existing CSP policy which has `script-src` without `'unsafe-eval'`).
+     2. Remove the `integrity` attribute from the Alpine.js script tag (the existing hash was computed for `csp.min.js` which returns 404; the executor should fetch the correct integrity hash for `@alpinejs/csp@3.13.3/dist/cdn.min.js` from `https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.13.3/dist/cdn.min.js` via `openssl dgst -sha384 -binary | base64` and add it back if possible; if fetching fails, remove integrity entirely so Alpine.js loads).
     3. Update the `htmx:responseError` handler (second handler, line 91-98) that shows "Failed to load content" to provide status-code-specific messages:
        - `evt.detail.xhr.status === 401`: show "Session expired. Please log in again." (do NOT override the first 401 handler which triggers the login overlay)
        - `evt.detail.xhr.status === 404`: show "Page not found. The requested resource does not exist."
@@ -111,7 +113,7 @@ Output: Working admin panel with functional auth flow on the UI server port.
        - Other errors: keep existing "Failed to load content. Please try again later."
   </action>
   <verify>
-    <automated>grep -c 'cdn.min.js' kb_server/ui/templates/base.html</automated>
+    <automated>grep -c '@alpinejs/csp' kb_server/ui/templates/base.html</automated>
   </verify>
   <done>
     - Alpine.js loads from valid CDN URL (no 404)
@@ -129,62 +131,53 @@ Output: Working admin panel with functional auth flow on the UI server port.
     kb_server/server.py
   </files>
   <behavior>
-    - Test: app.py mounts auth_router at prefix /api/v1 (same as MCP server)
-    - Test: app.py initializes AuthService during startup event and stores in app.state
-    - Test: app.py startup seeds admin user ("admin" role="admin") + auto-generated API key if no users exist
-    - Test: auth/service.py has `ensure_admin_account()` method that creates admin user + API key
-    - Test: ensure_admin_account() returns the raw API key (for log display) or None if already exists
-    - Test: ensure_admin_account() logs the API key to stdout with clear formatting
-    - Test: app startup event calls ensure_admin_account()
-    - Test: AuthService in app.py uses the same AUTH_DB_PATH as server.py (data/auth.db)
+    - Test: test_app_mounts_auth_router — app.py mounts auth_router (same prefix as MCP server)
+    - Test: test_app_init_auth_service_on_startup — app.py init AuthService during startup event, store in app.state
+    - Test: test_app_seeds_admin_account — app.py startup seeds "admin" user (role="admin") + auto-generated API key if no users exist
+    - Test: test_service_has_ensure_admin_account — auth/service.py has `ensure_admin_account()` method
+    - Test: test_ensure_admin_account_returns_key_or_none — returns the raw API key or None if already exists
+    - Test: test_ensure_admin_account_logs_key — logs the API key to stdout with clear formatting banner
+    - Test: test_app_startup_calls_ensure_admin — app startup event calls ensure_admin_account()
+    - Test: test_auth_db_path_shared — AuthService in app.py uses same AUTH_DB_PATH as server.py (data/auth.db)
   </action>
-    1. In kb_server/auth/service.py: Add `ensure_admin_account()` method:
-       - Check if "admin" user exists via `self.get_user_by_username("admin")`
-       - If exists, check if it has any non-revoked API keys
-       - If no admin user: create one with `self.create_user(username="admin", role="admin")`
-       - If no active API keys: generate one via `self.create_api_key(admin.id, description="Default admin key for UI login")`
-       - Print the raw API key to stdout/logs with a clear banner:
-         ```python
-         log.info("=" * 60)
-         log.info("DEFAULT ADMIN ACCOUNT READY")
-         log.info(f"  Username: admin")
-         log.info(f"  API Key: {raw_key}")
-         log.info("=" * 60)
-         ```
-       - Return the raw_key string if created, or None if keys already exist
-    2. In kb_server/auth/models.py: Add `UserSession` table with columns:
-       - `id` (String 36, PK, UUID default)
-       - `user_id` (String 36, FK to users.id, index)
-       - `session_token` (String 255, unique, not null) — partial HMAC for lookup
-       - `ip_address` (String 45, nullable) — client IP
-       - `user_agent` (String 255, nullable)
-       - `created_at` (DateTime, default=now)
-       - `last_used_at` (DateTime, default=now)
-       - `is_revoked` (Boolean, default=False)
-       - This table is created by `Base.metadata.create_all(engine)` and will be used in Plan 04 for session management.
-    3. In kb_server/ui/app.py: Add startup logic:
-       - Import `kb_server.auth.router` as `auth_router`
-       - Import `kb_server.auth.service.AuthService`
-       - Import `Path` from pathlib
-       - Add `@app.on_event("startup")` async function that:
-         - Determines auth DB path: `Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))`
-         - Creates AuthService instance and assigns to `app.state.auth_service`
-         - Calls `app.state.auth_service.ensure_admin_account()`
-       - After the startup definition, mount the auth router:
-         ```python
-         app.include_router(auth_router)
-         ```
-       - Also add `from kb_server.auth.erasure import ErasureManager` and init erasure_manager on app.state so auth router dependencies work.
-    4. In kb_server/server.py: The existing auth initialization creates `auth_service` inside `main()` for the SSE transport. No changes needed here since the UI app now handles its own auth initialization. However, ensure both use the same `AUTH_DB_PATH` env var (default `data/auth.db`), which they already do via `config.get("AUTH_DB_PATH", "data/auth.db")`.
+     1. In kb_server/auth/service.py: Add `ensure_admin_account()` method:
+        - Check if "admin" user exists via `self.get_user_by_username("admin")`
+        - If exists, check if it has any non-revoked API keys
+        - If no admin user: create one with `self.create_user(username="admin", role="admin")`
+        - If no active API keys: generate one via `self.create_api_key(admin.id, description="Default admin key for UI login")`
+        - Print the raw API key to stdout/logs with a clear banner:
+          ```python
+          log.info("=" * 60)
+          log.info("DEFAULT ADMIN ACCOUNT READY")
+          log.info(f"  Username: admin")
+          log.info(f"  API Key: {raw_key}")
+          log.info("=" * 60)
+          ```
+        - Return the raw_key string if created, or None if keys already exist
+     2. (UserSession model intentionally NOT defined in this plan — deferred to Plan 04 per D-11, which owns session management scope.)
+     3. In kb_server/ui/app.py: Add startup logic:
+        - Import `kb_server.auth.router` as `auth_router`
+        - Import `kb_server.auth.service.AuthService`
+        - Import `Path` from pathlib
+        - Add `@app.on_event("startup")` async function that:
+          - Determines auth DB path: `Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))`
+          - Creates AuthService instance and assigns to `app.state.auth_service`
+          - Calls `app.state.auth_service.ensure_admin_account()`
+        - After the startup definition, mount the auth router:
+          ```python
+          app.include_router(auth_router)
+          ```
+        - Also add `from kb_server.auth.erasure import ErasureManager` and init erasure_manager on app.state so auth router dependencies work.
+     4. In kb_server/server.py: The existing auth initialization creates `auth_service` inside `main()` for the SSE transport. No changes needed here since the UI app now handles its own auth initialization. However, ensure both use the same `AUTH_DB_PATH` env var (default `data/auth.db`), which they already do via `config.get("AUTH_DB_PATH", "data/auth.db")`.
   </action>
   <verify>
-    <automated>pytest tests/test_admin_ui.py -v -k "auth"</automated>
+    <automated>pytest tests/test_admin_ui.py -v -k "auth or app or admin or startup or service"</automated>
   </verify>
   <done>
     - Auth router mounted on UI app at /api/v1
     - GET /api/v1/users/me works on UI port (8001) when authenticated
     - Default admin account created with API key logged to stdout on first startup
-    - UserSession model defined in auth/models.py
+    - UserSession model deferred to Plan 04 (session management scope)
   </done>
 </task>
 
@@ -195,15 +188,14 @@ Output: Working admin panel with functional auth flow on the UI server port.
     kb_server/ui/routes_admin.py
   </files>
   <behavior>
-    - Test: get_current_user validates JWT session cookie (not just API key headers)
-    - Test: Session cookie validation parses user_id:expires_at:signature and verifies HMAC
-    - Test: Session cookie validation checks expiry (rejects expired tokens)
-    - Test: admin_shell (GET /admin) does NOT require auth (returns HTML with Alpine.js login overlay)
-    - Test: admin_tab_content (GET /tabs/{tab_name}) requires auth via Depends(get_current_user)
-    - Test: admin_monitor_lights, admin_config_table, admin_profile_content require auth
-    - Test: admin_documents_content, admin_ingest_trigger, admin_job_status, admin_ragas_run require auth
-    - Test: Unauthenticated tab content requests return 401 with empty HTML fragment
-    - Test: The `_verify_request_api_key` function on api_router routes is unchanged (still works)
+    - Test: test_get_current_user_validates_session_cookie — get_current_user validates JWT session cookie (not just API key headers)
+    - Test: test_session_cookie_hmac_verified — Session cookie parses user_id:expires_at:signature and verifies HMAC
+    - Test: test_session_cookie_expiry — Session cookie validation checks expiry (rejects expired tokens)
+    - Test: test_admin_shell_no_auth — admin_shell (GET /admin) does NOT require auth (returns HTML with Alpine.js login overlay)
+    - Test: test_admin_tab_content_requires_auth — admin_tab_content (GET /tabs/{tab_name}) requires auth via Depends(get_current_user)
+    - Test: test_admin_content_endpoints_gated — admin_monitor_lights, config_table, profile_content, documents_content, ingest_trigger, job_status, ragas_run all require auth
+    - Test: test_unauthenticated_returns_401 — Unauthenticated tab content requests return 401
+    - Test: test_api_router_auth_unchanged — The `_verify_request_api_key` function on api_router routes is unchanged (still works)
   </behavior>
   <action>
     1. In kb_server/auth/deps.py:
@@ -249,7 +241,7 @@ Output: Working admin panel with functional auth flow on the UI server port.
          - The simplest approach: the base.html `htmx:responseError` handler already catches 401 and shows the login overlay. As long as the tab-content target div is not overwritten with an error message, the flow works. The current base.html handler (Task 1 of this plan updated) checks for 401 first and returns early (letting the existing handler logic run). So no custom exception handler is needed — the HTMX 401 response will trigger the base.html handler which shows the login modal.
   </action>
   <verify>
-    <automated>pytest tests/test_admin_ui.py -v -k "auth"</automated>
+    <automated>pytest tests/test_admin_ui.py -v -k "auth or session or cookie or gated"</automated>
   </verify>
   <done>
     - get_current_user validates both API key headers AND session cookies
@@ -257,6 +249,29 @@ Output: Working admin panel with functional auth flow on the UI server port.
     - Shell endpoint serves HTML without auth (login overlay handles unauthenticated state)
     - Existing api_router auth (via _verify_request_api_key) unchanged
     - 401 responses from HTMX tab requests correctly trigger login overlay
+  </done>
+</task>
+
+<task type="auto" tdd="false">
+  <name>Task 4: Clean up orphaned login.html standalone page and remove orphaned test (checker advisory)</name>
+  <files>
+    kb_server/ui/templates/admin/login.html
+    kb_server/ui/routes_admin.py
+    tests/test_admin_ui.py
+  </files>
+  <action>
+    1. Remove `login.html` from the admin templates directory — it was the old standalone full-page login used before the SPA overlay. The auth flow now uses the Alpine.js `x-show` overlay in `shell.html` (Plan 01 Task 1) with JWT cookie exchange (Plan 03 Task 1-3). `login.html` is no longer reachable/referenced by any route or template.
+     2. In `routes_admin.py`: If there is a route serving `login.html` (e.g., GET /login or similar), remove or redirect it to `/admin`. Prefer: remove the route if it exists, since the login overlay in shell.html is the only login path now.
+     3. In `tests/test_admin_ui.py`: Remove the `test_login_html_has_sri_integrity` test function (added by Plan 01 Task 3). This test validates SRI integrity on `login.html`, which no longer exists after this task deletes it. Without removal, Plan 03 execution causes a cross-plan test regression (FileNotFoundError when the test tries to read the deleted file).
+     4. Add empty state placeholder removal to the verification checklist.
+  </action>
+  <verify>
+    <automated>test -f kb_server/ui/templates/admin/login.html && echo "FAIL: login.html still exists" || echo "PASS: login.html removed"</automated>
+  </verify>
+  <done>
+    - login.html deleted from templates/admin/
+    - Any route serving login.html removed or redirected to /admin
+    - No orphaned files remain from the pre-SPA login flow
   </done>
 </task>
 
@@ -282,7 +297,7 @@ Output: Working admin panel with functional auth flow on the UI server port.
 
 <verification>
 - Run admin UI tests: `pytest tests/test_admin_ui.py -v -k "auth"`
-- Check Alpine.js loads: `python -c "import requests; r=requests.get('https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js'); print(f'Status: {r.status_code}, Size: {len(r.content)}')"` (should return 200)
+- Check Alpine.js CSP build loads: `python -c "import requests; r=requests.get('https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.13.3/dist/cdn.min.js'); print(f'Status: {r.status_code}, Size: {len(r.content)}')"` (should return 200)
 - Verify auth router mounted: `grep -c 'include_router.*auth_router' kb_server/ui/app.py` (should be >= 1)
 - Verify auth gating: `grep -c 'Depends(get_current_user)' kb_server/ui/routes_admin.py` (should be >= 8)
 - Run full test suite: `pytest tests/ -x --timeout=60 -q | tail -5`
