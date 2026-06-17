@@ -314,6 +314,122 @@ Items consolidated from `REVIEW.md` (2026-06-15 full audit) and `.planning/repor
 
 ---
 
+## Feature: Document Tag Management & Re-ingest Control
+
+### 6. Bulk Classification Tag Editor
+**Status**: Proposed / Backlog
+**Severity**: High
+**Requested**: 2026-06-17
+
+**Problem**: Users have no way to correct misclassified documents after ingestion. Wrong Product/Type/Version/Status tags require full re-ingestion. No bulk operations exist.
+
+**Use Cases**:
+- User accidentally ingested `.venv` Python packages as "documents" — 10,785 wrong files
+- User wants to change product tag from "OTCS" to "OpenText-CS" for 1,700 files
+- User wants to delete all "error" status files (11,436 items)
+- User wants to mark 500 config guides for re-ingestion after product rename
+
+**Proposed Feature**: `kb-rag tags` CLI + Web UI panel for bulk tag management
+
+#### CLI Commands
+
+```bash
+# List current tag values and counts
+kb-rag tags list --product
+kb-rag tags list --type
+kb-rag tags list --status
+
+# Update tags (bulk)
+kb-rag tags update --product "OTCS" --new-product "OpenText-CS" --dry-run
+kb-rag tags update --product ".venv" --status "error" --remove
+kb-rag tags update --type "config_guide" --version "v2.1" --mark-reingest
+
+# Remove files from KB and registry
+kb-rag tags remove --product ".venv" --confirm
+kb-rag tags remove --status "error" --dry-run
+
+# Mark for re-ingest (updates registry status + deletes Qdrant chunks)
+kb-rag tags reingest --product "Documentum" --type "release_notes"
+```
+
+#### Web UI Panel
+
+New admin page `/admin/tags` with:
+- **Filter Bar**: Dropdowns for Product, Type, Version, Status + search box
+- **Data Table**: Shows files matching filter with checkboxes
+- **Bulk Actions Toolbar** (appears when rows selected):
+  - "Change Product →" dropdown + apply
+  - "Change Type →" dropdown + apply
+  - "Change Version →" input + apply
+  - "Change Status →" dropdown + apply
+  - "Remove from KB" button (red, confirmation modal)
+  - "Mark for Re-ingest" button
+- **Stats Cards**: Total files, by-product breakdown, by-status breakdown
+- **Dry-run toggle**: Preview changes without executing
+
+#### Data Model Changes
+
+No schema changes needed. Uses existing `ingest_registry.files` table columns:
+- `product` (TEXT)
+- `file_type` / `doc_type` (TEXT) — unify naming first
+- `status` (TEXT: ok/error/deleted)
+- `chunks` (INTEGER)
+
+New operations on existing columns:
+- `UPDATE files SET product = ? WHERE product = ?`
+- `DELETE FROM files WHERE product = ?`
+- `UPDATE files SET status = 'pending_reingest' WHERE ...`
+
+#### Qdrant Integration
+
+For removal:
+```python
+# Delete by payload filter
+await client.delete(
+    collection_name="kb_docs",
+    points_selector=models.Filter(
+        must=[
+            models.FieldCondition(key="product", match=models.MatchValue(value=".venv"))
+        ]
+    )
+)
+```
+
+For re-ingest marking:
+```python
+# Delete chunks from Qdrant, set registry status to "pending"
+# Next ingest run picks them up
+```
+
+#### Files to Modify
+
+- `ingest/cli/main.py` — add `tags` command group
+- `ingest/cli/tags.py` — new CLI module
+- `kb_server/ui/routes_admin.py` — add `/admin/tags` endpoints
+- `kb_server/ui/templates/` — new tag management template
+- `ingest/core/metadata.py` — add `IngestRegistry.bulk_update_tags()`, `.bulk_remove()`, `.mark_reingest()`
+- `kb_server/vector_store.py` — add `delete_by_filter()` method
+
+#### Effort Estimate
+- CLI commands: ~2h
+- Web UI panel: ~4h
+- Registry methods: ~1h
+- Qdrant deletion: ~1h
+- Tests: ~2h
+- **Total: ~10h**
+
+#### Acceptance Criteria
+- [ ] `kb-rag tags list` shows tag counts
+- [ ] `kb-rag tags update --dry-run` previews changes without side effects
+- [ ] `kb-rag tags remove` deletes files from registry + Qdrant
+- [ ] `kb-rag tags reingest` sets status to pending + deletes Qdrant chunks
+- [ ] Web UI shows filterable table with bulk actions
+- [ ] All operations have confirmation for destructive actions
+- [ ] Unit tests cover all registry methods
+- [ ] Integration tests verify Qdrant deletion
+
+---
+
 ## References
 
 - `REVIEW.md` — Full audit with scores by dimension
