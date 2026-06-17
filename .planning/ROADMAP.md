@@ -6,7 +6,7 @@
 - ✅ **v0.1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v0.1.1-ROADMAP.md)
 - ✅ **v0.1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v0.1.2-ROADMAP.md)
 - ✅ **v0.1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v0.1.3-ROADMAP.md)
-- ✅ **v0.1.4 Platform, Analytics & Enterprise** — Phases 23–37 (shipped 2026-06-11)
+- ✅ **v0.1.4 Platform, Analytics & Enterprise** — Phases 23–37 (shipped 2026-06-11) — [archive](milestones/v0.1.4-ROADMAP.md)
 - 🔄 **v0.1.5 Streamable HTTP & Management Platform** — Phases 28 (reopened), 28b, 28c, 38, 39, 40, 41 (active)
 
 ## Phases
@@ -70,30 +70,28 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 ## v0.1.4 Platform, Analytics & Enterprise
 
-<details open>
-<summary>✅ v0.1.4 Phase Overview — SHIPPED 2026-06-11</summary>
+<details>
+<summary>✅ v0.1.4 Phase Overview — SHIPPED 2026-06-11 — [archive](milestones/v0.1.4-ROADMAP.md)</summary>
 
 **All 15 phases (23-37) complete:**
 
-- [x] Phase 23: Documentation Overhaul — 3 plans (doc reorganization, README restructuring, CHANGELOG/REFERENCE update) — completed 2026-05-27
-- [x] Phase 24: RAGAS Evaluation Pipeline — 4 plans (custom metrics, dataset loading, CLI + exporter, LLM wrappers) — completed 2026-06-11
-- [x] Phase 25: Optimization Experiments — 4 plans (chunking experiments, scoring experiments, metric computation, CLI runner) — completed 2026-06-11
-- [x] Phase 26: KB Content Discoverability — Dynamic content-summary tool descriptions + `kb://overview` MCP Resource — completed 2026-06-03
-- [x] Phase 27: Knowledge Base Registry — SQLite-backed KB registry with public/agent_private scopes, stable `kb_<id>` collection names — completed 2026-06-03
-- [x] Phase 28: MCP Streamable HTTP Transport — `/mcp` HTTP endpoint alongside stdio/SSE — completed 2026-06-03
-- [x] Phase 29: Enterprise Data Source Connectors — 4 plans (connector foundation, Confluence, JIRA, Git) — completed 2026-06-10
-- [x] Phase 30: Cross-Document Knowledge Graph — 2 plans (graph metadata derivation, MCP tools) — completed 2026-06-10
-- [x] Phase 31: MCP Prompt Templates — 1 plan (extract_answer + summarize_documents prompts) — completed 2026-06-10
-- [x] Phase 32: API Key Authentication — 1 plan (SQLite key registry, SSE middleware, CLI) — completed 2026-06-10
-- [x] Phase 33: Request Rate Limiting — 1 plan (token bucket per subject, HTTP 429, prometheus metrics) — completed 2026-06-10
-- [x] Phase 34: Upload and Index Quotas — 1 plan (quota config/usage tables, CLI, ingest enforcement) — completed 2026-06-10
-- [x] Phase 35: Multi-KB Aggregated Search — 1 plan (multi-KB search with resolve_multi, multi_search, merge + dedup) — completed 2026-06-10
-- [x] Phase 36: Provider Budget & Circuit Breaker — 1 plan (resilience layer, circuit breaker, budget tracking, fallback chain, 7 prometheus metrics) — completed 2026-06-11
-- [x] Phase 37: Request-level Retrieval Cache — 1 plan (LRU retrieval cache, deterministic cache keys, TTL expiry, invalidation hooks) — completed 2026-06-11
+- [x] Phase 23: Documentation Overhaul — 3 plans — completed 2026-05-27
+- [x] Phase 24: RAGAS Evaluation Pipeline — 4 plans — completed 2026-06-11
+- [x] Phase 25: Optimization Experiments — 4 plans — completed 2026-06-11
+- [x] Phase 26: KB Content Discoverability — 1 plan — completed 2026-06-03
+- [x] Phase 27: Knowledge Base Registry — 1 plan — completed 2026-06-03
+- [x] Phase 28: MCP Streamable HTTP Transport — 2 plans — completed 2026-06-03
+- [x] Phase 29: Enterprise Data Source Connectors — 4 plans — completed 2026-06-10
+- [x] Phase 30: Cross-Document Knowledge Graph — 2 plans — completed 2026-06-10
+- [x] Phase 31: MCP Prompt Templates — 1 plan — completed 2026-06-10
+- [x] Phase 32: API Key Authentication — 1 plan — completed 2026-06-10
+- [x] Phase 33: Request Rate Limiting — 1 plan — completed 2026-06-10
+- [x] Phase 34: Upload and Index Quotas — 1 plan — completed 2026-06-10
+- [x] Phase 35: Multi-KB Aggregated Search — 1 plan — completed 2026-06-10
+- [x] Phase 36: Provider Budget & Circuit Breaker — 1 plan — completed 2026-06-11
+- [x] Phase 37: Request-level Retrieval Cache — 1 plan — completed 2026-06-11
 
-**Delivered:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports) + Optimization Experiments framework (chunking strategies, scoring variants, IR metrics, `kb-rag optimize` CLI) + RAGAS Evaluation Pipeline (4 custom metrics, dataset loading, CLI, 4 LLM backends) + Multi-KB Aggregated Search + Enterprise Connectors (Confluence, JIRA, Git) + Cross-Document Knowledge Graph + MCP Prompt Templates + API Key Authentication + Request Rate Limiting + Upload/Index Quotas + Provider Budget & Circuit Breaker + Request-level Retrieval Cache.
-
-**All 15 phases (23-37) of v0.1.4 are complete.** Phase 24 (RAGAS Evaluation) was executed and verified — 4 plans, 57 tests. All features are implemented and tested.
+**Delivered:** Documentation restructuring + KB content discoverability + KB Registry + MCP Streamable HTTP transport + Optimization Experiments + RAGAS Evaluation Pipeline + Multi-KB Aggregated Search + Enterprise Connectors + Cross-Document Knowledge Graph + MCP Prompt Templates + API Key Authentication + Rate Limiting + Quotas + Circuit Breakers + Retrieval Cache.
 
 </details>
 
