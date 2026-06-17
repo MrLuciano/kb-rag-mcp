@@ -31,6 +31,7 @@ _JWT_SECURE = os.getenv("JWT_SECURE", "false").lower() in (
     "true",
     "1",
 )
+_SESSION_TIMEOUT = int(os.getenv("SESSION_TIMEOUT", "1800"))
 
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 
@@ -62,7 +63,7 @@ async def create_session(
     response: FastAPIResponse,
     current_user: User = Depends(get_current_user),
 ):
-    """Exchange API key for an HttpOnly session cookie (8h)."""
+    """Exchange API key for an HttpOnly session cookie."""
     service = _get_service(request)
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
@@ -70,7 +71,7 @@ async def create_session(
         if api_key:
             service.record_key_usage(api_key)
 
-    expires_at = int(time.time()) + 28800
+    expires_at = int(time.time()) + _SESSION_TIMEOUT
     raw = f"{current_user.id}:{expires_at}"
     secret = _JWT_SECRET or secrets.token_hex(32)
     signature = hmac.new(
@@ -83,15 +84,25 @@ async def create_session(
         value=session_token,
         httponly=True,
         samesite="lax",
-        max_age=28800,
+        max_age=_SESSION_TIMEOUT,
         secure=_JWT_SECURE,
         path="/",
     )
+
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("User-Agent", "unknown")
+    service.create_session_record(
+        user_id=str(current_user.id),
+        session_token=signature,
+        ip_address=ip,
+        user_agent=ua,
+    )
+
     return SessionResponse(
         id=str(current_user.id),
         username=cast(str, current_user.username),
         role=cast(str, current_user.role),
-        expires_in=28800,
+        expires_in=_SESSION_TIMEOUT,
     )
 
 
@@ -100,6 +111,46 @@ async def logout_session(response: FastAPIResponse):
     """Clear the session cookie."""
     response.delete_cookie(key="session", path="/")
     return {"status": "logged_out"}
+
+
+# ── Session Management ──────────────────────────────────────────
+
+
+@router.get("/auth/sessions")
+async def list_sessions(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """List active sessions for the current user."""
+    service = _get_service(request)
+    sessions = service.list_user_sessions(current_user.id)
+    return [
+        {
+            "id": s.id,
+            "ip_address": s.ip_address,
+            "user_agent": s.user_agent,
+            "created_at": str(s.created_at) if s.created_at else None,
+            "last_used_at": str(s.last_used_at) if s.last_used_at else None,
+            "is_revoked": s.is_revoked,
+        }
+        for s in sessions
+    ]
+
+
+@router.post("/auth/sessions/{session_id}/revoke")
+async def revoke_session(
+    session_id: str,
+    request: Request,
+    current_user: User = Depends(require_admin),
+):
+    """Revoke a session (admin only)."""
+    service = _get_service(request)
+    revoked = service.revoke_session(session_id, current_user.id)
+    if not revoked:
+        raise HTTPException(
+            status_code=404, detail=f"Session not found: {session_id}"
+        )
+    return {"revoked": True, "session_id": session_id}
 
 
 # ── User Endpoints ──────────────────────────────────────────────

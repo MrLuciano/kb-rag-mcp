@@ -3,6 +3,7 @@ import hmac
 import logging
 import os
 import time
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request
@@ -79,6 +80,15 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="User account is inactive")
+
+    # Check session validity in DB
+    session = service.get_user_session(user.id, signature)
+    if session is None:
+        raise HTTPException(
+            status_code=401, detail="Session has been revoked"
+        )
+    session.last_used_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    service.session.commit()
 
     log.debug("Authenticated via session cookie: user=%s", user.id)
     return user
