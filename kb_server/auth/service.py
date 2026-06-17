@@ -12,6 +12,7 @@ from kb_server.auth.models import (
     AuditLog,
     ErasureStatus,
     User,
+    UserSession,
     create_session,
 )
 
@@ -220,6 +221,53 @@ class AuthService:
             return raw_key
 
         return None
+
+    # ── Session Management ───────────────────────────────────────
+
+    def create_session_record(
+        self,
+        user_id: str,
+        session_token: str,
+        ip_address: str = "unknown",
+        user_agent: str = "unknown",
+    ) -> None:
+        session = UserSession(
+            user_id=user_id,
+            session_token=session_token,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+        self._session.add(session)
+        self._session.commit()
+
+    def get_user_session(
+        self, user_id: str, session_token: str
+    ) -> Optional[UserSession]:
+        return self._session.query(UserSession).filter(
+            UserSession.user_id == user_id,
+            UserSession.session_token == session_token,
+            UserSession.is_revoked == False,  # noqa: E712
+        ).first()  # type: ignore[no-any-return]
+
+    def list_user_sessions(
+        self, user_id: str
+    ) -> list[UserSession]:
+        return self._session.query(UserSession).filter(
+            UserSession.user_id == user_id,
+        ).order_by(
+            UserSession.last_used_at.desc()
+        ).all()  # type: ignore[no-any-return]
+
+    def revoke_session(self, session_id: str, user_id: str) -> bool:
+        session = self._session.query(UserSession).filter(
+            UserSession.id == session_id,
+        ).first()
+        if session is None:
+            return False
+        session.is_revoked = True
+        self._session.commit()
+        log.info("Revoked session: %s (user: %s)", session_id, user_id)
+        return True
 
     # ── Audit Logging ────────────────────────────────────────────
 

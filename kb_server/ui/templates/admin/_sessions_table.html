@@ -1,0 +1,48 @@
+<div x-data="sessionManager()">
+  <h3 class="h5 mb-3">Active Sessions</h3>
+  <p class="text-muted small">Sessions where your account is currently logged in.</p>
+  <div x-show="sessions.length === 0" class="text-muted py-3">
+    <p>No active sessions.</p>
+  </div>
+  <table x-show="sessions.length > 0" class="table table-sm">
+    <thead>
+      <tr>
+        <th>IP Address</th>
+        <th>User Agent</th>
+        <th>Created</th>
+        <th>Last Used</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <template x-for="session in sessions" :key="session.id">
+        <tr>
+          <td x-text="session.ip_address"></td>
+          <td x-text="session.user_agent" class="text-truncate" style="max-width: 200px"></td>
+          <td x-text="session.created_at"></td>
+          <td x-text="session.last_used_at"></td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger"
+                    :hx-post="`/api/v1/auth/sessions/${session.id}/revoke`"
+                    hx-confirm="Revoke session: Are you sure you want to revoke this session? The user will be logged out immediately."
+                    hx-target="closest tr"
+                    hx-swap="delete">Revoke</button>
+          </td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+<script nonce="{{ get_nonce(request) }}">
+  function sessionManager() {
+    return {
+      sessions: [],
+      init() {
+        fetch('/api/v1/auth/sessions')
+          .then(r => r.json())
+          .then(data => { this.sessions = data; })
+          .catch(() => {});
+      }
+    };
+  }
+</script>

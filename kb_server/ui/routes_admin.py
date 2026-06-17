@@ -266,6 +266,32 @@ async def admin_ragas_run(
     )
 
 
+@router.get("/tabs/sessions-content", response_class=HTMLResponse)
+async def admin_sessions_content(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Return session management partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_sessions_table.html",
+        {"request": request},
+    )
+
+
+@router.get("/tabs/credentials-content", response_class=HTMLResponse)
+async def admin_credentials_content(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Return credentials/API key management partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_credentials_section.html",
+        {"request": request},
+    )
+
+
 # ── Generic tab content route (registered after specific routes) ──
 
 

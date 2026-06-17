@@ -136,6 +136,36 @@ class ErasureRequest(Base):  # type: ignore[valid-type,misc]
     user = relationship("User", back_populates="erasure_requests")
 
 
+class UserSession(Base):  # type: ignore[valid-type,misc]
+    __tablename__ = "user_sessions"
+
+    id = Column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    session_token = Column(String(64), nullable=False, index=True)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+    )
+    last_used_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+    )
+    is_revoked = Column(Boolean, default=False)
+
+    user = relationship("User")
+
+
 def create_session(db_path: Path):
     engine = create_engine(f"sqlite:///{db_path}")
     Base.metadata.create_all(engine)

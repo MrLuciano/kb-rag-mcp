@@ -268,3 +268,116 @@ class TestCSPFix:
         with open("kb_server/ui/templates/admin/_ragas_results.html") as f:
             content = f.read()
         assert "No evaluation results yet" in content
+
+
+class TestSessionManagement:
+
+    def _setup_auth(self, client):
+        from unittest.mock import MagicMock
+        from kb_server.auth.deps import get_current_user
+        from kb_server.auth.models import User
+
+        mock_user = MagicMock(spec=User)
+        mock_user.id = "test-admin-id"
+        mock_user.username = "admin"
+        mock_user.role = "admin"
+        mock_user.is_active = True
+
+        async def _mock_get_current_user():
+            return mock_user
+
+        client.app.dependency_overrides[get_current_user] = (
+            _mock_get_current_user
+        )
+
+    def test_session_timeout_uses_env(self):
+        """SESSION_TIMEOUT env var is read by router.py."""
+        from kb_server.auth.router import _SESSION_TIMEOUT
+        assert _SESSION_TIMEOUT == 1800
+
+    def test_session_list_endpoint_returns_list(self, client):
+        """GET /api/v1/auth/sessions returns a list."""
+        from kb_server.auth.deps import get_current_user
+        from unittest.mock import MagicMock
+        from kb_server.auth.models import User
+
+        mock_user = MagicMock(spec=User)
+        mock_user.id = "test-admin-id"
+        mock_user.username = "admin"
+        mock_user.role = "admin"
+        mock_user.is_active = True
+
+        async def _mock_get_current_user():
+            return mock_user
+
+        client.app.dependency_overrides[get_current_user] = (
+            _mock_get_current_user
+        )
+        resp = client.get("/api/v1/auth/sessions")
+        assert resp.status_code == 200
+        assert isinstance(resp.json(), list)
+
+    def test_sessions_table_template_exists(self):
+        assert os.path.exists(
+            "kb_server/ui/templates/admin/_sessions_table.html"
+        )
+
+    def test_sessions_table_has_revoke(self):
+        with open(
+            "kb_server/ui/templates/admin/_sessions_table.html"
+        ) as f:
+            content = f.read()
+        assert "Revoke" in content
+        assert "No active sessions" in content
+
+    def test_sessions_content_route_returns_200(self, client):
+        """GET /admin/tabs/sessions-content returns 200."""
+        self._setup_auth(client)
+        resp = client.get("/admin/tabs/sessions-content")
+        assert resp.status_code == 200
+
+
+class TestCredentialsSection:
+
+    def _setup_auth(self, client):
+        from unittest.mock import MagicMock
+        from kb_server.auth.deps import get_current_user
+        from kb_server.auth.models import User
+
+        mock_user = MagicMock(spec=User)
+        mock_user.id = "test-admin-id"
+        mock_user.username = "admin"
+        mock_user.role = "admin"
+        mock_user.is_active = True
+
+        async def _mock_get_current_user():
+            return mock_user
+
+        client.app.dependency_overrides[get_current_user] = (
+            _mock_get_current_user
+        )
+
+    def test_credentials_template_exists(self):
+        assert os.path.exists(
+            "kb_server/ui/templates/admin/_credentials_section.html"
+        )
+
+    def test_credentials_has_generate_key(self):
+        with open(
+            "kb_server/ui/templates/admin/_credentials_section.html"
+        ) as f:
+            content = f.read()
+        assert "Generate New Key" in content
+        assert "API Keys" in content
+
+    def test_credentials_content_route_returns_200(self, client):
+        """GET /admin/tabs/credentials-content returns 200."""
+        self._setup_auth(client)
+        resp = client.get("/admin/tabs/credentials-content")
+        assert resp.status_code == 200
+
+    def test_tab_admin_loads_sessions_and_credentials(self):
+        with open("kb_server/ui/templates/admin/tab_admin.html") as f:
+            content = f.read()
+        assert "sessions-content" in content
+        assert "credentials-content" in content

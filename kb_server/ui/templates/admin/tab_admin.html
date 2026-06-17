@@ -7,3 +7,21 @@
      hx-swap="innerHTML">
     <p class="text-muted">Loading configuration...</p>
 </div>
+
+<hr class="my-4">
+
+<div id="sessions-content"
+     hx-get="/admin/tabs/sessions-content"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <p class="text-muted">Loading sessions...</p>
+</div>
+
+<hr class="my-4">
+
+<div id="credentials-content"
+     hx-get="/admin/tabs/credentials-content"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <p class="text-muted">Loading credentials...</p>
+</div>
