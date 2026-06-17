@@ -1,139 +1,98 @@
 ---
-status: incomplete
+status: partial
 phase: 28c-admin-spa-panel
-source: 28c-UI-REVIEW.md, 28c-UI-SPEC.md
-started: 2026-06-16
-updated: 2026-06-16
+source: 28c-01-SUMMARY.md, 28c-02-SUMMARY.md, 28c-03-SUMMARY.md, 28c-04-SUMMARY.md
+started: 2026-06-16T17:10:00Z
+updated: 2026-06-16T17:15:00Z
 ---
 
-## Verification Method
+## Current Test
 
-Verification performed via UI audit (gsd-ui-auditor) against approved 28c-UI-SPEC.md.
-Score: **12/24** — significant gaps remain before shipping.
+[testing paused — 8 items outstanding]
 
 ## Tests
 
-### 1. Auth Flow (SPA-02, SPA-03, SPA-12)
+### 1. Login with API Key
 expected: |
-  User enters API key → POST /api/v1/auth/session → receives HttpOnly JWT session cookie (8h, SameSite=Lax) → authenticated for duration.
-  Logout clears localStorage + cookie. 401 interceptor shows login modal.
-result: fail
-notes: |
-  BLOCKER: Frontend never calls /api/v1/auth/session. Instead stores raw API key in localStorage
-  and uses Bearer token on every request. JWT session cookie exchange is completely unused.
-  Login modal controlled by Bootstrap JS instead of Alpine.js x-show.
-  Impact: Different (less secure) auth model than designed.
+  Opening the admin panel shows a login modal. Entering a valid API key establishes a session (JWT cookie set). The modal closes and the admin shell with sidebar appears.
+result: issue
+reported: "Page shows 'Failed to load content. Please try again later.' Logout button visible but no login was required. Need: default admin account (admin/admin), login page on first open, password change page under settings, configurable session timeout (30 min default), user session management."
+severity: blocker
 
-### 2. Document Browse Table (SPA-09)
+### 2. Tab Navigation via Sidebar
 expected: |
-  Checkbox column with "select all" header. Bulk toolbar appears when ≥1 row selected
-  (Delete, Re-ingest, Delete Failed). Per-document Actions dropdown (View, Delete, Re-ingest).
-  Delete with hx-confirm.
-result: fail
-notes: |
-  Entire SPA-09 feature set missing. Only a "View" button exists.
-  No checkboxes, no bulk toolbar, no per-doc dropdown, no delete/re-ingest actions.
+  Clicking sidebar tabs (Documents, Monitoring, Ingestion, RAGAS, Admin, Profile) loads content via HTMX without full page reload. Active tab has visual indicator.
+result: issue
+reported: "Nothing loads, error message: 'Failed to load content. Please try again later.' RAGAS tab is not present in the sidebar."
+severity: blocker
 
-### 3. Monitor Lights (SPA-06)
+### 3. Role Gating
 expected: |
-  7 components (Qdrant, Embedding, LLM, Cache, Database, Filesystem, Grafana).
-  Auto-refresh every 30s. Latency in ms below name. Click to expand/collapse details.
-  ARIA labels on status badges.
-result: partial
-notes: |
-  Auto-refresh works (hx-trigger="every 30s"). Missing LLM component (only 6 shown).
-  No latency display. No click-to-expand details. No ARIA labels on badges.
-  Missing degraded/warning (yellow) state — only green/red/gray.
+  An admin user sees all sidebar tabs. A non-admin user sees a restricted set of tabs. Unauthorized tab access returns 403.
+result: [pending]
 
-### 4. Config Inline Editing (SPA-08)
+### 4. Monitor Lights - Health Indicators
 expected: |
-  Search filter, double-click to edit, save on Enter/Blur, cancel on Escape.
-  "Reset All" button with hx-confirm. Type badges. Group badges. HTMX PUT.
-result: partial
-notes: |
-  Search, dblclick edit, Enter/Blur save, Escape cancel — all present and working.
-  Missing "Reset All" button. Group column shows plain text instead of badge.
-  Uses fetch() instead of HTMX PUT. Error handling uses d-none toggle instead of aria-live.
+  The Monitoring tab shows health status indicators for 7 components (Qdrant, Embedding, LLM, Cache, Database, Filesystem, Grafana). Indicators show green/red/yellow status. View auto-refreshes every 30 seconds.
+result: [pending]
 
-### 5. Profile Tab (SPA-07)
+### 5. Config Inline Editing
 expected: |
-  Account info (username, role, created). API keys table with prefix/created/status/revoke.
-  "Generate New Key" with Copy button. GDPR Export. Erasure with confirm dialog.
-result: partial
-notes: |
-  Account info, API keys table, Generate New Key, GDPR Export, Erasure — all present.
-  Missing "Copy" button for one-time key reveal. Extra "Config" section not in spec.
-  Profile status uses text-* instead of bg-* badge styling.
+  The Admin tab shows a config table with search filter. Double-clicking a value opens inline edit mode. Pressing Enter saves, Escape cancels. Changes persist after page reload.
+result: [pending]
 
-### 6. Tab Navigation (SPA-04, SPA-05)
+### 6. Profile - API Key CRUD
 expected: |
-  URL hash history updates on tab switch. Server-side role gating.
-  Active tab indicator with Bootstrap nav-pills.
-result: partial
-notes: |
-  Active tab indicator works (nav-pills active class). No URL hash history.
-  Role gating is client-side only (x-show="isAdmin").
+  The Profile tab shows account info and an API keys table. "Generate New Key" creates a key with prefix/created/status. The raw key is shown once with a Copy button. Keys can be revoked.
+result: [pending]
 
-### 7. Security / CSP
+### 7. Profile - GDPR Export & Erasure
 expected: |
-  Strict CSP with nonces on all inline scripts. SRI on all external resources.
-  Alpine.js 3.14.8 CSP build. frame-src restricted to grafana URL.
-  aria-live regions on HTMX targets.
-result: fail
-notes: |
-  tab_ragas.html:36 script lacks CSP nonce — will be blocked by browser.
-  login.html:7 loads Bootstrap CSS without integrity attribute.
-  Alpine.js 3.13.3 loaded instead of spec's 3.14.8.
-  frame-src 'self' https: is too broad (spec: https://{grafana_url} only).
-  No aria-live regions on HTMX target containers.
+  "Export My Data" button downloads a JSON file with personal data. "Request Erasure" triggers a confirmation dialog; after confirmation, erasure is requested.
+result: [pending]
 
-### 8. Copywriting & Spacing
+### 8. Document Actions - Delete & Re-ingest
 expected: |
-  Matches UI-SPEC.md for all labels, empty states, placeholders, tab names.
-  Sidebar 280px, icon-only 60px at md, hamburger at sm.
-result: partial
-notes: |
-  Multiple mismatches: "Authentication Required" vs "Login to Admin Panel",
-  "Evaluation" vs "RAGAS Evaluation", "Settings" vs "Admin".
-  Sidebar 220px instead of 280px. Mobile is column stack instead of icon-only/hamburger.
-  12 copy/spacing mismatches documented in UI-REVIEW.md.
+  The Documents tab shows a sortable table (click column headers to sort). Each document has action buttons (Delete, Re-ingest). Delete shows confirmation. Deleted documents disappear from list.
+result: [pending]
 
-### 9. Missing Partials
+### 9. Advanced Filters
 expected: |
-  _ingestion_manual.html, _ingestion_schedule.html, _ingestion_monitor.html,
-  _ragas_editor.html, _ragas_results.html exist and are loaded by tabs.
-result: fail
-notes: |
-  None of these partials exist. Ingestion and RAGAS tabs use inline content instead.
+  The Documents tab has filter controls: date range (from/to), file type multi-select, vendor/product dropdowns. Applying filters updates the document list. URL reflects active filter params. "Clear All Filters" resets everything.
+result: [pending]
+
+### 10. Document Export (CSV/JSON)
+expected: |
+  An Export button on the Documents tab allows downloading as CSV or JSON. The export respects all active filters. Downloads have proper filenames and Content-Disposition headers.
+result: [pending]
 
 ## Summary
 
-total: 9
+total: 10
 passed: 0
-partial: 4
-failed: 5
+issues: 2
+pending: 8
+skipped: 0
 blocked: 0
 
-## Priority Fixes
+## Gaps
 
-### BLOCKER (must fix before shipping)
-1. **Auth flow**: Rewrite authenticate() to POST /api/v1/auth/session, handle JWT cookie,
-   use Alpine.js x-show for modal control.
+- truth: "Opening the admin panel shows a login modal. Entering a valid API key establishes a session. The modal closes and the admin shell with sidebar appears."
+  status: failed
+  reason: "User reported: Page shows 'Failed to load content. Please try again later.' Logout button visible but no login was required. Need: default admin account (admin/admin), login page on first open, password change page under settings, configurable session timeout (30 min default), user session management."
+  severity: blocker
+  test: 1
+  root_cause: ""
+  artifacts: []
+  missing: []
+  debug_session: ""
 
-### HIGH (should fix before shipping)
-2. **Document browse**: Add checkbox column, bulk toolbar, per-doc Actions dropdown.
-3. **CSP nonce**: Add nonce to tab_ragas.html script.
-4. **SRI**: Add integrity to login.html Bootstrap CSS.
-
-### MEDIUM (polish — can defer)
-5. **Monitor lights**: Add LLM component, latency, details toggle, ARIA labels.
-6. **Config editor**: Add "Reset All", Group badges, switch to HTMX PUT.
-7. **Copy/spacing**: Fix 12 label/width/mobile mismatches.
-8. **Missing partials**: Create _ingestion_*, _ragas_* partials.
-9. **Alpine.js version**: Upgrade to 3.14.8 CSP build.
-
-## Recommendation
-
-Phase 28c core shell is functional but diverges significantly from spec.
-Do NOT ship without fixing the auth flow BLOCKER.
-Remaining items can be addressed in follow-up plans (28c-05 through 28c-08).
+- truth: "Clicking sidebar tabs (Documents, Monitoring, Ingestion, RAGAS, Admin, Profile) loads content via HTMX without full page reload. Active tab has visual indicator."
+  status: failed
+  reason: "User reported: Nothing loads, error message: 'Failed to load content. Please try again later.' RAGAS tab is not present in the sidebar."
+  severity: blocker
+  test: 2
+  root_cause: ""
+  artifacts: []
+  missing: []
+  debug_session: ""
