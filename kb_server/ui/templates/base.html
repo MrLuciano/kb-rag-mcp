@@ -81,11 +81,7 @@
         });
         document.body.addEventListener('htmx:responseError', function(evt) {
             if (evt.detail.xhr.status === 401) {
-                var loginModal = document.getElementById('loginModal');
-                if (loginModal) {
-                    var modal = new bootstrap.Modal(loginModal);
-                    modal.show();
-                }
+                window.dispatchEvent(new CustomEvent('show-login'));
             }
         });
         document.addEventListener('htmx:responseError', function(event) {

@@ -3,8 +3,8 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
-from urllib.parse import urlencode
+from typing import Any, Callable, Optional
+from urllib.parse import quote, urlencode
 
 log = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ templates = Jinja2Templates(directory=str(template_dir))
 templates.env.globals["get_nonce"] = lambda request: getattr(
     request.state, "nonce", ""
 )
+templates.env.globals["quote_path"] = quote
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
