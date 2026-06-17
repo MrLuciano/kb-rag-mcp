@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-15)
 Milestone: v0.1.5 (Streamable HTTP & Management Platform) — ACTIVE
 Phase: 28c-fixes (admin-spa-gap-closure) — COMPLETE
 Status: All 4 plans executed — auth flow, CSP/SRI, doc browse, monitor lights, config editor, partials refactor, route ordering, auth router mount, Alpine.js CDN fix, auth gating, admin seeding, session management, credentials UI
-Next: Phase 40 (Config) + Phase 28 execution → Phase 28b (Auth) → Phase 41 + Phase 39 → Phase 38 (Grafana)
+Next: Phase 38 (Grafana Embed) + Phase 39 (Observability) + Phase 40 (Config) + Phase 41 (Provider Alias) + Phase 42 (Query Analytics)
 
 ## Phase 28c-fixes Outcomes
 
