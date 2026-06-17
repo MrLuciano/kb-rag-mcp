@@ -18,9 +18,9 @@
             integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
             crossorigin="anonymous"></script>
 
-    <!-- Alpine.js CSP build -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/csp.min.js"
-            integrity="sha384-Qkfvg7cG9MvQpE6mUjTWD+hCsPmRfPc8K3J7GzR62Qh9LfY8jV0K6N1yf51G3kT"
+    <!-- Alpine.js CSP build (safe evaluator, no new Function()) -->
+    <script src="https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.13.3/dist/cdn.min.js"
+            integrity="sha384-EkI5VI1qflXkHKn4NX4W76cYYqh8dAx7UKkCc4QJ10k8jdtauy8Qs3BkF21ZXcZj"
             crossorigin="anonymous"
             defer></script>
 
@@ -87,9 +87,14 @@
         document.addEventListener('htmx:responseError', function(event) {
             var target = event.detail.target;
             if (target && event.detail.xhr.status !== 401) {
+                var msg = 'Failed to load content. Please try again later.';
+                if (event.detail.xhr.status === 404) {
+                    msg = 'Page not found. The requested resource does not exist.';
+                } else if (event.detail.xhr.status >= 500) {
+                    msg = 'Server error. Please try again later.';
+                }
                 target.innerHTML = '<div class="alert alert-danger" role="alert">' +
-                    'Failed to load content. Please try again later.' +
-                    '</div>';
+                    msg + '</div>';
             }
         });
         document.addEventListener('htmx:sendError', function(event) {

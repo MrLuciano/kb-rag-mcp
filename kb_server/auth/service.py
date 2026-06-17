@@ -181,6 +181,46 @@ class AuthService:
         self._session.commit()
         return user
 
+    # ── Admin Account Seeding ─────────────────────────────────────
+
+    def ensure_admin_account(self) -> Optional[str]:
+        """Ensure an admin user exists with an active API key.
+
+        Returns:
+            The raw API key if a new one was created, or None if
+            the admin already has an active key.
+        """
+        admin_user = self.get_user_by_username("admin")
+        if admin_user is None:
+            admin_user = self.create_user(username="admin", role="admin")
+            raw_key, _ = self.create_api_key(
+                cast(str, admin_user.id),
+                description="Default admin key for UI login",
+            )
+            log.info("=" * 60)
+            log.info("DEFAULT ADMIN ACCOUNT READY")
+            log.info("  Username: admin")
+            log.info("  API Key: %s", raw_key)
+            log.info("=" * 60)
+            return raw_key
+
+        active_keys = [
+            k for k in admin_user.api_keys if not k.is_revoked
+        ]
+        if not active_keys:
+            raw_key, _ = self.create_api_key(
+                cast(str, admin_user.id),
+                description="Default admin key for UI login",
+            )
+            log.info("=" * 60)
+            log.info("DEFAULT ADMIN ACCOUNT READY")
+            log.info("  Username: admin")
+            log.info("  API Key: %s", raw_key)
+            log.info("=" * 60)
+            return raw_key
+
+        return None
+
     # ── Audit Logging ────────────────────────────────────────────
 
     def _write_audit_log(
