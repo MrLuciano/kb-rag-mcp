@@ -141,3 +141,97 @@ class TestAdminTabs:
         assert response.status_code == 200
         assert "RAGAS Evaluation" in response.text
         assert "Run Evaluation" in response.text
+
+
+class TestAuthFlow:
+    def test_shell_html_uses_alpine_xshow(self):
+        with open("kb_server/ui/templates/admin/shell.html") as f:
+            content = f.read()
+        assert 'x-show="!isAuthenticated"' in content
+
+    def test_login_modal_heading(self):
+        with open("kb_server/ui/templates/admin/shell.html") as f:
+            content = f.read()
+        assert "Login to Admin Panel" in content
+
+    def test_api_key_placeholder(self):
+        with open("kb_server/ui/templates/admin/shell.html") as f:
+            content = f.read()
+        assert "kb_xxxxxxxx..." in content
+
+    def test_sidebar_tab_labels(self):
+        with open("kb_server/ui/templates/admin/shell.html") as f:
+            content = f.read()
+        assert "RAGAS Evaluation" in content
+        assert "Admin" in content
+
+    def test_auth_router_has_logout(self):
+        with open("kb_server/auth/router.py") as f:
+            content = f.read()
+        assert "/auth/logout" in content
+        assert "delete_cookie" in content
+
+    def test_authenticate_posts_to_auth_session(self):
+        with open("kb_server/ui/templates/admin/shell.html") as f:
+            content = f.read()
+        assert "auth/session" in content
+
+    def test_logout_calls_auth_logout(self):
+        with open("kb_server/ui/templates/admin/shell.html") as f:
+            content = f.read()
+        assert "auth/logout" in content
+
+    def test_base_html_401_dispatches_custom_event(self):
+        with open("kb_server/ui/templates/base.html") as f:
+            content = f.read()
+        assert "show-login" in content
+
+
+class TestDocTableSelection:
+    def test_doc_table_select_all_checkbox(self):
+        with open("kb_server/ui/templates/admin/_documents_table.html") as f:
+            content = f.read()
+        assert '<input type="checkbox"' in content
+
+    def test_doc_table_per_row_checkbox(self):
+        with open("kb_server/ui/templates/admin/_documents_table.html") as f:
+            content = f.read()
+        assert 'x-model="selected"' in content
+
+    def test_doc_table_bulk_toolbar(self):
+        with open("kb_server/ui/templates/admin/_documents_table.html") as f:
+            content = f.read()
+        assert "Delete" in content
+        assert "Re-ingest" in content
+
+    def test_doc_table_per_row_actions(self):
+        with open("kb_server/ui/templates/admin/_documents_table.html") as f:
+            content = f.read()
+        assert "Actions" in content
+
+    def test_destructive_actions_have_confirm(self):
+        with open("kb_server/ui/templates/admin/_documents_table.html") as f:
+            content = f.read()
+        assert "hx-confirm" in content
+
+    def test_doc_table_empty_state(self):
+        with open("kb_server/ui/templates/admin/_documents_table.html") as f:
+            content = f.read()
+        assert "No documents match your search filters" in content or "No documents found" in content
+
+
+class TestCSPFix:
+    def test_tab_ragas_has_csp_nonce(self):
+        with open("kb_server/ui/templates/admin/tab_ragas.html") as f:
+            content = f.read()
+        assert "nonce" in content
+
+    def test_login_html_has_sri_integrity(self):
+        with open("kb_server/ui/templates/admin/login.html") as f:
+            content = f.read()
+        assert 'integrity="sha384-' in content
+
+    def test_ragas_empty_state_text(self):
+        with open("kb_server/ui/templates/admin/tab_ragas.html") as f:
+            content = f.read()
+        assert "No evaluation results yet" in content

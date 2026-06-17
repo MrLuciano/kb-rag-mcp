@@ -26,14 +26,14 @@
             <div class="card-body">
                 <h3 class="h5 card-title">Last Run</h3>
                 <p class="text-muted" id="ragas-last-run">
-                    No evaluation run yet.
+                    No evaluation results yet. Run an evaluation to see results here.
                 </p>
             </div>
         </div>
     </div>
 </div>
 
-<script>
+<script nonce="{{ get_nonce(request) }}">
     var ragasBtn = document.querySelector('button[hx-post="/admin/tabs/ragas-run"]');
     if (ragasBtn) {
         ragasBtn.addEventListener('htmx:beforeRequest', function() {

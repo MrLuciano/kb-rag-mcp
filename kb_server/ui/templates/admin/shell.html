@@ -5,35 +5,35 @@
 {% block content %}
 <div x-data="adminApp()" class="d-flex admin-shell">
     <!-- Sidebar -->
-    <div class="d-flex flex-column bg-dark text-white p-3 admin-sidebar">
+    <div class="d-flex flex-column bg-dark text-light p-3 admin-sidebar" role="navigation">
         <h2 class="h5 text-center mb-4">Admin Panel</h2>
-        <ul class="nav nav-pills flex-column">
+        <ul class="nav nav-pills flex-column" role="tablist">
             <li class="nav-item">
-                <a class="nav-link text-white" :class="{ 'active': activeTab === 'documents' }"
+                <a class="nav-link text-light" :class="{ 'active': activeTab === 'documents' }"
                    href="#" @click.prevent="switchTab('documents')">Documents</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" :class="{ 'active': activeTab === 'monitoring' }"
+                <a class="nav-link text-light" :class="{ 'active': activeTab === 'monitoring' }"
                    href="#" @click.prevent="switchTab('monitoring')">Monitoring</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" :class="{ 'active': activeTab === 'ingestion' }"
+                <a class="nav-link text-light" :class="{ 'active': activeTab === 'ingestion' }"
                    href="#" @click.prevent="switchTab('ingestion')">Ingestion</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" :class="{ 'active': activeTab === 'ragas' }"
-                   href="#" @click.prevent="switchTab('ragas')">Evaluation</a>
+                <a class="nav-link text-light" :class="{ 'active': activeTab === 'ragas' }"
+                   href="#" @click.prevent="switchTab('ragas')">RAGAS Evaluation</a>
             </li>
             <li class="nav-item" x-show="isAdmin">
-                <a class="nav-link text-white" :class="{ 'active': activeTab === 'admin' }"
-                   href="#" @click.prevent="switchTab('admin')">Settings</a>
+                <a class="nav-link text-light" :class="{ 'active': activeTab === 'admin' }"
+                   href="#" @click.prevent="switchTab('admin')">Admin</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" :class="{ 'active': activeTab === 'analytics' }"
+                <a class="nav-link text-light" :class="{ 'active': activeTab === 'analytics' }"
                    href="#" @click.prevent="switchTab('analytics')">Analytics</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white" :class="{ 'active': activeTab === 'profile' }"
+                <a class="nav-link text-light" :class="{ 'active': activeTab === 'profile' }"
                    href="#" @click.prevent="switchTab('profile')">Profile</a>
             </li>
         </ul>
@@ -56,30 +56,32 @@
     </div>
 </div>
 
-<!-- Error target for tab loading failures -->
-<div id="tab-error" class="d-none alert alert-danger" role="alert">
-    Failed to load tab content. <a href="/admin" class="alert-link">Refresh</a>
-</div>
-
-<!-- Login Modal -->
-<div class="modal fade" id="loginModal" data-bs-backdrop="static" tabindex="-1">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="h5 modal-title">Authentication Required</h3>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted small">Enter your API key to access the admin panel.</p>
-                <input type="password" class="form-control" id="apiKeyInput"
-                       placeholder="Enter API key"
-                       @keydown.enter="authenticate($el.value)">
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary w-100" id="loginBtn"
-                        @click="authenticate(document.getElementById('apiKeyInput').value)">Log in</button>
+<!-- Login Overlay -->
+<div x-show="!isAuthenticated" x-cloak
+     style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;"
+     x-transition aria-labelledby="login-heading">
+    <div class="d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+        <div class="card shadow" style="width: 350px;">
+            <div class="card-body p-4 text-center">
+                <h3 id="login-heading" class="h3 mb-3">Login to Admin Panel</h3>
+                <p class="text-muted small mb-3">Enter your API key to access the admin panel.</p>
+                <input type="password" class="form-control mb-2" id="apiKeyInput"
+                       placeholder="kb_xxxxxxxx..."
+                       aria-label="API key"
+                       @keydown.enter="authenticate($el.value)"
+                       x-model="apiKeyInput">
+                <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
+                <button class="btn btn-primary w-100" @click="authenticate(apiKeyInput)"
+                        x-text="loggingIn ? 'Logging in...' : 'Log in'"
+                        :disabled="loggingIn"></button>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Error target for tab loading failures -->
+<div id="tab-error" class="d-none alert alert-danger" role="alert">
+    Failed to load tab content. <a href="/admin" class="alert-link">Refresh</a>
 </div>
 {% endblock %}
 
@@ -88,7 +90,7 @@
         document.addEventListener('htmx:responseError', function(event) {
             if (event.detail.target && event.detail.target.id === 'tab-content') {
                 if (event.detail.xhr.status === 401) {
-                    return; // Let base.html handle 401 with login modal
+                    return;
                 }
                 var tabError = document.getElementById('tab-error');
                 if (tabError) {
@@ -110,53 +112,81 @@
                 activeTab: 'documents',
                 isAuthenticated: false,
                 isAdmin: false,
+                apiKeyInput: '',
+                loggingIn: false,
+                loginError: '',
                 init() {
                     var key = localStorage.getItem('kb_api_key');
                     if (key) {
-                        this.isAuthenticated = true;
-                        var headers = { 'Authorization': 'Bearer ' + key };
-                        fetch('/api/v1/users/me', { headers: headers })
-                            .then(r => r.json())
-                            .then(data => {
-                                this.isAdmin = (data.role === 'admin');
-                            })
-                            .catch(() => {
-                                this.isAdmin = false;
-                            });
-                    } else {
-                        var modal = new bootstrap.Modal(document.getElementById('loginModal'));
-                        modal.show();
+                        this.apiKeyInput = key;
+                        fetch('/api/v1/auth/session', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + key }
+                        })
+                        .then(r => {
+                            if (r.ok) {
+                                this.isAuthenticated = true;
+                                return r.json();
+                            }
+                            throw new Error('auth failed');
+                        })
+                        .then(data => {
+                            this.isAdmin = (data.role === 'admin');
+                        })
+                        .catch(() => {
+                            localStorage.removeItem('kb_api_key');
+                            this.isAuthenticated = false;
+                        });
                     }
-                },
-            switchTab(tab) {
-                this.activeTab = tab;
-                var target = '/admin/tabs/' + tab;
-                htmx.ajax('GET', target, { target: '#tab-content', swap: 'innerHTML' });
-            },
-            authenticate(key) {
-                if (!key) return;
-                localStorage.setItem('kb_api_key', key);
-                this.isAuthenticated = true;
-                var headers = { 'Authorization': 'Bearer ' + key };
-                fetch('/api/v1/users/me', { headers: headers })
-                    .then(r => r.json())
-                    .then(data => {
-                        this.isAdmin = (data.role === 'admin');
-                    })
-                    .catch(() => {
-                        this.isAdmin = false;
+                    var self = this;
+                    window.addEventListener('show-login', function() {
+                        self.isAuthenticated = false;
                     });
-                var modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-                if (modal) modal.hide();
-            },
-            logout() {
-                localStorage.removeItem('kb_api_key');
-                this.isAuthenticated = false;
-                this.isAdmin = false;
-                var modal = new bootstrap.Modal(document.getElementById('loginModal'));
-                modal.show();
-            }
-        };
-    }
-</script>
+                },
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    var target = '/admin/tabs/' + tab;
+                    htmx.ajax('GET', target, { target: '#tab-content', swap: 'innerHTML' });
+                },
+                authenticate(key) {
+                    if (!key) return;
+                    this.loggingIn = true;
+                    this.loginError = '';
+                    fetch('/api/v1/auth/session', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + key }
+                    })
+                    .then(r => {
+                        if (r.ok) return r.json();
+                        if (r.status === 401 || r.status === 403) {
+                            throw new Error('Invalid API key. Please check your key and try again. If the problem persists, generate a new key.');
+                        }
+                        throw new Error('Login failed. Please try again.');
+                    })
+                    .then(data => {
+                        localStorage.setItem('kb_api_key', key);
+                        this.isAuthenticated = true;
+                        this.isAdmin = (data.role === 'admin');
+                        this.loginError = '';
+                        this.loggingIn = false;
+                        htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
+                    })
+                    .catch(err => {
+                        localStorage.removeItem('kb_api_key');
+                        this.loginError = err.message;
+                        this.isAuthenticated = false;
+                        this.loggingIn = false;
+                    });
+                },
+                logout() {
+                    fetch('/api/v1/auth/logout', { method: 'POST' })
+                    .catch(() => {});
+                    localStorage.removeItem('kb_api_key');
+                    this.isAuthenticated = false;
+                    this.isAdmin = false;
+                    this.loginError = '';
+                }
+            };
+        }
+    </script>
 {% endblock %}

@@ -95,6 +95,13 @@ async def create_session(
     )
 
 
+@router.post("/auth/logout")
+async def logout_session(response: FastAPIResponse):
+    """Clear the session cookie."""
+    response.delete_cookie(key="session", path="/")
+    return {"status": "logged_out"}
+
+
 # ── User Endpoints ──────────────────────────────────────────────
 
 
