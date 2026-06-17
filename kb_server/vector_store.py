@@ -23,6 +23,7 @@ from qdrant_client.models import (
     Filter,
     MatchValue,
     PayloadSchemaType,
+    PointIdsList,
     PointStruct,
     VectorParams,
 )
@@ -950,6 +951,112 @@ class VectorStore:
         )
 
         log.info(f"Updated {len(point_ids)} chunks for {source_file}")
+        return len(point_ids)
+
+    # ── Phase 51: Tag management ──────────────────────────────────────────
+
+    async def update_tags(
+        self,
+        collection_name: str,
+        source_file: str,
+        tags: list[str],
+    ) -> int:
+        """Update tags for all chunks of a document.
+
+        Args:
+            collection_name: Qdrant collection name.
+            source_file: Source file path to filter chunks.
+            tags: List of tag strings to set.
+
+        Returns:
+            Number of chunks updated.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+
+        log.info(
+            f"Updating tags for {source_file} in {collection_name}: {tags}"
+        )
+
+        filter_query = Filter(
+            must=[
+                FieldCondition(
+                    key="source_file", match=MatchValue(value=source_file)
+                )
+            ]
+        )
+
+        points, _ = await self.client.scroll(
+            collection_name=collection_name,
+            scroll_filter=filter_query,
+            limit=10000,
+            with_payload=False,
+            with_vectors=False,
+        )
+
+        if not points:
+            log.warning(f"No chunks found for {source_file}")
+            return 0
+
+        point_ids = [p.id for p in points]
+
+        await self.client.set_payload(
+            collection_name=collection_name,
+            payload={"tags": tags},
+            points=point_ids,
+        )
+
+        log.info(f"Updated tags on {len(point_ids)} chunks for {source_file}")
+        return len(point_ids)
+
+    async def delete_by_filter(
+        self,
+        collection_name: str,
+        filter_dict: dict[str, str],
+    ) -> int:
+        """Delete chunks matching a payload filter.
+
+        Args:
+            collection_name: Qdrant collection name.
+            filter_dict: Dict of key -> value to match.
+
+        Returns:
+            Number of chunks deleted.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+
+        must_conditions = [
+            FieldCondition(key=k, match=MatchValue(value=v))
+            for k, v in filter_dict.items()
+        ]
+        filter_query = Filter(must=must_conditions)
+
+        log.info(
+            f"Deleting chunks from {collection_name} matching {filter_dict}"
+        )
+
+        # Scroll to get point IDs
+        points, _ = await self.client.scroll(
+            collection_name=collection_name,
+            scroll_filter=filter_query,
+            limit=10000,
+            with_payload=False,
+            with_vectors=False,
+        )
+
+        if not points:
+            log.warning("No chunks matched filter")
+            return 0
+
+        point_ids = [p.id for p in points]
+
+        await self.client.delete(
+            collection_name=collection_name,
+            points_selector=PointIdsList(points=point_ids),
+        )
+
+        log.info(f"Deleted {len(point_ids)} chunks")
         return len(point_ids)
 
     # ── PHASE 30: Graph introspection helpers ──────────────────────────────

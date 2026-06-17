@@ -895,6 +895,7 @@ def classify(
         "vendor": vendor,
         "subsystem": subsystem,
         "module": module,
+        "tags": [],
     }
 
     # PHASE 11-02: Apply enrichment from document metadata (gap-fill only,
