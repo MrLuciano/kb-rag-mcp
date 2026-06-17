@@ -104,7 +104,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 **Completed:** Phase 28, 28b, 28c, 28c-fixes, 38, 39, 40, 41, 42
 
-**Remaining:** 43-47 (Backlog)
+**Remaining:** 43-47, 51 (Backlog)
 
 - [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
@@ -351,6 +351,19 @@ Plans:
 Plans:
 - [ ] 50-01-PLAN.md — Refactor test_smoke.py from module-level stubs to per-function fixtures
 
+### Phase 51: Document Tag Management & Re-ingest Control
+**Goal**: Bulk classification tag editor via CLI (`kb-rag tags`) and Web UI (`/admin/tags`) for correcting misclassified documents after ingestion
+**Depends on**: Phase 28c (Admin SPA shell), Phase 45 (Registry bulk operations)
+**Requirements**: TAG-01, TAG-02, TAG-03, TAG-04, TAG-05
+**Success Criteria** (what must be TRUE):
+  1. `kb-rag tags list` shows tag counts for Product, Type, Version, Status
+  2. `kb-rag tags update --dry-run` previews bulk changes without side effects
+  3. `kb-rag tags remove` deletes files from registry + Qdrant by payload filter
+  4. `kb-rag tags reingest` sets status to pending and deletes Qdrant chunks
+  5. Web UI `/admin/tags` shows filterable table with checkboxes and bulk actions toolbar
+  6. All destructive operations require confirmation; dry-run available everywhere
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -411,11 +424,12 @@ Plans:
 | 48. Cross-Encoder Lazy Loading | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
 | 49. Qdrant Mock Cleanup | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
 | 50. SSE Test Process Consolidation | v0.1.5 | 0/0 | Backlog | — |
+| 51. Document Tag Management & Re-ingest Control | v0.1.5 | 0/0 | Backlog | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
-No items — all previously tracked items have been promoted to phases 47-50 or removed.
+- Phase 51: Document Tag Management & Re-ingest Control — bulk classification tag editor (`kb-rag tags` CLI + `/admin/tags` Web UI panel) for correcting misclassified documents, removing bad data, and marking files for re-ingestion.
 
 
