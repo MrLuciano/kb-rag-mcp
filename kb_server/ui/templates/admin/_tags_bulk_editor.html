@@ -1,0 +1,59 @@
+<!-- Bulk Editor Partial -->
+<div class="card">
+    <div class="card-body">
+        <h6 class="card-title">Bulk Tag Operations</h6>
+        
+        <div class="mb-3">
+            <label class="form-label">Filter Documents</label>
+            <input type="text" class="form-control form-control-sm" id="bulk-filter" 
+                   placeholder="e.g., product=MyApp, type=doc">
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Operation</label>
+            <select class="form-select form-select-sm" id="bulk-operation">
+                <option value="add">Add Tags</option>
+                <option value="remove">Remove Tags</option>
+                <option value="replace">Replace All Tags</option>
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Tags (comma-separated)</label>
+            <input type="text" class="form-control form-control-sm" id="bulk-tags"
+                   placeholder="e.g., legacy, needs-review, v2">
+        </div>
+        
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="bulk-dry-run" checked>
+            <label class="form-check-label" for="bulk-dry-run">Dry Run (preview only)</label>
+        </div>
+        
+        <button class="btn btn-primary btn-sm" onclick="executeBulkOperation()">Execute</button>
+    </div>
+</div>
+
+<div id="bulk-result" class="mt-3"></div>
+
+<script nonce="{{ get_nonce(request) }}">
+    function executeBulkOperation() {
+        var filter = document.getElementById('bulk-filter').value;
+        var operation = document.getElementById('bulk-operation').value;
+        var tags = document.getElementById('bulk-tags').value;
+        var dryRun = document.getElementById('bulk-dry-run').checked;
+        
+        if (!tags) { alert('Enter tags'); return; }
+        
+        var params = new URLSearchParams();
+        params.append('filter', filter);
+        params.append('operation', operation);
+        params.append('tags', tags);
+        params.append('dry_run', dryRun);
+        
+        fetch('/admin/tags/bulk-execute?' + params.toString(), {method: 'POST'})
+            .then(r => r.text())
+            .then(html => {
+                document.getElementById('bulk-result').innerHTML = html;
+            });
+    }
+</script>

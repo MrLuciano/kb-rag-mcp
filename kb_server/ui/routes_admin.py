@@ -292,6 +292,305 @@ async def admin_credentials_content(
     )
 
 
+# ── Tag Management Routes (Phase 51) ──────────────────────────
+
+
+@router.get("/tags/table", response_class=HTMLResponse)
+async def admin_tags_table(
+    request: Request,
+    filter: str = "",
+    _auth: User = Depends(get_current_user),
+):
+    """Return tags table partial with optional filter."""
+    import json
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    documents = []
+
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            if filter:
+                cursor.execute(
+                    "SELECT path, product, doc_type, tags FROM files "
+                    "WHERE status = 'completed' AND tags LIKE ? "
+                    "ORDER BY path LIMIT 100",
+                    (f"%{filter}%",),
+                )
+            else:
+                cursor.execute(
+                    "SELECT path, product, doc_type, tags FROM files "
+                    "WHERE status = 'completed' ORDER BY path LIMIT 100"
+                )
+            documents = [dict(row) for row in cursor.fetchall()]
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_tags_table.html",
+        {"request": request, "documents": documents},
+    )
+
+
+@router.get("/tags/bulk-editor", response_class=HTMLResponse)
+async def admin_tags_bulk_editor(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Return bulk tag editor partial."""
+    return templates.TemplateResponse(
+        request,
+        "admin/_tags_bulk_editor.html",
+        {"request": request},
+    )
+
+
+@router.get("/tags/reingest-queue", response_class=HTMLResponse)
+async def admin_tags_reingest_queue(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Return re-ingest queue partial."""
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    pending_docs = []
+
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT path, status, error_msg FROM files "
+                "WHERE status = 'pending' ORDER BY indexed_at DESC"
+            )
+            pending_docs = [dict(row) for row in cursor.fetchall()]
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_tags_reingest_queue.html",
+        {"request": request, "pending_docs": pending_docs},
+    )
+
+
+@router.post("/tags/bulk-add", response_class=HTMLResponse)
+async def admin_tags_bulk_add(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Add tags to selected documents."""
+    from ingest.cli.tags import _validate_tags
+
+    form = await request.form()
+    paths = form.getlist("paths")
+    tags_str = form.get("tags", "")
+    tags = _validate_tags([t.strip() for t in tags_str.split(",") if t.strip()])
+
+    import json
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            for path in paths:
+                row = conn.execute(
+                    "SELECT tags FROM files WHERE path = ?", (path,)
+                ).fetchone()
+                if row:
+                    current = json.loads(row["tags"] or "[]")
+                    for tag in tags:
+                        if tag not in current:
+                            current.append(tag)
+                    conn.execute(
+                        "UPDATE files SET tags = ? WHERE path = ?",
+                        (json.dumps(current), path),
+                    )
+            conn.commit()
+
+    # Refresh table
+    return await admin_tags_table(request, "")
+
+
+@router.post("/tags/bulk-remove", response_class=HTMLResponse)
+async def admin_tags_bulk_remove(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Remove tags from selected documents."""
+    form = await request.form()
+    paths = form.getlist("paths")
+    tags_str = form.get("tags", "")
+    tags = [t.strip().lower() for t in tags_str.split(",") if t.strip()]
+
+    import json
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            for path in paths:
+                row = conn.execute(
+                    "SELECT tags FROM files WHERE path = ?", (path,)
+                ).fetchone()
+                if row:
+                    current = json.loads(row["tags"] or "[]")
+                    current = [t for t in current if t not in tags]
+                    conn.execute(
+                        "UPDATE files SET tags = ? WHERE path = ?",
+                        (json.dumps(current), path),
+                    )
+            conn.commit()
+
+    return await admin_tags_table(request, "")
+
+
+@router.post("/tags/bulk-delete", response_class=HTMLResponse)
+async def admin_tags_bulk_delete(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Delete selected documents."""
+    form = await request.form()
+    paths = form.getlist("paths")
+
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            for path in paths:
+                conn.execute(
+                    "UPDATE files SET status = 'deleted' WHERE path = ?",
+                    (path,),
+                )
+            conn.commit()
+
+    return await admin_tags_table(request, "")
+
+
+@router.post("/tags/bulk-reingest", response_class=HTMLResponse)
+async def admin_tags_bulk_reingest(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Queue selected documents for re-ingest."""
+    form = await request.form()
+    paths = form.getlist("paths")
+
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            for path in paths:
+                conn.execute(
+                    "UPDATE files SET status = 'pending' WHERE path = ?",
+                    (path,),
+                )
+            conn.commit()
+
+    return await admin_tags_table(request, "")
+
+
+@router.post("/tags/bulk-execute", response_class=HTMLResponse)
+async def admin_tags_bulk_execute(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Execute bulk tag operation with filter."""
+    from ingest.cli.tags import _parse_filter_expr, _validate_tags
+
+    form = await request.form()
+    filter_expr = form.get("filter", "")
+    operation = form.get("operation", "add")
+    tags_str = form.get("tags", "")
+    dry_run = form.get("dry_run", "false").lower() == "true"
+
+    tags = _validate_tags([t.strip() for t in tags_str.split(",") if t.strip()])
+    metadata_filter = _parse_filter_expr(filter_expr)
+
+    import json
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    matched = []
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT path, product, doc_type, tags FROM files "
+                "WHERE status = 'completed'"
+            )
+            for row in cursor.fetchall():
+                doc = dict(row)
+                match = True
+                for key, value in metadata_filter.items():
+                    if doc.get(key) != value:
+                        match = False
+                        break
+                if match:
+                    matched.append(doc)
+
+    if dry_run:
+        return HTMLResponse(
+            f"<div class='alert alert-info'>"
+            f"Dry run: Would {operation} tags [{', '.join(tags)}] "
+            f"on {len(matched)} documents"
+            f"</div>"
+        )
+
+    # Apply changes
+    if db_path.exists():
+        with sqlite3.connect(str(db_path)) as conn:
+            for doc in matched:
+                current = json.loads(doc.get("tags") or "[]")
+                if operation == "add":
+                    for tag in tags:
+                        if tag not in current:
+                            current.append(tag)
+                elif operation == "remove":
+                    current = [t for t in current if t not in tags]
+                elif operation == "replace":
+                    current = tags
+                conn.execute(
+                    "UPDATE files SET tags = ? WHERE path = ?",
+                    (json.dumps(current), doc["path"]),
+                )
+            conn.commit()
+
+    return HTMLResponse(
+        f"<div class='alert alert-success'>"
+        f"✓ {operation}d tags on {len(matched)} documents"
+        f"</div>"
+    )
+
+
+@router.post("/tags/cancel-reingest", response_class=HTMLResponse)
+async def admin_tags_cancel_reingest(
+    request: Request,
+    _auth: User = Depends(get_current_user),
+):
+    """Cancel re-ingest for a document."""
+    form = await request.form()
+    path = form.get("path", "")
+
+    import sqlite3
+
+    db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
+    if db_path.exists() and path:
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute(
+                "UPDATE files SET status = 'ok' WHERE path = ?",
+                (path,),
+            )
+            conn.commit()
+
+    return await admin_tags_reingest_queue(request)
+
+
 # ── Generic tab content route (registered after specific routes) ──
 
 
@@ -310,6 +609,7 @@ async def admin_tab_content(
         "admin": "admin/tab_admin.html",
         "profile": "admin/tab_profile.html",
         "analytics": "admin/tab_analytics.html",
+        "tags": "admin/tab_tags.html",
     }
     template = template_map.get(tab_name)
     if template is None:

@@ -1,0 +1,115 @@
+<!-- Tags Table Partial -->
+{% if documents %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th><input type="checkbox" onclick="toggleAllTagCheckboxes(this)"></th>
+                <th>File</th>
+                <th>Product</th>
+                <th>Type</th>
+                <th>Tags</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documents %}
+            <tr>
+                <td><input type="checkbox" class="tag-checkbox" value="{{ doc.path }}"></td>
+                <td>{{ doc.path }}</td>
+                <td>{{ doc.product or 'N/A' }}</td>
+                <td>{{ doc.doc_type or 'N/A' }}</td>
+                <td>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% set doc_tags = doc.tags|default('[]') %}
+                        {% if doc_tags is string %}
+                            {% set doc_tags = doc_tags|fromjson %}
+                        {% endif %}
+                        {% if doc_tags %}
+                            {% for tag in doc_tags %}
+                            <span class="badge bg-secondary">{{ tag }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted small">No tags</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary"
+                            hx-get="/admin/tags/edit-form?path={{ quote_path(doc.path) }}"
+                            hx-target="#tag-edit-modal-content"
+                            data-bs-toggle="modal" data-bs-target="#tagEditModal">Edit Tags</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Bulk Toolbar -->
+<div class="mt-2">
+    <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-primary" onclick="bulkAddTags()">Add Tags</button>
+        <button class="btn btn-outline-warning" onclick="bulkRemoveTags()">Remove Tags</button>
+        <button class="btn btn-outline-danger" onclick="bulkDeleteDocs()">Delete</button>
+        <button class="btn btn-outline-info" onclick="bulkReingestDocs()">Re-ingest</button>
+    </div>
+</div>
+
+<p class="text-muted small mt-2">Showing {{ documents|length }} documents</p>
+{% else %}
+<div class="alert alert-info">
+    No documents found. Try adjusting your filter or ingest some documents first.
+</div>
+{% endif %}
+
+<script nonce="{{ get_nonce(request) }}">
+    function toggleAllTagCheckboxes(master) {
+        document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = master.checked);
+    }
+    function getSelectedPaths() {
+        return Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => cb.value);
+    }
+    function bulkAddTags() {
+        var paths = getSelectedPaths();
+        if (paths.length === 0) { alert('Select documents first'); return; }
+        var tags = prompt('Enter tags to add (comma-separated):');
+        if (!tags) return;
+        htmx.ajax('POST', '/admin/tags/bulk-add', {
+            target: '#tags-table-container',
+            swap: 'innerHTML',
+            values: {paths: paths, tags: tags}
+        });
+    }
+    function bulkRemoveTags() {
+        var paths = getSelectedPaths();
+        if (paths.length === 0) { alert('Select documents first'); return; }
+        var tags = prompt('Enter tags to remove (comma-separated):');
+        if (!tags) return;
+        htmx.ajax('POST', '/admin/tags/bulk-remove', {
+            target: '#tags-table-container',
+            swap: 'innerHTML',
+            values: {paths: paths, tags: tags}
+        });
+    }
+    function bulkDeleteDocs() {
+        var paths = getSelectedPaths();
+        if (paths.length === 0) { alert('Select documents first'); return; }
+        if (!confirm('Delete ' + paths.length + ' documents? This cannot be undone.')) return;
+        htmx.ajax('POST', '/admin/tags/bulk-delete', {
+            target: '#tags-table-container',
+            swap: 'innerHTML',
+            values: {paths: paths}
+        });
+    }
+    function bulkReingestDocs() {
+        var paths = getSelectedPaths();
+        if (paths.length === 0) { alert('Select documents first'); return; }
+        if (!confirm('Queue ' + paths.length + ' documents for re-ingest?')) return;
+        htmx.ajax('POST', '/admin/tags/bulk-reingest', {
+            target: '#tags-table-container',
+            swap: 'innerHTML',
+            values: {paths: paths}
+        });
+    }
+</script>

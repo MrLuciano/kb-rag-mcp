@@ -22,6 +22,7 @@
                     <th>Source</th>
                     <th>Product</th>
                     <th>Type</th>
+                    <th>Tags</th>
                     <th>Status</th>
                     <th>Chunks</th>
                     <th>Actions</th>
@@ -35,6 +36,21 @@
                     <td>{{ doc.path }}</td>
                     <td>{{ doc.product or 'N/A' }}</td>
                     <td>{{ doc.doc_type or 'N/A' }}</td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-1" style="max-width: 200px;">
+                            {% set doc_tags = doc.tags|default('[]') %}
+                            {% if doc_tags is string %}
+                                {% set doc_tags = doc_tags|fromjson %}
+                            {% endif %}
+                            {% if doc_tags %}
+                                {% for tag in doc_tags %}
+                                <span class="badge bg-secondary">{{ tag }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted small">No tags</span>
+                            {% endif %}
+                        </div>
+                    </td>
                     <td>
                         {% if doc.status == 'completed' or doc.status == 'ok' %}
                         <span class="badge bg-success">{{ doc.status }}</span>
