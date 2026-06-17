@@ -100,11 +100,11 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 ## v0.1.5 Streamable HTTP & Management Platform
 
 <details open>
-<summary>🔄 v0.1.5 Phase Overview — 4/11 PHASES COMPLETE</summary>
+<summary>🔄 v0.1.5 Phase Overview — 5/11 PHASES COMPLETE</summary>
 
-**Completed:** Phase 28 (Streamable HTTP), Phase 28b (Auth API), Phase 28c (Admin SPA), Phase 28c-fixes (Gap Closure)
+**Completed:** Phase 28 (Streamable HTTP), Phase 28b (Auth API), Phase 28c (Admin SPA), Phase 28c-fixes (Gap Closure), Phase 38 (Grafana Embed)
 
-**Remaining:** 38 (Grafana Embed), 39 (Observability), 40 (Config), 41 (Provider Alias), 42 (Query Analytics), 43-47 (Backlog)
+**Remaining:** 39 (Observability), 40 (Config), 41 (Provider Alias), 42 (Query Analytics), 43-47 (Backlog)
 
 - [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
@@ -115,7 +115,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth, documents, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 4 tasks (monitor, config, partials, route ordering), [28c-fixes-03-PLAN.md](phases/28c-fixes/28c-fixes-03-PLAN.md) — 4 tasks (auth router, Alpine.js CDN, gating, admin seeding), [28c-fixes-04-PLAN.md](phases/28c-fixes/28c-fixes-04-PLAN.md) — 2 tasks (session management, credentials)
 - [x] Phase 28c-fixes: Admin SPA Gap Closure — Fix UAT failures from Phase 28c (auth flow, document browse, CSP/SRI, monitor lights, config editor, partials, route ordering, auth router mount, session management, credentials UI) (completed 2026-06-16)
   - Plans: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks, [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 4 tasks, [28c-fixes-03-PLAN.md](phases/28c-fixes/28c-fixes-03-PLAN.md) — 4 tasks, [28c-fixes-04-PLAN.md](phases/28c-fixes/28c-fixes-04-PLAN.md) — 2 tasks
-- [ ] Phase 38: Grafana Dashboard Embedding — iframe embed helper, time range selector, Jinja2 globals
+- [x] Phase 38: Grafana Dashboard Embedding — iframe embed helper, time range selector, Jinja2 globals (completed 2026-06-16)
   - Plans: [38-01-PLAN.md](phases/38-grafana-embed/38-01-PLAN.md) — 1 task
 - [ ] Phase 39: Observability Backlog — OBS-01 (Grafana health check), OBS-02 (request ID middleware), METRICS-01 (percentile metrics)
   - Plans: [39-01-PLAN.md](phases/39-observability/39-01-PLAN.md) — 4 tasks
