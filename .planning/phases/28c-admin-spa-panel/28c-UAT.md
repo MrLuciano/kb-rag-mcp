@@ -1,9 +1,9 @@
 ---
-status: partial
+status: diagnosed
 phase: 28c-admin-spa-panel
 source: 28c-01-SUMMARY.md, 28c-02-SUMMARY.md, 28c-03-SUMMARY.md, 28c-04-SUMMARY.md
 started: 2026-06-16T17:10:00Z
-updated: 2026-06-16T17:15:00Z
+updated: 2026-06-16T17:25:00Z
 ---
 
 ## Current Test
@@ -82,17 +82,42 @@ blocked: 0
   reason: "User reported: Page shows 'Failed to load content. Please try again later.' Logout button visible but no login was required. Need: default admin account (admin/admin), login page on first open, password change page under settings, configurable session timeout (30 min default), user session management."
   severity: blocker
   test: 1
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Three interconnected root causes: (1) Alpine.js CDN URL invalid (404) — alpinejs@3.13.3/dist/csp.min.js doesn't exist, all x-data/x-show silently fail; (2) No server-side auth gating on admin endpoints in routes_admin.py; (3) Auth endpoints mounted on MCP server (port 8765) not UI app (port 8001)"
+  artifacts:
+    - path: "kb_server/ui/templates/base.html:22-25"
+      issue: "Invalid Alpine.js CDN URL — alpinejs@3.13.3 has no dist/csp.min.js"
+    - path: "kb_server/ui/routes_admin.py:24-35,38-118"
+      issue: "No server-side auth gating on admin shell or tab endpoints"
+    - path: "kb_server/ui/app.py:63-66"
+      issue: "Auth router not mounted on UI app, only on MCP server sub-app"
+    - path: "kb_server/server.py:1508-1516,1673"
+      issue: "Auth routes only on MCP sub-app (port 8765), not UI app (port 8001)"
+    - path: "kb_server/ui/templates/admin/shell.html:113-129"
+      issue: "init() calls /api/v1/users/me on UI app → 404"
+    - path: "kb_server/ui/templates/admin/shell.html:131-158"
+      issue: "authenticate() never POSTs to /api/v1/auth/session"
+  missing:
+    - "Fix Alpine.js CDN URL to valid path (dist/cdn.min.js or @alpinejs/csp)"
+    - "Add server-side Depends(get_current_user) to all admin routes"
+    - "Mount auth router on UI FastAPI app"
+    - "Implement JWT session cookie exchange in authenticate()"
+    - "Seed default admin account (admin/admin) on first startup"
+    - "Add configurable session timeout (30 min default)"
+    - "Add proper error handling (distinguish 404 vs 401 vs 500)"
+    - "Add RAGAS tab to sidebar"
+    - "Add password change page under settings"
+  debug_session: ".planning/debug/admin-panel-auth-and-content-loading.md"
 
 - truth: "Clicking sidebar tabs (Documents, Monitoring, Ingestion, RAGAS, Admin, Profile) loads content via HTMX without full page reload. Active tab has visual indicator."
   status: failed
   reason: "User reported: Nothing loads, error message: 'Failed to load content. Please try again later.' RAGAS tab is not present in the sidebar."
   severity: blocker
   test: 2
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Cascading consequence of root causes from Test 1: Alpine.js broken means tab switching x-show directives don't work; no auth on tab endpoints means they fail; missing RAGAS tab in sidebar config"
+  artifacts:
+    - path: "kb_server/ui/templates/admin/shell.html"
+      issue: "RAGAS tab missing from sidebar nav items"
+  missing:
+    - "Add RAGAS tab to sidebar navigation"
+    - "Fix content loading chain (depends on auth fix from gap 1)"
+  debug_session: ".planning/debug/admin-panel-auth-and-content-loading.md"
