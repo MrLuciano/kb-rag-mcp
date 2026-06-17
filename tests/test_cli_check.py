@@ -175,3 +175,74 @@ def test_missing_component_shows_skipped(cli_runner):
     # Only explicitly unhealthy critical components trigger exit 1
     assert result.exit_code == 0
     assert "SKIP" in result.output
+
+
+# ── kb-ingest check embedding (Phase 47) ───────────────────────────
+
+
+def test_check_embedding_healthy_exits_zero(cli_runner):
+    """Embedding healthy → exits 0, prints backend name."""
+    mock_status = _make_health_status(
+        "embedding", True, "backend: lmstudio"
+    )
+
+    with patch(
+        "kb_server.health.check_embedding_service",
+        new=AsyncMock(return_value=mock_status),
+    ):
+        result = cli_runner.invoke(cli, ["check", "embedding"])
+
+    assert result.exit_code == 0
+    assert "✓ Embedding backend" in result.output
+    assert "lmstudio" in result.output
+
+
+def test_check_embedding_unhealthy_exits_one(cli_runner):
+    """Embedding unhealthy → exits 1, prints error message."""
+    mock_status = _make_health_status(
+        "embedding", False, "connection refused"
+    )
+
+    with patch(
+        "kb_server.health.check_embedding_service",
+        new=AsyncMock(return_value=mock_status),
+    ):
+        result = cli_runner.invoke(cli, ["check", "embedding"])
+
+    assert result.exit_code == 1
+    assert "✗ Embedding backend unavailable" in result.output
+    assert "connection refused" in result.output
+
+
+def test_check_embedding_exception_handled(cli_runner):
+    """Exception in check_embedding_service → exits 1 without traceback."""
+    with patch(
+        "kb_server.health.check_embedding_service",
+        side_effect=RuntimeError("timeout"),
+    ):
+        result = cli_runner.invoke(cli, ["check", "embedding"])
+
+    assert result.exit_code == 1
+    assert "timeout" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_check_embedding_verbose_shows_details(cli_runner):
+    """--verbose shows backend details."""
+    mock_status = _make_health_status(
+        "embedding",
+        True,
+        "backend: lmstudio",
+        details={"model": "nomic-embed", "dims": 768},
+    )
+
+    with patch(
+        "kb_server.health.check_embedding_service",
+        new=AsyncMock(return_value=mock_status),
+    ):
+        result = cli_runner.invoke(
+            cli, ["check", "embedding", "--verbose"]
+        )
+
+    assert result.exit_code == 0
+    assert "model=nomic-embed" in result.output
