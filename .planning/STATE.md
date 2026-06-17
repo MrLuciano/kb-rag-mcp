@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v0.1.5
 milestone_name: Streamable HTTP & Management Platform
 status: executing
-last_updated: "2026-06-17T12:00:00.000Z"
+last_updated: "2026-06-17T14:00:00.000Z"
 progress:
   total_phases: 17
-  completed_phases: 18
-  total_plans: 31
-  completed_plans: 26
-  percent: 84
+  completed_phases: 16
+  total_plans: 28
+  completed_plans: 28
+  percent: 94
 ---
 
 # Project State
@@ -19,14 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 28c-fixes — admin-spa-gap-closure
+**Current focus:** Milestone v0.1.5 completion — all backlog phases done, ready to ship
 
 ## Current Position
 
 Milestone: v0.1.5 (Streamable HTTP & Management Platform) — ACTIVE
-Phase: 28c-fixes (admin-spa-gap-closure) — COMPLETE
-Status: All 4 plans executed — auth flow, CSP/SRI, doc browse, monitor lights, config editor, partials refactor, route ordering, auth router mount, Alpine.js CDN fix, auth gating, admin seeding, session management, credentials UI
-Next: Phase 43-47 (Backlog) — Chunk Preview, Auth Security, DB Reliability, Code Quality, LM Studio Dependency
+Phase: All backlog phases COMPLETE — 43-47, 50
+Status: 16/16 phases complete, 28/28 plans executed
+Next: Phase 51 (Document Tag Management) OR milestone completion / v0.1.6 planning
 
 ## Phase 28c-fixes Outcomes
 

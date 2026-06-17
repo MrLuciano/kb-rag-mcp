@@ -100,11 +100,11 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 ## v0.1.5 Streamable HTTP & Management Platform
 
 <details open>
-<summary>🔄 v0.1.5 Phase Overview — 9/11 PHASES COMPLETE</summary>
+<summary>🔄 v0.1.5 Phase Overview — 16/17 PHASES COMPLETE</summary>
 
-**Completed:** Phase 28, 28b, 28c, 28c-fixes, 38, 39, 40, 41, 42
+**Completed:** Phase 28, 28b, 28c, 28c-fixes, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50
 
-**Remaining:** 43-47, 51 (Backlog)
+**Remaining:** Phase 51 (Document Tag Management)
 
 - [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
@@ -125,22 +125,22 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: [41-01-PLAN.md](phases/41-provider-alias/41-01-PLAN.md) — 2 tasks (ConfigLoader alias methods + EmbedClient integration)
 - [x] Phase 42: Query Logging Analytics Dashboard — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution) (completed 2026-06-16)
   - Plans: [42-01-PLAN.md](phases/42-query-analytics-dashboard/42-01-PLAN.md) — 2 tasks (get_latency_stats + analytics route + template + tests)
-- [ ] Phase 43: Chunk Preview in Document Detail — Inline chunk viewer with highlight for matched terms
-  - Plans: TBD
-- [ ] Phase 44: Auth Security Hardening — Mount auth router on server, erasure separation, ownership checks, secure cookie, verify_key batching, rate-limit hashing
-  - Plans: TBD
-- [ ] Phase 45: Database Reliability — SQLite connection leaks, FK enforcement, missing indexes, migration DDL safe re-runs
-  - Plans: TBD
-- [ ] Phase 46: Code Quality & Coverage — utcnow deprecation fix, flake8 cleanup, coverage gap, test tagging, unused imports
+- [x] Phase 43: Chunk Preview in Document Detail — Inline chunk viewer with highlight for matched terms (completed 2026-06-17)
+  - Plans: [43-01-PLAN.md](phases/43-chunk-preview-document-detail/43-01-PLAN.md)
+- [x] Phase 44: Auth Security Hardening — Mount auth router on server, erasure separation, ownership checks, secure cookie, verify_key batching, rate-limit hashing (completed 2026-06-17)
+  - Plans: [44-01-PLAN.md](phases/44-auth-security-hardening/44-01-PLAN.md)
+- [x] Phase 45: Database Reliability — SQLite connection leaks, FK enforcement, missing indexes, migration DDL safe re-runs (completed 2026-06-17)
+  - Plans: [45-01-PLAN.md](phases/45-database-reliability/45-01-PLAN.md)
+- [x] Phase 46: Code Quality & Coverage — utcnow deprecation fix, flake8 cleanup, coverage gap, test tagging, unused imports (completed 2026-06-17)
   - Plans: [46-01-PLAN.md](phases/46-code-quality-coverage/46-01-PLAN.md) — 3 tasks (utcnow replacement, F401 cleanup, integration tags)
-- [ ] Phase 47: LM Studio Dependency Handling — Graceful fallback when LM Studio is unreachable; startup health-check
+- [x] Phase 47: LM Studio Dependency Handling — Graceful fallback when LM Studio is unreachable; startup health-check (completed 2026-06-17)
   - Plans: [47-01-PLAN.md](phases/47-lm-studio-dependency/47-01-PLAN.md) — 2 tasks (graceful error fallback + kb-ingest check embedding)
 - [-] Phase 48: Cross-Encoder Lazy Loading — ✅ Already implemented and tested (shipped in v0.1.3 Phase 20)
   - Plans: Already done
 - [-] Phase 49: Qdrant Mock Cleanup — ✅ Already resolved (Phase 10 imported real qdrant before stubs; conftest.py uses proper patch)
   - Plans: Already done
-- [ ] Phase 50: SSE Test Process Consolidation — Refactor test_smoke.py for per-function @patch to consolidate SSE test process
-  - Plans: TBD
+- [x] Phase 50: SSE Test Process Consolidation — Refactor test_smoke.py for per-function @patch to consolidate SSE test process (completed 2026-06-17)
+  - Plans: [50-01-PLAN.md](phases/50-sse-test-consolidation/50-01-PLAN.md)
 
 </details>
 
