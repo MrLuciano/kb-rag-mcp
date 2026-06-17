@@ -31,6 +31,7 @@ from ingest.cli.progress import progress_group  # noqa: E402
 from ingest.cli.quota import quota_group  # noqa: E402
 from ingest.cli.reclassify import reclassify_group  # noqa: E402
 from ingest.cli.status import status_group  # noqa: E402
+from ingest.cli.tags import tags_group  # noqa: E402
 
 
 @click.group()
@@ -89,6 +90,7 @@ cli.add_command(reclassify_group, name="reclassify")
 cli.add_command(connectors_group)
 cli.add_command(auth_group)
 cli.add_command(quota_group)
+cli.add_command(tags_group, name="tags")
 cli.add_command(optimize, name="optimize")
 
 

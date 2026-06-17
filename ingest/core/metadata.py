@@ -16,7 +16,7 @@ from typing import Optional
 log = logging.getLogger("kb-ingest.metadata")
 
 DEFAULT_DB = Path(__file__).parent.parent.parent / "data" / "kb_metadata.db"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 class MetadataStore:
@@ -98,6 +98,9 @@ class MetadataStore:
             self._migrate_v3_to_v4()
         elif current_version == 3:
             self._migrate_v3_to_v4()
+            self._migrate_v4_to_v5()
+        elif current_version == 4:
+            self._migrate_v4_to_v5()
         elif current_version == SCHEMA_VERSION:
             log.debug(f"Schema v{current_version} up to date")
         else:
@@ -185,7 +188,8 @@ class MetadataStore:
                 error_msg   TEXT,
                 indexed_at  REAL NOT NULL,
                 file_mtime  REAL,
-                file_size   INTEGER
+                file_size   INTEGER,
+                tags        TEXT DEFAULT '[]'
             );
 
             CREATE INDEX idx_files_status ON files(status);
@@ -221,6 +225,21 @@ class MetadataStore:
                 ON reclassify_history(session_timestamp);
             CREATE INDEX idx_reclassify_history_timestamp
                 ON reclassify_history(timestamp);
+
+            -- Tag management audit history (Phase 51)
+            CREATE TABLE tags_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL NOT NULL,
+                user_id TEXT,
+                source_file TEXT NOT NULL,
+                action TEXT NOT NULL,
+                tag_values TEXT
+            );
+
+            CREATE INDEX idx_tags_history_file
+                ON tags_history(source_file);
+            CREATE INDEX idx_tags_history_timestamp
+                ON tags_history(timestamp);
         """)
 
         self._set_schema_version(SCHEMA_VERSION)
@@ -347,6 +366,55 @@ class MetadataStore:
             log.debug("quota_usage table already exists")
 
         self._set_schema_version(4)
+
+    def _migrate_v4_to_v5(self) -> None:
+        """Migrate from v4 to v5: add tags support."""
+        log.info("Migrating schema v4 → v5...")
+
+        # Add tags column to files table
+        columns = [
+            r[1]
+            for r in self.conn.execute(
+                "PRAGMA table_info(files)"
+            ).fetchall()
+        ]
+        if "tags" not in columns:
+            self.conn.execute(
+                "ALTER TABLE files ADD COLUMN tags TEXT DEFAULT '[]'"
+            )
+            log.info("Added tags column to files table")
+        else:
+            log.debug("tags column already exists")
+
+        # Create tags_history table
+        tables = [
+            r[0]
+            for r in self.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        if "tags_history" not in tables:
+            self.conn.execute("""
+                CREATE TABLE tags_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp REAL NOT NULL,
+                    user_id TEXT,
+                    source_file TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    tag_values TEXT
+                )
+            """)
+            self.conn.execute(
+                "CREATE INDEX idx_tags_history_file ON tags_history(source_file)"
+            )
+            self.conn.execute(
+                "CREATE INDEX idx_tags_history_timestamp ON tags_history(timestamp)"
+            )
+            log.info("Created tags_history table")
+        else:
+            log.debug("tags_history table already exists")
+
+        self._set_schema_version(5)
 
     # ── Quota Helpers
 
@@ -1101,6 +1169,104 @@ class IngestRegistry:
         )
         return [dict(r) for r in rows]
 
+    # ── Phase 51: Tag management ────────────────────────────────────────
+
+    def update_file_tags(
+        self, rel_path: str, tags: list[str]
+    ) -> None:
+        """Update tags for a file in the registry.
+
+        Args:
+            rel_path: Relative file path (primary key).
+            tags: List of tag strings (will be JSON-serialized).
+        """
+        assert self._conn is not None, "Database connection not established."
+        import json
+
+        self._conn.execute(
+            "UPDATE files SET tags = ? WHERE path = ?",
+            (json.dumps(tags), rel_path),
+        )
+        self._conn.commit()
+        log_reg.info("Updated tags for '%s': %s", rel_path, tags)
+
+    def get_file_tags(self, rel_path: str) -> list[str]:
+        """Get tags for a file from the registry.
+
+        Args:
+            rel_path: Relative file path.
+
+        Returns:
+            List of tag strings.
+        """
+        assert self._conn is not None, "Database connection not established."
+        import json
+
+        row = self._conn.execute(
+            "SELECT tags FROM files WHERE path = ?", (rel_path,)
+        ).fetchone()
+        if row and row[0]:
+            return json.loads(row[0])
+        return []
+
+    def log_tag_history(
+        self,
+        user_id: str | None,
+        source_file: str,
+        action: str,
+        tag_values: list[str],
+    ) -> None:
+        """Log a tag mutation to the audit history.
+
+        Args:
+            user_id: User who performed the action.
+            source_file: Document path affected.
+            action: Action type (add, remove, replace, delete-tag).
+            tag_values: List of tag values involved.
+        """
+        assert self._conn is not None, "Database connection not established."
+        import json
+
+        self._conn.execute(
+            """
+            INSERT INTO tags_history (timestamp, user_id, source_file,
+                                      action, tag_values)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                time.time(),
+                user_id,
+                source_file,
+                action,
+                json.dumps(tag_values),
+            ),
+        )
+        self._conn.commit()
+
+    def get_tags_history(
+        self, source_file: str | None = None
+    ) -> list[dict]:
+        """Get tag audit history, optionally filtered by file.
+
+        Args:
+            source_file: Optional file path filter.
+
+        Returns:
+            List of history record dicts.
+        """
+        assert self._conn is not None, "Database connection not established."
+        if source_file:
+            rows = self._conn.execute(
+                "SELECT * FROM tags_history WHERE source_file = ? "
+                "ORDER BY timestamp DESC",
+                (source_file,),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM tags_history ORDER BY timestamp DESC"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def purge_deleted(self) -> None:
         """Permanently delete all records with status 'deleted'."""
         assert self._conn is not None, "Database connection not established."
@@ -1151,8 +1317,8 @@ class IngestRegistry:
             """
             INSERT INTO files (path, sha256, file_type, product, doc_type,
                                chunks, status, error_msg, indexed_at,
-                               file_mtime, file_size)
-            VALUES (?, ?, '', '', 'document', ?, 'ok', NULL, ?, 0, 0)
+                               file_mtime, file_size, tags)
+            VALUES (?, ?, '', '', 'document', ?, 'ok', NULL, ?, 0, 0, '[]')
             ON CONFLICT(path) DO UPDATE SET
                 sha256     = excluded.sha256,
                 chunks     = excluded.chunks,
