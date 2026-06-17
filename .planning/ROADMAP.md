@@ -104,7 +104,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 **Completed:** Phase 28, 28b, 28c, 28c-fixes, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50
 
-**Remaining:** Phase 51 (Document Tag Management)
+**Completed:** All 17 phases complete
 
 - [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
@@ -424,12 +424,12 @@ Plans:
 | 48. Cross-Encoder Lazy Loading | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
 | 49. Qdrant Mock Cleanup | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
 | 50. SSE Test Process Consolidation | v0.1.5 | 0/0 | Backlog | — |
-| 51. Document Tag Management & Re-ingest Control | v0.1.5 | 0/0 | Backlog | — |
+| 51. Document Tag Management & Re-ingest Control | v0.1.5 | 1/1 | Complete | 2026-06-17 |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
-- Phase 51: Document Tag Management & Re-ingest Control — bulk classification tag editor (`kb-rag tags` CLI + `/admin/tags` Web UI panel) for correcting misclassified documents, removing bad data, and marking files for re-ingestion.
+All backlog items completed. See phase directories under `.planning/phases/` for details.
 
 
