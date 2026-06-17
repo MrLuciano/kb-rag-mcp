@@ -898,3 +898,4 @@ All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete 
 | 20260616-001 | Fix missing SQLAlchemy dependency in Docker | 2026-06-16 | — | [20260616-fix-sqlalchemy-dep](./quick/20260616-fix-sqlalchemy-dep/) |
 | 2 | split-gpu-requirements | Split GPU requirements from core with runtime detection | 2026-06-16 | 3cb2f05 | Verified | [split-gpu-requirements](./quick/2-split-gpu-requirements/) |
 | 3 | Add AMD GPU (ROCm) support to entrypoint | 2026-06-16 | edadcf9 | Verified | [amd-gpu-support](./quick/3-amd-gpu-support/) |
+| 4 | Fix CLI auth commands failing on read-only Docker auth.db | 2026-06-17 | beb2394 | Verified | [auth-db-fix](./quick/4-auth-db-fix/) |
