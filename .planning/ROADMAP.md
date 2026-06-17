@@ -100,19 +100,21 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 ## v0.1.5 Streamable HTTP & Management Platform
 
 <details open>
-<summary>🔄 v0.1.5 Phase Overview — PLANNING</summary>
+<summary>🔄 v0.1.5 Phase Overview — 3/11 PHASES COMPLETE</summary>
 
-**Target features:**
+**Completed:** Phase 28 (Streamable HTTP), Phase 28c (Admin SPA), Phase 28c-fixes (Gap Closure)
+
+**Remaining:** 28b (Auth API), 38 (Grafana Embed), 39 (Observability), 40 (Config), 41 (Provider Alias), 42 (Query Analytics), 43-47 (Backlog)
 
 - [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
   - [28-02-PLAN.md](phases/28-mcp-streamable-http/28-02-PLAN.md) — 2 tasks (session limit, metrics, sweep)
 - [ ] Phase 28b: Auth & User Management API — SQLAlchemy User/ApiKey/AuditLog models, CRUD REST endpoints, role-based access, GDPR erasure workflow
   - Plans: [28b-01-PLAN.md](phases/28b-auth-api/28b-01-PLAN.md) — 7 tasks
-- [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, tab content (config, monitoring, ingestion, RAGAS, browser cleanup, profile), advanced filters (date range, file type, vendor, product), document export (CSV/JSON)
-  - Plans: [28c-01-PLAN.md](phases/28c-admin-spa-panel/28c-01-PLAN.md) — 2 tasks (shell), [28c-02-PLAN.md](phases/28c-admin-spa-panel/28c-02-PLAN.md) — 6 tasks (tab content), [28c-03-PLAN.md](phases/28c-admin-spa-panel/28c-03-PLAN.md) — TBD (advanced filters), [28c-04-PLAN.md](phases/28c-admin-spa-panel/28c-04-PLAN.md) — TBD (document export)
-- [ ] Phase 28c-fixes: Admin SPA Gap Closure — Fix UAT failures from Phase 28c (auth flow, document browse, CSP/SRI, monitor lights, config editor, partials, copy/spacing)
-  - Plans: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth, documents, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 3 tasks (monitor, config, partials + spacing)
+- [x] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, tab content (config, monitoring, ingestion, RAGAS, browser cleanup, profile), advanced filters (date range, file type, vendor, product), document export (CSV/JSON) (completed 2026-06-16 via Phase 28c-fixes)
+  - Plans: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth, documents, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 4 tasks (monitor, config, partials, route ordering), [28c-fixes-03-PLAN.md](phases/28c-fixes/28c-fixes-03-PLAN.md) — 4 tasks (auth router, Alpine.js CDN, gating, admin seeding), [28c-fixes-04-PLAN.md](phases/28c-fixes/28c-fixes-04-PLAN.md) — 2 tasks (session management, credentials)
+- [x] Phase 28c-fixes: Admin SPA Gap Closure — Fix UAT failures from Phase 28c (auth flow, document browse, CSP/SRI, monitor lights, config editor, partials, route ordering, auth router mount, session management, credentials UI) (completed 2026-06-16)
+  - Plans: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks, [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 4 tasks, [28c-fixes-03-PLAN.md](phases/28c-fixes/28c-fixes-03-PLAN.md) — 4 tasks, [28c-fixes-04-PLAN.md](phases/28c-fixes/28c-fixes-04-PLAN.md) — 2 tasks
 - [ ] Phase 38: Grafana Dashboard Embedding — iframe embed helper, time range selector, Jinja2 globals
   - Plans: [38-01-PLAN.md](phases/38-grafana-embed/38-01-PLAN.md) — 1 task
 - [ ] Phase 39: Observability Backlog — OBS-01 (Grafana health check), OBS-02 (request ID middleware), METRICS-01 (percentile metrics)
