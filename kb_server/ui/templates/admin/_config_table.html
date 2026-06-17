@@ -1,7 +1,11 @@
 <div x-data="configEditor()" x-init="loadConfig()">
-    <div class="mb-2">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <input type="text" class="form-control form-control-sm config-search"
-               placeholder="Search config..." x-model="search">
+               placeholder="Search config keys..." x-model="search" style="max-width: 300px;">
+        <button class="btn btn-outline-danger btn-sm"
+                hx-post="/api/v1/config/reset"
+                hx-confirm="Reset all config: Reset all configuration to environment defaults? This cannot be undone."
+                hx-target="#tab-content" hx-swap="innerHTML">Reset All</button>
     </div>
     <table class="table table-sm table-striped">
         <thead><tr><th>Key</th><th>Value</th><th>Type</th><th>Group</th><th>Updated</th><th></th></tr></thead>
@@ -13,10 +17,16 @@
                         <span x-show="editing !== entry.key" x-text="entry.value"
                               @dblclick="startEdit(entry)" class="editable-field"></span>
                         <input x-show="editing === entry.key" type="text" class="form-control form-control-sm"
-                               x-model="editValue" @keydown.enter="saveEdit(entry)" @keydown.escape="cancelEdit()">
+                               x-model="editValue"
+                               :hx-put="'/api/v1/config/' + entry.key"
+                               hx-trigger="blur, keydown[key=='Enter']"
+                               hx-target="closest tr"
+                               hx-swap="none"
+                               hx-vals='js:{value: editValue}'
+                               @keydown.escape="cancelEdit()">
                     </td>
                     <td><span class="badge bg-secondary" x-text="entry.type"></span></td>
-                    <td x-text="entry.group_name"></td>
+                    <td><span class="badge bg-info" x-text="entry.group_name"></span></td>
                     <td x-text="entry.updated_at ? new Date(entry.updated_at*1000).toLocaleDateString() : ''"></td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" @click="startEdit(entry)">Edit</button>
@@ -26,9 +36,7 @@
         </tbody>
     </table>
     <div x-show="filteredConfig.length === 0" class="text-muted">No configuration entries found.</div>
-    <div id="config-save-error" class="alert alert-danger d-none mt-2" role="alert">
-        Failed to save config value. Check the value format and try again.
-    </div>
+    <div x-show="saveError" class="alert alert-danger mt-2" role="alert" aria-live="assertive" x-text="saveError"></div>
 </div>
 
 <script nonce="{{ get_nonce(request) }}">
@@ -38,6 +46,7 @@ function configEditor() {
         editing: '',
         editValue: '',
         search: '',
+        saveError: '',
         get filteredConfig() {
             if (!this.search) return this.entries;
             var s = this.search.toLowerCase();
@@ -58,30 +67,25 @@ function configEditor() {
             this.editing = '';
             this.editValue = '';
         },
-        saveEdit(entry) {
-            var headers = { 'Content-Type': 'application/json' };
-            fetch('/api/v1/config/' + entry.key, {
-                method: 'PUT',
-                headers: headers,
-                body: JSON.stringify({
-                    value: this.editValue,
-                    type: entry.type,
-                    group_name: entry.group_name,
-                    description: entry.description || ''
-                })
-            })
-            .then(r => {
-                var errorDiv = document.getElementById('config-save-error');
-                if (!r.ok) {
-                    if (errorDiv) errorDiv.classList.remove('d-none');
-                    return;
+        init() {
+            var self = this;
+            document.addEventListener('htmx:responseError', function(evt) {
+                var el = evt.detail.elt;
+                var putPath = el && el.getAttribute('hx-put');
+                if (putPath && putPath.indexOf('/api/v1/config/') === 0) {
+                    self.saveError = 'Failed to save config value. Check the value format and try again.';
                 }
-                if (errorDiv) errorDiv.classList.add('d-none');
-                return r.json();
-            })
-            .then(() => {
-                this.editing = '';
-                this.loadConfig();
+            });
+            document.addEventListener('htmx:afterRequest', function(evt) {
+                var el = evt.detail.elt;
+                var putPath = el && el.getAttribute('hx-put');
+                if (putPath && putPath.indexOf('/api/v1/config/') === 0) {
+                    if (evt.detail.successful) {
+                        self.saveError = '';
+                        self.editing = '';
+                        self.loadConfig();
+                    }
+                }
             });
         }
     };
