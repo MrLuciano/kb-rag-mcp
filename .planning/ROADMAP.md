@@ -200,7 +200,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
    11. Default admin account auto-seeded on first startup with API key logged to stdout
    12. Session timeout is configurable via env var (default 30 min); session tracking in UserSession table
    13. Admin can view active sessions and revoke them; Admin tab has API key management (generate/revoke)
-**Plans**: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth flow, document browse, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 3 tasks (monitor lights, config editor, partials + copy/spacing), [28c-fixes-03-PLAN.md](phases/28c-fixes/28c-fixes-03-PLAN.md) — 3 tasks (Alpine.js CDN fix, auth router mount + admin seed, server-side auth gating), [28c-fixes-04-PLAN.md](phases/28c-fixes/28c-fixes-04-PLAN.md) — 2 tasks (session timeout + tracking, session management + settings UI)
+**Plans**: [28c-fixes-01-PLAN.md](phases/28c-fixes/28c-fixes-01-PLAN.md) — 3 tasks (auth flow, document browse, CSP/SRI), [28c-fixes-02-PLAN.md](phases/28c-fixes/28c-fixes-02-PLAN.md) — 3 tasks (monitor lights, config editor, partials + copy/spacing), [28c-fixes-03-PLAN.md](phases/28c-fixes/28c-fixes-03-PLAN.md) — 3 tasks (Alpine.js CDN fix, auth router mount + admin seed, server-side auth gating), [28c-fixes-04-PLAN.md](phases/28c-fixes/28c-fixes-04-PLAN.md) — 2 tasks (session timeout + tracking, session management + credentials UI), [28c-fixes-05-PLAN.md](phases/28c-fixes/28c-fixes-05-PLAN.md) — 1 task (register adminApp via Alpine.data for CSP compatibility)
 
 ### Phase 38: Grafana Dashboard Embedding
 **Goal**: Embed the existing Grafana monitoring dashboard inside the admin SPA Monitoring tab with configurable time ranges
