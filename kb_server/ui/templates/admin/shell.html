@@ -3,7 +3,7 @@
 {% block title %}Admin Panel - KB-RAG{% endblock %}
 
 {% block content %}
-<div x-data="adminApp()" class="d-flex admin-shell">
+<div x-data="adminApp" class="d-flex admin-shell">
     <!-- Hamburger toggle (visible on mobile) -->
     <button class="btn btn-dark d-md-none position-fixed top-0 start-0 m-2 z-3"
             @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
@@ -151,8 +151,8 @@
             }
         });
 
-        function adminApp() {
-            return {
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('adminApp', () => ({
                 sidebarOpen: false,
                 activeTab: 'documents',
                 isAuthenticated: false,
@@ -266,7 +266,7 @@
                     this.isAdmin = false;
                     this.loginError = '';
                 }
-            };
-        }
+            }));
+        });
     </script>
 {% endblock %}
