@@ -938,7 +938,7 @@ class VectorStore:
         )
 
         if not points:
-            log.warning(f"No chunks found for {source_file}")
+            log.debug(f"No chunks found for {source_file}")
             return 0
 
         point_ids = [p.id for p in points]
@@ -995,7 +995,7 @@ class VectorStore:
         )
 
         if not points:
-            log.warning(f"No chunks found for {source_file}")
+            log.debug(f"No chunks found for {source_file}")
             return 0
 
         point_ids = [p.id for p in points]
