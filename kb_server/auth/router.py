@@ -19,6 +19,7 @@ from kb_server.auth.schemas import (
     CreateApiKeyRequest,
     CreateUserRequest,
     ErasureRequestResponse,
+    LoginRequest,
     SessionResponse,
     UserResponse,
 )
@@ -55,6 +56,57 @@ def _get_erasure_manager(request: Request) -> ErasureManager:
 
 
 # ── Auth Session ────────────────────────────────────────────────
+
+
+@router.post("/auth/login", response_model=SessionResponse)
+async def login_with_password(
+    request: Request,
+    response: FastAPIResponse,
+    body: LoginRequest,
+):
+    """Exchange username+password for an HttpOnly session cookie."""
+    service = _get_service(request)
+    user = service.verify_login(body.username, body.password)
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password",
+        )
+
+    expires_at = int(time.time()) + _SESSION_TIMEOUT
+    raw = f"{user.id}:{expires_at}"
+    secret = _JWT_SECRET or secrets.token_hex(32)
+    signature = hmac.new(
+        secret.encode(), raw.encode(), hashlib.sha256
+    ).hexdigest()[:16]
+    session_token = f"{raw}:{signature}"
+
+    response.set_cookie(
+        key="session",
+        value=session_token,
+        httponly=True,
+        samesite="lax",
+        max_age=_SESSION_TIMEOUT,
+        secure=_JWT_SECURE,
+        path="/",
+    )
+
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("User-Agent", "unknown")
+    service.create_session_record(
+        user_id=str(user.id),
+        session_token=signature,
+        ip_address=ip,
+        user_agent=ua,
+    )
+
+    log.info("Password login: user=%s", user.username)
+    return SessionResponse(
+        id=str(user.id),
+        username=str(user.username),
+        role=str(user.role),
+        expires_in=_SESSION_TIMEOUT,
+    )
 
 
 @router.post("/auth/session", response_model=SessionResponse)
