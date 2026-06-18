@@ -901,3 +901,4 @@ All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete 
 | 4 | Fix CLI auth commands failing on read-only Docker auth.db | 2026-06-17 | beb2394 | Verified | [auth-db-fix](./quick/4-auth-db-fix/) |
 | 5 | Fix kb-rag CLI entry point (missing kb_server in setup.py) | 2026-06-17 | 035e97d | Verified | [cli-fix](./quick/5-cli-fix/) |
 | 6 | Add default admin user with password login and first-time API key | 2026-06-17 | fea95a3 | Verified | [admin-user-bootstrap](./quick/6-admin-user-bootstrap/) |
+| 7 | Add missing tags_history table to IngestRegistry migration | 2026-06-17 | 6f91a9c | Verified | — |
