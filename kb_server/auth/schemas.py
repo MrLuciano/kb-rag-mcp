@@ -48,6 +48,11 @@ class ErasureRequestResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 class SessionResponse(BaseModel):
     id: str
     username: str

@@ -71,16 +71,53 @@
         <div class="card shadow" style="width: 350px;">
             <div class="card-body p-4 text-center">
                 <h3 id="login-heading" class="h3 mb-3">Login to Admin Panel</h3>
-                <p class="text-muted small mb-3">Enter your API key to access the admin panel.</p>
-                <input type="password" class="form-control mb-2" id="apiKeyInput"
-                       placeholder="kb_xxxxxxxx..."
-                       aria-label="API key"
-                       @keydown.enter="authenticate($el.value)"
-                       x-model="apiKeyInput">
-                <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
-                <button class="btn btn-primary w-100" @click="authenticate(apiKeyInput)"
-                        x-text="loggingIn ? 'Logging in...' : 'Log in'"
-                        :disabled="loggingIn"></button>
+
+                <!-- Login method tabs -->
+                <ul class="nav nav-tabs nav-fill mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" :class="{ active: loginMethod === 'password' }"
+                                @click="loginMethod = 'password'; loginError = ''"
+                                type="button">Password</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" :class="{ active: loginMethod === 'apikey' }"
+                                @click="loginMethod = 'apikey'; loginError = ''"
+                                type="button">API Key</button>
+                    </li>
+                </ul>
+
+                <!-- Password login form -->
+                <div x-show="loginMethod === 'password'">
+                    <p class="text-muted small mb-3">Enter your username and password.</p>
+                    <input type="text" class="form-control mb-2" id="loginUsername"
+                           placeholder="Username"
+                           aria-label="Username"
+                           @keydown.enter="loginWithPassword()"
+                           x-model="loginUsername">
+                    <input type="password" class="form-control mb-2" id="loginPassword"
+                           placeholder="Password"
+                           aria-label="Password"
+                           @keydown.enter="loginWithPassword()"
+                           x-model="loginPassword">
+                    <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
+                    <button class="btn btn-primary w-100" @click="loginWithPassword()"
+                            x-text="loggingIn ? 'Logging in...' : 'Log in'"
+                            :disabled="loggingIn"></button>
+                </div>
+
+                <!-- API key login form -->
+                <div x-show="loginMethod === 'apikey'">
+                    <p class="text-muted small mb-3">Enter your API key to access the admin panel.</p>
+                    <input type="password" class="form-control mb-2" id="apiKeyInput"
+                           placeholder="kb_xxxxxxxx..."
+                           aria-label="API key"
+                           @keydown.enter="authenticate($el.value)"
+                           x-model="apiKeyInput">
+                    <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
+                    <button class="btn btn-primary w-100" @click="authenticate(apiKeyInput)"
+                            x-text="loggingIn ? 'Logging in...' : 'Log in'"
+                            :disabled="loggingIn"></button>
+                </div>
             </div>
         </div>
     </div>
@@ -120,7 +157,10 @@
                 activeTab: 'documents',
                 isAuthenticated: false,
                 isAdmin: false,
+                loginMethod: 'password',
                 apiKeyInput: '',
+                loginUsername: '',
+                loginPassword: '',
                 loggingIn: false,
                 loginError: '',
                 init() {
@@ -155,6 +195,38 @@
                     this.activeTab = tab;
                     var target = '/admin/tabs/' + tab;
                     htmx.ajax('GET', target, { target: '#tab-content', swap: 'innerHTML' });
+                },
+                loginWithPassword() {
+                    if (!this.loginUsername || !this.loginPassword) return;
+                    this.loggingIn = true;
+                    this.loginError = '';
+                    fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: this.loginUsername,
+                            password: this.loginPassword
+                        })
+                    })
+                    .then(r => {
+                        if (r.ok) return r.json();
+                        if (r.status === 401) {
+                            throw new Error('Invalid username or password.');
+                        }
+                        throw new Error('Login failed. Please try again.');
+                    })
+                    .then(data => {
+                        this.isAuthenticated = true;
+                        this.isAdmin = (data.role === 'admin');
+                        this.loginError = '';
+                        this.loggingIn = false;
+                        htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
+                    })
+                    .catch(err => {
+                        this.loginError = err.message;
+                        this.isAuthenticated = false;
+                        this.loggingIn = false;
+                    });
                 },
                 authenticate(key) {
                     if (!key) return;

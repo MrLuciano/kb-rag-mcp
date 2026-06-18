@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -23,11 +24,76 @@ class AuthService:
     def __init__(self, db_path: Path):
         self._db_path = db_path
         self._session = create_session(db_path)
+        self._run_migrations()
+
+    def _run_migrations(self) -> None:
+        """Apply schema migrations for existing databases."""
+        from sqlalchemy import inspect as sa_inspect, text as sa_text
+        inspector = sa_inspect(self._session.bind)
+        columns = [c["name"] for c in inspector.get_columns("users")]
+        if "password_hash" not in columns:
+            self._session.execute(
+                sa_text(
+                    "ALTER TABLE users ADD COLUMN "
+                    "password_hash VARCHAR(128)"
+                )
+            )
+            self._session.commit()
+            log.info("Added password_hash column to users table")
 
     @property
     def session(self):
         """Expose the SQLAlchemy session for shared use by ErasureManager."""
         return self._session
+
+    # ── Password Management ──────────────────────────────────────
+
+    @staticmethod
+    def _hash_password(password: str) -> str:
+        """Hash a password using PBKDF2-SHA256 with a random salt."""
+        salt = secrets.token_hex(16)
+        dk = hashlib.pbkdf2_hmac(
+            "sha256", password.encode(), salt.encode(), 100_000
+        )
+        return f"{salt}:{dk.hex()}"
+
+    @staticmethod
+    def _check_password(password: str, stored: str) -> bool:
+        """Verify a password against its PBKDF2-SHA256 hash."""
+        try:
+            salt, hash_hex = stored.split(":", 1)
+            dk = hashlib.pbkdf2_hmac(
+                "sha256", password.encode(), salt.encode(), 100_000
+            )
+            return hmac.compare_digest(dk.hex(), hash_hex)
+        except (ValueError, AttributeError):
+            return False
+
+    def set_password(self, user_id: str, password: str) -> None:
+        """Set a user's password hash."""
+        user = self.get_user(user_id)
+        if user is None:
+            raise ValueError(f"User not found: {user_id}")
+        user.password_hash = self._hash_password(password)
+        self._session.commit()
+        log.info("Password set for user: %s", user_id)
+
+    def verify_login(
+        self, username: str, password: str
+    ) -> Optional[User]:
+        """Verify username/password credentials and return the User on success."""
+        user = self.get_user_by_username(username)
+        if user is None:
+            return None
+        if not user.is_active:
+            return None
+        if user.erasure_status == ErasureStatus.erasure_completed:
+            return None
+        if not user.password_hash:
+            return None
+        if not self._check_password(password, user.password_hash):
+            return None
+        return user
 
     # ── User CRUD ────────────────────────────────────────────────
 
@@ -184,6 +250,15 @@ class AuthService:
 
     # ── Admin Account Seeding ─────────────────────────────────────
 
+    def _ensure_admin_password(self, user_id: str) -> None:
+        """Set or reset the default admin password."""
+        user = self.get_user(user_id)
+        if user is None:
+            return
+        if not user.password_hash:
+            self.set_password(user_id, "admin")
+            log.info("Set default password for admin user")
+
     def ensure_admin_account(self) -> Optional[str]:
         """Ensure an admin user exists with an active API key.
 
@@ -194,6 +269,7 @@ class AuthService:
         admin_user = self.get_user_by_username("admin")
         if admin_user is None:
             admin_user = self.create_user(username="admin", role="admin")
+            self.set_password(cast(str, admin_user.id), "admin")
             raw_key, _ = self.create_api_key(
                 cast(str, admin_user.id),
                 description="Default admin key for UI login",
@@ -201,9 +277,18 @@ class AuthService:
             log.info("=" * 60)
             log.info("DEFAULT ADMIN ACCOUNT READY")
             log.info("  Username: admin")
+            log.info("  Password: admin")
             log.info("  API Key: %s", raw_key)
             log.info("=" * 60)
+            print("=" * 60, flush=True)
+            print("DEFAULT ADMIN ACCOUNT READY", flush=True)
+            print("  Username: admin", flush=True)
+            print("  Password: admin", flush=True)
+            print(f"  API Key: {raw_key}", flush=True)
+            print("=" * 60, flush=True)
             return raw_key
+
+        self._ensure_admin_password(cast(str, admin_user.id))
 
         active_keys = [
             k for k in admin_user.api_keys if not k.is_revoked
@@ -216,8 +301,15 @@ class AuthService:
             log.info("=" * 60)
             log.info("DEFAULT ADMIN ACCOUNT READY")
             log.info("  Username: admin")
+            log.info("  Password: admin")
             log.info("  API Key: %s", raw_key)
             log.info("=" * 60)
+            print("=" * 60, flush=True)
+            print("DEFAULT ADMIN ACCOUNT READY", flush=True)
+            print("  Username: admin", flush=True)
+            print("  Password: admin", flush=True)
+            print(f"  API Key: {raw_key}", flush=True)
+            print("=" * 60, flush=True)
             return raw_key
 
         return None
