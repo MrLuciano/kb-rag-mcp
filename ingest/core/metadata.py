@@ -893,6 +893,20 @@ class IngestRegistry:
                 "ALTER TABLE files ADD COLUMN "
                 "tags TEXT DEFAULT '[]'"
             )
+        self._conn.executescript("""
+            CREATE TABLE IF NOT EXISTS tags_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL NOT NULL,
+                user_id TEXT,
+                source_file TEXT NOT NULL,
+                action TEXT NOT NULL,
+                tag_values TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_tags_history_file
+                ON tags_history(source_file);
+            CREATE INDEX IF NOT EXISTS idx_tags_history_timestamp
+                ON tags_history(timestamp);
+        """)
         self._conn.commit()
 
     @staticmethod
