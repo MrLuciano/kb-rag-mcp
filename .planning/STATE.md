@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v0.1.5
 milestone_name: Streamable HTTP & Management Platform
 status: executing
-last_updated: "2026-06-17T14:00:00.000Z"
+last_updated: "2026-06-17T16:00:00.000Z"
 progress:
   total_phases: 17
   completed_phases: 16
@@ -893,10 +893,11 @@ All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete 
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 20260616-001 | Fix missing SQLAlchemy dependency in Docker | 2026-06-16 | — | [20260616-fix-sqlalchemy-dep](./quick/20260616-fix-sqlalchemy-dep/) |
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 20260616-001 | Fix missing SQLAlchemy dependency in Docker | 2026-06-16 | — | | [20260616-fix-sqlalchemy-dep](./quick/20260616-fix-sqlalchemy-dep/) |
 | 2 | split-gpu-requirements | Split GPU requirements from core with runtime detection | 2026-06-16 | 3cb2f05 | Verified | [split-gpu-requirements](./quick/2-split-gpu-requirements/) |
 | 3 | Add AMD GPU (ROCm) support to entrypoint | 2026-06-16 | edadcf9 | Verified | [amd-gpu-support](./quick/3-amd-gpu-support/) |
 | 4 | Fix CLI auth commands failing on read-only Docker auth.db | 2026-06-17 | beb2394 | Verified | [auth-db-fix](./quick/4-auth-db-fix/) |
 | 5 | Fix kb-rag CLI entry point (missing kb_server in setup.py) | 2026-06-17 | 035e97d | Verified | [cli-fix](./quick/5-cli-fix/) |
+| 6 | Add default admin user with password login and first-time API key | 2026-06-17 | fea95a3 | Verified | [admin-user-bootstrap](./quick/6-admin-user-bootstrap/) |
