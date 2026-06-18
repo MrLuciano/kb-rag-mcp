@@ -902,3 +902,4 @@ All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete 
 | 5 | Fix kb-rag CLI entry point (missing kb_server in setup.py) | 2026-06-17 | 035e97d | Verified | [cli-fix](./quick/5-cli-fix/) |
 | 6 | Add default admin user with password login and first-time API key | 2026-06-17 | fea95a3 | Verified | [admin-user-bootstrap](./quick/6-admin-user-bootstrap/) |
 | 7 | Add missing tags_history table to IngestRegistry migration | 2026-06-17 | 6f91a9c | Verified | — |
+| 8 | Downgrade 'No chunks found' log from warning to debug | 2026-06-17 | f99d138 | Verified | — |
