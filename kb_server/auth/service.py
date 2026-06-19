@@ -41,6 +41,30 @@ class AuthService:
             self._session.commit()
             log.info("Added password_hash column to users table")
 
+        api_cols = [c["name"] for c in inspector.get_columns("api_keys")]
+        if "user_id" not in api_cols:
+            self._session.execute(
+                sa_text(
+                    "ALTER TABLE api_keys ADD COLUMN "
+                    "user_id VARCHAR(36) REFERENCES users(id)"
+                )
+            )
+            admin = (
+                self._session.query(User)
+                .filter(User.role == "admin")
+                .first()
+            )
+            if admin:
+                self._session.execute(
+                    sa_text(
+                        "UPDATE api_keys SET user_id = :uid "
+                        "WHERE user_id IS NULL"
+                    ),
+                    {"uid": admin.id},
+                )
+            self._session.commit()
+            log.info("Added user_id column to api_keys table")
+
     @property
     def session(self):
         """Expose the SQLAlchemy session for shared use by ErasureManager."""
@@ -247,6 +271,37 @@ class AuthService:
 
         self._session.commit()
         return user
+
+    # ── Cross-user key operations (for CLI / admin) ────────────
+
+    def list_all_api_keys(self) -> list[ApiKey]:
+        """List all API keys across all users."""
+        return self._session.query(ApiKey).order_by(  # type: ignore[no-any-return]
+            ApiKey.created_at.desc()
+        ).all()
+
+    def find_key_by_prefix(self, prefix: str) -> Optional[ApiKey]:
+        """Find an API key by its 8-character prefix."""
+        return self._session.query(ApiKey).filter(  # type: ignore[no-any-return]
+            ApiKey.prefix == prefix
+        ).first()
+
+    def revoke_key_by_prefix(self, prefix: str) -> bool:
+        "Revoke an API key by its 8-character prefix."
+        key = self.find_key_by_prefix(prefix)
+        if key is None or key.is_revoked:
+            return False
+        key.is_revoked = True
+        self._session.flush()
+        self._write_audit_log(
+            actor_id=cast(str, key.user_id),
+            action="api_key.revoked",
+            resource_type="api_key",
+            resource_id=cast(str, key.id),
+        )
+        self._session.commit()
+        log.info("Revoked API key by prefix: %s (key id: %s)", prefix, key.id)
+        return True
 
     # ── Admin Account Seeding ─────────────────────────────────────
 

@@ -695,6 +695,23 @@ async def _verify_request_api_key(request: Request):
         api_key = request.headers.get("X-API-Key")
     if not api_key:
         raise HTTPException(status_code=401, detail="API key required")
+
+    # Check AuthService (api_keys table via SQLAlchemy)
+    from pathlib import Path
+    import os
+    from kb_server.auth.service import AuthService
+
+    try:
+        svc = AuthService(
+            db_path=Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
+        )
+        user = svc.verify_key(api_key)
+        if user is not None:
+            return
+    except Exception:
+        log.exception("AuthService verification in admin routes failed")
+
+    # Fallback: legacy auth_api_keys table
     from kb_server.auth_registry import get_registry
 
     registry = get_registry()
