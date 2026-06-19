@@ -22,8 +22,6 @@ _DEFAULT_DB_PATH = Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
 
 def _resolve_db_path(path: Path) -> Path:
     """Return writable path, falling back to /tmp if file is read-only."""
-    # If file exists and is not writable (e.g. Docker root-owned),
-    # fall back to a temp file so CLI commands still work.
     if path.exists() and not os.access(path, os.W_OK):
         fallback = Path("/tmp") / path.name
         log.warning(
@@ -43,6 +41,8 @@ class AuthRegistry:
     scoped keys with revocation tracking.
     """
 
+    _TABLE = "auth_api_keys"
+
     def __init__(self, db_path: Path = _DEFAULT_DB_PATH):
         self._db_path = _resolve_db_path(db_path)
         self._lock = threading.Lock()
@@ -58,8 +58,9 @@ class AuthRegistry:
     def _init_db(self) -> None:
         with self._lock:
             conn = self._conn()
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS api_keys (
+            conn.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {self._TABLE} (
                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
                     key_hash    TEXT NOT NULL UNIQUE,
                     prefix      TEXT NOT NULL,
@@ -70,11 +71,12 @@ class AuthRegistry:
                     created_at  TEXT NOT NULL,
                     revoked_at  TEXT
                 )
-                """)
+                """
+            )
             try:
                 conn.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_api_keys_prefix "
-                    "ON api_keys(prefix)"
+                    f"CREATE INDEX IF NOT EXISTS idx_{self._TABLE}_prefix "
+                    f"ON {self._TABLE}(prefix)"
                 )
                 conn.commit()
             except sqlite3.OperationalError as e:
@@ -88,6 +90,13 @@ class AuthRegistry:
                     raise
             finally:
                 conn.close()
+
+    def _get_columns(self) -> set[str]:
+        conn = self._conn()
+        cursor = conn.execute(f"PRAGMA table_info({self._TABLE})")
+        cols = {row[1] for row in cursor.fetchall()}
+        conn.close()
+        return cols
 
     def create_key(
         self,
@@ -108,17 +117,17 @@ class AuthRegistry:
         Returns:
             The plaintext API key (hex string, 64 chars).
         """
-        raw_key = secrets.token_hex(32)  # 32 bytes → 64 hex chars
+        raw_key = secrets.token_hex(32)
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
-        prefix = raw_key[:8]  # first 8 chars for identification
+        prefix = raw_key[:8]
         now = datetime.now(timezone.utc).isoformat()
 
         with self._lock:
             conn = self._conn()
             conn.execute(
-                """
-                INSERT INTO api_keys (key_hash, prefix, scope, kb_name,
-                                      description, created_at)
+                f"""
+                INSERT INTO {self._TABLE}
+                    (key_hash, prefix, scope, kb_name, description, created_at)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (key_hash, prefix, scope, kb_name, description, now),
@@ -141,7 +150,7 @@ class AuthRegistry:
         with self._lock:
             conn = self._conn()
             row = conn.execute(
-                "SELECT revoked FROM api_keys WHERE key_hash = ?",
+                f"SELECT revoked FROM {self._TABLE} WHERE key_hash = ?",
                 (key_hash,),
             ).fetchone()
             conn.close()
@@ -160,8 +169,8 @@ class AuthRegistry:
         with self._lock:
             conn = self._conn()
             cursor = conn.execute(
-                """
-                UPDATE api_keys SET revoked = 1, revoked_at = ?
+                f"""
+                UPDATE {self._TABLE} SET revoked = 1, revoked_at = ?
                 WHERE prefix = ? AND revoked = 0
                 """,
                 (now, prefix),
@@ -180,36 +189,37 @@ class AuthRegistry:
         """
         with self._lock:
             conn = self._conn()
-            cursor = conn.execute("PRAGMA table_info(api_keys)")
+            cursor = conn.execute(f"PRAGMA table_info({self._TABLE})")
             columns = {row[1] for row in cursor.fetchall()}
 
-            # Build SELECT clause based on actual schema
             select_cols = []
             if "prefix" in columns:
                 select_cols.append("prefix")
             if "scope" in columns:
                 select_cols.append("scope")
+            else:
+                select_cols.append("'global' AS scope")
             if "kb_name" in columns:
                 select_cols.append("kb_name")
+            else:
+                select_cols.append("NULL AS kb_name")
             if "description" in columns:
                 select_cols.append("description")
-            # Handle renamed columns
             if "revoked" in columns:
                 select_cols.append("revoked")
-            elif "is_revoked" in columns:
-                select_cols.append("is_revoked AS revoked")
             if "created_at" in columns:
                 select_cols.append("created_at")
             if "revoked_at" in columns:
                 select_cols.append("revoked_at")
-            elif "last_used_at" in columns:
-                select_cols.append("last_used_at AS revoked_at")
 
             if not select_cols:
                 conn.close()
                 return []
 
-            query = f"SELECT {', '.join(select_cols)} FROM api_keys ORDER BY created_at DESC"
+            query = (
+                f"SELECT {', '.join(select_cols)} "
+                f"FROM {self._TABLE} ORDER BY created_at DESC"
+            )
             rows = conn.execute(query).fetchall()
             conn.close()
         return [dict(r) for r in rows]

@@ -1,14 +1,18 @@
 ---
-status: diagnosed
+status: testing
 phase: 28c-fixes
 source: 28c-fixes-01-SUMMARY.md
 started: 2026-06-16T16:00:00Z
-updated: 2026-06-17T16:30:00Z
+updated: 2026-06-17T17:30:00Z
 ---
 
 ## Current Test
 
-[issue found — diagnosed, fix plan ready]
+number: 7
+name: Login Modal on 401 (re-test #2)
+expected: |
+  Visiting /admin/ without a session shows the Alpine.js login overlay
+awaiting: user response
 
 ## Tests
 
@@ -45,11 +49,10 @@ result: pass
 expected: tab_ragas.html inline script has nonce attr; login.html Bootstrap CSS link has integrity hash
 result: pass
 
-### 7. Login Modal on 401 (re-test of #1)
+### 7. Login Modal on 401 (re-test #2 of #1)
 expected: HTMX 401 → CustomEvent('show-login') → Alpine.js overlay visible
-result: issue
-reported: "server running, nothing happens in this page"
-severity: major
+result: pending
+fix_applied: "x-data=\"adminApp()\" → x-data=\"adminApp\", registered via Alpine.data() inside alpine:init"
 
 ### 8. Login with API Key (re-test of #2)
 expected: Enter key in Alpine modal → POST /api/v1/auth/session → session cookie set → modal closes
