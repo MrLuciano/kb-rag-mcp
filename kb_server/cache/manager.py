@@ -10,7 +10,11 @@ import logging
 from typing import Any, Literal, Optional, cast
 
 from kb_server.cache.lru import LRUCache
-from observability.metrics import MetricsCollector
+
+try:
+    from observability.metrics import MetricsCollector
+except ImportError:
+    MetricsCollector = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 

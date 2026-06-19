@@ -29,7 +29,11 @@ from qdrant_client.models import (
 )
 
 from kb_server.embed_client import get_embed_dim
-from observability.metrics import record_batch_upsert
+
+try:
+    from observability.metrics import record_batch_upsert
+except ImportError:
+    record_batch_upsert = None
 
 log = logging.getLogger("kb-mcp.store")
 

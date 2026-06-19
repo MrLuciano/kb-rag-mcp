@@ -1,5 +1,6 @@
 """FastAPI application for KB-RAG Web UI."""
 
+import json
 import os
 import secrets
 from importlib.metadata import PackageNotFoundError, version
@@ -52,6 +53,7 @@ templates = Jinja2Templates(directory=str(template_dir))
 templates.env.globals["get_nonce"] = lambda request: getattr(
     request.state, "nonce", ""
 )
+templates.env.filters["fromjson"] = json.loads
 
 # CSP middleware
 app.add_middleware(CSPMiddleware)

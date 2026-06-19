@@ -33,7 +33,13 @@ import httpx
 from kb_server.cache.manager import CacheManager
 from kb_server.circuit_breaker import CircuitBreaker, CircuitState
 from kb_server.provider_budget import ProviderBudget
-from observability.metrics import MetricsCollector, record_batch_embedding
+
+try:
+    from observability.metrics import MetricsCollector, record_batch_embedding
+except ImportError:
+    MetricsCollector = None  # type: ignore[assignment,misc]
+    def record_batch_embedding(*args: object, **kwargs: object) -> None:  # type: ignore[misc]
+        pass
 
 if TYPE_CHECKING:
     from kb_server.config.loader import ConfigLoader
