@@ -1,4 +1,6 @@
 import logging
+import os
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -20,13 +22,30 @@ def _verify_config_auth(request: Request):
         if not is_auth_enabled():
             return
         raise HTTPException(status_code=401, detail="API key required")
+
+    # Check AuthService (api_keys table via SQLAlchemy)
+    from kb_server.auth.service import AuthService
+
+    try:
+        svc = AuthService(
+            db_path=Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
+        )
+        user = svc.verify_key(api_key)
+        if user is not None:
+            return
+    except Exception:
+        log.exception("AuthService verification in config router failed")
+
+    # Fallback: legacy auth_api_keys table
     from kb_server.auth_registry import get_registry
 
     registry = get_registry()
-    if not registry.verify_key(api_key):
-        raise HTTPException(
-            status_code=401, detail="Invalid or revoked API key"
-        )
+    if registry.verify_key(api_key):
+        return
+
+    raise HTTPException(
+        status_code=401, detail="Invalid or revoked API key"
+    )
 
 
 router = APIRouter(
