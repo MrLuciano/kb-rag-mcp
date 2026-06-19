@@ -172,12 +172,14 @@
                 init() {
                     this._syncClasses();
                     this._syncLoginMethod();
+                    var comp = this;
                     var key = localStorage.getItem('kb_api_key');
                     if (key) {
                         this.apiKeyInput = key;
                         this._doAuth('/api/v1/auth/session', key);
+                    } else {
+                        this._checkSession();
                     }
-                    var comp = this;
                     document.addEventListener('input', function(e) {
                         var el = e.target;
                         if (el.id === 'loginUsername') comp.loginUsername = el.value;
@@ -244,6 +246,23 @@
                 },
                 _setLoginLabel() {
                     this.loginButtonLabel = this.loggingIn ? 'Logging in...' : 'Log in';
+                },
+                _checkSession() {
+                    var comp = this;
+                    fetch('/api/v1/users/me')
+                        .then(function(r) {
+                            if (r.ok) return r.json();
+                            throw new Error('No valid session');
+                        })
+                        .then(function(data) {
+                            comp.isAuthenticated = true;
+                            comp.showOverlay = false;
+                            comp.isAdmin = data.role === 'admin';
+                            htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
+                        })
+                        .catch(function() {
+                            // No valid session — overlay stays visible
+                        });
                 },
                 _switchTab(tab) {
                     this.activeTab = tab;

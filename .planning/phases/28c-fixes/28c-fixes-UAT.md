@@ -3,15 +3,15 @@ status: testing
 phase: 28c-fixes
 source: 28c-fixes-01-SUMMARY.md
 started: 2026-06-16T16:00:00Z
-updated: 2026-06-17T17:30:00Z
+updated: 2026-06-19T00:59:00Z
 ---
 
 ## Current Test
 
-number: 7
-name: Login Modal on 401 (re-test #2)
+number: 10
+name: Document Browse Checkbox Selection (re-test of #4)
 expected: |
-  Visiting /admin/ without a session shows the Alpine.js login overlay
+  Table has checkbox column; select-all toggles all rows; bulk toolbar appears with selected count
 awaiting: user response
 
 ## Tests
@@ -51,16 +51,15 @@ result: pass
 
 ### 7. Login Modal on 401 (re-test #2 of #1)
 expected: HTMX 401 → CustomEvent('show-login') → Alpine.js overlay visible
-result: pending
-fix_applied: "x-data=\"adminApp()\" → x-data=\"adminApp\", registered via Alpine.data() inside alpine:init"
+result: pass
 
 ### 8. Login with API Key (re-test of #2)
 expected: Enter key in Alpine modal → POST /api/v1/auth/session → session cookie set → modal closes
-result: pending
+result: pass
 
 ### 9. Logout Clears Session (re-test of #3)
 expected: Click logout → POST /auth/logout → session cookie deleted → login overlay shown
-result: pending
+result: pass
 
 ### 10. Document Browse Checkbox Selection (re-test of #4)
 expected: Table has checkbox column; select-all toggles all rows; bulk toolbar appears with selected count
@@ -69,9 +68,9 @@ result: pending
 ## Summary
 
 total: 10
-passed: 2
+passed: 5
 issues: 3
-pending: 3
+pending: 1
 skipped: 0
 blocked: 2
 

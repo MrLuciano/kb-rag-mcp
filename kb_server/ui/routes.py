@@ -281,6 +281,7 @@ async def document_detail(
     request: Request,
     doc_id: int,
     q: Optional[str] = Query(None),
+    back: Optional[str] = Query(None),
 ):
     """Document detail page showing metadata and chunks."""
     with sqlite3.connect(DB_PATH) as conn:
@@ -355,6 +356,13 @@ async def document_detail(
         except Exception as e:
             log.error("VectorStore error for doc %s: %s", doc_id, e)
 
+    if not back:
+        referer = request.headers.get("referer", "")
+        if "/admin" in referer:
+            back = "/admin"
+        else:
+            back = "/ui/browse"
+
     return templates.TemplateResponse(
         request,
         "document.html",
@@ -364,6 +372,7 @@ async def document_detail(
             "chunks": chunks,
             "search_query": q,
             "active_page": "browse",
+            "back_url": back,
         },
     )
 

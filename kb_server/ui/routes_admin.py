@@ -1,5 +1,6 @@
 """Admin SPA panel routes."""
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -21,6 +22,7 @@ templates.env.globals["get_nonce"] = lambda request: getattr(
     request.state, "nonce", ""
 )
 templates.env.globals["quote_path"] = quote
+templates.env.filters["fromjson"] = json.loads
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -88,27 +90,33 @@ async def admin_profile_content(
 async def admin_documents_content(
     request: Request,
     _auth: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
 ):
-    """Return documents table for admin panel."""
+    """Return documents table for admin panel with pagination."""
     import sqlite3
 
     db_path = Path(os.getenv("REGISTRY_DB_PATH", "data/registry.db"))
     documents = []
     total = 0
+    per_page = 20
 
     if db_path.exists():
         with sqlite3.connect(str(db_path)) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT COUNT(*) FROM files WHERE status = 'completed'"
+                "SELECT COUNT(*) FROM files WHERE status = 'ok'"
             )
             total = cursor.fetchone()[0]
+            offset = (page - 1) * per_page
             cursor.execute(
-                "SELECT rowid, * FROM files WHERE status = 'completed' "
-                "ORDER BY rowid DESC LIMIT 20"
+                "SELECT rowid, * FROM files WHERE status = 'ok' "
+                "ORDER BY rowid DESC LIMIT ? OFFSET ?",
+                (per_page, offset),
             )
             documents = [dict(row) for row in cursor.fetchall()]
+
+    total_pages = max(1, (total + per_page - 1) // per_page)
 
     return templates.TemplateResponse(
         request,
@@ -117,6 +125,9 @@ async def admin_documents_content(
             "request": request,
             "documents": documents,
             "total": total,
+            "page": page,
+            "total_pages": total_pages,
+            "per_page": per_page,
         },
     )
 
@@ -315,14 +326,14 @@ async def admin_tags_table(
             if filter:
                 cursor.execute(
                     "SELECT path, product, doc_type, tags FROM files "
-                    "WHERE status = 'completed' AND tags LIKE ? "
+                    "WHERE status = 'ok' AND tags LIKE ? "
                     "ORDER BY path LIMIT 100",
                     (f"%{filter}%",),
                 )
             else:
                 cursor.execute(
                     "SELECT path, product, doc_type, tags FROM files "
-                    "WHERE status = 'completed' ORDER BY path LIMIT 100"
+                    "WHERE status = 'ok' ORDER BY path LIMIT 100"
                 )
             documents = [dict(row) for row in cursor.fetchall()]
 
@@ -522,7 +533,7 @@ async def admin_tags_bulk_execute(
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT path, product, doc_type, tags FROM files "
-                "WHERE status = 'completed'"
+                "WHERE status = 'ok'"
             )
             for row in cursor.fetchall():
                 doc = dict(row)
@@ -883,3 +894,10 @@ def build_grafana_embed_url_with_range(
         "to": int(now.timestamp() * 1000),
     }
     return f"{base}?{urlencode(params)}"
+
+
+# Register template globals (after functions are defined)
+templates.env.globals["build_grafana_embed_url"] = build_grafana_embed_url
+templates.env.globals["build_grafana_embed_url_with_range"] = (
+    build_grafana_embed_url_with_range
+)

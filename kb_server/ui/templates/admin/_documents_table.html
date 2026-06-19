@@ -65,7 +65,7 @@
                         <div class="dropdown">
                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="/ui/document/{{ doc.rowid }}">View</a></li>
+                                <li><a class="dropdown-item" href="/ui/document/{{ doc.rowid }}?back=/admin">View</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="#"
                                        hx-delete="/api/v1/documents/{{ quote_path(doc.path) }}"
@@ -83,6 +83,63 @@
         </table>
     </div>
     <p class="text-muted small">Showing {{ documents|length }} of {{ total }} documents</p>
+    {% if total_pages > 1 %}
+    {% set start_page = 1 if page <= 4 else page - 3 %}
+    {% set end_page = total_pages if page >= total_pages - 3 else page + 3 %}
+    <nav aria-label="Document pagination">
+        <ul class="pagination pagination-sm justify-content-center">
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="#"
+                   hx-get="/admin/tabs/documents-content?page={{ page - 1 }}"
+                   hx-target="#tab-content" hx-swap="innerHTML">&laquo; Prev</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>
+            {% endif %}
+            {% if start_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="#"
+                   hx-get="/admin/tabs/documents-content?page=1"
+                   hx-target="#tab-content" hx-swap="innerHTML">1</a>
+            </li>
+            {% if start_page > 2 %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+            {% endif %}
+            {% endif %}
+            {% for p in range(start_page, end_page + 1) %}
+                {% if p == page %}
+                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="#"
+                       hx-get="/admin/tabs/documents-content?page={{ p }}"
+                       hx-target="#tab-content" hx-swap="innerHTML">{{ p }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+            {% endif %}
+            <li class="page-item">
+                <a class="page-link" href="#"
+                   hx-get="/admin/tabs/documents-content?page={{ total_pages }}"
+                   hx-target="#tab-content" hx-swap="innerHTML">{{ total_pages }}</a>
+            </li>
+            {% endif %}
+            {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="#"
+                   hx-get="/admin/tabs/documents-content?page={{ page + 1 }}"
+                   hx-target="#tab-content" hx-swap="innerHTML">Next &raquo;</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
     {% else %}
     <div class="alert alert-info">
         No documents match your search filters. Try adjusting your filter criteria or clear all filters.
