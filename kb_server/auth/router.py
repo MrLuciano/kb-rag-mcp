@@ -3,7 +3,6 @@ import hashlib
 import hmac
 import logging
 import os
-import secrets
 import time
 from typing import Optional, cast
 
@@ -75,7 +74,7 @@ async def login_with_password(
 
     expires_at = int(time.time()) + _SESSION_TIMEOUT
     raw = f"{user.id}:{expires_at}"
-    secret = _JWT_SECRET or secrets.token_hex(32)
+    secret = _JWT_SECRET or "kb-rag-mcp-session-secret"
     signature = hmac.new(
         secret.encode(), raw.encode(), hashlib.sha256
     ).hexdigest()[:16]
@@ -125,7 +124,7 @@ async def create_session(
 
     expires_at = int(time.time()) + _SESSION_TIMEOUT
     raw = f"{current_user.id}:{expires_at}"
-    secret = _JWT_SECRET or secrets.token_hex(32)
+    secret = _JWT_SECRET or "kb-rag-mcp-session-secret"
     signature = hmac.new(
         secret.encode(), raw.encode(), hashlib.sha256
     ).hexdigest()[:16]

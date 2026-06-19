@@ -6,117 +6,109 @@
 <div x-data="adminApp" class="d-flex admin-shell">
     <!-- Hamburger toggle (visible on mobile) -->
     <button class="btn btn-dark d-md-none position-fixed top-0 start-0 m-2 z-3"
-            @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
+            data-action="toggle-sidebar" aria-label="Toggle sidebar">
         &#9776;
     </button>
 
     <!-- Sidebar -->
     <div class="d-flex flex-column bg-dark text-light p-3 admin-sidebar" role="navigation"
-         :class="{ show: sidebarOpen }">
+         :class="sidebarClass">
         <h2 class="h5 text-center mb-4">Admin Panel</h2>
         <ul class="nav nav-pills flex-column" role="tablist">
             <li class="nav-item">
-                <a class="nav-link text-light" :class="{ 'active': activeTab === 'documents' }"
-                   href="#" @click.prevent="switchTab('documents')">&#128196; <span>Documents</span></a>
+                <a class="nav-link text-light" :class="docsClass"
+                   href="#" data-action="switch-tab" data-tab="documents">&#128196; <span>Documents</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-light" :class="{ 'active': activeTab === 'monitoring' }"
-                   href="#" @click.prevent="switchTab('monitoring')">&#128200; <span>Monitoring</span></a>
+                <a class="nav-link text-light" :class="monitorClass"
+                   href="#" data-action="switch-tab" data-tab="monitoring">&#128200; <span>Monitoring</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-light" :class="{ 'active': activeTab === 'ingestion' }"
-                   href="#" @click.prevent="switchTab('ingestion')">&#9889; <span>Ingestion</span></a>
+                <a class="nav-link text-light" :class="ingestClass"
+                   href="#" data-action="switch-tab" data-tab="ingestion">&#9889; <span>Ingestion</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-light" :class="{ 'active': activeTab === 'ragas' }"
-                   href="#" @click.prevent="switchTab('ragas')">&#129514; <span>RAGAS Evaluation</span></a>
+                <a class="nav-link text-light" :class="ragasClass"
+                   href="#" data-action="switch-tab" data-tab="ragas">&#129514; <span>RAGAS Evaluation</span></a>
             </li>
             <li class="nav-item" x-show="isAdmin">
-                <a class="nav-link text-light" :class="{ 'active': activeTab === 'admin' }"
-                   href="#" @click.prevent="switchTab('admin')">&#9881; <span>Admin</span></a>
+                <a class="nav-link text-light" :class="adminClass"
+                   href="#" data-action="switch-tab" data-tab="admin">&#9881; <span>Admin</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-light" :class="{ 'active': activeTab === 'analytics' }"
-                   href="#" @click.prevent="switchTab('analytics')">&#128202; <span>Analytics</span></a>
+                <a class="nav-link text-light" :class="analyticsClass"
+                   href="#" data-action="switch-tab" data-tab="analytics">&#128202; <span>Analytics</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-light" :class="{ 'active': activeTab === 'profile' }"
-                   href="#" @click.prevent="switchTab('profile')">&#128100; <span>Profile</span></a>
+                <a class="nav-link text-light" :class="profileClass"
+                   href="#" data-action="switch-tab" data-tab="profile">&#128100; <span>Profile</span></a>
             </li>
         </ul>
         <div class="mt-auto">
-            <button class="btn btn-outline-light w-100" @click="logout()"
+            <button class="btn btn-outline-light w-100" data-action="logout"
                     x-show="isAuthenticated">Log out</button>
         </div>
     </div>
 
     <!-- Tab Content -->
-    <div class="flex-grow-1 p-4 admin-content" id="tab-content"
-         hx-get="/admin/tabs/documents"
-         hx-trigger="load"
-         hx-swap="innerHTML"
-         hx-target="#tab-content">
+    <div class="flex-grow-1 p-4 admin-content" id="tab-content">
         <div class="text-center text-muted py-5">
             <div class="spinner-border" role="status"></div>
             <p class="mt-2">Loading...</p>
         </div>
     </div>
-</div>
+    <!-- Login Overlay -->
+    <div x-show="showOverlay"
+         style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;"
+         aria-labelledby="login-heading">
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+            <div class="card shadow" style="width: 350px;">
+                <div class="card-body p-4 text-center">
+                    <h3 id="login-heading" class="h3 mb-3">Login to Admin Panel</h3>
 
-<!-- Login Overlay -->
-<div x-show="!isAuthenticated" x-cloak
-     style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;"
-     x-transition aria-labelledby="login-heading">
-    <div class="d-flex align-items-center justify-content-center" style="min-height: 100vh;">
-        <div class="card shadow" style="width: 350px;">
-            <div class="card-body p-4 text-center">
-                <h3 id="login-heading" class="h3 mb-3">Login to Admin Panel</h3>
+                    <!-- Login method tabs -->
+                    <ul class="nav nav-tabs nav-fill mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" :class="loginPasswordTabClass"
+                                    data-action="set-login-method" data-method="password"
+                                    type="button">Password</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" :class="loginApiKeyTabClass"
+                                    data-action="set-login-method" data-method="apikey"
+                                    type="button">API Key</button>
+                        </li>
+                    </ul>
 
-                <!-- Login method tabs -->
-                <ul class="nav nav-tabs nav-fill mb-3" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" :class="{ active: loginMethod === 'password' }"
-                                @click="loginMethod = 'password'; loginError = ''"
-                                type="button">Password</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" :class="{ active: loginMethod === 'apikey' }"
-                                @click="loginMethod = 'apikey'; loginError = ''"
-                                type="button">API Key</button>
-                    </li>
-                </ul>
+                    <!-- Password login form -->
+                    <div x-show="isPasswordLoginMethod">
+                        <p class="text-muted small mb-3">Enter your username and password.</p>
+                        <input type="text" class="form-control mb-2" id="loginUsername"
+                               placeholder="Username"
+                               aria-label="Username"
+                               :value="loginUsername">
+                        <input type="password" class="form-control mb-2" id="loginPassword"
+                               placeholder="Password"
+                               aria-label="Password"
+                               :value="loginPassword">
+                        <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
+                        <button class="btn btn-primary w-100" data-action="login-password"
+                                :disabled="loggingIn"
+                                x-text="loginButtonLabel"></button>
+                    </div>
 
-                <!-- Password login form -->
-                <div x-show="loginMethod === 'password'">
-                    <p class="text-muted small mb-3">Enter your username and password.</p>
-                    <input type="text" class="form-control mb-2" id="loginUsername"
-                           placeholder="Username"
-                           aria-label="Username"
-                           @keydown.enter="loginWithPassword()"
-                           x-model="loginUsername">
-                    <input type="password" class="form-control mb-2" id="loginPassword"
-                           placeholder="Password"
-                           aria-label="Password"
-                           @keydown.enter="loginWithPassword()"
-                           x-model="loginPassword">
-                    <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
-                    <button class="btn btn-primary w-100" @click="loginWithPassword()"
-                            x-text="loggingIn ? 'Logging in...' : 'Log in'"
-                            :disabled="loggingIn"></button>
-                </div>
-
-                <!-- API key login form -->
-                <div x-show="loginMethod === 'apikey'">
-                    <p class="text-muted small mb-3">Enter your API key to access the admin panel.</p>
-                    <input type="password" class="form-control mb-2" id="apiKeyInput"
-                           placeholder="kb_xxxxxxxx..."
-                           aria-label="API key"
-                           @keydown.enter="authenticate($el.value)"
-                           x-model="apiKeyInput">
-                    <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
-                    <button class="btn btn-primary w-100" @click="authenticate(apiKeyInput)"
-                            x-text="loggingIn ? 'Logging in...' : 'Log in'"
-                            :disabled="loggingIn"></button>
+                    <!-- API key login form -->
+                    <div x-show="isApiKeyLoginMethod">
+                        <p class="text-muted small mb-3">Enter your API key to access the admin panel.</p>
+                        <input type="password" class="form-control mb-2" id="apiKeyInput"
+                               placeholder="kb_xxxxxxxx..."
+                               aria-label="API key"
+                                :value="apiKeyInput">
+                        <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
+                        <button class="btn btn-primary w-100" data-action="login-apikey"
+                                :disabled="loggingIn"
+                                x-text="loginButtonLabel"></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -163,43 +155,108 @@
                 loginPassword: '',
                 loggingIn: false,
                 loginError: '',
+                showOverlay: true,
+                sidebarClass: '',
+                docsClass: '',
+                monitorClass: '',
+                ingestClass: '',
+                ragasClass: '',
+                adminClass: '',
+                analyticsClass: '',
+                profileClass: '',
+                loginPasswordTabClass: '',
+                loginApiKeyTabClass: '',
+                isPasswordLoginMethod: false,
+                isApiKeyLoginMethod: false,
+                loginButtonLabel: 'Log in',
                 init() {
+                    this._syncClasses();
+                    this._syncLoginMethod();
                     var key = localStorage.getItem('kb_api_key');
                     if (key) {
                         this.apiKeyInput = key;
-                        fetch('/api/v1/auth/session', {
-                            method: 'POST',
-                            headers: { 'Authorization': 'Bearer ' + key }
-                        })
-                        .then(r => {
-                            if (r.ok) {
-                                this.isAuthenticated = true;
-                                return r.json();
-                            }
-                            throw new Error('auth failed');
-                        })
-                        .then(data => {
-                            this.isAdmin = (data.role === 'admin');
-                        })
-                        .catch(() => {
-                            localStorage.removeItem('kb_api_key');
-                            this.isAuthenticated = false;
-                        });
+                        this._doAuth('/api/v1/auth/session', key);
                     }
-                    var self = this;
+                    var comp = this;
+                    document.addEventListener('input', function(e) {
+                        var el = e.target;
+                        if (el.id === 'loginUsername') comp.loginUsername = el.value;
+                        else if (el.id === 'loginPassword') comp.loginPassword = el.value;
+                        else if (el.id === 'apiKeyInput') comp.apiKeyInput = el.value;
+                    });
                     window.addEventListener('show-login', function() {
-                        self.isAuthenticated = false;
+                        comp.isAuthenticated = false;
+                        comp.showOverlay = true;
+                    });
+                    document.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'toggle-sidebar') {
+                            comp.sidebarOpen = !comp.sidebarOpen;
+                            comp._syncClasses();
+                        } else if (action === 'switch-tab') {
+                            comp._switchTab(btn.getAttribute('data-tab'));
+                        } else if (action === 'set-login-method') {
+                            comp.loginMethod = btn.getAttribute('data-method');
+                            comp.loginError = '';
+                            comp._syncLoginMethod();
+                        } else if (action === 'login-password') {
+                            comp._loginWithPassword();
+                        } else if (action === 'login-apikey') {
+                            comp._loginWithApiKey();
+                        } else if (action === 'logout') {
+                            comp._logout();
+                        }
+                    });
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            var target = e.target;
+                            if (target.id === 'loginUsername' || target.id === 'loginPassword') {
+                                comp._loginWithPassword();
+                            } else if (target.id === 'apiKeyInput') {
+                                comp._loginWithApiKey();
+                            }
+                        }
                     });
                 },
-                switchTab(tab) {
+                _syncClasses() {
+                    var t = this.activeTab;
+                    var tabMap = {
+                        documents: 'docsClass', monitoring: 'monitorClass',
+                        ingestion: 'ingestClass', ragas: 'ragasClass',
+                        admin: 'adminClass', analytics: 'analyticsClass',
+                        profile: 'profileClass'
+                    };
+                    var k;
+                    for (k in tabMap) {
+                        this[tabMap[k]] = t === k ? 'active' : '';
+                    }
+                    this.sidebarClass = this.sidebarOpen ? 'show' : '';
+                },
+                _syncLoginMethod() {
+                    var isPw = this.loginMethod === 'password';
+                    this.isPasswordLoginMethod = isPw;
+                    this.isApiKeyLoginMethod = !isPw;
+                    this.loginPasswordTabClass = isPw ? 'active' : '';
+                    this.loginApiKeyTabClass = !isPw ? 'active' : '';
+                },
+                _setLoginLabel() {
+                    this.loginButtonLabel = this.loggingIn ? 'Logging in...' : 'Log in';
+                },
+                _switchTab(tab) {
                     this.activeTab = tab;
+                    this._syncClasses();
                     var target = '/admin/tabs/' + tab;
                     htmx.ajax('GET', target, { target: '#tab-content', swap: 'innerHTML' });
                 },
-                loginWithPassword() {
+                _loginWithPassword() {
                     if (!this.loginUsername || !this.loginPassword) return;
                     this.loggingIn = true;
                     this.loginError = '';
+                    this._setLoginLabel();
+                    var comp = this;
                     fetch('/api/v1/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -208,61 +265,78 @@
                             password: this.loginPassword
                         })
                     })
-                    .then(r => {
+                    .then(function(r) {
                         if (r.ok) return r.json();
-                        if (r.status === 401) {
-                            throw new Error('Invalid username or password.');
-                        }
+                        if (r.status === 401) throw new Error('Invalid username or password.');
                         throw new Error('Login failed. Please try again.');
                     })
-                    .then(data => {
-                        this.isAuthenticated = true;
-                        this.isAdmin = (data.role === 'admin');
-                        this.loginError = '';
-                        this.loggingIn = false;
+                    .then(function(data) {
+                        comp.isAuthenticated = true;
+                        comp.showOverlay = false;
+                        comp.isAdmin = data.role === 'admin';
+                        comp.loginError = '';
+                        comp.loggingIn = false;
+                        comp._setLoginLabel();
                         htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
                     })
-                    .catch(err => {
-                        this.loginError = err.message;
-                        this.isAuthenticated = false;
-                        this.loggingIn = false;
+                    .catch(function(err) {
+                        comp.loginError = err.message;
+                        comp.isAuthenticated = false;
+                        comp.showOverlay = true;
+                        comp.loggingIn = false;
+                        comp._setLoginLabel();
                     });
                 },
-                authenticate(key) {
+                _loginWithApiKey() {
+                    var key = this.apiKeyInput;
                     if (!key) return;
                     this.loggingIn = true;
                     this.loginError = '';
-                    fetch('/api/v1/auth/session', {
+                    this._setLoginLabel();
+                    var comp = this;
+                    this._doAuth('/api/v1/auth/session', key, function(data) {
+                        localStorage.setItem('kb_api_key', key);
+                        comp.isAuthenticated = true;
+                        comp.showOverlay = false;
+                        comp.isAdmin = data.role === 'admin';
+                        comp.loginError = '';
+                        comp.loggingIn = false;
+                        comp._setLoginLabel();
+                        htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
+                    }, function(err) {
+                        localStorage.removeItem('kb_api_key');
+                        comp.loginError = err.message;
+                        comp.isAuthenticated = false;
+                        comp.showOverlay = true;
+                        comp.loggingIn = false;
+                        comp._setLoginLabel();
+                    });
+                },
+                _doAuth(url, key, onSuccess, onError) {
+                    var comp = this;
+                    fetch(url, {
                         method: 'POST',
                         headers: { 'Authorization': 'Bearer ' + key }
                     })
-                    .then(r => {
+                    .then(function(r) {
                         if (r.ok) return r.json();
                         if (r.status === 401 || r.status === 403) {
                             throw new Error('Invalid API key. Please check your key and try again. If the problem persists, generate a new key.');
                         }
                         throw new Error('Login failed. Please try again.');
                     })
-                    .then(data => {
-                        localStorage.setItem('kb_api_key', key);
-                        this.isAuthenticated = true;
-                        this.isAdmin = (data.role === 'admin');
-                        this.loginError = '';
-                        this.loggingIn = false;
-                        htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
+                    .then(function(data) {
+                        if (onSuccess) onSuccess(data);
                     })
-                    .catch(err => {
-                        localStorage.removeItem('kb_api_key');
-                        this.loginError = err.message;
-                        this.isAuthenticated = false;
-                        this.loggingIn = false;
+                    .catch(function(err) {
+                        if (onError) onError(err);
                     });
                 },
-                logout() {
-                    fetch('/api/v1/auth/logout', { method: 'POST' })
-                    .catch(() => {});
+                _logout() {
+                    fetch('/api/v1/auth/logout', { method: 'POST' }).catch(function() {});
                     localStorage.removeItem('kb_api_key');
                     this.isAuthenticated = false;
+                    this.showOverlay = true;
                     this.isAdmin = false;
                     this.loginError = '';
                 }
