@@ -903,3 +903,5 @@ All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete 
 | 6 | Add default admin user with password login and first-time API key | 2026-06-17 | fea95a3 | Verified | [admin-user-bootstrap](./quick/6-admin-user-bootstrap/) |
 | 7 | Add missing tags_history table to IngestRegistry migration | 2026-06-17 | 6f91a9c | Verified | — |
 | 8 | Downgrade 'No chunks found' log from warning to debug | 2026-06-17 | f99d138 | Verified | — |
+| 9 | Fix kb-rag db create-indexes CLI + create Qdrant payload indexes | 2026-06-19 | 03ec76c | Verified | — |
+| 10 | Zip ingestion already supports extracting supported docs, skipping unsupported | 2026-06-20 | — | Verified | — |
