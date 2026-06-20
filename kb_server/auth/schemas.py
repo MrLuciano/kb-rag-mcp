@@ -6,12 +6,14 @@ from pydantic import BaseModel, ConfigDict
 
 class CreateUserRequest(BaseModel):
     username: str
+    email: str = ""
     role: str = "user"
 
 
 class UserResponse(BaseModel):
     id: str
     username: str
+    email: Optional[str] = None
     role: str
     is_active: bool
     created_at: datetime
@@ -20,7 +22,7 @@ class UserResponse(BaseModel):
 
 
 class CreateApiKeyRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     description: str = ""
 
 

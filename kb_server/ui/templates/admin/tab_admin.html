@@ -1,27 +1,12 @@
 <h2 class="h3">Admin Settings</h2>
 <p class="text-muted">System configuration (admin only).</p>
 
-<div id="config-table-content"
-     hx-get="/admin/tabs/config-table"
-     hx-trigger="load"
-     hx-swap="innerHTML">
-    <p class="text-muted">Loading configuration...</p>
-</div>
+{% include "admin/_config_table.html" %}
 
 <hr class="my-4">
 
-<div id="sessions-content"
-     hx-get="/admin/tabs/sessions-content"
-     hx-trigger="load"
-     hx-swap="innerHTML">
-    <p class="text-muted">Loading sessions...</p>
-</div>
+{% include "admin/_sessions_table.html" %}
 
 <hr class="my-4">
 
-<div id="credentials-content"
-     hx-get="/admin/tabs/credentials-content"
-     hx-trigger="load"
-     hx-swap="innerHTML">
-    <p class="text-muted">Loading credentials...</p>
-</div>
+{% include "admin/_credentials_section.html" %}

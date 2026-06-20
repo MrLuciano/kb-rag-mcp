@@ -14,8 +14,8 @@
     } %}
     {% for key, label in labels.items() %}
         {% set status = components.get(key) %}
-        <div class="card monitor-card" x-data="{ expanded: false }">
-            <div class="card-body text-center py-3" @click="expanded = !expanded" style="cursor: pointer;">
+        <div class="card monitor-card" x-data="monitorCard">
+            <div class="card-body text-center py-3" @click="toggle()" style="cursor: pointer;">
                 {% if status and status.healthy %}
                     <div class="mb-1 monitor-light bg-success" aria-label="{{ label }} status: healthy"></div>
                     <small class="text-success d-block">{{ label }}</small>

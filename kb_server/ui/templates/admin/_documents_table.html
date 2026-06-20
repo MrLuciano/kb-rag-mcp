@@ -1,4 +1,4 @@
-<div x-data="docBrowser()">
+<div x-data="docBrowser">
     <!-- Bulk Toolbar -->
     <div x-show="selected.length > 0" class="mb-2">
         <div class="btn-group btn-group-sm">
@@ -147,39 +147,3 @@
     {% endif %}
 </div>
 
-<script nonce="{{ get_nonce(request) }}">
-    function docBrowser() {
-        return {
-            selected: [],
-            toggleSelectAll() {
-                var checkboxes = document.querySelectorAll('input[type="checkbox"][x-model="selected"]');
-                if (this.selected.length === checkboxes.length) {
-                    this.selected = [];
-                } else {
-                    this.selected = Array.from(checkboxes).map(cb => parseInt(cb.value));
-                }
-            },
-            bulkDelete() {
-                var ids = this.selected;
-                if (ids.length === 0) return;
-                if (!confirm('Delete selected documents: Are you sure you want to delete these documents? This action cannot be undone.')) return;
-                var promises = ids.map(function(id) {
-                    return fetch('/api/v1/documents/' + id, { method: 'DELETE' });
-                });
-                Promise.all(promises).then(function() {
-                    htmx.ajax('GET', '/admin/tabs/documents-content', {target: '#tab-content', swap: 'innerHTML'});
-                });
-            },
-            bulkReingest() {
-                var ids = this.selected;
-                if (ids.length === 0) return;
-                var promises = ids.map(function(id) {
-                    return fetch('/api/v1/documents/' + id + '/re-ingest', { method: 'POST' });
-                });
-                Promise.all(promises).then(function() {
-                    htmx.ajax('GET', '/admin/tabs/documents-content', {target: '#tab-content', swap: 'innerHTML'});
-                });
-            }
-        };
-    }
-</script>

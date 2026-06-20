@@ -1,4 +1,4 @@
-<div x-data="profilePage()" x-init="initProfile()">
+<div x-data="profilePage">
     <h3 class="h5">Account</h3>
     <p>Username: <strong x-text="user.username"></strong><br>
        Role: <span class="badge bg-info" x-text="user.role"></span><br>
@@ -36,66 +36,3 @@
     </div>
 </div>
 
-<script nonce="{{ get_nonce(request) }}">
-function profilePage() {
-    return {
-        user: {},
-        keys: [],
-        newKey: '',
-        erasureStatus: '',
-        initProfile() {
-            var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-            fetch('/api/v1/users/me', { headers: headers })
-                .then(r => r.json())
-                .then(data => { this.user = data; });
-            this.loadKeys();
-        },
-        loadKeys() {
-            if (!this.user.id) return;
-            var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-            fetch('/api/v1/api-keys?user_id=' + this.user.id, { headers: headers })
-                .then(r => r.json())
-                .then(data => { this.keys = data; });
-        },
-        generateKey() {
-            if (!this.user.id) return;
-            var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
-            fetch('/api/v1/api-keys', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({ user_id: this.user.id, description: 'Admin UI key' })
-            })
-            .then(r => r.json())
-            .then(data => {
-                this.newKey = data.raw_key;
-                this.loadKeys();
-            });
-        },
-        revokeKey(keyId) {
-            if (!confirm('Revoke API key: Are you sure you want to revoke this key? Applications using this key will lose access immediately.')) return;
-            var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-            fetch('/api/v1/api-keys/' + keyId, { method: 'DELETE', headers: headers })
-                .then(() => { this.loadKeys(); });
-        },
-        exportData() {
-            var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-            fetch('/api/v1/users/' + this.user.id + '/export', { headers: headers })
-                .then(r => r.json())
-                .then(data => {
-                    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                    var url = URL.createObjectURL(blob);
-                    var a = document.createElement('a');
-                    a.href = url; a.download = 'my-data-export.json'; a.click();
-                    URL.revokeObjectURL(url);
-                });
-        },
-        requestErasure() {
-            if (!confirm('Request complete erasure of all your data? This will anonymize your account and revoke all API keys.')) return;
-            var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
-            fetch('/api/v1/users/' + this.user.id + '/erasure-request', { method: 'POST', headers: headers })
-                .then(r => r.json())
-                .then(data => { this.erasureStatus = data.status; });
-        }
-    };
-}
-</script>

@@ -14,7 +14,7 @@ setup(
     python_requires=">=3.11",
     license="MIT",
     packages=find_packages(
-        include=["config*", "ingest*", "server*", "observability*", "kb_server*"]
+        include=["config*", "ingest*", "server*", "observability*", "kb_server*", "scripts*"]
     ),
     install_requires=[
         # Core dependencies from requirements.txt

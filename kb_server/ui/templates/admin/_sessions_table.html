@@ -1,4 +1,4 @@
-<div x-data="sessionManager()">
+<div x-data="sessionManager">
   <h3 class="h5 mb-3">Active Sessions</h3>
   <p class="text-muted small">Sessions where your account is currently logged in.</p>
   <div x-show="sessions.length === 0" class="text-muted py-3">
@@ -33,16 +33,3 @@
     </tbody>
   </table>
 </div>
-<script nonce="{{ get_nonce(request) }}">
-  function sessionManager() {
-    return {
-      sessions: [],
-      init() {
-        fetch('/api/v1/auth/sessions')
-          .then(r => r.json())
-          .then(data => { this.sessions = data; })
-          .catch(() => {});
-      }
-    };
-  }
-</script>

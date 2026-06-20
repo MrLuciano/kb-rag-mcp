@@ -1,4 +1,4 @@
-<div x-data="configEditor()" x-init="loadConfig()">
+<div x-data="configEditor" x-init="loadConfig()">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <input type="text" class="form-control form-control-sm config-search"
                placeholder="Search config keys..." x-model="search" style="max-width: 300px;">
@@ -39,55 +39,3 @@
     <div x-show="saveError" class="alert alert-danger mt-2" role="alert" aria-live="assertive" x-text="saveError"></div>
 </div>
 
-<script nonce="{{ get_nonce(request) }}">
-function configEditor() {
-    return {
-        entries: [],
-        editing: '',
-        editValue: '',
-        search: '',
-        saveError: '',
-        get filteredConfig() {
-            if (!this.search) return this.entries;
-            var s = this.search.toLowerCase();
-            return this.entries.filter(function(e) {
-                return e.key.toLowerCase().includes(s) || e.group_name.toLowerCase().includes(s);
-            });
-        },
-        loadConfig() {
-            fetch('/api/v1/config')
-                .then(r => r.json())
-                .then(data => { this.entries = data; });
-        },
-        startEdit(entry) {
-            this.editing = entry.key;
-            this.editValue = entry.value;
-        },
-        cancelEdit() {
-            this.editing = '';
-            this.editValue = '';
-        },
-        init() {
-            var self = this;
-            document.addEventListener('htmx:responseError', function(evt) {
-                var el = evt.detail.elt;
-                var putPath = el && el.getAttribute('hx-put');
-                if (putPath && putPath.indexOf('/api/v1/config/') === 0) {
-                    self.saveError = 'Failed to save config value. Check the value format and try again.';
-                }
-            });
-            document.addEventListener('htmx:afterRequest', function(evt) {
-                var el = evt.detail.elt;
-                var putPath = el && el.getAttribute('hx-put');
-                if (putPath && putPath.indexOf('/api/v1/config/') === 0) {
-                    if (evt.detail.successful) {
-                        self.saveError = '';
-                        self.editing = '';
-                        self.loadConfig();
-                    }
-                }
-            });
-        }
-    };
-}
-</script>

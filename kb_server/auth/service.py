@@ -41,6 +41,16 @@ class AuthService:
             self._session.commit()
             log.info("Added password_hash column to users table")
 
+        if "email" not in columns:
+            self._session.execute(
+                sa_text(
+                    "ALTER TABLE users ADD COLUMN "
+                    "email VARCHAR(255)"
+                )
+            )
+            self._session.commit()
+            log.info("Added email column to users table")
+
         api_cols = [c["name"] for c in inspector.get_columns("api_keys")]
         if "user_id" not in api_cols:
             self._session.execute(
@@ -121,14 +131,16 @@ class AuthService:
 
     # ── User CRUD ────────────────────────────────────────────────
 
-    def create_user(self, username: str, role: str = "user") -> User:
+    def create_user(
+        self, username: str, role: str = "user", email: str = ""
+    ) -> User:
         existing = (
             self._session.query(User).filter(User.username == username).first()
         )
         if existing:
             raise ValueError(f"User already exists: {username}")
 
-        user = User(username=username, role=role)
+        user = User(username=username, role=role, email=email or None)
         self._session.add(user)
         self._session.flush()
 

@@ -1,15 +1,15 @@
 <h2 class="h3">RAGAS Evaluation</h2>
 <p class="text-muted">Golden dataset and evaluation metrics.</p>
 
-<div x-data="{ activeRagasTab: 'editor' }">
+<div x-data="ragasTab">
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-            <a class="nav-link" :class="{ active: activeRagasTab === 'editor' }" href="#"
-               @click.prevent="activeRagasTab = 'editor'; htmx.ajax('GET', '/admin/tabs/ragas-editor', {target: '#ragas-content', swap: 'innerHTML'})">Editor</a>
+            <a class="nav-link" :class="{ active: activeTab === 'editor' }" href="#"
+               @click.prevent="switchTab('editor')">Editor</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" :class="{ active: activeRagasTab === 'results' }" href="#"
-               @click.prevent="activeRagasTab = 'results'; htmx.ajax('GET', '/admin/tabs/ragas-results', {target: '#ragas-content', swap: 'innerHTML'})">Results</a>
+            <a class="nav-link" :class="{ active: activeTab === 'results' }" href="#"
+               @click.prevent="switchTab('results')">Results</a>
         </li>
     </ul>
 
