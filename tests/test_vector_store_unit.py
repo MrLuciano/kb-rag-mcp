@@ -70,7 +70,11 @@ import kb_server.vector_store as _vs_mod  # noqa: E402
 
 
 def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 def _make_point(chunk_id="abc", score=0.9, **extra_payload):

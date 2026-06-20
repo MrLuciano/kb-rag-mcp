@@ -274,6 +274,10 @@ class TestDeps:
             headers = {}
             app = test_app
 
+            @property
+            def cookies(self):
+                return {}
+
         import asyncio
 
         from fastapi import HTTPException
