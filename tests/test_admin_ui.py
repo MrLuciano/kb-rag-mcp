@@ -50,13 +50,19 @@ class TestCSP:
 
 
 class TestGrafana:
-    def test_build_grafana_embed_url_empty_without_env(self):
+    def test_build_grafana_embed_url_empty_without_env(self, monkeypatch):
+        monkeypatch.delenv("GRAFANA_URL", raising=False)
+        monkeypatch.delenv("GRAFANA_DASHBOARD_UID", raising=False)
         from kb_server.ui.routes_admin import build_grafana_embed_url
 
         url = build_grafana_embed_url()
         assert url == ""
 
-    def test_build_grafana_embed_url_with_range_empty_without_env(self):
+    def test_build_grafana_embed_url_with_range_empty_without_env(
+        self, monkeypatch
+    ):
+        monkeypatch.delenv("GRAFANA_URL", raising=False)
+        monkeypatch.delenv("GRAFANA_DASHBOARD_UID", raising=False)
         from kb_server.ui.routes_admin import (
             build_grafana_embed_url_with_range,
         )
@@ -185,7 +191,8 @@ class TestAuthFlow:
     def test_shell_html_uses_alpine_xshow(self):
         with open("kb_server/ui/templates/admin/shell.html") as f:
             content = f.read()
-        assert 'x-show="!isAuthenticated"' in content
+        assert 'x-data="adminApp"' in content
+        assert 'x-show="showOverlay"' in content
 
     def test_login_modal_heading(self):
         with open("kb_server/ui/templates/admin/shell.html") as f:
@@ -379,5 +386,5 @@ class TestCredentialsSection:
     def test_tab_admin_loads_sessions_and_credentials(self):
         with open("kb_server/ui/templates/admin/tab_admin.html") as f:
             content = f.read()
-        assert "sessions-content" in content
-        assert "credentials-content" in content
+        assert '{% include "admin/_sessions_table.html" %}' in content
+        assert '{% include "admin/_credentials_section.html" %}' in content

@@ -4,10 +4,18 @@ FASE 25: Optimization Experiments
 """
 
 import asyncio
+import sys
+import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+# Ensure docling module stubs exist so tests can patch docling.chunking.HybridChunker
+# without requiring the real docling package to be installed.
+sys.modules.setdefault("docling", types.ModuleType("docling"))
+sys.modules.setdefault("docling.chunking", types.ModuleType("docling.chunking"))
+sys.modules["docling.chunking"].HybridChunker = None
 
 from kb_server.optimization.chunking_experiments import (
     ChunkingEngine,
