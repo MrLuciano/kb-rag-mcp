@@ -32,6 +32,10 @@
                    href="#" data-action="switch-tab" data-tab="ragas">&#129514; <span>RAGAS Evaluation</span></a>
             </li>
             <li class="nav-item" x-show="isAdmin">
+                <a class="nav-link text-light" :class="usersClass"
+                   href="#" data-action="switch-tab" data-tab="users">&#128101; <span>Users</span></a>
+            </li>
+            <li class="nav-item" x-show="isAdmin">
                 <a class="nav-link text-light" :class="adminClass"
                    href="#" data-action="switch-tab" data-tab="admin">&#9881; <span>Admin</span></a>
             </li>
@@ -144,6 +148,365 @@
         });
 
         document.addEventListener('alpine:init', () => {
+            Alpine.data('docBrowser', () => ({
+                selected: [],
+                toggleSelectAll() {
+                    var checkboxes = document.querySelectorAll('input[type="checkbox"][x-model="selected"]');
+                    if (this.selected.length === checkboxes.length) {
+                        this.selected = [];
+                    } else {
+                        this.selected = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                    }
+                },
+                bulkDelete() {
+                    var ids = this.selected;
+                    if (ids.length === 0) return;
+                    if (!confirm('Delete selected documents: Are you sure you want to delete these documents? This action cannot be undone.')) return;
+                    var promises = ids.map(function(id) {
+                        return fetch('/api/v1/documents/' + id, { method: 'DELETE' });
+                    });
+                    Promise.all(promises).then(function() {
+                        htmx.ajax('GET', '/admin/tabs/documents-content', {target: '#tab-content', swap: 'innerHTML'});
+                    });
+                },
+                bulkReingest() {
+                    var ids = this.selected;
+                    if (ids.length === 0) return;
+                    var promises = ids.map(function(id) {
+                        return fetch('/api/v1/documents/' + id + '/re-ingest', { method: 'POST' });
+                    });
+                    Promise.all(promises).then(function() {
+                        htmx.ajax('GET', '/admin/tabs/documents-content', {target: '#tab-content', swap: 'innerHTML'});
+                    });
+                }
+            }));
+            Alpine.data('ingestionTab', () => ({
+                activeTab: 'manual',
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    htmx.ajax('GET', '/admin/tabs/ingestion-' + tab, {target: '#ingestion-content', swap: 'innerHTML'});
+                }
+            }));
+            Alpine.data('ragasTab', () => ({
+                activeTab: 'editor',
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    htmx.ajax('GET', '/admin/tabs/ragas-' + tab, {target: '#ragas-content', swap: 'innerHTML'});
+                }
+            }));
+            Alpine.data('configEditor', () => ({
+                entries: [],
+                editing: '',
+                editValue: '',
+                search: '',
+                saveError: '',
+                get filteredConfig() {
+                    if (!this.search) return this.entries;
+                    var s = this.search.toLowerCase();
+                    return this.entries.filter(function(e) {
+                        return e.key.toLowerCase().includes(s) || e.group_name.toLowerCase().includes(s);
+                    });
+                },
+                loadConfig() {
+                    fetch('/api/v1/config')
+                        .then(r => r.json())
+                        .then(data => { this.entries = data; });
+                },
+                startEdit(entry) {
+                    this.editing = entry.key;
+                    this.editValue = entry.value;
+                },
+                cancelEdit() {
+                    this.editing = '';
+                    this.editValue = '';
+                },
+                init() {
+                    var self = this;
+                    document.addEventListener('htmx:responseError', function(evt) {
+                        var el = evt.detail.elt;
+                        var putPath = el && el.getAttribute('hx-put');
+                        if (putPath && putPath.indexOf('/api/v1/config/') === 0) {
+                            self.saveError = 'Failed to save config value. Check the value format and try again.';
+                        }
+                    });
+                    document.addEventListener('htmx:afterRequest', function(evt) {
+                        var el = evt.detail.elt;
+                        var putPath = el && el.getAttribute('hx-put');
+                        if (putPath && putPath.indexOf('/api/v1/config/') === 0) {
+                            if (evt.detail.successful) {
+                                self.saveError = '';
+                                self.editing = '';
+                                self.loadConfig();
+                            }
+                        }
+                    });
+                }
+            }));
+            Alpine.data('sessionManager', () => ({
+                sessions: [],
+                init() {
+                    fetch('/api/v1/auth/sessions')
+                        .then(r => r.json())
+                        .then(data => { this.sessions = data; })
+                        .catch(() => {});
+                }
+            }));
+            Alpine.data('credentialManager', () => ({
+                keys: [],
+                newKey: '',
+                init() {
+                    fetch('/api/v1/api-keys')
+                        .then(r => r.json())
+                        .then(data => { this.keys = data; })
+                        .catch(() => {});
+                },
+                generateKey() {
+                    fetch('/api/v1/api-keys', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({description: 'Admin panel key'})
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        this.newKey = data.raw_key;
+                        this.keys.unshift({id: data.id, prefix: data.prefix, description: data.description, created_at: data.created_at, last_used_at: null, is_revoked: false});
+                        setTimeout(() => { this.newKey = ''; }, 15000);
+                    })
+                    .catch(() => {});
+                }
+            }));
+            Alpine.data('tagManager', () => ({
+                activeTab: 'browse',
+                tagFilter: '',
+                init() {
+                    this.loadTab('browse');
+                },
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    this.loadTab(tab);
+                },
+                loadTab(tab) {
+                    var target = '';
+                    var url = '';
+                    if (tab === 'browse') {
+                        target = '#tags-table-container';
+                        url = '/admin/tags/table';
+                    } else if (tab === 'bulk') {
+                        target = '#tags-bulk-container';
+                        url = '/admin/tags/bulk-editor';
+                    } else if (tab === 'queue') {
+                        target = '#tags-queue-container';
+                        url = '/admin/tags/reingest-queue';
+                    }
+                    if (target && url) {
+                        htmx.ajax('GET', url, {target: target, swap: 'innerHTML'});
+                    }
+                },
+                filterTags() {
+                    htmx.ajax('GET', '/admin/tags/table?filter=' + encodeURIComponent(this.tagFilter), {
+                        target: '#tags-table-container',
+                        swap: 'innerHTML'
+                    });
+                }
+            }));
+            Alpine.data('userManager', () => ({
+                users: [],
+                showCreateForm: false,
+                newUser: { username: '', email: '', role: 'user' },
+                newKey: '',
+                showNewKey: false,
+                creating: false,
+                createError: '',
+                selectedUser: null,
+                userKeys: [],
+                init() {
+                    this.loadUsers();
+                },
+                loadUsers() {
+                    var comp = this;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
+                    fetch('/api/v1/users', { headers: headers })
+                        .then(function(r) { if (r.ok) return r.json(); throw new Error('Failed to load users'); })
+                        .then(function(data) {
+                            // Fetch API key prefix for each user
+                            var keyPromises = data.map(function(user) {
+                                return fetch('/api/v1/api-keys?user_id=' + user.id, { headers: headers })
+                                    .then(function(r) { return r.ok ? r.json() : []; })
+                                    .then(function(keys) {
+                                        var active = keys.filter(function(k) { return !k.is_revoked; });
+                                        user.apiKeyPrefix = active.length > 0 ? active[0].prefix + '...' : null;
+                                        return user;
+                                    });
+                            });
+                            return Promise.all(keyPromises);
+                        })
+                        .then(function(users) { comp.users = users; })
+                        .catch(function() {});
+                },
+                createUser() {
+                    var comp = this;
+                    this.createError = '';
+                    this.creating = true;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
+                    fetch('/api/v1/users', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(comp.newUser)
+                    })
+                    .then(function(r) {
+                        if (r.ok) return r.json();
+                        return r.json().then(function(e) { throw new Error(e.detail || 'Failed to create user'); });
+                    })
+                    .then(function(user) {
+                        return fetch('/api/v1/api-keys', {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({ user_id: user.id, description: 'Auto-generated for ' + user.username })
+                        })
+                        .then(function(r) {
+                            if (r.ok) return r.json();
+                            throw new Error('User created but API key generation failed');
+                        })
+                        .then(function(keyData) {
+                            comp.newKey = keyData.raw_key;
+                            comp.showNewKey = true;
+                            comp.showCreateForm = false;
+                            comp.newUser = { username: '', email: '', role: 'user' };
+                            comp.creating = false;
+                            comp.loadUsers();
+                        });
+                    })
+                    .catch(function(err) {
+                        comp.createError = err.message;
+                        comp.creating = false;
+                    });
+                },
+                deleteUser(user) {
+                    if (!confirm('Delete user "' + user.username + '"? This will also revoke all their API keys.')) return;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
+                    var comp = this;
+                    fetch('/api/v1/users/' + user.id, { method: 'DELETE', headers: headers })
+                        .then(function(r) {
+                            if (r.ok) { comp.loadUsers(); }
+                        });
+                },
+                showApiKeys(user) {
+                    this.selectedUser = user;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
+                    var comp = this;
+                    fetch('/api/v1/api-keys?user_id=' + user.id, { headers: headers })
+                        .then(function(r) { return r.ok ? r.json() : []; })
+                        .then(function(keys) { comp.userKeys = keys; });
+                    var modal = new bootstrap.Modal(document.getElementById('apiKeysModal'));
+                    modal.show();
+                },
+                generateKeyForUser(user) {
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
+                    var comp = this;
+                    fetch('/api/v1/api-keys', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ user_id: user.id, description: 'Admin generated' })
+                    })
+                    .then(function(r) { return r.ok ? r.json() : null; })
+                    .then(function(data) {
+                        if (data) {
+                            comp.newKey = data.raw_key;
+                            comp.showNewKey = true;
+                            comp.showApiKeys(user);
+                        }
+                    });
+                },
+                revokeKey(key) {
+                    if (!confirm('Revoke this API key?')) return;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
+                    var comp = this;
+                    fetch('/api/v1/api-keys/' + key.id, { method: 'DELETE', headers: headers })
+                        .then(function() { comp.showApiKeys(comp.selectedUser); });
+                },
+                copyKey() {
+                    var input = document.getElementById('new-api-key-input');
+                    if (input) { input.select(); document.execCommand('copy'); }
+                },
+                formatDate(dateStr) {
+                    if (!dateStr) return '—';
+                    var d = new Date(dateStr);
+                    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+            }));
+            Alpine.data('profilePage', () => ({
+                user: {},
+                keys: [],
+                newKey: '',
+                erasureStatus: '',
+                init() {
+                    var comp = this;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
+                    fetch('/api/v1/users/me', { headers: headers })
+                        .then(r => r.json())
+                        .then(data => { comp.user = data; comp.loadKeys(); });
+                },
+                loadKeys() {
+                    if (!this.user.id) return;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
+                    fetch('/api/v1/api-keys?user_id=' + this.user.id, { headers: headers })
+                        .then(r => r.json())
+                        .then(data => { this.keys = data; });
+                },
+                generateKey() {
+                    if (!this.user.id) return;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
+                    fetch('/api/v1/api-keys', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ user_id: this.user.id, description: 'Admin UI key' })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        this.newKey = data.raw_key;
+                        this.loadKeys();
+                    });
+                },
+                revokeKey(keyId) {
+                    if (!confirm('Revoke API key: Are you sure you want to revoke this key? Applications using this key will lose access immediately.')) return;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
+                    fetch('/api/v1/api-keys/' + keyId, { method: 'DELETE', headers: headers })
+                        .then(() => { this.loadKeys(); });
+                },
+                exportData() {
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
+                    fetch('/api/v1/users/' + this.user.id + '/export', { headers: headers })
+                        .then(r => r.json())
+                        .then(data => {
+                            var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url; a.download = 'my-data-export.json'; a.click();
+                            URL.revokeObjectURL(url);
+                        });
+                },
+                requestErasure() {
+                    if (!confirm('Request complete erasure of all your data? This will anonymize your account and revoke all API keys.')) return;
+                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
+                    fetch('/api/v1/users/' + this.user.id + '/erasure-request', { method: 'POST', headers: headers })
+                        .then(r => r.json())
+                        .then(data => { this.erasureStatus = data.status; });
+                }
+            }));
+            Alpine.data('monitorCard', () => ({
+                expanded: false,
+                toggle() {
+                    this.expanded = !this.expanded;
+                }
+            }));
+            Alpine.data('grafanaDashboard', () => ({
+                timeRange: '6h',
+                url: '',
+                initUrl: '',
+                init() {
+                    this.url = this.initUrl;
+                }
+            }));
             Alpine.data('adminApp', () => ({
                 sidebarOpen: false,
                 activeTab: 'documents',
@@ -162,6 +525,7 @@
                 ingestClass: '',
                 ragasClass: '',
                 adminClass: '',
+                usersClass: '',
                 analyticsClass: '',
                 profileClass: '',
                 loginPasswordTabClass: '',
@@ -228,8 +592,8 @@
                     var tabMap = {
                         documents: 'docsClass', monitoring: 'monitorClass',
                         ingestion: 'ingestClass', ragas: 'ragasClass',
-                        admin: 'adminClass', analytics: 'analyticsClass',
-                        profile: 'profileClass'
+                        admin: 'adminClass', users: 'usersClass',
+                        analytics: 'analyticsClass', profile: 'profileClass'
                     };
                     var k;
                     for (k in tabMap) {

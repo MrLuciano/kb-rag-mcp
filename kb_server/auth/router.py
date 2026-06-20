@@ -215,7 +215,9 @@ async def create_user(
 ):
     service = _get_service(request)
     try:
-        user = service.create_user(username=body.username, role=body.role)
+        user = service.create_user(
+            username=body.username, role=body.role, email=body.email
+        )
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     return UserResponse.model_validate(user)
@@ -263,9 +265,10 @@ async def create_api_key(
     current_user: User = Depends(get_current_user),
 ):
     service = _get_service(request)
+    target_user_id = body.user_id or current_user.id
     try:
         raw_key, api_key = service.create_api_key(
-            user_id=body.user_id, description=body.description
+            user_id=target_user_id, description=body.description
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

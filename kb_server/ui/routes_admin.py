@@ -618,6 +618,7 @@ async def admin_tab_content(
         "ingestion": "admin/tab_ingestion.html",
         "ragas": "admin/tab_ragas.html",
         "admin": "admin/tab_admin.html",
+        "users": "admin/tab_users.html",
         "profile": "admin/tab_profile.html",
         "analytics": "admin/tab_analytics.html",
         "tags": "admin/tab_tags.html",

@@ -1,19 +1,19 @@
 <h2 class="h3">Ingestion</h2>
 <p class="text-muted">Manual ingest trigger and job status.</p>
 
-<div x-data="{ activeIngestionTab: 'manual' }">
+<div x-data="ingestionTab">
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-            <a class="nav-link" :class="{ active: activeIngestionTab === 'manual' }" href="#"
-               @click.prevent="activeIngestionTab = 'manual'; htmx.ajax('GET', '/admin/tabs/ingestion-manual', {target: '#ingestion-content', swap: 'innerHTML'})">Manual</a>
+            <a class="nav-link" :class="{ active: activeTab === 'manual' }" href="#"
+               @click.prevent="switchTab('manual')">Manual</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" :class="{ active: activeIngestionTab === 'schedule' }" href="#"
-               @click.prevent="activeIngestionTab = 'schedule'; htmx.ajax('GET', '/admin/tabs/ingestion-schedule', {target: '#ingestion-content', swap: 'innerHTML'})">Schedule</a>
+            <a class="nav-link" :class="{ active: activeTab === 'schedule' }" href="#"
+               @click.prevent="switchTab('schedule')">Schedule</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" :class="{ active: activeIngestionTab === 'monitor' }" href="#"
-               @click.prevent="activeIngestionTab = 'monitor'; htmx.ajax('GET', '/admin/tabs/ingestion-monitor', {target: '#ingestion-content', swap: 'innerHTML'})">Monitor</a>
+            <a class="nav-link" :class="{ active: activeTab === 'monitor' }" href="#"
+               @click.prevent="switchTab('monitor')">Monitor</a>
         </li>
     </ul>
 

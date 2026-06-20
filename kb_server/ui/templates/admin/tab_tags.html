@@ -1,16 +1,16 @@
-<div x-data="tagManager()">
+<div x-data="tagManager">
     <!-- Sub-tab Navigation -->
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-            <a class="nav-link" :class="{'active': activeTab === 'browse'}" @click="activeTab = 'browse'"
+            <a class="nav-link" :class="{'active': activeTab === 'browse'}" @click="switchTab('browse')"
                href="#">Browse Tags</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" :class="{'active': activeTab === 'bulk'}" @click="activeTab = 'bulk'"
+            <a class="nav-link" :class="{'active': activeTab === 'bulk'}" @click="switchTab('bulk')"
                href="#">Bulk Edit</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" :class="{'active': activeTab === 'queue'}" @click="activeTab = 'queue'"
+            <a class="nav-link" :class="{'active': activeTab === 'queue'}" @click="switchTab('queue')"
                href="#">Re-ingest Queue</a>
         </li>
     </ul>
@@ -21,7 +21,7 @@
             <input type="text" class="form-control form-control-sm" placeholder="Filter by tag name..."
                    x-model="tagFilter" @input="filterTags()">
         </div>
-        <div id="tags-table-container" hx-get="/admin/tags/table" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <div id="tags-table-container">
             <div class="text-center p-4">
                 <div class="spinner-border spinner-border-sm" role="status"></div>
                 <span class="ms-2">Loading tags...</span>
@@ -31,7 +31,7 @@
 
     <!-- Bulk Edit Tab -->
     <div x-show="activeTab === 'bulk'" x-cloak>
-        <div id="tags-bulk-container" hx-get="/admin/tags/bulk-editor" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <div id="tags-bulk-container">
             <div class="text-center p-4">
                 <div class="spinner-border spinner-border-sm" role="status"></div>
                 <span class="ms-2">Loading bulk editor...</span>
@@ -41,7 +41,7 @@
 
     <!-- Re-ingest Queue Tab -->
     <div x-show="activeTab === 'queue'" x-cloak>
-        <div id="tags-queue-container" hx-get="/admin/tags/reingest-queue" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <div id="tags-queue-container">
             <div class="text-center p-4">
                 <div class="spinner-border spinner-border-sm" role="status"></div>
                 <span class="ms-2">Loading re-ingest queue...</span>
@@ -50,17 +50,3 @@
     </div>
 </div>
 
-<script nonce="{{ get_nonce(request) }}">
-    function tagManager() {
-        return {
-            activeTab: 'browse',
-            tagFilter: '',
-            filterTags() {
-                htmx.ajax('GET', '/admin/tags/table?filter=' + encodeURIComponent(this.tagFilter), {
-                    target: '#tags-table-container',
-                    swap: 'innerHTML'
-                });
-            }
-        };
-    }
-</script>

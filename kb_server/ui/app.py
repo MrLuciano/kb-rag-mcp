@@ -80,14 +80,26 @@ from kb_server.auth.service import AuthService  # noqa: E402
 
 app.include_router(auth_router)
 
+# Config router (mounted for config API endpoint on UI port)
+from kb_server.config.router import router as config_router  # noqa: E402
+
+app.include_router(config_router)
+
 
 @app.on_event("startup")
-async def startup_init_auth():
-    """Initialize auth service and seed default admin account."""
+async def startup_init():
+    """Initialize auth service, config loader, and seed default admin account."""
     db_path = Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
     auth_service = AuthService(db_path)
     app.state.auth_service = auth_service
     app.state.auth_service.ensure_admin_account()
+
+    from kb_server.config.loader import ConfigLoader
+
+    config_db_path = Path(os.getenv("CONFIG_DB_PATH", "data/config.db"))
+    config_loader = ConfigLoader(config_db_path)
+    config_loader.load_from_env()
+    app.state.config_loader = config_loader
 
 
 def highlight_term(text: str, query: str | None) -> str:
