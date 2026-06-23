@@ -177,3 +177,8 @@
 .editable-field {
     cursor: pointer;
 }
+
+/* Prevent Alpine.js flicker — hide elements until CSP build initializes */
+[x-cloak] {
+    display: none !important;
+}
