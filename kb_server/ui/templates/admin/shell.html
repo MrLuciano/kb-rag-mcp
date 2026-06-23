@@ -146,6 +146,10 @@
                 }
             }
         });
+        // Initialize Alpine components in HTMX-swapped content
+        document.addEventListener('htmx:afterSettle', function(evt) {
+            Alpine.initTree(evt.detail.target);
+        });
 
         document.addEventListener('alpine:init', () => {
             Alpine.data('docBrowser', () => ({
