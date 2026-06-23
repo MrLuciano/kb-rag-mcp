@@ -1,18 +1,14 @@
 ---
-status: testing
+status: partial
 phase: 28c-fixes
 source: 28c-fixes-01-SUMMARY.md
 started: 2026-06-16T16:00:00Z
-updated: 2026-06-19T00:59:00Z
+updated: 2026-06-23T12:00:00Z
 ---
 
 ## Current Test
 
-number: 10
-name: Document Browse Checkbox Selection (re-test of #4)
-expected: |
-  Table has checkbox column; select-all toggles all rows; bulk toolbar appears with selected count
-awaiting: user response
+[testing paused — 2 items outstanding (blocked)]
 
 ## Tests
 
@@ -63,14 +59,16 @@ result: pass
 
 ### 10. Document Browse Checkbox Selection (re-test of #4)
 expected: Table has checkbox column; select-all toggles all rows; bulk toolbar appears with selected count
-result: pending
+result: issue
+reported: "No"
+severity: major
 
 ## Summary
 
 total: 10
 passed: 5
-issues: 3
-pending: 1
+issues: 4
+pending: 0
 skipped: 0
 blocked: 2
 
@@ -119,4 +117,12 @@ blocked: 2
       issue: "Generic /tabs/{tab_name} route (line 39) registered before specific routes like /tabs/documents-content (line 155)"
   missing:
     - "Reorder route registration: define specific routes before the generic /{tab_name} route, or import routes_admin after defining specific routes"
+  debug_session: ""
+- truth: "Table has checkbox column; select-all toggles all rows; bulk toolbar appears with selected count"
+  status: failed
+  reason: "User reported: No"
+  severity: major
+  test: 10
+  artifacts: []
+  missing: []
   debug_session: ""
