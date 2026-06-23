@@ -193,6 +193,43 @@ class TestAuthService:
         found = service.get_user_by_username("byusername")
         assert found is not None
 
+    def test_ensure_admin_account_exists(self, service):
+        """ensure_admin_account() method is defined on AuthService."""
+        assert hasattr(service, "ensure_admin_account")
+        assert callable(service.ensure_admin_account)
+
+    def test_ensure_admin_account_creates_admin_and_returns_key(self, service):
+        """When no admin exists, ensure_admin_account creates one and returns key."""
+        raw_key = service.ensure_admin_account()
+        assert raw_key is not None
+        assert len(raw_key) > 20
+        # Verify admin user was created
+        admin = service.get_user_by_username("admin")
+        assert admin is not None
+        assert admin.role == "admin"
+
+    def test_ensure_admin_account_returns_none_if_admin_exists(self, service):
+        """When admin user with active key exists, ensure_admin_account returns None."""
+        service.create_user(username="admin", role="admin")
+        service.ensure_admin_account()  # First call creates admin
+        raw_key = service.ensure_admin_account()  # Second call — should return None
+        assert raw_key is None
+
+    def test_ensure_admin_account_creates_key_when_all_revoked(self, service):
+        """When admin user exists but all keys are revoked, a new key is created."""
+        admin = service.create_user(username="admin", role="admin")
+        # Create and revoke a key
+        raw, key = service.create_api_key(admin.id, "initial")
+        service.revoke_api_key(key.id)
+        # Now ensure_admin_account should create a new key
+        new_key = service.ensure_admin_account()
+        assert new_key is not None
+        assert new_key != raw
+        # Verify new key works
+        verified = service.verify_key(new_key)
+        assert verified is not None
+        assert verified.id == admin.id
+
     def test_create_api_key(self, service):
         user = service.create_user("key_user")
         raw_key, api_key = service.create_api_key(user.id, "test description")
