@@ -328,13 +328,12 @@
                 },
                 loadUsers() {
                     var comp = this;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-                    fetch('/api/v1/users', { headers: headers })
+                    fetch('/api/v1/users')
                         .then(function(r) { if (r.ok) return r.json(); throw new Error('Failed to load users'); })
                         .then(function(data) {
                             // Fetch API key prefix for each user
                             var keyPromises = data.map(function(user) {
-                                return fetch('/api/v1/api-keys?user_id=' + user.id, { headers: headers })
+                                return fetch('/api/v1/api-keys?user_id=' + user.id)
                                     .then(function(r) { return r.ok ? r.json() : []; })
                                     .then(function(keys) {
                                         var active = keys.filter(function(k) { return !k.is_revoked; });
@@ -351,7 +350,7 @@
                     var comp = this;
                     this.createError = '';
                     this.creating = true;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
+                    var headers = { 'Content-Type': 'application/json' };
                     fetch('/api/v1/users', {
                         method: 'POST',
                         headers: headers,
@@ -385,27 +384,28 @@
                         comp.creating = false;
                     });
                 },
+                toggleCreateForm() {
+                    this.showCreateForm = !this.showCreateForm;
+                },
                 deleteUser(user) {
                     if (!confirm('Delete user "' + user.username + '"? This will also revoke all their API keys.')) return;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
                     var comp = this;
-                    fetch('/api/v1/users/' + user.id, { method: 'DELETE', headers: headers })
+                    fetch('/api/v1/users/' + user.id, { method: 'DELETE' })
                         .then(function(r) {
                             if (r.ok) { comp.loadUsers(); }
                         });
                 },
                 showApiKeys(user) {
                     this.selectedUser = user;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
                     var comp = this;
-                    fetch('/api/v1/api-keys?user_id=' + user.id, { headers: headers })
+                    fetch('/api/v1/api-keys?user_id=' + user.id)
                         .then(function(r) { return r.ok ? r.json() : []; })
                         .then(function(keys) { comp.userKeys = keys; });
                     var modal = new bootstrap.Modal(document.getElementById('apiKeysModal'));
                     modal.show();
                 },
                 generateKeyForUser(user) {
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
+                    var headers = { 'Content-Type': 'application/json' };
                     var comp = this;
                     fetch('/api/v1/api-keys', {
                         method: 'POST',
@@ -423,9 +423,8 @@
                 },
                 revokeKey(key) {
                     if (!confirm('Revoke this API key?')) return;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
                     var comp = this;
-                    fetch('/api/v1/api-keys/' + key.id, { method: 'DELETE', headers: headers })
+                    fetch('/api/v1/api-keys/' + key.id, { method: 'DELETE' })
                         .then(function() { comp.showApiKeys(comp.selectedUser); });
                 },
                 copyKey() {
@@ -445,21 +444,19 @@
                 erasureStatus: '',
                 init() {
                     var comp = this;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-                    fetch('/api/v1/users/me', { headers: headers })
+                    fetch('/api/v1/users/me')
                         .then(r => r.json())
                         .then(data => { comp.user = data; comp.loadKeys(); });
                 },
                 loadKeys() {
                     if (!this.user.id) return;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-                    fetch('/api/v1/api-keys?user_id=' + this.user.id, { headers: headers })
+                    fetch('/api/v1/api-keys?user_id=' + this.user.id)
                         .then(r => r.json())
                         .then(data => { this.keys = data; });
                 },
                 generateKey() {
                     if (!this.user.id) return;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
+                    var headers = { 'Content-Type': 'application/json' };
                     fetch('/api/v1/api-keys', {
                         method: 'POST',
                         headers: headers,
@@ -473,13 +470,11 @@
                 },
                 revokeKey(keyId) {
                     if (!confirm('Revoke API key: Are you sure you want to revoke this key? Applications using this key will lose access immediately.')) return;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-                    fetch('/api/v1/api-keys/' + keyId, { method: 'DELETE', headers: headers })
+                    fetch('/api/v1/api-keys/' + keyId, { method: 'DELETE' })
                         .then(() => { this.loadKeys(); });
                 },
                 exportData() {
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key') };
-                    fetch('/api/v1/users/' + this.user.id + '/export', { headers: headers })
+                    fetch('/api/v1/users/' + this.user.id + '/export')
                         .then(r => r.json())
                         .then(data => {
                             var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -491,7 +486,7 @@
                 },
                 requestErasure() {
                     if (!confirm('Request complete erasure of all your data? This will anonymize your account and revoke all API keys.')) return;
-                    var headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kb_api_key'), 'Content-Type': 'application/json' };
+                    var headers = { 'Content-Type': 'application/json' };
                     fetch('/api/v1/users/' + this.user.id + '/erasure-request', { method: 'POST', headers: headers })
                         .then(r => r.json())
                         .then(data => { this.erasureStatus = data.status; });
