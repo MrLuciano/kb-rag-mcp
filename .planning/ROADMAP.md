@@ -166,7 +166,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   3. User can view own profile (GDPR Article 15), manage API keys (create/list/revoke), and request GDPR erasure
   4. Admin can delete users (tombstone: anonymize username, clear hash, keep UUID) and manage GDPR erasure state machine
   5. All SQLite connections use WAL mode via `db_utils.py` helper; audit log auto-prunes after 90 days
-**Plans**: [28b-01-PLAN.md](phases/28b-auth-api/28b-01-PLAN.md) — 7 tasks
+**Plans**: [28b-01-PLAN.md](phases/28b-auth-api/28b-01-PLAN.md) — 7 tasks, [28b-02-PLAN.md](phases/28b-auth-api/28b-02-PLAN.md) — 2 tasks (gap closure: fix Users tab Alpine CSP + auth null)
 
 ### Phase 28c: Admin SPA Panel
 **Goal**: Full browser-based admin panel with login, tabbed interface, role gating, document management, advanced filters, and document export
@@ -406,7 +406,7 @@ Plans:
 | 37. Request-level Retrieval Cache | v0.1.4 | 1/1 | Complete | 2026-06-11 |
 
 | 28. MCP Streamable HTTP (reopened) | v0.1.5 | 2/2 | Complete | 2026-06-15 |
-| 28b. Auth & User Management API | v0.1.5 | 1/1 | Complete | 2026-06-15 |
+| 28b. Auth & User Management API | v0.1.5 | 2/2 | Gap closure (fix Users tab) | 2026-06-15 |
 | 28c. Admin SPA Panel | v0.1.5 | 4/4 | Complete | 2026-06-15 |
 | 38. Grafana Dashboard Embedding | v0.1.5 | 1/1 | Complete | 2026-06-15 |
 | 39. Observability Backlog | v0.1.5 | 1/1 | Complete | 2026-06-15 |
