@@ -123,6 +123,10 @@ blocked: 2
   reason: "User reported: No"
   severity: major
   test: 10
-  artifacts: []
-  missing: []
+  root_cause: "Route ordering bug is fixed (200 returned from /admin/tabs/documents-content). However, checkbox selection requires Alpine.js in a browser — not verifiable via API calls. Template has x-data=\"docBrowser\" with select-all/bulk-delete, but rendering requires browser with JS enabled."
+  artifacts:
+    - path: "kb_server/ui/templates/admin/tab_documents.html"
+      issue: "Verify Alpine component works in browser — checkbox column, select-all toggle"
+  missing:
+    - "Manual browser verification: open /admin, login, navigate to Documents tab, verify checkbox column visible"
   debug_session: ""
