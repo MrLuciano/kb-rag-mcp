@@ -428,6 +428,17 @@ Plans:
 
 ## Backlog
 
-All backlog items completed. See phase directories under `.planning/phases/` for details.
+### Phase 999.0: Ingestion Schedule Management (BACKLOG)
+**Goal**: Create and manage CRON-based ingestion schedules from the Admin UI Schedule tab. Schedules trigger `kb-rag job create` with matching params on cron match. Monitor executions in the Monitor tab.
+**Depends on**: Phase 28c (Admin SPA shell with Ingestion tab), Phase 40 (config REST API for config validation)
+**Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04, SCHED-05
+**Success Criteria** (what must be TRUE):
+  1. Admin can view, create, update, and delete ingestion schedules from the Schedule tab
+  2. Each schedule stores: name, cron expression, docs path, product, workers, priority, clean, force
+  3. Background scheduler runs every 30s, creates Job when cron matches, updates last_run/next_run
+  4. Schedules can be enabled/disabled without deletion
+  5. Scheduled ingestion jobs appear in the Monitor tab alongside manually created jobs
+**Plans**: TBD
+**Spec**: [2026-06-24-ingestion-schedule-design.md](phases/999.0-ingestion-schedule/CONTEXT.md)
 
 
