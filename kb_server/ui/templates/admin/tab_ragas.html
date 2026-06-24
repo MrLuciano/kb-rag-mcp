@@ -5,11 +5,11 @@
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
             <a class="nav-link" :class="{ active: activeTab === 'editor' }" href="#"
-               @click.prevent="switchTab('editor')">Editor</a>
+               data-action="ragas-switch-tab" data-tab="editor">Editor</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" :class="{ active: activeTab === 'results' }" href="#"
-               @click.prevent="switchTab('results')">Results</a>
+               data-action="ragas-switch-tab" data-tab="results">Results</a>
         </li>
     </ul>
 

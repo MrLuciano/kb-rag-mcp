@@ -178,7 +178,7 @@
     cursor: pointer;
 }
 
-/* Prevent Alpine.js flicker — hide elements until CSP build initializes */
+/* Prevent Alpine.js flicker — hide elements until Alpine initializes */
 [x-cloak] {
     display: none !important;
 }

@@ -182,6 +182,23 @@
                     Promise.all(promises).then(function() {
                         htmx.ajax('GET', '/admin/tabs/documents-content', {target: '#tab-content', swap: 'innerHTML'});
                     });
+                },
+                init() {
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'doc-bulk-delete') {
+                            comp.bulkDelete();
+                        } else if (action === 'doc-bulk-reingest') {
+                            comp.bulkReingest();
+                        } else if (action === 'doc-toggle-select-all') {
+                            comp.toggleSelectAll();
+                        }
+                    });
                 }
             }));
             Alpine.data('ingestionTab', () => ({
@@ -189,6 +206,19 @@
                 switchTab(tab) {
                     this.activeTab = tab;
                     htmx.ajax('GET', '/admin/tabs/ingestion-' + tab, {target: '#ingestion-content', swap: 'innerHTML'});
+                },
+                init() {
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'ingestion-switch-tab') {
+                            comp.switchTab(btn.getAttribute('data-tab'));
+                        }
+                    });
                 }
             }));
             Alpine.data('ragasTab', () => ({
@@ -196,6 +226,19 @@
                 switchTab(tab) {
                     this.activeTab = tab;
                     htmx.ajax('GET', '/admin/tabs/ragas-' + tab, {target: '#ragas-content', swap: 'innerHTML'});
+                },
+                init() {
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'ragas-switch-tab') {
+                            comp.switchTab(btn.getAttribute('data-tab'));
+                        }
+                    });
                 }
             }));
             Alpine.data('configEditor', () => ({
@@ -211,21 +254,32 @@
                         return e.key.toLowerCase().includes(s) || e.group_name.toLowerCase().includes(s);
                     });
                 },
+                _applyDates() {
+                    this.entries.forEach(function(e) {
+                        if (e.updated_at) {
+                            var d = new Date(e.updated_at * 1000);
+                            e.updated_at_display = d.toLocaleDateString();
+                        } else {
+                            e.updated_at_display = '';
+                        }
+                    });
+                },
                 loadConfig() {
+                    var comp = this;
                     fetch('/api/v1/config')
                         .then(r => r.json())
-                        .then(data => { this.entries = data; });
+                        .then(data => {
+                            comp.entries = data;
+                            comp._applyDates();
+                        });
                 },
                 startEdit(entry) {
                     this.editing = entry.key;
                     this.editValue = entry.value;
                 },
-                cancelEdit() {
-                    this.editing = '';
-                    this.editValue = '';
-                },
                 init() {
                     var self = this;
+                    this.loadConfig();
                     document.addEventListener('htmx:responseError', function(evt) {
                         var el = evt.detail.elt;
                         var putPath = el && el.getAttribute('hx-put');
@@ -244,6 +298,24 @@
                             }
                         }
                     });
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'config-start-edit') {
+                            self.editing = btn.getAttribute('data-key');
+                            self.editValue = btn.getAttribute('data-value');
+                        }
+                    });
+                    container.addEventListener('dblclick', function(e) {
+                        var el = e.target.closest('[data-action="config-start-edit"]');
+                        if (el) {
+                            self.editing = el.getAttribute('data-key');
+                            self.editValue = el.getAttribute('data-value');
+                        }
+                    });
                 }
             }));
             Alpine.data('sessionManager', () => ({
@@ -259,10 +331,21 @@
                 keys: [],
                 newKey: '',
                 init() {
+                    var comp = this;
                     fetch('/api/v1/api-keys')
                         .then(r => r.json())
                         .then(data => { this.keys = data; })
                         .catch(() => {});
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'credential-generate-key') {
+                            comp.generateKey();
+                        }
+                    });
                 },
                 generateKey() {
                     fetch('/api/v1/api-keys', {
@@ -284,6 +367,21 @@
                 tagFilter: '',
                 init() {
                     this.loadTab('browse');
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'tag-switch-tab') {
+                            comp.switchTab(btn.getAttribute('data-tab'));
+                        }
+                    });
+                    container.addEventListener('input', function(e) {
+                        var el = e.target.closest('[data-action="tag-filter"]');
+                        if (el) comp.filterTags();
+                    });
                 },
                 switchTab(tab) {
                     this.activeTab = tab;
@@ -315,6 +413,7 @@
             }));
             Alpine.data('userManager', () => ({
                 users: [],
+                loadError: '',
                 showCreateForm: false,
                 newUser: { username: '', email: '', role: 'user' },
                 newKey: '',
@@ -325,14 +424,50 @@
                 userKeys: [],
                 init() {
                     this.loadUsers();
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'toggle-create-form') {
+                            comp.showCreateForm = !comp.showCreateForm;
+                        } else if (action === 'create-user') {
+                            comp.createUser();
+                        } else if (action === 'copy-key') {
+                            comp.copyKey();
+                        } else if (action === 'dismiss-new-key') {
+                            comp.showNewKey = false;
+                            comp.newKey = '';
+                        } else if (action === 'show-api-keys') {
+                            var userId = btn.getAttribute('data-user-id');
+                            var user = comp.users.find(function(u) { return u.id === userId; });
+                            if (user) comp.showApiKeys(user);
+                        } else if (action === 'delete-user') {
+                            var userId = btn.getAttribute('data-user-id');
+                            var user = comp.users.find(function(u) { return u.id === userId; });
+                            if (user) comp.deleteUser(user);
+                        } else if (action === 'revoke-key') {
+                            var keyId = btn.getAttribute('data-key-id');
+                            var key = comp.userKeys.find(function(k) { return k.id === keyId; });
+                            if (key) comp.revokeKey(key);
+                        } else if (action === 'generate-key-for-user') {
+                            if (comp.selectedUser) comp.generateKeyForUser(comp.selectedUser);
+                        }
+                    });
                 },
                 loadUsers() {
                     var comp = this;
+                    comp.loadError = '';
                     fetch('/api/v1/users')
-                        .then(function(r) { if (r.ok) return r.json(); throw new Error('Failed to load users'); })
+                        .then(function(r) {
+                            if (!r.ok) throw new Error('HTTP ' + r.status + ' fetching users');
+                            return r.json();
+                        })
                         .then(function(data) {
-                            // Fetch API key prefix for each user
                             var keyPromises = data.map(function(user) {
+                                user.created_at_display = comp._fmtDate(user.created_at);
                                 return fetch('/api/v1/api-keys?user_id=' + user.id)
                                     .then(function(r) { return r.ok ? r.json() : []; })
                                     .then(function(keys) {
@@ -343,12 +478,22 @@
                             });
                             return Promise.all(keyPromises);
                         })
-                        .then(function(users) { comp.users = users; })
-                        .catch(function() {});
+                        .then(function(users) {
+                            comp.users = users;
+                            comp.loadError = 'Loaded ' + users.length + ' users';
+                        })
+                        .catch(function(err) {
+                            comp.loadError = 'Error: ' + err.message;
+                        });
                 },
                 createUser() {
                     var comp = this;
                     this.createError = '';
+                    if (!comp.newUser.username.trim()) {
+                        this.createError = 'Username is required';
+                        this.creating = false;
+                        return;
+                    }
                     this.creating = true;
                     var headers = { 'Content-Type': 'application/json' };
                     fetch('/api/v1/users', {
@@ -374,9 +519,10 @@
                             comp.newKey = keyData.raw_key;
                             comp.showNewKey = true;
                             comp.showCreateForm = false;
-                            comp.newUser = { username: '', email: '', role: 'user' };
                             comp.creating = false;
-                            comp.loadUsers();
+                            user.created_at_display = comp._fmtDate(user.created_at);
+                            user.apiKeyPrefix = keyData.raw_key.substring(0, 8) + '...';
+                            comp.users.unshift(user);
                         });
                     })
                     .catch(function(err) {
@@ -395,13 +541,29 @@
                             if (r.ok) { comp.loadUsers(); }
                         });
                 },
+                _fmtDate(dateStr) {
+                    if (!dateStr) return '—';
+                    var d = new Date(dateStr);
+                    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                },
                 showApiKeys(user) {
                     this.selectedUser = user;
                     var comp = this;
+                    var prev = document.activeElement;
                     fetch('/api/v1/api-keys?user_id=' + user.id)
                         .then(function(r) { return r.ok ? r.json() : []; })
-                        .then(function(keys) { comp.userKeys = keys; });
-                    var modal = new bootstrap.Modal(document.getElementById('apiKeysModal'));
+                        .then(function(keys) {
+                            keys.forEach(function(k) {
+                                k.created_at_display = comp._fmtDate(k.created_at);
+                            });
+                            comp.userKeys = keys;
+                        });
+                    var modalEl = document.getElementById('apiKeysModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modalEl.addEventListener('hidden.bs.modal', function() {
+                        modalEl.removeAttribute('aria-hidden');
+                        if (prev && prev.focus) prev.focus();
+                    }, { once: true });
                     modal.show();
                 },
                 generateKeyForUser(user) {
@@ -432,9 +594,7 @@
                     if (input) { input.select(); document.execCommand('copy'); }
                 },
                 formatDate(dateStr) {
-                    if (!dateStr) return '—';
-                    var d = new Date(dateStr);
-                    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    return this._fmtDate(dateStr);
                 }
             }));
             Alpine.data('profilePage', () => ({
@@ -447,6 +607,23 @@
                     fetch('/api/v1/users/me')
                         .then(r => r.json())
                         .then(data => { comp.user = data; comp.loadKeys(); });
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'profile-generate-key') {
+                            comp.generateKey();
+                        } else if (action === 'profile-revoke-key') {
+                            var keyId = parseInt(btn.getAttribute('data-key-id'));
+                            comp.revokeKey(keyId);
+                        } else if (action === 'profile-export') {
+                            comp.exportData();
+                        } else if (action === 'profile-erasure') {
+                            comp.requestErasure();
+                        }
+                    });
                 },
                 loadKeys() {
                     if (!this.user.id) return;
@@ -500,10 +677,29 @@
             }));
             Alpine.data('grafanaDashboard', () => ({
                 timeRange: '6h',
-                url: '',
-                initUrl: '',
+                url: '{{ build_grafana_embed_url_with_range("6h") }}',
+                setRange(range) {
+                    this.timeRange = range;
+                    var urls = {
+                        '1h': '{{ build_grafana_embed_url_with_range("1h") }}',
+                        '6h': '{{ build_grafana_embed_url_with_range("6h") }}',
+                        '24h': '{{ build_grafana_embed_url_with_range("24h") }}',
+                        '7d': '{{ build_grafana_embed_url_with_range("7d") }}',
+                    };
+                    this.url = urls[range];
+                },
                 init() {
-                    this.url = this.initUrl;
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'grafana-range') {
+                            comp.setRange(btn.getAttribute('data-range'));
+                        }
+                    });
                 }
             }));
             Alpine.data('adminApp', () => ({

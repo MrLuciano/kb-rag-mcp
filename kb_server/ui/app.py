@@ -23,7 +23,7 @@ class CSPMiddleware(BaseHTTPMiddleware):
 
     CSP_DIRECTIVES = (
         "default-src 'self'; "
-        "script-src 'self' 'nonce-{nonce}' "
+        "script-src 'self' 'unsafe-eval' 'nonce-{nonce}' "
         "https://cdn.jsdelivr.net https://unpkg.com; "
         "style-src 'self' 'unsafe-inline' "
         "https://cdn.jsdelivr.net; "

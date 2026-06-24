@@ -2,15 +2,15 @@
     <!-- Sub-tab Navigation -->
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-            <a class="nav-link" :class="{'active': activeTab === 'browse'}" @click="switchTab('browse')"
+            <a class="nav-link" :class="{'active': activeTab === 'browse'}" data-action="tag-switch-tab" data-tab="browse"
                href="#">Browse Tags</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" :class="{'active': activeTab === 'bulk'}" @click="switchTab('bulk')"
+            <a class="nav-link" :class="{'active': activeTab === 'bulk'}" data-action="tag-switch-tab" data-tab="bulk"
                href="#">Bulk Edit</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" :class="{'active': activeTab === 'queue'}" @click="switchTab('queue')"
+            <a class="nav-link" :class="{'active': activeTab === 'queue'}" data-action="tag-switch-tab" data-tab="queue"
                href="#">Re-ingest Queue</a>
         </li>
     </ul>
@@ -19,7 +19,7 @@
     <div x-show="activeTab === 'browse'" x-cloak>
         <div class="mb-3">
             <input type="text" class="form-control form-control-sm" placeholder="Filter by tag name..."
-                   x-model="tagFilter" @input="filterTags()">
+                   x-model="tagFilter" data-action="tag-filter">
         </div>
         <div id="tags-table-container">
             <div class="text-center p-4">

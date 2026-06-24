@@ -1,4 +1,4 @@
-<div x-data="configEditor" x-init="loadConfig()">
+<div x-data="configEditor">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <input type="text" class="form-control form-control-sm config-search"
                placeholder="Search config keys..." x-model="search" style="max-width: 300px;">
@@ -15,7 +15,7 @@
                     <td><code x-text="entry.key"></code></td>
                     <td>
                         <span x-show="editing !== entry.key" x-text="entry.value"
-                              @dblclick="startEdit(entry)" class="editable-field"></span>
+                              data-action="config-start-edit" :data-key="entry.key" :data-value="entry.value" class="editable-field"></span>
                         <input x-show="editing === entry.key" type="text" class="form-control form-control-sm"
                                x-model="editValue"
                                :hx-put="'/api/v1/config/' + entry.key"
@@ -23,13 +23,14 @@
                                hx-target="closest tr"
                                hx-swap="none"
                                hx-vals='js:{value: editValue}'
-                               @keydown.escape="cancelEdit()">
+                                @keydown.escape.prevent="editing = ''">
                     </td>
                     <td><span class="badge bg-secondary" x-text="entry.type"></span></td>
                     <td><span class="badge bg-info" x-text="entry.group_name"></span></td>
-                    <td x-text="entry.updated_at ? new Date(entry.updated_at*1000).toLocaleDateString() : ''"></td>
+                    <td x-text="entry.updated_at_display"></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" @click="startEdit(entry)">Edit</button>
+                        <button class="btn btn-sm btn-outline-primary" data-action="config-start-edit"
+                                :data-key="entry.key" :data-value="entry.value">Edit</button>
                     </td>
                 </tr>
             </template>
