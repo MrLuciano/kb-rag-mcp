@@ -98,11 +98,11 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 ## v0.1.5 Streamable HTTP & Management Platform
 
 <details open>
-<summary>🔄 v0.1.5 Phase Overview — 16/17 PHASES COMPLETE</summary>
+<summary>🔄 v0.1.5 Phase Overview — 17/18 PHASES COMPLETE</summary>
 
 **Completed:** Phase 28, 28b, 28c, 28c-fixes, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50
 
-**Completed:** All 17 phases complete
+**Phase 52:** Ingestion Schedule Management (planned)
 
 - [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
@@ -139,6 +139,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: Already done
 - [x] Phase 50: SSE Test Process Consolidation — Refactor test_smoke.py for per-function @patch to consolidate SSE test process (completed 2026-06-17)
   - Plans: [50-01-PLAN.md](phases/50-sse-test-consolidation/50-01-PLAN.md)
+- [ ] Phase 52: Ingestion Schedule Management — Create and manage CRON-based ingestion schedules from Admin UI Schedule tab; background scheduler creates jobs on cron match (planned)
 
 </details>
 
@@ -362,6 +363,18 @@ Plans:
   6. All destructive operations require confirmation; dry-run available everywhere
 **Plans**: TBD
 
+### Phase 52: Ingestion Schedule Management
+**Goal**: Create, manage, and automatically execute CRON-based ingestion schedules from the Admin UI Schedule tab
+**Depends on**: Phase 28c (Admin SPA shell with Ingestion tab), Phase 45 (MetadataStore schema migration)
+**Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04, SCHED-05
+**Success Criteria** (what must be TRUE):
+  1. Admin can view, create, update, and delete ingestion schedules from the Schedule tab
+  2. Each schedule stores: name, cron expression, docs path, product, workers, priority, clean, force
+  3. Background scheduler runs every 30s, creates Job when cron matches, updates last_run/next_run
+  4. Schedules can be enabled/disabled without deletion
+  5. Scheduled ingestion jobs appear in the Monitor tab alongside manually created jobs
+**Plans**: [52-01-PLAN.md](phases/52-ingestion-schedule/52-01-PLAN.md)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -423,22 +436,11 @@ Plans:
 | 49. Qdrant Mock Cleanup | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
 | 50. SSE Test Process Consolidation | v0.1.5 | 0/0 | Backlog | — |
 | 51. Document Tag Management & Re-ingest Control | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 52. Ingestion Schedule Management | v0.1.5 | 0/0 | Planned | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
-### Phase 999.0: Ingestion Schedule Management (BACKLOG)
-**Goal**: Create and manage CRON-based ingestion schedules from the Admin UI Schedule tab. Schedules trigger `kb-rag job create` with matching params on cron match. Monitor executions in the Monitor tab.
-**Depends on**: Phase 28c (Admin SPA shell with Ingestion tab), Phase 40 (config REST API for config validation)
-**Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04, SCHED-05
-**Success Criteria** (what must be TRUE):
-  1. Admin can view, create, update, and delete ingestion schedules from the Schedule tab
-  2. Each schedule stores: name, cron expression, docs path, product, workers, priority, clean, force
-  3. Background scheduler runs every 30s, creates Job when cron matches, updates last_run/next_run
-  4. Schedules can be enabled/disabled without deletion
-  5. Scheduled ingestion jobs appear in the Monitor tab alongside manually created jobs
-**Plans**: TBD
-**Spec**: [2026-06-24-ingestion-schedule-design.md](phases/999.0-ingestion-schedule/CONTEXT.md)
-
+All backlog items promoted or completed. See phase directories under `.planning/phases/` for details.
 
