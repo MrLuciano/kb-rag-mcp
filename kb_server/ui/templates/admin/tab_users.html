@@ -4,9 +4,9 @@
             <h2 class="h3 mb-1">Users</h2>
             <p class="text-muted mb-0">Manage user accounts and their API keys.</p>
         </div>
-        <button class="btn btn-primary"
-                x-on:click="toggleCreateForm()"
-                x-text="showCreateForm ? 'Cancel' : 'Create User'"></button>
+<button class="btn btn-primary"
+        data-action="toggle-create-form"
+        x-text="showCreateForm ? 'Cancel' : 'Create User'">Create User</button>
     </div>
 
     <div x-show="showCreateForm" x-cloak class="card mb-4">
@@ -30,7 +30,7 @@
                 </div>
             </div>
             <div x-show="createError" class="alert alert-danger mt-3 py-2 small" x-text="createError" x-cloak></div>
-            <button class="btn btn-success mt-3" x-on:click="createUser()" :disabled="creating">
+            <button class="btn btn-success mt-3" data-action="create-user" :disabled="creating">
                 <span x-show="creating" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 <span x-text="creating ? 'Creating...' : 'Create User & Generate API Key'"></span>
             </button>
@@ -43,10 +43,10 @@
         <div class="input-group mt-2">
             <input type="text" class="form-control font-monospace" :value="newKey" readonly id="new-api-key-input">
             <button class="btn btn-outline-secondary" type="button"
-                    x-on:click="copyKey()">Copy</button>
+                    data-action="copy-key">Copy</button>
         </div>
         <button class="btn btn-sm btn-outline-success mt-2"
-                x-on:click="showNewKey = false; newKey = ''">Dismiss</button>
+                data-action="dismiss-new-key">Dismiss</button>
     </div>
 
     {% include "admin/_users_table.html" %}

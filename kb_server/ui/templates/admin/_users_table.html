@@ -1,3 +1,4 @@
+<div x-show="loadError && users.length === 0" class="alert alert-info py-2 small mb-2" x-text="loadError"></div>
 <div class="table-responsive">
     <table class="table table-hover align-middle">
         <thead class="table-dark">
@@ -23,17 +24,19 @@
                     <td>
                         <span x-text="user.apiKeyPrefix || '—'" class="font-monospace small"></span>
                         <button class="btn btn-sm btn-outline-secondary ms-1 py-0 px-1"
-                                x-on:click="showApiKeys(user)"
+                                data-action="show-api-keys"
+                                :data-user-id="user.id"
                                 title="View API keys">&hellip;</button>
                     </td>
-                    <td x-text="formatDate(user.created_at)" class="small"></td>
+                    <td x-text="user.created_at_display" class="small"></td>
                     <td>
                         <span class="badge" :class="user.is_active ? 'bg-success' : 'bg-secondary'"
                               x-text="user.is_active ? 'Active' : 'Inactive'"></span>
                     </td>
                     <td>
                         <button class="btn btn-sm btn-outline-danger"
-                                x-on:click="deleteUser(user)"
+                                data-action="delete-user"
+                                :data-user-id="user.id"
                                 x-show="user.username !== 'admin'">Delete</button>
                     </td>
                 </tr>
@@ -46,11 +49,11 @@
 </div>
 
 <!-- API Keys Modal -->
-<div class="modal fade" id="apiKeysModal" tabindex="-1" x-data>
+<div class="modal fade" id="apiKeysModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" x-text="'API Keys: ' + (selectedUser?.username || '')"></h5>
+                <h5 class="modal-title" x-text="'API Keys: ' + ((selectedUser || {}).username || '')"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -65,7 +68,8 @@
                                 <span class="badge" :class="key.is_revoked ? 'bg-danger' : 'bg-success'"
                                       x-text="key.is_revoked ? 'Revoked' : 'Active'"></span>
                                 <button class="btn btn-sm btn-outline-danger ms-2"
-                                        x-on:click="revokeKey(key)"
+                                        data-action="revoke-key"
+                                        :data-key-id="key.id"
                                         x-show="!key.is_revoked">Revoke</button>
                             </div>
                         </li>
@@ -74,7 +78,7 @@
                 <p x-show="userKeys.length === 0" class="text-muted text-center mb-0">No API keys for this user.</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" x-on:click="generateKeyForUser(selectedUser)">Generate New Key</button>
+                <button class="btn btn-primary" data-action="generate-key-for-user">Generate New Key</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

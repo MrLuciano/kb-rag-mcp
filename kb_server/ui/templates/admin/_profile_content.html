@@ -7,7 +7,7 @@
     <hr>
     <h3 class="h5">API Keys</h3>
     <div class="mb-2">
-        <button class="btn btn-sm btn-primary" @click="generateKey()">Generate New Key</button>
+        <button class="btn btn-sm btn-primary" data-action="profile-generate-key">Generate New Key</button>
     </div>
     <div x-show="newKey" class="alert alert-success py-2">
         <strong>New API Key:</strong> <code x-text="newKey" class="user-select-all"></code>
@@ -21,7 +21,7 @@
                     <td><code x-text="key.prefix"></code></td>
                     <td x-text="key.created_at"></td>
                     <td><span x-text="key.is_revoked ? 'Revoked' : 'Active'" :class="'badge ' + (key.is_revoked ? 'bg-danger' : 'bg-success')"></span></td>
-                    <td><button class="btn btn-sm btn-outline-danger" @click="revokeKey(key.id)" x-show="!key.is_revoked">Revoke</button></td>
+                    <td><button class="btn btn-sm btn-outline-danger" data-action="profile-revoke-key" :data-key-id="key.id" x-show="!key.is_revoked">Revoke</button></td>
                 </tr>
             </template>
         </tbody>
@@ -29,8 +29,8 @@
 
     <hr>
     <h3 class="h5">GDPR</h3>
-    <button class="btn btn-sm btn-outline-primary me-2" @click="exportData()">Export My Data (GDPR Art. 20)</button>
-    <button class="btn btn-sm btn-outline-danger" @click="requestErasure()">Request Data Erasure</button>
+    <button class="btn btn-sm btn-outline-primary me-2" data-action="profile-export">Export My Data (GDPR Art. 20)</button>
+    <button class="btn btn-sm btn-outline-danger" data-action="profile-erasure">Request Data Erasure</button>
     <div x-show="erasureStatus" class="mt-2">
         <span class="badge bg-warning">Erasure status: <span x-text="erasureStatus"></span></span>
     </div>

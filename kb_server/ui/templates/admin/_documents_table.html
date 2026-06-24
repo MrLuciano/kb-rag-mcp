@@ -2,9 +2,9 @@
     <!-- Bulk Toolbar -->
     <div x-show="selected.length > 0" class="mb-2">
         <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-danger" @click="bulkDelete()"
+            <button class="btn btn-outline-danger" data-action="doc-bulk-delete"
                     hx-confirm="Delete selected documents: Are you sure you want to delete these documents? This action cannot be undone.">Delete</button>
-            <button class="btn btn-outline-warning" @click="bulkReingest()">Re-ingest</button>
+            <button class="btn btn-outline-warning" data-action="doc-bulk-reingest">Re-ingest</button>
             <button class="btn btn-outline-secondary" hx-post="/api/v1/documents/delete-failed"
                     hx-confirm="Delete failed documents: Delete all documents with failed status?"
                     hx-target="#tab-content" hx-swap="innerHTML">Delete Failed</button>
@@ -17,7 +17,7 @@
         <table class="table table-sm table-striped">
             <thead>
                 <tr>
-                    <th><input type="checkbox" @click="toggleSelectAll()"></th>
+                    <th><input type="checkbox" data-action="doc-toggle-select-all"></th>
                     <th>ID</th>
                     <th>Source</th>
                     <th>Product</th>
