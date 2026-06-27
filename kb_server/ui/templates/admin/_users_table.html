@@ -34,6 +34,10 @@
                               x-text="user.is_active ? 'Active' : 'Inactive'"></span>
                     </td>
                     <td>
+                        <button class="btn btn-sm btn-outline-primary"
+                                data-action="update-user"
+                                :data-user-id="user.id"
+                                x-show="user.username !== 'admin'">Update</button>
                         <button class="btn btn-sm btn-outline-danger"
                                 data-action="delete-user"
                                 :data-user-id="user.id"
@@ -80,6 +84,43 @@
             <div class="modal-footer">
                 <button class="btn btn-primary" data-action="generate-key-for-user">Generate New Key</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update User Modal -->
+<div class="modal fade" id="updateUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" x-text="'Update User: ' + ((updatingUser || {}).username || '')"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div x-show="updateError" class="alert alert-danger py-2 small" x-text="updateError" x-cloak></div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" x-model="updateForm.email">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Role</label>
+                    <select class="form-select" x-model="updateForm.role">
+                        <option value="user">user</option>
+                        <option value="admin">admin</option>
+                    </select>
+                </div>
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="update-active" x-model="updateForm.is_active">
+                    <label class="form-check-label" for="update-active">Active</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" data-action="save-update-user" :disabled="updating">
+                    <span x-show="updating" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    <span x-text="updating ? 'Saving...' : 'Save'"></span>
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>

@@ -27,15 +27,33 @@ class CSPMiddleware(BaseHTTPMiddleware):
         "https://cdn.jsdelivr.net https://unpkg.com; "
         "style-src 'self' 'unsafe-inline' "
         "https://cdn.jsdelivr.net; "
-        "frame-src 'self' https:; "
+        "frame-src 'self' https: {grafana_origin}; "
         "object-src 'none'"
     )
+
+    def __init__(self, app):
+        super().__init__(app)
+        self._grafana_origin = self._build_grafana_origin()
+
+    @staticmethod
+    def _build_grafana_origin() -> str:
+        grafana_url = os.getenv("GRAFANA_URL", "").rstrip("/")
+        if not grafana_url:
+            return ""
+        from urllib.parse import urlparse
+        parsed = urlparse(grafana_url)
+        origin = f"{parsed.scheme}://{parsed.hostname}"
+        if parsed.port:
+            origin += f":{parsed.port}"
+        return origin
 
     async def dispatch(self, request: Request, call_next):
         nonce = secrets.token_hex(16)
         request.state.nonce = nonce
         response = await call_next(request)
-        csp = self.CSP_DIRECTIVES.format(nonce=nonce)
+        csp = self.CSP_DIRECTIVES.format(
+            nonce=nonce, grafana_origin=self._grafana_origin
+        )
         response.headers["Content-Security-Policy"] = csp
         return response
 
@@ -84,6 +102,11 @@ app.include_router(auth_router)
 from kb_server.config.router import router as config_router  # noqa: E402
 
 app.include_router(config_router)
+
+# Schedules router (mounted for ingestion schedule CRUD on UI port)
+from kb_server.schedules.router import router as schedules_router  # noqa: E402
+
+app.include_router(schedules_router)
 
 
 @app.on_event("startup")

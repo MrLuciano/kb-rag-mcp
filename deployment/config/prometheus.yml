@@ -50,6 +50,23 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: instance
 
+  # Scrape MCP server metrics (the process that actually increments counters)
+  - job_name: 'kb-rag-mcp'
+    static_configs:
+      - targets:
+          - 'kb-rag-mcp:8765'
+        labels:
+          service: 'kb-rag'
+          component: 'mcp-server'
+
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
 # Alerting rules
 rule_files:
   - 'kb-rag-alerts.yml'
