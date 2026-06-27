@@ -863,7 +863,7 @@ def build_grafana_embed_url() -> str:
     grafana_uid = os.getenv("GRAFANA_DASHBOARD_UID", "")
     if not grafana_url or not grafana_uid:
         return ""
-    base = f"{grafana_url}/d-solo/{grafana_uid}"
+    base = f"{grafana_url}/d/{grafana_uid}"
     params = {"orgId": 1, "kiosk": "t", "theme": "light"}
     return f"{base}?{urlencode(params)}"
 
@@ -886,7 +886,7 @@ def build_grafana_embed_url_with_range(
         "7d": timedelta(days=7),
     }
     delta = range_map.get(time_range, timedelta(hours=6))
-    base = f"{grafana_url}/d-solo/{grafana_uid}"
+    base = f"{grafana_url}/d/{grafana_uid}"
     params = {
         "orgId": 1,
         "kiosk": "t",

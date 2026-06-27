@@ -10,6 +10,12 @@ class CreateUserRequest(BaseModel):
     role: str = "user"
 
 
+class UpdateUserRequest(BaseModel):
+    email: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
 class UserResponse(BaseModel):
     id: str
     username: str

@@ -170,6 +170,33 @@ class AuthService:
             self._session.query(User).filter(User.username == username).first()
         )
 
+    def update_user(
+        self,
+        user_id: str,
+        email: Optional[str] = None,
+        role: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> Optional[User]:
+        user = self.get_user(user_id)
+        if user is None:
+            return None
+        if email is not None:
+            user.email = email or None
+        if role is not None:
+            user.role = role
+        if is_active is not None:
+            user.is_active = is_active
+        self._session.flush()
+        self._write_audit_log(
+            actor_id=user_id,
+            action="user.updated",
+            resource_type="user",
+            resource_id=user_id,
+        )
+        self._session.commit()
+        log.info("Updated user: %s (role=%s, active=%s)", user.username, user.role, user.is_active)
+        return user
+
     def delete_user(self, user_id: str) -> bool:
         user = self.get_user(user_id)
         if user is None:

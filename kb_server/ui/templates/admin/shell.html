@@ -221,6 +221,100 @@
                     });
                 }
             }));
+            Alpine.data('scheduleManager', () => ({
+                schedules: [],
+                loading: false,
+                formError: '',
+                formSuccess: '',
+                form: {
+                    name: '',
+                    cron_expr: '',
+                    docs_path: '',
+                    product: '',
+                    workers: 2,
+                    priority: 'normal',
+                    clean: 'false',
+                    force: 'false',
+                },
+                async load() {
+                    this.loading = true;
+                    try {
+                        var resp = await fetch('/api/v1/schedules');
+                        this.schedules = await resp.json();
+                    } catch(e) {
+                        this.formError = 'Failed to load schedules';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                _clearFlash() {
+                    var comp = this;
+                    setTimeout(function() { comp.formError = ''; comp.formSuccess = ''; }, 3000);
+                },
+                async create() {
+                    this.formError = '';
+                    this.formSuccess = '';
+                    try {
+                        var resp = await fetch('/api/v1/schedules', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                name: this.form.name,
+                                cron_expr: this.form.cron_expr,
+                                docs_path: this.form.docs_path,
+                                product: this.form.product || null,
+                                workers: parseInt(this.form.workers),
+                                priority: this.form.priority,
+                                clean: this.form.clean === 'true',
+                                force: this.form.force === 'true',
+                            }),
+                        });
+                        if (!resp.ok) {
+                            var err = await resp.json();
+                            this.formError = err.detail || 'Failed to create schedule';
+                            this._clearFlash();
+                            return;
+                        }
+                        this.formSuccess = 'Schedule created';
+                        this.form.name = '';
+                        this.form.cron_expr = '';
+                        this.form.docs_path = '';
+                        this.form.product = '';
+                        this.form.workers = 2;
+                        this.form.priority = 'normal';
+                        this.form.clean = 'false';
+                        this.form.force = 'false';
+                        await this.load();
+                        this._clearFlash();
+                    } catch(e) {
+                        this.formError = 'Network error';
+                        this._clearFlash();
+                    }
+                },
+                async toggle(id, enabled) {
+                    try {
+                        await fetch('/api/v1/schedules/' + id, {
+                            method: 'PUT',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({enabled: enabled}),
+                        });
+                        await this.load();
+                    } catch(e) {
+                        this.formError = 'Failed to toggle schedule';
+                        this._clearFlash();
+                    }
+                },
+                async remove(id) {
+                    if (!confirm('Delete this schedule?')) return;
+                    try {
+                        await fetch('/api/v1/schedules/' + id, {method: 'DELETE'});
+                        await this.load();
+                    } catch(e) {
+                        this.formError = 'Failed to delete schedule';
+                        this._clearFlash();
+                    }
+                },
+            }));
             Alpine.data('ragasTab', () => ({
                 activeTab: 'editor',
                 switchTab(tab) {
@@ -422,6 +516,10 @@
                 createError: '',
                 selectedUser: null,
                 userKeys: [],
+                updatingUser: null,
+                updateForm: { email: '', role: 'user', is_active: true },
+                updateError: '',
+                updating: false,
                 init() {
                     this.loadUsers();
                     var comp = this;
@@ -454,6 +552,12 @@
                             if (key) comp.revokeKey(key);
                         } else if (action === 'generate-key-for-user') {
                             if (comp.selectedUser) comp.generateKeyForUser(comp.selectedUser);
+                        } else if (action === 'update-user') {
+                            var userId = btn.getAttribute('data-user-id');
+                            var user = comp.users.find(function(u) { return u.id === userId; });
+                            if (user) comp.openUpdateModal(user);
+                        } else if (action === 'save-update-user') {
+                            comp.updateUser();
                         }
                     });
                 },
@@ -532,6 +636,62 @@
                 },
                 toggleCreateForm() {
                     this.showCreateForm = !this.showCreateForm;
+                },
+                openUpdateModal(user) {
+                    this.updatingUser = user;
+                    this.updateForm = {
+                        email: user.email || '',
+                        role: user.role || 'user',
+                        is_active: user.is_active !== false
+                    };
+                    this.updateError = '';
+                    this.updating = false;
+                    var prev = document.activeElement;
+                    var modalEl = document.getElementById('updateUserModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modalEl.addEventListener('hidden.bs.modal', function() {
+                        modalEl.removeAttribute('aria-hidden');
+                        if (prev && prev.focus) prev.focus();
+                    }, { once: true });
+                    modal.show();
+                },
+                updateUser() {
+                    var comp = this;
+                    var user = this.updatingUser;
+                    if (!user) return;
+                    this.updating = true;
+                    this.updateError = '';
+                    fetch('/api/v1/users/' + user.id, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: comp.updateForm.email || null,
+                            role: comp.updateForm.role,
+                            is_active: comp.updateForm.is_active
+                        })
+                    })
+                    .then(function(r) {
+                        if (r.ok) return r.json();
+                        return r.json().then(function(e) { throw new Error(e.detail || 'Failed to update user'); });
+                    })
+                    .then(function() {
+                        comp.updating = false;
+                        var modalEl = document.getElementById('updateUserModal');
+                        var modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                        var checkBackdrop = function() {
+                            var b = document.querySelectorAll('.modal-backdrop');
+                            b.forEach(function(el) { el.remove(); });
+                            document.body.classList.remove('modal-open');
+                            document.body.style.removeProperty('overflow');
+                        };
+                        setTimeout(checkBackdrop, 300);
+                        comp.loadUsers();
+                    })
+                    .catch(function(err) {
+                        comp.updateError = err.message;
+                        comp.updating = false;
+                    });
                 },
                 deleteUser(user) {
                     if (!confirm('Delete user "' + user.username + '"? This will also revoke all their API keys.')) return;

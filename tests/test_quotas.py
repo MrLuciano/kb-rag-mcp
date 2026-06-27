@@ -201,7 +201,7 @@ class TestQuotaSchemaMigration:
         ]
         assert "quota_config" in tables
         assert "quota_usage" in tables
-        assert store2._get_schema_version() == 5
+        assert store2._get_schema_version() == 6
         store2.close()
 
 

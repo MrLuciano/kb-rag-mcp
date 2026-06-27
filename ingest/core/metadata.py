@@ -16,7 +16,7 @@ from typing import Optional
 log = logging.getLogger("kb-ingest.metadata")
 
 DEFAULT_DB = Path(__file__).parent.parent.parent / "data" / "kb_metadata.db"
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 class MetadataStore:
@@ -90,22 +90,29 @@ class MetadataStore:
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
             self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
         elif current_version == 1:
             self._migrate_v1_to_v2()
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
             self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
         elif current_version == 2:
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
             self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
         elif current_version == 3:
             self._migrate_v3_to_v4()
             self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
         elif current_version == 4:
             self._migrate_v4_to_v5()
-        elif current_version == SCHEMA_VERSION:
-            log.debug(f"Schema v{current_version} up to date")
+            self._migrate_v5_to_v6()
+        elif current_version == 5:
+            self._migrate_v5_to_v6()
+        elif current_version == 6:  # Already up to date
+            pass
         else:
             raise ValueError(f"Unknown schema version {current_version}")
 
@@ -418,6 +425,43 @@ class MetadataStore:
             log.debug("tags_history table already exists")
 
         self._set_schema_version(5)
+
+    def _migrate_v5_to_v6(self) -> None:
+        """Migrate from v5 to v6: add schedules table."""
+        log.info("Migrating schema v5 → v6...")
+        tables = [
+            r[0]
+            for r in self.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        if "schedules" not in tables:
+            self.conn.execute("""
+                CREATE TABLE schedules (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    cron_expr TEXT NOT NULL,
+                    docs_path TEXT NOT NULL,
+                    product TEXT,
+                    workers INTEGER DEFAULT 2,
+                    priority TEXT DEFAULT 'normal',
+                    clean INTEGER DEFAULT 0,
+                    force INTEGER DEFAULT 0,
+                    enabled INTEGER DEFAULT 1,
+                    created_at REAL NOT NULL,
+                    updated_at REAL,
+                    last_run_at REAL,
+                    last_run_status TEXT,
+                    next_run_at REAL
+                )
+            """)
+            self.conn.execute(
+                "CREATE INDEX idx_schedules_enabled ON schedules(enabled)"
+            )
+            log.info("Created schedules table")
+        else:
+            log.debug("schedules table already exists")
+        self._set_schema_version(6)
 
     # ── Quota Helpers
 
@@ -792,6 +836,144 @@ class MetadataStore:
             (source_key,),
         ).fetchone()
         return row["sync_checkpoint"] if row else None
+
+    def add_schedule(
+        self,
+        schedule_id: str,
+        name: str,
+        cron_expr: str,
+        docs_path: str,
+        product: Optional[str] = None,
+        workers: int = 2,
+        priority: str = "normal",
+        clean: bool = False,
+        force: bool = False,
+    ) -> dict:
+        now = time.time()
+        self.conn.execute(
+            """
+            INSERT INTO schedules (id, name, cron_expr, docs_path, product,
+                                   workers, priority, clean, force,
+                                   enabled, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            """,
+            (
+                schedule_id, name, cron_expr, docs_path,
+                product, workers, priority,
+                1 if clean else 0, 1 if force else 0,
+                now, now,
+            ),
+        )
+        self._conn.commit()
+        log.info("Added schedule: %s (cron=%s)", name, cron_expr)
+        return self.get_schedule(schedule_id)
+
+    def list_schedules(self) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT * FROM schedules ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_schedule(self, schedule_id: str) -> Optional[dict]:
+        row = self.conn.execute(
+            "SELECT * FROM schedules WHERE id = ?", (schedule_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def update_schedule(
+        self,
+        schedule_id: str,
+        name: Optional[str] = None,
+        cron_expr: Optional[str] = None,
+        docs_path: Optional[str] = None,
+        product: Optional[str] = None,
+        workers: Optional[int] = None,
+        priority: Optional[str] = None,
+        clean: Optional[bool] = None,
+        force: Optional[bool] = None,
+        enabled: Optional[bool] = None,
+    ) -> Optional[dict]:
+        existing = self.get_schedule(schedule_id)
+        if existing is None:
+            return None
+        updates = {}
+        if name is not None:
+            updates["name"] = name
+        if cron_expr is not None:
+            updates["cron_expr"] = cron_expr
+        if docs_path is not None:
+            updates["docs_path"] = docs_path
+        if product is not None:
+            updates["product"] = product
+        if workers is not None:
+            updates["workers"] = workers
+        if priority is not None:
+            updates["priority"] = priority
+        if clean is not None:
+            updates["clean"] = 1 if clean else 0
+        if force is not None:
+            updates["force"] = 1 if force else 0
+        if enabled is not None:
+            updates["enabled"] = 1 if enabled else 0
+        updates["updated_at"] = time.time()
+        set_clause = ", ".join(
+            f"{k} = ?" for k in updates
+        )
+        values = list(updates.values()) + [schedule_id]
+        self.conn.execute(
+            f"UPDATE schedules SET {set_clause} WHERE id = ?", values
+        )
+        self._conn.commit()
+        return self.get_schedule(schedule_id)
+
+    def delete_schedule(self, schedule_id: str) -> bool:
+        row = self.conn.execute(
+            "SELECT id FROM schedules WHERE id = ?", (schedule_id,)
+        ).fetchone()
+        if row is None:
+            return False
+        self.conn.execute(
+            "DELETE FROM schedules WHERE id = ?", (schedule_id,)
+        )
+        self._conn.commit()
+        log.info("Deleted schedule: %s", schedule_id)
+        return True
+
+    def update_schedule_run(
+        self,
+        schedule_id: str,
+        last_run_at: float,
+        last_run_status: str,
+        next_run_at: Optional[float] = None,
+    ) -> None:
+        if next_run_at is not None:
+            self.conn.execute(
+                """UPDATE schedules
+                   SET last_run_at = ?, last_run_status = ?,
+                       next_run_at = ?, updated_at = ?
+                   WHERE id = ?""",
+                (last_run_at, last_run_status, next_run_at, time.time(), schedule_id),
+            )
+        else:
+            self.conn.execute(
+                """UPDATE schedules
+                   SET last_run_at = ?, last_run_status = ?,
+                       updated_at = ?
+                   WHERE id = ?""",
+                (last_run_at, last_run_status, time.time(), schedule_id),
+            )
+        self._conn.commit()
+
+    def get_enabled_schedules_due(self) -> list[dict]:
+        now = time.time()
+        rows = self.conn.execute(
+            """SELECT * FROM schedules
+               WHERE enabled = 1
+                 AND (next_run_at IS NULL OR next_run_at <= ?)
+               ORDER BY created_at""",
+            (now,),
+        ).fetchall()
+        return [dict(r) for r in rows]
 
 
 # ── Legacy registry (migrated from ingest/registry.py) ──────────────────────
@@ -1352,4 +1534,4 @@ class IngestRegistry:
             (rel_path, checksum, chunks, time.time()),
         )
         self._conn.commit()
-        log_reg.info("Marked indexed: '%s' chunks=%d", rel_path, chunks)
+

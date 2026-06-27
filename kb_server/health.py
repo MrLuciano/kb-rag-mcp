@@ -336,6 +336,10 @@ async def check_grafana() -> HealthStatus:
     """
     Check Grafana connectivity via TCP connection to GRAFANA_URL.
 
+    Falls back to Docker service name ``grafana:3000`` when the
+    configured URL's host is unreachable (e.g. ``localhost`` inside a
+    container where Grafana runs in a separate container).
+
     Returns:
         HealthStatus for Grafana connectivity
     """
@@ -350,32 +354,48 @@ async def check_grafana() -> HealthStatus:
             latency_ms=(time.time() - start) * 1000,
         )
 
-    try:
-        parsed = urlparse(grafana_url)
-        host = parsed.hostname or "localhost"
-        port = parsed.port or 80
+    candidates = []
+    parsed = urlparse(grafana_url)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or 80
+    candidates.append((host, port, f"{host}:{port}"))
 
-        reader, writer = await asyncio.open_connection(host, port)
-        writer.close()
-        await writer.wait_closed()
+    # Docker fallback — try the internal service name
+    if host in ("localhost", "127.0.0.1", "0.0.0.0"):
+        candidates.append(("grafana", 3000, "grafana:3000"))
+    # Also try the Docker network gateway
+    candidates.append(("localhost", 3000, "localhost:3000"))
 
-        latency = (time.time() - start) * 1000
-        return HealthStatus(
-            name="grafana",
-            healthy=True,
-            message=f"Connected to {host}:{port}",
-            latency_ms=latency,
-            details={"host": host, "port": port},
-        )
-    except Exception as e:
-        latency = (time.time() - start) * 1000
-        log.error(f"Grafana health check failed: {e}")
-        return HealthStatus(
-            name="grafana",
-            healthy=False,
-            message=str(e),
-            latency_ms=latency,
-        )
+    last_error = None
+    for candidate_host, candidate_port, label in candidates:
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(candidate_host, candidate_port),
+                timeout=3.0,
+            )
+            writer.close()
+            await writer.wait_closed()
+
+            latency = (time.time() - start) * 1000
+            return HealthStatus(
+                name="grafana",
+                healthy=True,
+                message=f"Connected to {label}",
+                latency_ms=latency,
+                details={"host": candidate_host, "port": candidate_port},
+            )
+        except Exception as e:
+            last_error = e
+            continue
+
+    latency = (time.time() - start) * 1000
+    log.error(f"Grafana health check failed (tried {len(candidates)} candidates): {last_error}")
+    return HealthStatus(
+        name="grafana",
+        healthy=False,
+        message=str(last_error),
+        latency_ms=latency,
+    )
 
 
 async def check_all_components() -> Dict[str, HealthStatus]:

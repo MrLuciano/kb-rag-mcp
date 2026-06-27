@@ -20,6 +20,7 @@ from kb_server.auth.schemas import (
     ErasureRequestResponse,
     LoginRequest,
     SessionResponse,
+    UpdateUserRequest,
     UserResponse,
 )
 from kb_server.auth.service import AuthService
@@ -253,6 +254,27 @@ async def delete_user(
             status_code=404, detail=f"User not found: {user_id}"
         )
     return {"deleted": True, "user_id": user_id}
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: str,
+    body: UpdateUserRequest,
+    request: Request,
+    admin: User = Depends(require_admin),
+):
+    service = _get_service(request)
+    user = service.update_user(
+        user_id,
+        email=body.email,
+        role=body.role,
+        is_active=body.is_active,
+    )
+    if user is None:
+        raise HTTPException(
+            status_code=404, detail=f"User not found: {user_id}"
+        )
+    return UserResponse.model_validate(user)
 
 
 # ── API Key Endpoints ───────────────────────────────────────────

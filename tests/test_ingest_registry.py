@@ -242,6 +242,6 @@ class TestConnectorState:
         row = store.conn.execute(
             "SELECT version FROM schema_version"
         ).fetchone()
-        assert row["version"] == 5
+        assert row["version"] == 6
 
         store.close()

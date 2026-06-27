@@ -43,6 +43,8 @@ from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
 from kb_server.observability.percentiles import get_percentile_tracker
 from kb_server.telemetry.query_logger import QueryLogger
 from kb_server.vector_store import VectorStore
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
 from observability.metrics import record_active_sessions  # PHASE 28
 from observability.metrics import record_session_evicted  # PHASE 28
 from observability.metrics import (
@@ -1377,6 +1379,86 @@ async def _schedule_metric_updates() -> None:
         await _update_rate_limit_subject_metric()
 
 
+async def _schedule_scheduler_loop() -> None:
+    """Phase 52: Background ingestion scheduler - runs every 30s."""
+    SHED_LOOP: str | None = config.get("SCHEDULER_LOOP", "true")
+    if SHED_LOOP is None or SHED_LOOP.lower() not in ("true", "1", "yes"):
+        log.info("Ingestion scheduler loop disabled via SCHEDULER_LOOP")
+        return
+    from datetime import datetime
+    from ingest.core.cron import cron_matches, next_cron_time
+    from ingest.core.metadata import MetadataStore
+    from ingest.job.manager import JobManager
+    from ingest.job.models import JobPriority
+
+    try:
+        sched_store = MetadataStore(Path("data/kb_metadata.db"))
+        sched_store.connect()
+        job_mgr = JobManager(sched_store)
+    except Exception as e:
+        log.error("Failed to init scheduler metadata store: %s", e)
+        return
+
+    while True:
+        await asyncio.sleep(30)
+        try:
+            now = datetime.now()
+            now_ts = now.timestamp()
+            due = sched_store.get_enabled_schedules_due()
+            for s in due:
+                name = s.get("name", "?")
+                sid = s.get("id", "")
+                cron_expr = s.get("cron_expr", "")
+
+                if not cron_matches(now, cron_expr):
+                    continue
+
+                log.info(
+                    "Scheduler trigger: schedule='%s' cron=%s docs_path=%s",
+                    name, cron_expr, s.get("docs_path", ""),
+                )
+                try:
+                    priority_str = s.get("priority", "normal")
+                    priority_map = {
+                        "low": JobPriority.LOW,
+                        "normal": JobPriority.NORMAL,
+                        "high": JobPriority.HIGH,
+                    }
+                    job = job_mgr.create_job(
+                        docs_path=s.get("docs_path", ""),
+                        priority=priority_map.get(priority_str, JobPriority.NORMAL),
+                        product_override=s.get("product"),
+                        workers=int(s.get("workers", 2)),
+                        clean=bool(s.get("clean", False)),
+                        force=bool(s.get("force", False)),
+                    )
+                    next_run = next_cron_time(now, cron_expr)
+                    sched_store.update_schedule_run(
+                        schedule_id=sid,
+                        last_run_at=now_ts,
+                        last_run_status="triggered",
+                        next_run_at=next_run.timestamp() if next_run else None,
+                    )
+                    log.info(
+                        "Scheduler triggered job=%s from schedule='%s'",
+                        job.job_id, name,
+                    )
+                except Exception as e:
+                    log.error(
+                        "Scheduler failed to create job for schedule='%s': %s",
+                        name, e,
+                    )
+                    next_run = next_cron_time(now, cron_expr)
+                    sched_store.update_schedule_run(
+                        schedule_id=sid,
+                        last_run_at=now_ts,
+                        last_run_status="error",
+                        next_run_at=next_run.timestamp() if next_run else None,
+                    )
+        except Exception as e:
+            log.error("Scheduler loop error: %s", e, exc_info=True)
+
+
 async def _schedule_log_cleanup() -> None:
     """CR-04: Periodically purge query log entries older than retention window.
 
@@ -1585,6 +1667,10 @@ async def main():
         asyncio.create_task(_schedule_metric_updates())
         log.info("Rate-limit metric updates scheduled every 60s")
 
+    # PHASE 52: Start background ingestion scheduler
+    asyncio.create_task(_schedule_scheduler_loop())
+    log.info("Ingestion scheduler loop started (30s interval)")
+
     if TRANSPORT == "sse":
         import uvicorn
         from starlette.applications import Starlette
@@ -1670,10 +1756,18 @@ async def main():
                 media_type="application/json",
             )
 
+        async def handle_metrics(request):
+            """Prometheus metrics endpoint — served from MCP process for real data."""
+            return Response(
+                content=generate_latest(),
+                media_type=CONTENT_TYPE_LATEST,
+            )
+
         starlette_app = Starlette(
             routes=[
                 Route("/sse", endpoint=handle_sse),
                 Route("/health", endpoint=handle_health),
+                Route("/metrics", endpoint=handle_metrics),
                 Mount("/messages/", app=sse.handle_post_message),
                 Mount("/api/v1", app=_build_auth_app()),
             ]
@@ -1790,6 +1884,13 @@ async def main():
                     endpoint=lambda r: Response(
                         content='{"status":"ok","service":"kb-rag"}',
                         media_type="application/json",
+                    ),
+                ),
+                Route(
+                    "/metrics",
+                    endpoint=lambda r: Response(
+                        content=generate_latest(),
+                        media_type=CONTENT_TYPE_LATEST,
                     ),
                 ),
                 Mount("/api/v1", app=_build_auth_app()),

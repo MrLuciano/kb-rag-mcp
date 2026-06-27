@@ -122,3 +122,22 @@ class JobProgress:
     error: Optional[str] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+
+
+@dataclass
+class Schedule:
+    id: str
+    name: str
+    cron_expr: str
+    docs_path: str
+    product: Optional[str] = None
+    workers: int = 2
+    priority: str = "normal"
+    clean: bool = False
+    force: bool = False
+    enabled: bool = True
+    created_at: float = 0.0
+    updated_at: Optional[float] = None
+    last_run_at: Optional[float] = None
+    last_run_status: Optional[str] = None
+    next_run_at: Optional[float] = None
