@@ -230,6 +230,21 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 - Embedding failures: propagate up to caller (critical path)
 - Hybrid search / reranking: fallback to non-hybrid / original results on failure
 - Query logging: non-fatal; logged but never raises
+## Versioning and deprecation policy
+
+This project follows [Semantic Versioning](https://semver.org/):
+
+- **Patch** (`x.y.Z`): bug fixes that do not change public API or
+  on-disk format.
+- **Minor** (`x.Y.0`): additive changes; new CLI subcommands, new MCP
+  tools, new config keys. Existing behaviour is preserved.
+- **Major** (`X.0.0`): breaking changes. This includes on-disk format
+  changes that are not handled by a migration, removal of CLI subcommands,
+  or changes to the MCP tool schema that would break existing agents.
+
+Breaking changes only ship in major releases. Deprecated items are
+documented in the CHANGELOG under `### Deprecated` and removed no sooner
+than the following major release.
 ## Cross-Cutting Concerns
 <!-- GSD:architecture-end -->
 
