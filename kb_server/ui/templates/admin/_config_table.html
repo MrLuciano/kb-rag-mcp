@@ -18,11 +18,15 @@
                               data-action="config-start-edit" :data-key="entry.key" :data-value="entry.value" class="editable-field"></span>
                         <input x-show="editing === entry.key" type="text" class="form-control form-control-sm"
                                x-model="editValue"
-                               :hx-put="'/api/v1/config/' + entry.key"
-                               hx-trigger="blur, keydown[key=='Enter']"
-                               hx-target="closest tr"
-                               hx-swap="none"
-                               hx-vals='js:{value: editValue}'
+                               @keydown.enter.prevent="
+                                   fetch('/api/v1/config/' + entry.key, {
+                                       method: 'PUT',
+                                       headers: {'Content-Type': 'application/json'},
+                                       body: JSON.stringify({value: editValue})
+                                   }).then(r => {
+                                       if (r.ok) { editing = ''; loadConfig(); }
+                                   });
+                               "
                                 @keydown.escape.prevent="editing = ''">
                     </td>
                     <td><span class="badge bg-secondary" x-text="entry.type"></span></td>

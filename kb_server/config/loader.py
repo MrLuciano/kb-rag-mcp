@@ -44,33 +44,121 @@ class ConfigLoader:
         them into the config table with group_name="env_default" when the
         key does not already exist in the database.
 
-        Only seeds the default production database to avoid polluting
+        Seeds both kb_metadata.db (MCP server) and config.db (UI server)
+        to make all env keys visible in the admin settings UI. Skips
         temporary test databases.
         """
-        # Skip seeding for non-production databases (e.g. tests)
-        if self._db_path.name != "kb_metadata.db":
+        # Skip seeding for test databases
+        if self._db_path.name not in ("kb_metadata.db", "config.db"):
             return
 
         seed_keys = [
-            "LOG_PATH",
+            # ── Embedding ──────────────────────────────────────────────────
+            "EMBED_BACKEND",
+            "EMBED_MODEL",
+            "EMBED_BATCH_SIZE",
+            "LMS_BASE_URL",
+            "LMS_HOST",
+            "LMS_PORT",
+            "OLLAMA_HOST",
+            # ── Qdrant ─────────────────────────────────────────────────────
+            "QDRANT_HOST",
+            "QDRANT_PORT",
+            "QDRANT_GRPC_PORT",
+            "QDRANT_COLLECTION",
+            "QDRANT_DATA_PATH",
+            "QDRANT_URL",
+            "QDRANT_TIMEOUT",
+            "QDRANT_BATCH_SIZE",
+            # ── Search / Retrieval ─────────────────────────────────────────
+            "SCORE_THRESHOLD",
+            "DEFAULT_TOP_K",
+            "HYBRID_ENABLED",
+            "HYBRID_DENSE_WEIGHT",
+            "HYBRID_SPARSE_WEIGHT",
+            "HYBRID_RRF_K",
+            "HYBRID_SPARSE_MODEL",
+            "RERANK_ENABLED",
+            "RERANKER_MODEL",
+            "RERANKER_BATCH_SIZE",
+            "RERANKER_CACHE_TTL",
+            # ── MCP Server ─────────────────────────────────────────────────
             "MCP_TRANSPORT",
             "SSE_HOST",
             "SSE_PORT",
-            "DEFAULT_TOP_K",
+            "DATA_DIR",
+            "KB_METADATA_DB",
+            "METADATA_DB",
+            "CONFIG_DB_PATH",
+            "REGISTRY_DB_PATH",
+            "REGISTRY_DB",
+            # ── UI Server ──────────────────────────────────────────────────
+            "UI_HOST",
+            "UI_PORT",
+            # ── Logs ───────────────────────────────────────────────────────
+            "LOG_PATH",
+            "LOGS_DIR",
+            "MCP_LOG",
+            # ── Docs / Ingestion ───────────────────────────────────────────
+            "DOCS_PATH",
+            "WATCH_PATH",
+            "WATCH_DEBOUNCE_SECONDS",
+            "WATCH_RECURSIVE",
+            "WATCH_IGNORE_PATTERNS",
+            "INGEST_CHUNK_SIZE_DEFAULT",
+            "INGEST_CHUNK_OVERLAP_DEFAULT",
+            "PDF_EXTRACTOR",
+            # ── Auth ───────────────────────────────────────────────────────
+            "AUTH_DASHBOARD_ENABLED",
+            "AUTH_ENABLED",
+            "AUTH_DB_PATH",
+            "JWT_SECURE",
+            "SESSION_TIMEOUT",
+            # ── Grafana ────────────────────────────────────────────────────
+            "GRAFANA_URL",
+            "GRAFANA_DASHBOARD_UID",
+            # ── Rate Limiting ──────────────────────────────────────────────
             "RATE_LIMIT_ENABLED",
             "RATE_LIMIT_REQUESTS",
             "RATE_LIMIT_WINDOW",
+            # ── Cache ──────────────────────────────────────────────────────
             "RLCACHE_ENABLED",
             "RLCACHE_TTL",
             "RLCACHE_MAX_ENTRIES",
+            # ── Query Logging ──────────────────────────────────────────────
             "QUERY_LOG_ENABLED",
             "QUERY_LOG_PATH",
             "QUERY_LOG_RETENTION_DAYS",
             "QUERY_LOG_CLEANUP_INTERVAL_HOURS",
+            # ── Health ─────────────────────────────────────────────────────
             "HEALTH_HOST",
             "HEALTH_PORT",
-            "METADATA_DB",
+            # ── Tags ───────────────────────────────────────────────────────
             "TAGS_SEARCH_ENABLED",
+            # ── Embedding Infrastructure ───────────────────────────────────
+            "HTTP_POOL_CONNECTIONS",
+            "HTTP_POOL_MAXSIZE",
+            "HTTP_TIMEOUT",
+            "CIRCUIT_BREAKER_THRESHOLD",
+            "CIRCUIT_BREAKER_COOLDOWN",
+            "CIRCUIT_BREAKER_COOLDOWN_MAX",
+            "PROVIDER_BUDGET_WINDOW_SECONDS",
+            "PROVIDER_BUDGET_MAX_REQUESTS",
+            # ── LLM / Evaluation ───────────────────────────────────────────
+            "OPENAI_BASE_URL",
+            "LLM_MODEL",
+            "EVAL_LLM_MODEL",
+            # ── Optimization ───────────────────────────────────────────────
+            "OPT_CHUNK_SIZE",
+            "OPT_CHUNK_OVERLAP",
+            "OPT_TOP_K",
+            "OPT_DENSE_WEIGHT",
+            "OPT_SPARSE_WEIGHT",
+            "OPT_RRF_K",
+            "OPT_DISTANCE_METRIC",
+            "OPT_EVAL_BACKEND",
+            # ── Reclassification ───────────────────────────────────────────
+            "RECLASSIFY_BACKUP_RETENTION_DAYS",
         ]
         try:
             with get_connection(self._db_path) as conn:
