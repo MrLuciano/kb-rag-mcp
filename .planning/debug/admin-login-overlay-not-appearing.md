@@ -1,5 +1,5 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "Admin panel login overlay doesn't appear for user visiting admin page without valid session"
 created: 2026-06-17T18:00:00Z
 updated: 2026-06-17T18:00:00Z
@@ -83,6 +83,6 @@ started: "unknown — likely since UI was deployed"
 ## Resolution
 
 root_cause: "adminApp() is defined as a global function and invoked via x-data='adminApp()' in shell.html. The Alpine CSP build (@alpinejs/csp) does NOT support calling global functions in expressions per its documented limitations. The component never initializes — Alpine injects [x-cloak] CSS (hiding the overlay), but never processes the component (so x-cloak is never removed, x-show is never evaluated, and the overlay stays hidden)."
-fix: ""
-verification: ""
-files_changed: []
+fix: "Registered adminApp via Alpine.data('adminApp', () => ({...})) and changed x-data='adminApp()' to x-data='adminApp' in shell.html (Phase 28c-fixes Plan 05)"
+verification: "Login overlay appears on 401; JWT session cookie exchange works end-to-end (verified in 28c-fixes UAT)"
+files_changed: ["kb_server/ui/templates/admin/shell.html"]

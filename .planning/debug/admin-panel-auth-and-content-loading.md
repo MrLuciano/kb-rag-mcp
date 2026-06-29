@@ -1,3 +1,9 @@
+---
+status: resolved
+created: 2026-06-17T16:00:00Z
+updated: 2026-06-29T18:05:00Z
+---
+
 # Debug Session: Admin Panel Auth & Content Loading
 
 ## Symptoms
@@ -38,12 +44,17 @@ This explains:
 | `kb_server/ui/templates/admin/shell.html:113-129` | `init()` calls /api/v1/users/me → 404 |
 | `kb_server/ui/templates/admin/shell.html:131-158` | `authenticate()` never POSTs JWT session |
 
-## Suggested Fix Direction
+## Resolution
 
-1. Fix Alpine.js CDN URL — use `dist/cdn.min.js` from a trusted CDN or install `@alpinejs/csp`
-2. Add server-side auth gating to ALL admin routes using `Depends(get_current_user)`
-3. Mount auth router on UI app so `/api/v1/users/me` and `/api/v1/auth/session` available
-4. Implement JWT session cookie exchange in `authenticate()`
-5. Seed default admin account (admin/admin) on first startup
-6. Add session timeout tracking
-7. Add proper error handling (distinguish 404 vs 401 vs 500)
+All 7 items fixed in Phase 28c-fixes Plans 01-05:
+1. Alpine.js CDN URL fixed — `@alpinejs/csp@3.13.3/dist/cdn.min.js` with SRI hash ✅
+2. Server-side auth gating added — 13 endpoints use `Depends(get_current_user)` ✅
+3. Auth router mounted on UI app — `app.py` includes auth_router ✅
+4. JWT session cookie exchange — `POST /auth/session` → JWT cookie ✅
+5. Default admin account seeded — `ensure_admin_account()` on startup ✅
+6. Session timeout tracking — `_SESSION_TIMEOUT=1800`, `UserSession` table ✅
+7. Error handling — status-code-specific error handler in base.html ✅
+
+## Verified
+
+Phase 28c-fixes UAT: 3/3 verification steps passed (password login, API key login, session validation).
