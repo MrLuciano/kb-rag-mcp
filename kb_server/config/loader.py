@@ -22,6 +22,8 @@ class ConfigLoader:
         self._cache: dict[str, tuple[str, str, float]] = {}
         self._old_cache: dict[str, tuple[str, str, float]] = {}
         self._cache_version: int = 0
+        self._last_refresh: float = 0.0
+        self._refresh_ttl: float = 1.0
         self._observers: list[tuple[str, Callable[[str, Any], None]]] = []
 
         self._init_db()
@@ -189,6 +191,7 @@ class ConfigLoader:
                             )
                 bump_config_version(conn)
             self._cache_version = 0
+            self._last_refresh = 0.0
         except Exception:
             log.warning(
                 "ConfigLoader.load_from_env: SQLite unavailable, "
@@ -196,6 +199,10 @@ class ConfigLoader:
             )
 
     def _refresh_cache(self) -> None:
+        now = time.time()
+        if now - self._last_refresh < self._refresh_ttl:
+            return
+        self._last_refresh = now
         try:
             with get_connection(self._db_path) as conn:
                 current_version = get_config_version(conn)
@@ -269,6 +276,7 @@ class ConfigLoader:
             raise
 
         self._cache_version = 0
+        self._last_refresh = 0.0
         self._notify_observers(key, value)
         return {
             "key": key,
@@ -306,6 +314,7 @@ class ConfigLoader:
             raise
 
         self._cache_version = 0
+        self._last_refresh = 0.0
         self._notify_observers(key, None)
         return True
 
@@ -339,6 +348,7 @@ class ConfigLoader:
             raise
 
         self._cache_version = 0
+        self._last_refresh = 0.0
         self._notify_observers("*", None)
         return deleted
 

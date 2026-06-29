@@ -26,7 +26,8 @@ def loader(db_path):
 
 
 @pytest.fixture
-def app(loader):
+def app(loader, monkeypatch):
+    monkeypatch.setattr("kb_server.auth.legacy.AUTH_ENABLED", False)
     app = FastAPI()
     app.state.config_loader = loader
     app.include_router(router)
