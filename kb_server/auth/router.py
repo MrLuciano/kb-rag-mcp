@@ -34,6 +34,24 @@ _JWT_SECURE = os.getenv("JWT_SECURE", "false").lower() in (
 )
 _SESSION_TIMEOUT = int(os.getenv("SESSION_TIMEOUT", "1800"))
 
+# In-memory rate limiter for login endpoint
+_LOGIN_LIMIT_WINDOW = int(os.getenv("LOGIN_RATE_LIMIT_WINDOW", "60"))
+_LOGIN_LIMIT_MAX = int(os.getenv("LOGIN_RATE_LIMIT_MAX", "5"))
+_login_attempts: dict[str, list[float]] = {}
+
+
+def _check_login_rate_limit(ip: str) -> None:
+    now = time.time()
+    attempts = _login_attempts.get(ip, [])
+    attempts = [t for t in attempts if now - t < _LOGIN_LIMIT_WINDOW]
+    if len(attempts) >= _LOGIN_LIMIT_MAX:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts. Try again later.",
+        )
+    attempts.append(now)
+    _login_attempts[ip] = attempts
+
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 
 
@@ -65,6 +83,8 @@ async def login_with_password(
     body: LoginRequest,
 ):
     """Exchange username+password for an HttpOnly session cookie."""
+    ip = request.client.host if request.client else "unknown"
+    _check_login_rate_limit(ip)
     service = _get_service(request)
     user = service.verify_login(body.username, body.password)
     if user is None:

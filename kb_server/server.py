@@ -1629,6 +1629,21 @@ async def main():
     else:
         log.info(f"Embedding backend healthy: {embedding_status.message}")
 
+    from kb_server.auth import is_auth_enabled
+
+    if not is_auth_enabled() and TRANSPORT != "stdio":
+        log.warning(
+            "SECURITY: AUTH_ENABLED=false in HTTP/SSE mode — "
+            "all endpoints are accessible without authentication. "
+            "Set AUTH_ENABLED=true in production."
+        )
+    if is_auth_enabled() and not os.getenv("JWT_SECRET"):
+        log.warning(
+            "SECURITY: JWT_SECRET is not set. Session tokens use a "
+            "predictable fallback secret. Set JWT_SECRET to a random "
+            "64-character hex string in production."
+        )
+
     vector_status = await check_vector_store()
     if not vector_status.healthy:
         log.warning(

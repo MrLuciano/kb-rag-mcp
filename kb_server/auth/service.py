@@ -288,9 +288,12 @@ class AuthService:
             self._session.commit()
 
     def verify_key(self, raw_key: str) -> Optional[User]:
+        from sqlalchemy.orm import joinedload
+
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         api_key = (
             self._session.query(ApiKey)
+            .options(joinedload(ApiKey.user))
             .filter(
                 ApiKey.key_hash == key_hash,
                 ApiKey.is_revoked == False,  # noqa: E712
@@ -299,17 +302,13 @@ class AuthService:
         )
         if api_key is None:
             return None
-
-        user = self.get_user(api_key.user_id)
-        if user is None:
+        if api_key.user is None:
             return None
-        if not user.is_active:
+        if not api_key.user.is_active:
             return None
-        if user.erasure_status == ErasureStatus.erasure_completed:
+        if api_key.user.erasure_status == ErasureStatus.erasure_completed:
             return None
-
-        self._session.commit()
-        return user
+        return api_key.user
 
     # ── Cross-user key operations (for CLI / admin) ────────────
 

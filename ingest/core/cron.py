@@ -2,6 +2,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
+from croniter import croniter
+
 log = logging.getLogger("kb-ingest.cron")
 
 
@@ -87,17 +89,14 @@ def next_cron_time(
     after: datetime, expression: str
 ) -> Optional[datetime]:
     validate_cron(expression)
-    candidate = after.replace(second=0, microsecond=0) + timedelta(minutes=1)
-    max_steps = 525600
-    steps = 0
-    while steps < max_steps:
-        if cron_matches(candidate, expression):
-            return candidate
-        candidate += timedelta(minutes=1)
-        steps += 1
-    log.warning(
-        "No future cron match found within %d minutes for '%s'",
-        max_steps,
-        expression,
-    )
-    return None
+    try:
+        cron = croniter(expression, after)
+        return cron.get_next(datetime)
+    except (ValueError, KeyError) as e:
+        log.warning(
+            "No future cron match found for '%s' (after %s): %s",
+            expression,
+            after,
+            e,
+        )
+        return None
