@@ -1,6 +1,8 @@
+import hashlib
+import hmac
 import logging
 import os
-from pathlib import Path
+import time
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -16,36 +18,71 @@ def _verify_config_auth(request: Request):
         api_key = auth_header[7:].strip()
     if not api_key:
         api_key = request.headers.get("X-API-Key")
-    if not api_key:
-        from kb_server.auth import is_auth_enabled
+    if api_key:
+        from pathlib import Path
 
-        if not is_auth_enabled():
+        from kb_server.auth.service import AuthService
+
+        try:
+            svc = AuthService(
+                db_path=Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
+            )
+            user = svc.verify_key(api_key)
+            if user is not None:
+                return
+        except Exception:
+            log.exception("AuthService verification in config router failed")
+
+        from kb_server.auth_registry import get_registry
+
+        registry = get_registry()
+        if registry.verify_key(api_key):
             return
-        raise HTTPException(status_code=401, detail="API key required")
 
-    # Check AuthService (api_keys table via SQLAlchemy)
-    from kb_server.auth.service import AuthService
-
-    try:
-        svc = AuthService(
-            db_path=Path(os.getenv("AUTH_DB_PATH", "data/auth.db"))
+        raise HTTPException(
+            status_code=401, detail="Invalid or revoked API key"
         )
-        user = svc.verify_key(api_key)
-        if user is not None:
-            return
-    except Exception:
-        log.exception("AuthService verification in config router failed")
 
-    # Fallback: legacy auth_api_keys table
-    from kb_server.auth_registry import get_registry
+    # No API key — try session cookie
+    session_cookie = request.cookies.get("session")
+    if session_cookie:
+        parts = session_cookie.split(":")
+        if len(parts) == 3:
+            user_id, expires_at_str, signature = parts
+            try:
+                expires_at = int(expires_at_str)
+                if expires_at >= int(time.time()):
+                    secret = os.getenv("JWT_SECRET", "")
+                    if not secret:
+                        secret = "kb-rag-mcp-session-secret"
+                    expected = hmac.new(
+                        secret.encode(),
+                        f"{user_id}:{expires_at}".encode(),
+                        hashlib.sha256,
+                    ).hexdigest()[:16]
+                    if hmac.compare_digest(signature, expected):
+                        from pathlib import Path
 
-    registry = get_registry()
-    if registry.verify_key(api_key):
+                        from kb_server.auth.service import AuthService
+
+                        svc = AuthService(
+                            db_path=Path(
+                                os.getenv("AUTH_DB_PATH", "data/auth.db")
+                            )
+                        )
+                        user = svc.get_user(user_id)
+                        if user is not None and user.is_active:
+                            return
+            except (ValueError, IndexError):
+                pass
+
+    # Final fallback: allow if auth is disabled
+    from kb_server.auth import is_auth_enabled
+
+    if not is_auth_enabled():
         return
 
-    raise HTTPException(
-        status_code=401, detail="Invalid or revoked API key"
-    )
+    raise HTTPException(status_code=401, detail="API key required")
 
 
 router = APIRouter(
