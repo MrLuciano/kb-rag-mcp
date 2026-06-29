@@ -1914,6 +1914,49 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 
 ---
 
+## v0.1.5 Features
+
+### Admin SPA
+
+The Admin SPA is served at `/admin/` when the server is running in HTTP mode (SSE or streamable-http transport). It provides:
+
+- **Dashboard** — System overview with monitor lights
+- **Config Editor** — View and edit all configuration values
+- **Document Browser** — Browse ingested documents with filters and search
+- **Schedule Management** — Create, view, update, and delete ingestion schedules
+- **User Management** — Create and manage users and API keys
+- **Monitoring** — Grafana dashboard embed and component health lights
+- **Analytics** — Query logging visualization
+- **Tag Management** — Edit document tags
+
+Access: Open `http://<host>:<port>/admin/` in a browser.
+
+### Ingestion Schedules
+
+Schedules use standard 5-field CRON expressions. The scheduler loop runs every 30 seconds and triggers ingestion jobs.
+
+Environment variables:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SCHEDULER_INTERVAL` | `30` | Scheduler loop interval in seconds |
+
+### Login Rate Limiting
+
+When `AUTH_ENABLED=true`, the `/auth/login` endpoint is rate-limited:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOGIN_RATE_LIMIT_WINDOW` | `60` | Time window in seconds |
+| `LOGIN_RATE_LIMIT_MAX` | `5` | Max attempts per window |
+
+### Security Notes
+
+#### Startup Warnings
+- When `AUTH_ENABLED=false` in HTTP/SSE mode, a startup warning reminds you to enable auth in production.
+- When `AUTH_ENABLED=true` and `JWT_SECRET` is not set, a startup warning recommends setting a strong random secret.
+
+---
+
 ## Quick Command Reference
 
 | Task | Command |
