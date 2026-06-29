@@ -98,11 +98,11 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 ## v0.1.5 Streamable HTTP & Management Platform
 
 <details open>
-<summary>🔄 v0.1.5 Phase Overview — 17/18 PHASES COMPLETE</summary>
+<summary>🔄 v0.1.5 Phase Overview — 18/18 PHASES COMPLETE (1 planned)</summary>
 
-**Completed:** Phase 28, 28b, 28c, 28c-fixes, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50
+**Completed:** Phase 28, 28b, 28c, 28c-fixes, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50, 51, 52
 
-**Phase 52:** Ingestion Schedule Management (planned)
+**Phase 53:** v0.1.5 Quality & Polish (planned)
 
 - [x] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware, session lifecycle, Prometheus metrics (completed 2026-06-15)
   - Plans: [28-01-PLAN.md](phases/28-mcp-streamable-http/28-01-PLAN.md) — 5 tasks (transport, auth, rate limit, docs)
@@ -139,7 +139,8 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
   - Plans: Already done
 - [x] Phase 50: SSE Test Process Consolidation — Refactor test_smoke.py for per-function @patch to consolidate SSE test process (completed 2026-06-17)
   - Plans: [50-01-PLAN.md](phases/50-sse-test-consolidation/50-01-PLAN.md)
-- [ ] Phase 52: Ingestion Schedule Management — Create and manage CRON-based ingestion schedules from Admin UI Schedule tab; background scheduler creates jobs on cron match (planned)
+- [x] Phase 52: Ingestion Schedule Management — Create and manage CRON-based ingestion schedules from Admin UI Schedule tab; background scheduler creates jobs on cron match (completed 2026-06-17)
+- [ ] Phase 53: v0.1.5 Quality & Polish — Bug bash, E2E tests, security audit, docs, performance tuning (planned)
 
 </details>
 
@@ -375,6 +376,20 @@ Plans:
   5. Scheduled ingestion jobs appear in the Monitor tab alongside manually created jobs
 **Plans**: [52-01-PLAN.md](phases/52-ingestion-schedule/52-01-PLAN.md)
 
+### Phase 53: v0.1.5 Quality & Polish
+**Goal**: Comprehensive quality pass on v0.1.5 features — bug bash Admin SPA, add E2E tests, security audit, documentation, and performance tuning
+**Depends on**: Phase 28c (Admin SPA), Phase 28b (Auth), Phase 52 (Schedule), Phase 40 (Config)
+**Requirements**: QA-01, QA-02, QA-03, QA-04, QA-05
+**Success Criteria** (what must be TRUE):
+   1. Admin SPA bugs identified in bug bash are fixed and verified
+   2. E2E tests cover auth flow (login/logout/session), admin panel (config, document browse, filters, export), and schedule management
+   3. Security audit completed: auth endpoints reviewed, session cookie hardening verified, rate limiting effective, no PII leaks
+   4. Documentation updated covers all v0.1.5 features: Admin SPA, Auth API, Config API, Schedule Management, Grafana Embed, Observability
+   5. Performance profiling identifies and resolves top-3 bottlenecks in config API, schedule scheduler, or admin panel rendering
+**Plans**: TBD
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -436,7 +451,8 @@ Plans:
 | 49. Qdrant Mock Cleanup | v0.1.5 | 1/1 | Complete | 2026-06-15 (pre-existing) |
 | 50. SSE Test Process Consolidation | v0.1.5 | 0/0 | Backlog | — |
 | 51. Document Tag Management & Re-ingest Control | v0.1.5 | 1/1 | Complete | 2026-06-17 |
-| 52. Ingestion Schedule Management | v0.1.5 | 0/0 | Planned | — |
+| 52. Ingestion Schedule Management | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 53. v0.1.5 Quality & Polish | v0.1.5 | 0/0 | Planned | — |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
