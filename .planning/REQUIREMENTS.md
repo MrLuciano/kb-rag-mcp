@@ -61,37 +61,37 @@ Requirements for v0.1.5 milestone. Each maps to roadmap phases.
 
 ### Observability (Phase 39)
 
-- [ ] **OBS-01**: Request ID middleware: auto-generate `X-Request-Id` (UUID) if not present, propagate via context var, expose as response header
-- [ ] **OBS-02**: Per-operation percentile metrics (p50/p95/p99) for `search_kb`, `list_documents`, `get_chunk`, `kb_stats`
-- [ ] **OBS-03**: Percentile metrics use bounded-memory sorted-list or ring buffer, reset every scrape interval
-- [ ] **OBS-04**: Health API endpoint `GET /api/v1/health` with Grafana connectivity check
+- [x] **OBS-01**: Request ID middleware: auto-generate `X-Request-Id` (UUID) if not present, propagate via context var, expose as response header
+- [x] **OBS-02**: Per-operation percentile metrics (p50/p95/p99) for `search_kb`, `list_documents`, `get_chunk`, `kb_stats`
+- [x] **OBS-03**: Percentile metrics use bounded-memory sorted-list or ring buffer, reset every scrape interval
+- [x] **OBS-04**: Health API endpoint `GET /api/v1/health` with Grafana connectivity check
 
 ### Grafana Dashboard Embedding (Phase 38)
 
-- [ ] **GRAF-01**: Grafana dashboard embedded via iframe in Monitoring tab
-- [ ] **GRAF-02**: Time range selector (1h/6h/24h/7d) updates iframe `from`/`to` parameters
-- [ ] **GRAF-03**: CSP `frame-src` directive configurable via `GRAFANA_URL` config entry
-- [ ] **GRAF-04**: Grafana configured with `allow_embedding=true` and anonymous Viewer role
+- [x] **GRAF-01**: Grafana dashboard embedded via iframe in Monitoring tab
+- [x] **GRAF-02**: Time range selector (1h/6h/24h/7d) updates iframe `from`/`to` parameters
+- [x] **GRAF-03**: CSP `frame-src` directive configurable via `GRAFANA_URL` config entry
+- [x] **GRAF-04**: Grafana configured with `allow_embedding=true` and anonymous Viewer role
 
 ### Provider Aliases (Phase 41)
 
-- [ ] **PROV-01**: Config table entries with group `provider_alias`, key pattern `provider_alias.<canonical_name>`
-- [ ] **PROV-02**: `EmbedClient` reads aliases from config layer on resolution; fallback to value-as-is if no alias found
+- [x] **PROV-01**: Config table entries with group `provider_alias`, key pattern `provider_alias.<canonical_name>`
+- [x] **PROV-02**: `EmbedClient` reads aliases from config layer on resolution; fallback to value-as-is if no alias found
 
 ### Advanced Filters (SPA-05)
 
-- [ ] **FILT-01**: Date range filter on document browse (created_at from/to)
-- [ ] **FILT-02**: File type filter (PDF, DOCX, XLSX, PPTX, MD, TXT) with multi-select
-- [ ] **FILT-03**: Vendor and product filter dropdowns populated from distinct values
-- [ ] **FILT-04**: Filter state reflected in URL query params (shareable/bookmarkable)
-- [ ] **FILT-05**: "Clear All Filters" button resets all active filters
+- [x] **FILT-01**: Date range filter on document browse (created_at from/to)
+- [x] **FILT-02**: File type filter (PDF, DOCX, XLSX, PPTX, MD, TXT) with multi-select
+- [x] **FILT-03**: Vendor and product filter dropdowns populated from distinct values
+- [x] **FILT-04**: Filter state reflected in URL query params (shareable/bookmarkable)
+- [x] **FILT-05**: "Clear All Filters" button resets all active filters
 
 ### Document Export (SPA-04)
 
-- [ ] **EXPT-01**: Export button in document browse triggers filtered download
-- [ ] **EXPT-02**: Export format options: CSV, JSON
-- [ ] **EXPT-03**: Respects all active filters (date range, file type, vendor, product)
-- [ ] **EXPT-04**: Large export runs as background job with progress indicator
+- [x] **EXPT-01**: Export button in document browse triggers filtered download
+- [x] **EXPT-02**: Export format options: CSV, JSON
+- [x] **EXPT-03**: Respects all active filters (date range, file type, vendor, product)
+- [x] **EXPT-04**: Large export runs as background job with progress indicator
 
 ## v2 Requirements
 
@@ -119,25 +119,35 @@ Deferred to future release. Tracked but not in current roadmap.
 | Real-time document editing | Shifts from document management to collaborative editor |
 | Mobile app | Web-first, MCP clients on mobile are the mobile experience |
 
+### Schedule Management (Phase 52)
+
+- [x] **SCHED-01**: Admin can view, create, update, and delete ingestion schedules from the Schedule tab
+- [x] **SCHED-02**: Each schedule stores: name, cron expression, docs path, product, workers, priority, clean, force
+- [x] **SCHED-03**: Background scheduler runs every 30s, creates Job when cron matches, updates last_run/next_run
+- [x] **SCHED-04**: Schedules can be enabled/disabled without deletion
+- [x] **SCHED-05**: Scheduled ingestion jobs appear in the Monitor tab alongside manually created jobs
+
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SH-01 through SH-05 | Phase 28 (reopened) | In Progress (Plan 28-01 done) |
-| AUTH-01 through AUTH-15 | Phase 28b | Pending |
-| CONF-01 through CONF-08 | Phase 40 | Pending |
-| SPA-01 through SPA-12 | Phase 28c | Pending |
-| OBS-01 through OBS-04 | Phase 39 | Pending |
-| GRAF-01 through GRAF-04 | Phase 38 | Pending |
-| PROV-01 through PROV-02 | Phase 41 | Pending |
-| FILT-01 through FILT-05 | Phase 28c | Pending |
-| EXPT-01 through EXPT-04 | Phase 28c | Pending |
+| SH-01 through SH-05 | Phase 28 (reopened) | Complete |
+| AUTH-01 through AUTH-15 | Phase 28b | Complete |
+| CONF-01 through CONF-08 | Phase 40 | Complete |
+| SPA-01 through SPA-12 | Phase 28c | Complete |
+| OBS-01 through OBS-04 | Phase 39 | Complete |
+| GRAF-01 through GRAF-04 | Phase 38 | Complete |
+| PROV-01 through PROV-02 | Phase 41 | Complete |
+| FILT-01 through FILT-05 | Phase 28c | Complete |
+| EXPT-01 through EXPT-04 | Phase 28c | Complete |
+| SCHED-01 through SCHED-05 | Phase 52 | Complete |
 
 **Coverage:**
-- v1 requirements: 59 total
-- Mapped to phases: 59
+- v1 requirements: 64 total
+- Checked off: 64
+- Mapped to phases: 64
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-15*
-*Last updated: 2026-06-15 — FILT/EXPT requirements mapped to Phase 28c; coverage count corrected to 59*
+*Last updated: 2026-06-29 — all 59 requirements checked off; v0.1.5 milestone complete*
