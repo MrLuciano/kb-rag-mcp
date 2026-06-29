@@ -29,6 +29,10 @@ MCP client.
 - 🔄 **Streamable HTTP** — Alternative MCP transport with session management
 - 🛡️ **Rate limiting** — Per-subject token bucket with burst protection
 - ⚡ **Provider resilience** — Circuit breaker + budget system with auto-fallback
+- 🖥️ **Admin SPA** — Full admin panel at `/admin/` with Alpine.js frontend for managing config, documents, schedules, users, API keys, and monitoring
+- ⏰ **Ingestion Schedule** — CRON-based schedule management via UI and REST API; background scheduler loop checks every 30s
+- 🏷️ **Document Tags** — Edit per-document tags via the admin panel; trigger re-ingest with tag changes
+- 📊 **Analytics Dashboard** — Query logging visualization and usage statistics in the admin panel
 
 ---
 
@@ -72,6 +76,7 @@ Choose your deployment mode:
 | RAG evaluation | [docs/RAG_EVALUATION.md](docs/RAG_EVALUATION.md) |
 | Web UI | [docs/WEB_UI.md](docs/WEB_UI.md) |
 | Security | [docs/SECURITY.md](docs/SECURITY.md) |
+| API Reference | [docs/API.md](docs/API.md) | REST API documentation for all endpoints |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
 ### 👨‍💻 Development
