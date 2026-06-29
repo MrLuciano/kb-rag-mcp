@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1.5
 milestone_name: Streamable HTTP & Management Platform
-current_phase: 28c
-current_phase_name: admin-spa-gap-closure
-status: completed
-last_updated: "2026-06-23T21:03:44.900Z"
+current_phase: complete
+current_phase_name: milestone-complete
+status: shipped
+last_updated: "2026-06-29T18:10:00.000Z"
 progress:
   total_phases: 18
-  completed_phases: 15
-  total_plans: 22
-  completed_plans: 22
-  percent: 83
+  completed_phases: 18
+  total_plans: 28
+  completed_plans: 28
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Phase 28b — auth-api
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Milestone: v0.1.5 (Streamable HTTP & Management Platform) — ACTIVE
-Phase: 28b — COMPLETE
-Status: Phase 28b complete
-Next: Milestone v0.1.5 completion — all 17 phases complete, ready to ship
+Milestone: v0.1.5 (Streamable HTTP & Management Platform) — SHIPPED
+Status: All 18 phases complete, ready for milestone archive
+Next: Milestone v0.1.5 completion archive
 
 ## Phase 28c-fixes Outcomes
 
