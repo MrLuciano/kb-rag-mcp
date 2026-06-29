@@ -459,12 +459,14 @@ class TestConfigEditor:
         assert "badge bg-info" in content
         assert "entry.group_name" in content
 
-    def test_config_save_uses_htmx_put(self):
-        """Save mechanism uses HTMX hx-put on the input."""
+    def test_config_save_uses_alpine_fetch(self):
+        """Save mechanism uses Alpine.js fetch() on @keydown.enter."""
         with open("kb_server/ui/templates/admin/_config_table.html") as f:
             content = f.read()
-        assert "hx-put" in content
-        assert "hx-trigger" in content
+        assert "@keydown.enter.prevent" in content
+        assert "fetch('/api/v1/config/'" in content
+        assert "method: 'PUT'" in content
+        assert "JSON.stringify({value: editValue})" in content
 
     def test_config_error_aria_live(self):
         """Error container has aria-live='assertive' and role='alert'."""
