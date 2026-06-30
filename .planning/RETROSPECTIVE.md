@@ -54,8 +54,59 @@
 
 ---
 
+## Milestone: v0.1.5 — Streamable HTTP & Management Platform
+
+**Shipped:** 2026-06-29
+**Phases:** 18 | **Plans:** 28
+
+### What Was Built
+
+1. **Streamable HTTP transport** — browser-compatible MCP over GET/POST/DELETE/OPTIONS on `/mcp` with session lifecycle (idle timeout, count limit, background sweep), CORS, auth middleware, and Prometheus metrics
+2. **Auth & User Management API** — SQLAlchemy models (User, ApiKey, AuditLog, ErasureRequest), CRUD REST endpoints, JWT session cookies, RBAC, GDPR erasure workflow, session management UI
+3. **Admin SPA Panel** — Alpine.js+HTMX+Bootstrap 5 tabbed UI at `/admin/` with login modal, role gating, 6 tabs (Documents, Monitoring, Ingestion, Admin, Profile, Query Analytics), advanced filters, CSV/JSON export, chunk preview, document tag editor, schedule manager
+4. **Observability & Config Infrastructure** — request ID middleware, percentile latency metrics (p50/p95/p99), Grafana dashboard embedding with time range selector, SQLite config table with hot-reload, provider aliases
+5. **Ingestion Schedule Management** — pure Python 5-field cron matcher, CRUD API at `/api/v1/schedules`, background asyncio loop (30s), Admin UI Schedule tab
+6. **Quality Polish** — 14 E2E tests covering auth/admin/schedule flows, security audit (login rate limiting, startup warnings), performance optimization (croniter O(1) matching, joinedload single-query JOIN, ConfigLoader TTL cache), documentation (API.md, README, OPERATIONS updates)
+
+### What Worked
+
+- **Structured phase planning with wave parallelization** — 18 phases across multiple concurrent workstreams (transport, auth, SPA, observability, config, schedules) shipped efficiently
+- **UAT-driven gap closure** — Phase 28c-fixes used UAT results to systematically fix 13+ issues across the Admin SPA, ensuring production readiness
+- **Security audit as separate workstream** — systematic review found and documented all findings; rate limiting and startup warnings were quick wins
+- **Performance profiling targeted at O(n)→O(1) transformations** — replacing brute-force cron scanning with croniter and N+1 queries with joinedload gave immediate, measurable improvements
+- **Milestone audit** — pre-close audit with artifact scanning caught a stale quick task that was easily resolved
+
+### What Was Inefficient
+
+- **Cross-phase auth dependencies** — auth system evolved across 4+ phases (28b base, 28c SPA integration, 44 hardening, 53 rate limiting), causing rework and test isolation churn
+- **E2E test setup overhead** — required running server with auth enabled, monkeypatching AUTH_ENABLED at the right level, and handling session cookie lifecycle across test functions
+- **gsd-tools artifact audit limitations** — quick task status detection tool flagged a completed task as "unknown" because it relied on file metadata not present in the quick task directory
+
+### Patterns Established
+
+- `monkeypatch.setattr("module.attribute", value)` for env-var-like configuration in tests (more reliable than os.environ manipulation when modules cache at import time)
+- In-memory rate limiter (token bucket per subject with sliding window) — sufficient for internal tool, documented as lost-on-restart
+- ConfigLoader TTL cache (1s default) as thread-safe alternative to persistent connections
+- Cron matching: `croniter` for O(1) evaluation + `validate_cron()` pre-check for backward-compatible error behavior
+
+### Key Lessons
+
+1. **Auth should be designed once, not iterated** — auth is a cross-cutting concern that touches every subsystem; getting it right (or close to right) in the first phase saves significant rework across 5+ downstream phases
+2. **Artifact audit before closing** — the pre-close audit caught a quick task that was implemented but never marked verified; adding audit to the close workflow prevents forgotten items
+3. **Performance wins come from algorithmic improvements, not micro-optimizations** — replacing O(n) with O(1) in two hot paths (cron matching, DB queries) was far more impactful than any code-level micro-optimization
+4. **Internal tool security is about awareness, not perfection** — documenting accepted risks (stdio no-auth, default admin password) with startup warnings and operational guidance is the right approach for a self-hosted internal tool
+
+### Cost Observations
+
+- Total sessions: ~25+ across 14 days
+- Heavy sessions: Phase 53 multi-workstream quality polish (bug bash, E2E tests, security audit, perf tuning)
+- Notable: Phase 28c Admin SPA was the most complex phase — Alpine.js+HTMX SPA with CSP, auth integration across 6 tabs, responsive sidebar, and UAT-driven gap closure
+
+---
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Tests | Coverage | Duration |
 |-----------|--------|-------|----------|----------|
 | v0.1.0 | 4 | 491 | 88% | 5 days |
+| v0.1.5 | 18 | 1541 | 90% | 14 days |
