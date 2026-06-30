@@ -16,8 +16,8 @@ MCP client.
 
 - 🔍 **Semantic search** over technical documentation
 - 📚 **Multi-format support**: PDF, DOCX, XLSX, PPTX, TXT, code
-- ✅ **1284+ tests** — Full mock isolation, no external deps needed
-- ✅ **CI/CD pipeline** — 72% branch coverage gate, logging audit, Helm lint
+- ✅ **1541+ tests** — Full mock isolation, no external deps needed
+- ✅ **CI/CD pipeline** — 90% branch coverage gate, logging audit, Helm lint
 - ✅ **Auto-classification** — Vendor, product, subsystem, version inference
 - ✅ **Kubernetes/Helm** — Helm chart for multi-replica deployment
 - 📊 **Real-time monitoring** — Grafana + Prometheus with 6-tab dashboard
@@ -725,14 +725,14 @@ pytest tests/ -v
 # With coverage
 pytest tests/ --cov=kb_server --cov=ingest --cov=observability --cov-branch --cov-report=term-missing
 
-# Coverage with threshold enforcement (72% branch coverage required)
-pytest tests/ --cov=kb_server --cov=ingest --cov-branch --cov-fail-under=72
+# Coverage with threshold enforcement (90% branch coverage required)
+pytest tests/ --cov=kb_server --cov=ingest --cov-branch --cov-fail-under=90
 
 # Specific test file
 pytest tests/test_job_system.py -v
 ```
 
-**Test baseline:** 1284 core tests (excluding SSE handler and e2e tests)
+**Test baseline:** 1541 core tests (excluding SSE handler and e2e tests)
 
 #### Code Quality
 

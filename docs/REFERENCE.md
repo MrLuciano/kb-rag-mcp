@@ -16,8 +16,8 @@ by a local LM Studio instance, no data leaves the network.
 The system is designed for bare-metal deployment on Linux with systemd or
 Kubernetes. It supports multi-format ingestion (PDF, DOCX, XLSX, PPTX, TXT,
 legacy Office, ZIP), job-based async processing, LRU+Redis caching, hybrid
-dense+sparse search, cross-encoder reranking, multi-collection routing, a web UI
-for document browsing, query telemetry, Prometheus/Grafana observability, and a
+dense+sparse search, cross-encoder reranking, multi-collection routing, an admin web UI
+for document browsing, search testing, and system management, query telemetry, Prometheus/Grafana observability, and a
 QA evaluation pipeline.
 
 ---
@@ -74,7 +74,7 @@ return ranked chunks
 | LRU cache | `kb_server/cache` | `lru.py`, `manager.py`, `redis.py` | In-memory LRU with optional Redis fallback |
 | Hybrid search | `kb_server/retrieval` | `hybrid_search.py` | Dense + BM25 sparse with RRF fusion |
 | Reranker | `kb_server/retrieval` | `reranker.py` | Cross-encoder reranking (ms-marco-MiniLM-L-6-v2) |
-| Web UI | `kb_server/ui` | `app.py`, `routes.py` | FastAPI+HTMX browse/search UI |
+| Web UI / Admin SPA | `kb_server/ui` | `app.py`, `routes.py`, `routes_admin.py` | Alpine.js + HTMX admin SPA, browse/search, tag management, config editor |
 | Query telemetry | `kb_server/telemetry` | `query_logger.py` | SQLite query log, 90-day retention |
 | Health server | `kb_server` | `health_server.py`, `health.py` | HTTP health endpoint for systemd/monitoring |
 | Ingest pipeline | `ingest` | `ingest.py`, `registry.py`, `classifier.py` | File scan, classify, chunk, embed, upsert |
@@ -99,6 +99,10 @@ return ranked chunks
 | Circuit Breaker | `kb_server` | `circuit_breaker.py` | Provider resilience state machine |
 | Provider Budget | `kb_server` | `provider_budget.py` | Sliding window budget tracking |
 | Retrieval Cache | `kb_server/cache` | `request_cache.py` | Request-level search caching |
+| Auth service | `kb_server/auth` | `router.py`, `deps.py`, `models.py`, `schemas.py`, `service.py`, `erasure.py` | User auth, RBAC, API key management, session management, GDPR erasure |
+| Config loader & API | `kb_server/config` | `loader.py`, `router.py`, `db.py`, `models.py` | SQLite-backed config, REST API, hot-reload event bus |
+| Schedule manager | `kb_server/schedules` | `router.py` | CRON-based ingestion schedule CRUD via REST API |
+| Tag management | `kb_server/tags.py` (routes in `kb_server/ui/routes_admin.py`) | — | Bulk classification tag editor via CLI and Web UI |
 
 ---
 
@@ -250,8 +254,10 @@ POST JSON-RPC to `http://{host}:{port}/mcp` with:
 
 | Variable | Default | Description |
 |---|---|---|
-| `AUTH_ENABLED` | `false` | Enable Bearer token authentication on SSE |
+| `AUTH_ENABLED` | `true` | Enable authentication system (SSE + admin UI) |
 | `AUTH_DB_PATH` | `./auth.db` | Path to auth SQLite database |
+| `LOGIN_RATE_LIMIT_WINDOW` | `60` | Login rate limit window in seconds |
+| `LOGIN_RATE_LIMIT_MAX` | `5` | Max login attempts per window |
 
 **Rate Limiting**
 
@@ -447,7 +453,7 @@ PYTHONPATH=. pytest --cov=kb_server --cov=ingest --cov=qa --cov-report=term-miss
 PYTHONPATH=. pytest -m "not integration"
 ```
 
-**Current status:** 1095 passing, 0 failing, 12 skipped  
+**Current status:** 1541 passing, 0 failing, 12 skipped  
 **Coverage target:** 90% branch, enforced on kb_server/ + ingest/  
 **Key test files:**
 
@@ -525,6 +531,20 @@ Phases 1–28 (v0.1.3–v0.1.4) are complete. See [PLAN.md](PLAN.md) for full sp
 | 36 | Provider Budget & Circuit Breaker | ✅ Complete | Provider resilience, fallback chain |
 | 37 | Request-level Retrieval Cache | ✅ Complete | Request cache with invalidation |
 | QA | QA Evaluation Pipeline | ✅ Complete | End-to-end eval, Hit Rate 100%, MRR 0.78 |
+| 38 | Grafana Dashboard Embedding | ✅ Complete | iframe embed, time range selector, CSP frame-src |
+| 39 | Observability Backlog | ✅ Complete | Request ID middleware, percentile metrics, health API |
+| 40 | Configuration Backlog | ✅ Complete | Config table, REST API, hot-reload event bus |
+| 41 | Provider Alias | ✅ Complete | Alias resolution, config-backed, hot-reload |
+| 42 | Query Logging Analytics Dashboard | ✅ Complete | Analytics dashboard for query logs |
+| 43 | Chunk Preview in Document Detail | ✅ Complete | Inline chunk viewer with keyword highlighting |
+| 44 | Auth Security Hardening | ✅ Complete | Mount auth router, erasure separation, secure cookies |
+| 45 | Database Reliability | ✅ Complete | SQLite context managers, FK, indexes, idempotent DDL |
+| 46 | Code Quality & Coverage | ✅ Complete | utcnow fix, flake8 cleanup, unused imports, test tags |
+| 47 | LM Studio Dependency Handling | ✅ Complete | Graceful fallback when embedding backend down |
+| 50 | SSE Test Process Consolidation | ✅ Complete | Per-function @patch, same-process SSE tests |
+| 51 | Document Tag Management | ✅ Complete | CLI + UI tag management, reingest control |
+| 52 | Ingestion Schedule Management | ✅ Complete | CRON schedules, background scheduler |
+| 53 | v0.1.5 Quality & Polish | ✅ Complete | Bug fixes, E2E tests, security audit, perf tuning |
 
 ---
 
@@ -559,7 +579,7 @@ ingested collection to `qa/queries.json`.
 Tests marked `integration` require a live Qdrant instance. Run `docker compose up -d`
 before `pytest -m integration`.
 
-**Authentication is optional (disabled by default)**  
-The MCP server, web UI, and health endpoint have no auth by default. Set
-`AUTH_ENABLED=true` and configure keys via `kb-ingest auth` CLI to enable Bearer
-auth on SSE. See [SECURITY.md](SECURITY.md).
+**Authentication is enabled by default in v0.1.5+**  
+The MCP server and admin UI require authentication by default. Set
+`AUTH_ENABLED=false` to disable (development only). Configure keys via the
+`kb-ingest auth` CLI. See [SECURITY.md](SECURITY.md).

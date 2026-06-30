@@ -316,3 +316,195 @@ Filter by vendor, subsystem, module parameters on search_kb and list_documents t
 - `kb_server/retrieval/filters.py` — Search filter logic
 
 **Status:** ✅ Implemented
+
+---
+
+## 24. MCP Prompt Templates
+
+`extract_answer` and `summarize_documents` MCP prompt templates. `PROMPT_DEFINITIONS` registry with `render_prompt()` dispatcher.
+
+**Key files:**
+- `kb_server/prompts/prompt_templates.py` — prompt definitions & dispatcher
+
+**Status:** ✅ Implemented
+
+---
+
+## 25. Enterprise Data Source Connectors
+
+`ConnectorBase` ABC with factory pattern for third-party data sources. Confluence (Cloud + DC), JIRA (Cloud + DC), and Git (clone + incremental pull) connectors. CLI staging system for connector management.
+
+**Key files:**
+- `ingest/connectors/base.py` — ConnectorBase ABC & factory
+- `ingest/connectors/confluence.py` — Confluence connector
+- `ingest/connectors/jira.py` — JIRA connector
+- `ingest/connectors/git.py` — Git connector
+- `ingest/cli/connector.py` — CLI staging system
+
+**Status:** ✅ Implemented
+
+---
+
+## 26. Cross-Document Knowledge Graph
+
+Document graph metadata derivation (`doc_graph_id`, entities, topics). `get_related_documents` and `explore_topic` MCP tools. Payload indexes on graph fields.
+
+**Key files:**
+- `kb_server/knowledge_graph/` — Graph metadata derivation & MCP tools
+
+**Status:** ✅ Implemented
+
+---
+
+## 27. Upload & Index Quotas
+
+6 quota fields (documents, chunks, storage, collections, api_calls, concurrent_jobs). SQLite `quota_config` and `quota_usage` tables. CLI: `kb-rag quota show/set/reset`. Ingest enforcement before chunking/embedding.
+
+**Key files:**
+- `kb_server/quotas/` — Quota configuration, tracking, and enforcement
+
+**Status:** ✅ Implemented
+
+---
+
+## 28. Multi-KB Aggregated Search
+
+`search_kb(kb_ids=[...])` across multiple collections. RRF fusion with per-collection score normalization. Chunk-level dedup across KB boundaries.
+
+**Key files:**
+- `kb_server/retrieval/aggregated_search.py` — Multi-collection search with RRF fusion
+
+**Status:** ✅ Implemented
+
+---
+
+## 29. Provider Budget & Circuit Breaker
+
+Per-provider token/month budgets with sliding window. Circuit breaker CLOSED/OPEN/HALF_OPEN state machine. Auto-fallback chain on budget exhaustion or circuit open.
+
+**Key files:**
+- `kb_server/providers/budget.py` — Token budget tracking
+- `kb_server/providers/circuit_breaker.py` — Circuit breaker state machine
+- `kb_server/providers/fallback.py` — Auto-fallback chain
+
+**Status:** ✅ Implemented
+
+---
+
+## 30. Request-Level Retrieval Cache
+
+SHA-256 deterministic cache keys over retrieval inputs. TTL expiry with invalidation hooks. Hit/miss counters and size monitoring.
+
+**Key files:**
+- `kb_server/cache/retrieval_cache.py` — Request-level retrieval cache
+
+**Status:** ✅ Implemented
+
+---
+
+## 31. Document Tag Management
+
+Per-document tag editing via CLI (list/update/delete/reingest). Tag filter on `search_kb` and `list_documents`. Tag display in admin document browser.
+
+**Key files:**
+- `kb_server/tags/` — Document tag management
+- `ingest/cli/tag.py` — CLI tag subcommands
+
+**Status:** ✅ Implemented
+
+---
+
+## 32. Ingestion Schedule Management
+
+CRON-based schedule CRUD via REST API and admin UI. Background scheduler loop (30s interval). Schedule status display in admin monitor tab.
+
+**Key files:**
+- `ingest/scheduler/` — CRON schedule management & background loop
+- `kb_server/admin/schedule.py` — Schedule REST API
+
+**Status:** ✅ Implemented
+
+---
+
+## 33. Query Analytics Dashboard
+
+Query volume, popular queries, slow queries visualizations. Zero-result analysis. Collection-specific filtering. Integrated into Admin SPA.
+
+**Key files:**
+- `kb_server/admin/analytics.py` — Query analytics endpoints
+- `kb_server/admin/templates/analytics.html` — Analytics dashboard template
+
+**Status:** ✅ Implemented
+
+---
+
+## 34. Chunk Preview in Document Detail
+
+Inline chunk viewer with keyword highlighting. HTMX accordion-based chunk browser. Metadata display (score, source, position).
+
+**Key files:**
+- `kb_server/admin/chunks.py` — Chunk preview endpoints
+- `kb_server/admin/templates/chunks.html` — Chunk browser template
+
+**Status:** ✅ Implemented
+
+---
+
+## 35. Grafana Dashboard Embedding
+
+Embedded Grafana iframe in admin monitor tab. Configurable dashboard UID. Direct link fallback.
+
+**Key files:**
+- `kb_server/admin/grafana.py` — Grafana embedding endpoints
+- `kb_server/admin/templates/grafana.html` — Grafana embed template
+
+**Status:** ✅ Implemented
+
+---
+
+## 36. Auth Security Hardening
+
+JWT session cookie with HMAC signing. Secure cookie flags (HttpOnly, Secure, SameSite=Lax). API key ownership checks. Erasure separation for GDPR compliance.
+
+**Key files:**
+- `kb_server/auth/session.py` — JWT session management
+- `kb_server/auth/middleware.py` — Auth middleware with secure cookies
+
+**Status:** ✅ Implemented
+
+---
+
+## 37. Login Rate Limiting
+
+5 attempts per 60s sliding window. Configurable via `LOGIN_RATE_LIMIT_WINDOW` and `LOGIN_RATE_LIMIT_MAX` env vars.
+
+**Key files:**
+- `kb_server/middleware/login_limiter.py` — Login rate limiter
+
+**Status:** ✅ Implemented
+
+---
+
+## 38. Performance Optimizations
+
+`croniter` for O(1) cron matching. `joinedload` single-query JOIN for `verify_key`. ConfigLoader 1s TTL cache.
+
+**Key files:**
+- `ingest/scheduler/cron.py` — O(1) cron matching with croniter
+- `kb_server/auth/keys.py` — Optimized key verification
+- `kb_server/config/loader.py` — TTL-cached ConfigLoader
+
+**Status:** ✅ Implemented
+
+---
+
+## 39. E2E Test Suite
+
+14 E2E tests across auth, admin, and schedule flows. Integration test patterns in `test_admin_ui.py`.
+
+**Key files:**
+- `tests/e2e/test_auth_flows.py` — Auth E2E tests
+- `tests/e2e/test_admin_ui.py` — Admin UI integration tests
+- `tests/e2e/test_schedule_flows.py` — Schedule E2E tests
+
+**Status:** ✅ Implemented

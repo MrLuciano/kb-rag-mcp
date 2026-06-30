@@ -18,7 +18,7 @@ Choose your deployment mode:
 ## Getting Started
 
 - [README.md](../README.md) — Quick start, installation, usage
-- [FEATURES.md](../FEATURES.md) — Complete feature reference — all 23 features
+- [FEATURES.md](../FEATURES.md) — Complete feature reference — all 39 features
 - [REFERENCE.md](REFERENCE.md) — **Living reference: architecture, components, config, ops, QA results**
 - [TESTING.md](TESTING.md) — Testing strategy and guidelines
 - [CHANGELOG.md](CHANGELOG.md) — Release history and per-PHASE change log
@@ -88,9 +88,9 @@ PHASE lifecycle docs (completion reports, per-PHASE plans) are preserved in
 
 | Metric | Value |
 |---|---|
-| **Tests passing** | 1284 |
-| **Tests failing** | 0 (6 skipped, 2 pre-existing) |
-| **Coverage target** | 72% branch |
+| **Tests passing** | 1541 |
+| **Tests failing** | 0 (14 skipped) |
+| **Coverage target** | 90% branch |
 | **Phases completed** | 50 (v0.1.0 through v0.1.5) |
 | **QA Hit Rate** | 100% |
 | **QA MRR** | 0.78 |

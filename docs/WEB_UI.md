@@ -7,19 +7,20 @@ The KB-RAG Web UI provides a browser-based interface for:
 - **Testing** search queries with various parameters
 - **Viewing** document details and metadata
 
-Built with FastAPI, Bootstrap 5, and HTMX for a fast, lightweight experience.
+Built with FastAPI, Bootstrap 5, Alpine.js + HTMX for a fast, lightweight experience.
 
 ## Quick Start
 
-### Starting the UI Server
+The Admin SPA is served by the main MCP server — no separate UI server needed.
+
+### Starting the Server
 
 ```bash
-# Development
-python3 server/ui/run_ui.py
+# Development (serves both MCP + Admin UI)
+python -m kb_server.server
 
-# Production (systemd)
-sudo systemctl start kb-rag-ui
-sudo systemctl enable kb-rag-ui
+# Production
+sudo systemctl start kb-rag-mcp
 ```
 
 ### Accessing the UI
@@ -28,6 +29,7 @@ Default URL: http://localhost:8001
 
 - **Browse Documents**: `/ui/browse`
 - **Search Tester**: `/ui/search`
+- **Admin SPA**: `/admin/` (requires auth if `AUTH_ENABLED=true`)
 - **Health Check**: `/health`
 
 ## Features
@@ -77,6 +79,23 @@ View comprehensive document metadata:
 - SHA256 hash
 - Status alerts (failed, no chunks, success)
 
+### 4. Admin SPA (`/admin/`)
+
+The Admin SPA provides an integrated management panel with:
+
+**Tabs:**
+- **Documents** — Browse, filter, paginate, bulk select documents with checkboxes and export
+- **Ingestion** — Monitor ingest status, manage ingestion schedules (CRON), view schedule status
+- **RAGAS** — RAG evaluation pipeline controls and results display
+- **Admin** — Server configuration (config editor with HTMX PUT save + Reset All), session management (list/revoke), credential management (generate/revoke API keys)
+
+**Features:**
+- Login overlay with API key authentication (Alpine.js)
+- Responsive hamburger sidebar (280px expanded / icon-only collapsed)
+- Monitor lights panel showing health components with latency
+- CSP nonce on inline scripts for security
+- Auth router mounted on UI app
+
 ## Configuration
 
 ### Environment Variables
@@ -92,21 +111,23 @@ KB_METADATA_DB=data/kb_metadata.db  # Path to metadata database
 
 ### systemd Service
 
-Service file: `deployment/systemd/kb-rag-ui.service`
+The Admin SPA is served by the main MCP server — the legacy `kb-rag-ui` systemd service is no longer used.
+
+Service file: `deployment/systemd/kb-rag-mcp.service`
 
 ```bash
 # Install
-sudo cp deployment/systemd/kb-rag-ui.service /etc/systemd/system/
+sudo cp deployment/systemd/kb-rag-mcp.service /etc/systemd/system/
 sudo systemctl daemon-reload
 
 # Manage
-sudo systemctl start kb-rag-ui
-sudo systemctl stop kb-rag-ui
-sudo systemctl status kb-rag-ui
-sudo systemctl enable kb-rag-ui  # Start on boot
+sudo systemctl start kb-rag-mcp
+sudo systemctl stop kb-rag-mcp
+sudo systemctl status kb-rag-mcp
+sudo systemctl enable kb-rag-mcp  # Start on boot
 
 # Logs
-sudo journalctl -u kb-rag-ui -f
+sudo journalctl -u kb-rag-mcp -f
 ```
 
 ## Architecture
@@ -114,24 +135,42 @@ sudo journalctl -u kb-rag-ui -f
 ### Technology Stack
 
 - **Backend**: FastAPI (async Python web framework)
-- **Templating**: Jinja2
-- **Frontend**: Bootstrap 5 + HTMX
-- **Server**: Uvicorn (ASGI server)
+- **Templating**: Jinja2 with Alpine.js + HTMX for interactivity
+- **Frontend**: Bootstrap 5 (legacy), Alpine.js + HTMX (Admin SPA)
+- **CSP**: Content Security Policy with nonces on inline scripts
+- **Server**: Uvicorn (ASGI server, shared with MCP)
 
 ### File Structure
 
 ```
-server/ui/
+kb_server/ui/
 ├── __init__.py           # Package init
-├── app.py                # FastAPI app initialization
-├── routes.py             # Route handlers
-├── run_ui.py             # Startup script
+├── app.py                # FastAPI app initialization (mounted on main server)
+├── routes.py             # Legacy route handlers (/ui/browse, /ui/search, ...)
+├── routes_admin.py       # Admin SPA routes (/admin/, /admin/tabs/*)
+├── run_ui.py             # Standalone startup (dev only)
+├── static/
+│   └── styles.css        # UI stylesheet
 └── templates/
-    ├── base.html         # Base template
-    ├── browse.html       # Document browser
-    ├── search.html       # Search tester
-    ├── document.html     # Document detail
-    └── error.html        # Error page
+    ├── base.html         # Legacy base template
+    ├── browse.html       # Legacy document browser
+    ├── search.html       # Legacy search tester
+    ├── document.html     # Legacy document detail
+    ├── document_chunks.html
+    ├── error.html        # Error page
+    ├── search_results.html
+    └── admin/            # Admin SPA templates (Alpine.js)
+        ├── shell.html
+        ├── tab_documents.html
+        ├── tab_ingestion.html
+        ├── tab_ragas.html
+        ├── tab_admin.html
+        ├── tab_monitoring.html
+        ├── tab_analytics.html
+        ├── tab_tags.html
+        ├── tab_users.html
+        ├── tab_profile.html
+        └── _*.html       # Partial templates (loaders, tables, editors)
 ```
 
 ### Database Schema
@@ -194,7 +233,7 @@ ls -l data/kb_metadata.db
 
 **Check logs:**
 ```bash
-sudo journalctl -u kb-rag-ui -n 50
+sudo journalctl -u kb-rag-mcp -n 50
 ```
 
 ### No Documents Shown
@@ -214,26 +253,27 @@ ls -l data/kb_metadata.db
 
 **Check service status:**
 ```bash
-sudo systemctl status kb-rag-ui
+sudo systemctl status kb-rag-mcp
 ```
 
 **Verify routes loaded:**
 ```bash
 curl http://localhost:8001/health
-# Should return: {"status": "ok", "service": "kb-rag-ui"}
+# Should return: {"status": "ok", "service": "kb-rag-mcp"}
 ```
 
 ## Security Notes
 
-- **No Authentication**: UI is designed for internal use only
-- **Network Access**: Bind to 127.0.0.1 for local-only access
+- **Authentication**: Optional — set `AUTH_ENABLED=true` to enable login with API keys
+- **Admin SPA**: The `/admin/` panel requires authentication when `AUTH_ENABLED=true`
+- **Network Access**: Bind to `127.0.0.1` for local-only access
 - **Reverse Proxy**: Use nginx/Apache for HTTPS in production
-- **Database**: Read-only access (no write operations from UI)
+- **Database**: Read-only access (no write operations from legacy UI)
 
 ## Performance
 
 - **Pagination**: 20 docs/page prevents large result sets
-- **Lightweight**: No JavaScript frameworks, minimal client-side code
+- **Lightweight**: Alpine.js + HTMX for minimal client-side overhead
 - **Fast**: HTMX for dynamic updates without full page reloads
 - **Efficient**: Direct SQLite queries with indexes
 
@@ -241,6 +281,7 @@ curl http://localhost:8001/health
 
 The following features previously listed as future work are now implemented:
 
+- ✅ **Admin SPA** — Full management panel with Documents, Ingestion, RAGAS, and Admin tabs (Phase 28c)
 - ✅ **Query logging analytics dashboard** — `/ui/admin/query-analytics` with charts, top queries, slow queries, zero-result analysis (Phase 42)
 - ✅ **Chunk preview with accordion** — Document detail page shows expandable chunk previews with keyword highlighting (Phase 43)
 - ✅ **Real-time search integration** — The search tester now integrates with the MCP server via the Streamable HTTP transport (Phase 28c)
@@ -254,6 +295,6 @@ The following features previously listed as future work are now implemented:
 ## Support
 
 For issues or questions:
-- Check logs: `sudo journalctl -u kb-rag-ui -f`
-- Verify config: `systemctl show kb-rag-ui`
+- Check logs: `sudo journalctl -u kb-rag-mcp -f`
+- Verify config: `systemctl show kb-rag-mcp`
 - Review plan: `docs/PHASE14_PLAN.md`

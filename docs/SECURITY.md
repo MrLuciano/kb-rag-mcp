@@ -1,14 +1,14 @@
 # KB-RAG-MCP Security Reference
 
 > This document describes the security posture, threat model, hardening
-> measures, and known limitations of KB-RAG-MCP. Last updated: 2026-06-11.
+> measures, and known limitations of KB-RAG-MCP. Last updated: 2026-06-29.
 
 ## Design Assumptions
 
 KB-RAG-MCP is designed as an **internal, trusted-network service**:
 
-- Authentication is **optional and opt-in** (`AUTH_ENABLED=false` by default); existing deployments are fully backward compatible
-- No user accounts or sessions
+- Authentication is **enabled by default** (`AUTH_ENABLED=true`); deployments without authentication must explicitly set `AUTH_ENABLED=false`
+- User accounts with JWT session cookies, API keys for programmatic access
 - No public internet exposure expected
 - Consumers are local AI assistants (Claude Desktop, OpenCode) or internal tools
 - All data (documents, embeddings) is treated as non-sensitive internal IP
@@ -43,6 +43,18 @@ If your deployment model differs from the above, see [Production Hardening](#pro
 | Prompt injection via retrieved chunks | Out of scope for the RAG layer; LLM handles prompt safety |
 | Qdrant direct access | Qdrant has no auth by default; restrict via network/firewall |
 
+### Authentication Hardening (Phase 44, 53)
+
+| Measure | Detail |
+|---------|--------|
+| Password storage | bcrypt hashing (no plaintext) |
+| Session tokens | JWT with HMAC-SHA256 signing, HttpOnly+Secure+SameSite cookies |
+| Key erasure | revoke_key deletes only the caller's keys (erasure separation) |
+| API key validation | verify_key uses joinedload single-query JOIN (no timing oracle) |
+| Rate limiting (login) | 5 attempts per 60s sliding window (token bucket, in-memory) |
+| Startup security warning | Warning logged when AUTH_ENABLED=false in HTTP mode |
+| CSP | Content Security Policy with nonces on admin SPA inline scripts |
+
 ---
 
 ## Attack Surface
@@ -50,7 +62,7 @@ If your deployment model differs from the above, see [Production Hardening](#pro
 | Component | Port | Protocol | Auth | Notes |
 |---|---|---|---|---|
 | MCP server (stdio) | — | stdin/stdout | None | Only accessible to spawning process |
-| MCP server (SSE) | 8000 | HTTP | Bearer token (optional, `AUTH_ENABLED`) | Bind to `127.0.0.1` in production |
+| MCP server (SSE) | 8000 | HTTP | Bearer token (`AUTH_ENABLED=true` enables it) | Bind to `127.0.0.1` in production |
 | Web UI | 8080 | HTTP | None | Internal only; disable if unused |
 | Health server | 8081 | HTTP | None | Exposes `/health` and `/metrics` |
 | Qdrant | 6333 (HTTP), 6334 (gRPC) | HTTP/gRPC | None | Localhost Docker; firewall from external |
@@ -69,7 +81,7 @@ If your deployment model differs from the above, see [Production Hardening](#pro
 - **systemd sandboxing:** Services run as non-root with `ProtectSystem=strict`, `NoNewPrivileges=true` (see `deployment/systemd/`)
 - **Qdrant local-only:** Docker binding to `localhost` by default
 - **Safe archive extraction:** ZIP and tar extraction filters path traversal members (`..` and absolute paths) before writing
-- **API key authentication:** Optional Bearer token auth on SSE endpoint; `AUTH_ENABLED=true` enables it; SHA-256 hashed keys managed via `kb-rag auth create/list/revoke`
+- **API key authentication:** Bearer token auth on SSE endpoint (default-enabled via `AUTH_ENABLED=true`); SHA-256 hashed keys managed via `kb-rag auth create/list/revoke`
 - **Rate limiting:** `RATE_LIMIT_ENABLED=true` enables per-subject token bucket; returns HTTP 429 on exhaustion
 - **Upload quotas:** Per-source quotas via `kb-rag quota set/show/reset`; schema migration (v3→v4) included
 
@@ -159,7 +171,7 @@ The `_sanitize_env` function in `scripts/migrate/export.py` redacts any key cont
 
 | Limitation | Impact | Workaround |
 |---|---|---|
-| Auth off by default (`AUTH_ENABLED=false`) | MCP SSE, UI, and health endpoints unprotected unless configured | Enable `AUTH_ENABLED=true` + create keys via `kb-rag auth create`; stdio remains unauth |
+| Auth on by default (`AUTH_ENABLED=true`) | MCP SSE, UI, and health endpoints protected by default; stdio transport has no auth | Disable via `AUTH_ENABLED=false`; stdio remains unauth regardless |
 | Query log stores raw queries | Query text visible to anyone with file access | Restrict `QUERY_LOG_PATH` file permissions |
 | Qdrant collection has no ACL | Any process with network access can read/write vectors | Qdrant API key (see above) |
 | No TLS on any endpoint | Traffic readable on local network | TLS termination via reverse proxy |

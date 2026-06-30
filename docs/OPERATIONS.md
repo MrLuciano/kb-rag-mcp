@@ -1998,4 +1998,4 @@ When `AUTH_ENABLED=true`, the `/auth/login` endpoint is rate-limited:
 ---
 
 *Quick reference for KB-RAG-MCP v0.1.5 operations*  
-*Last updated: 2026-06-11*
+*Last updated: 2026-06-29*

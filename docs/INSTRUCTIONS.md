@@ -2,7 +2,7 @@
 
 > Reference document for project evolution via LLM-based code generation.
 > Describes current architecture, technical decisions, interface contracts, and improvement directions.
-> Last updated: 2026-06-11
+> Last updated: 2026-06-29
 
 ---
 

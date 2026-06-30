@@ -1,6 +1,6 @@
 # Data Inventory
 
-**Last updated:** 2026-06-15
+**Last updated:** 2026-06-29
 **Purpose:** GDPR compliance — catalog all data stores managed by kb-rag-mcp.
 
 | Data Store | Data Categories | PII? | Retention | Deletion Method |

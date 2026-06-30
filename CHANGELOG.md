@@ -8,11 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
-## [0.1.5] 2026-06-15
+## [0.1.5] 2026-06-29
 
 ### Fixed
 
-- **Phase 44: Auth Security Hardening** (2026-06-15)
+- **Phase 44: Auth Security Hardening**
   - SEC-01: Mount auth router to fix unauthenticated SSE access
   - SEC-02: Erasure separation — `revoke_key` deletes only caller's keys
   - SEC-03: API key ownership checks on CRUD operations
@@ -20,55 +20,138 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SEC-05: `verify_key` batch dedup to prevent timing oracle
   - SEC-06: Rate-limit hashing uses SHA-256 of prefix, never raw keys
 
-- **Phase 45: DB Reliability** (2026-06-15)
-  - Consistent context manager usage for all SQLite connections
-  - Foreign key enforcement enabled on all databases
-  - Missing indexes added for query performance
+- **Phase 45: Database Reliability**
+  - Consistent context manager for all SQLite connections
+  - Foreign key enforcement on all databases
+  - Missing indexes for query performance
   - Migration DDL hardened with IF NOT EXISTS / IF EXISTS guards
 
-- **Phase 46: Code Quality** (2026-06-15)
+- **Phase 46: Code Quality & Coverage**
   - `datetime.utcnow()` → `datetime.now(timezone.utc)` across 24 sites
-  - Removed 16 unused imports (F401)
-  - Tagged 5 tests with `@pytest.mark.integration`
+  - 16 unused imports removed (F401)
+  - 5 tests tagged with `@pytest.mark.integration`
+  - Flake8 cleanup
+  - Test tagging for all skipped tests
 
-- **Phase 50: SSE Test Consolidation** (2026-06-15)
-  - Removed module-level stubs from `test_smoke.py` that polluted global state
-  - Consolidated SSE transport tests into dedicated test module
+- **Phase 50: SSE Test Consolidation**
+  - Removed module-level stubs from `test_smoke.py` (120+ lines)
+  - All SSE tests run in same pytest process
+  - Per-function `@patch` decorators instead of module-level stubs
 
-- **REVIEW.md Resolution** (2026-06-15)
+- **Phase 53: Bug Fixes**
+  - `test_admin_ui` config save test fixed for Alpine.js CSP compat
+
+- **REVIEW.md Resolution**
   - All 33 REVIEW.md findings resolved (25→28→30→33 across 4 passes)
   - Split dev dependencies from production requirements (HW-17)
   - Exposed session via property instead of `_session` direct access (INF-04)
 
 ### Added
 
-- **Phase 28 Extensions: Session Management & Admin SPA** (2026-06-03)
-  - 28-02: Session lifecycle management, max concurrent session enforcement with oldest-idle eviction, Prometheus session metrics (`active_sessions`, `session_evictions_total`), 60-second background sweep
-  - 28c: Admin SPA panel — shell/auth/CSP, tab-based content layout, advanced search filters, document export/cleanup
+- **Phase 28: MCP Streamable HTTP Transport**
+  - `/mcp` HTTP POST endpoint alongside existing stdio/SSE
+  - Session lifecycle management with max concurrent session enforcement
+  - Prometheus session metrics (`active_sessions`, `session_evictions_total`)
+  - Three transport modes: stdio, SSE, Streamable HTTP
 
-- **Phase 40: Config API** (2026-06-10)
-  - SQLite-backed config table with nonce-based locking
-  - `ConfigLoader` with env override and live reload support
-  - REST API endpoints for config CRUD
+- **Phase 28b: Auth & User Management API**
+  - SQLAlchemy users table with password hashing
+  - POST /auth/login with username+password
+  - POST /auth/session for API key → session cookie exchange
+  - User CRUD (GET/POST/PUT/DELETE /users)
+  - API Key CRUD (GET/POST/DELETE /api-keys)
+  - JWT session cookie with HMAC signing
+  - Default admin account seeded on startup
+  - Session create/list/revoke
 
-- **Phase 41: Provider Alias** (2026-06-10)
-  - PROV-01: Embedding provider alias resolution (nickname → backend URL)
-  - PROV-02: CLI support for provider alias create/list/delete
+- **Phase 28c: Admin SPA Panel**
+  - Alpine.js + HTMX admin panel at /admin/
+  - Tab-based layout: Documents, Ingestion, RAGAS, Admin tabs
+  - Document browser with filters, pagination, export
+  - Search tester with parameter controls
+  - Login overlay with API key authentication
+  - Hamburger sidebar with responsive design (280px/icon-only)
+  - CSP nonce on inline scripts for security
+  - Route ordering (specific /tabs/ paths before generic)
+  - Auth router mounted on UI app
 
-- **Phase 42: Query Logging Analytics Dashboard** (2026-06-15)
-  - Analytics dashboard integrated into Admin SPA
-  - Query volume, latency, top queries, and error rate visualizations
-  - Date range filtering and export
-  - 1284 passing tests, 0 failures
+- **Phase 28c-fixes: Admin SPA Gap Closure**
+  - Auth flow rewrite with Alpine.js login overlay
+  - Document browse with checkboxes and bulk actions
+  - Monitor lights panel (7 health components with latency)
+  - Config inline editor with HTMX PUT save and Reset All
+  - Session management UI (list/revoke)
+  - Credential management UI (generate/revoke API keys)
+  - CSP-safe Alpine.js build (@alpinejs/csp) with SRI hash
 
-- **Phase 43: Chunk Preview with HTMX** (2026-06-15)
-  - Accordion-based chunk browser with keyword highlighting
-  - HTMX progressive loading for large result sets
+- **Phase 38: Grafana Dashboard Embedding**
+  - Embed Grafana iframe in Admin monitor tab
+  - Dashboard UID configuration via env var
+  - Responsive iframe sizing
+  - Direct link fallback when iframe blocked
+
+- **Phase 39: Observability Backlog**
+  - Request ID middleware for distributed tracing
+  - Percentile latency metrics (P50, P95, P99)
+  - Component-level health status in monitor lights
+  - Logging for auth operations and config changes
+
+- **Phase 40: Configuration Backlog**
+  - SQLite config table with nonce-based locking
+  - ConfigLoader with env override chain and live reload
+  - REST API: GET/PUT/DELETE /config endpoints
+  - Type validation (string, int, bool, float) with coercion
+  - Config change log with before/after values
+  - Observer model for hot-reload subscriptions
+
+- **Phase 41: Provider Alias**
+  - Embedding provider alias resolution (nickname → backend URL)
+  - Config-based alias storage and lookup
+  - CLI support for alias create/list/delete
+
+- **Phase 42: Query Analytics Dashboard**
+  - Admin dashboard with query volume chart (past 7 days)
+  - Top 10 most popular queries table
+  - Slow queries (P95 latency) identification
+  - Zero-result query analysis
+  - Collection-specific filtering
+
+- **Phase 43: Chunk Preview in Document Detail**
+  - Inline chunk viewer in document detail modal
+  - Keyword highlighting for matched search terms
+  - Accordion-based chunk browser with HTMX progressive loading
   - Inline metadata display (score, source, position)
 
-- **Phase 47: LM Studio Deprecation — Graceful Fallback** (2026-06-15)
-  - Graceful embedding backend fallback with clear error message when LM Studio is unavailable
+- **Phase 47: LM Studio Dependency Handling**
+  - Graceful fallback when LM Studio is unreachable
+  - Clear error message when embedding backend unavailable
   - Fallback chain configuration
+
+- **Phase 51: Document Tag Management**
+  - Per-document tags via `kb-rag tags` CLI (list/update/delete/reingest)
+  - Tag filter in `search_kb` and `list_documents`
+  - Tag display in admin document browser
+  - Re-ingest trigger on tag changes
+
+- **Phase 52: Ingestion Schedule Management**
+  - CRON-based schedule CRUD via UI and REST API
+  - Background scheduler loop (every 30s checks for cron match)
+  - Scheduler runs async, doesn't block server
+  - Schedule status display in admin ingestion monitor tab
+
+- **Phase 53: Features**
+  - 14 E2E tests across auth, admin, and schedule flows
+  - Login rate limiting: 5 attempts per 60s window
+  - Startup security warnings for AUTH_ENABLED=false in HTTP mode
+
+### Changed
+
+- **Phase 53: Quality & Polish**
+  - Security audit report with 12 findings (1 Critical accepted, 2 High fixed)
+  - Performance: croniter for O(1) cron matching (was O(n) iteration)
+  - Performance: joinedload single-query JOIN for `verify_key`
+  - Performance: ConfigLoader 1s TTL cache to reduce SQLite reads
+  - Documentation: API.md, README, OPERATIONS.md updated
 
 ## [0.1.4]
 

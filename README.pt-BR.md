@@ -16,7 +16,7 @@ TXT, Markdown e código-fonte. Compatível com **Claude Code**,
 
 - 🔍 **Busca semântica** em documentação técnica
 - 📚 **Suporte multi-formato**: PDF, DOCX, XLSX, PPTX, TXT, código
-- ✅ **585+ testes** — Isolamento total via mocks, sem dependências externas
+- ✅ **1541+ testes** — Isolamento total via mocks, sem dependências externas
 - ✅ **Pipeline CI/CD** — Gate de cobertura (90% branch), lint Helm
 - ✅ **Auto-classificação** — Vendor, produto, subsistema, versão
 - ✅ **Kubernetes/Helm** — Helm chart para deployment multi-réplica
@@ -24,6 +24,15 @@ TXT, Markdown e código-fonte. Compatível com **Claude Code**,
 - 🔄 **Sistema de cache** — LRU com auto-ajuste de RAM ou Redis (80%+ hit rate)
 - 🔧 **Multi-backend** — LM Studio, Ollama ou APIs compatíveis com OpenAI
 - 🛠️ **Operações** — Instalação automatizada, backup/restore, atualizações
+- 🔐 **Autenticação e controle de acesso** — Login com senha, chaves de API, sessões JWT, admin SPA
+- 📋 **Painel Admin SPA** — Interface web para navegação, busca, monitoria e configuração
+- ⏰ **Agendamento de ingestão** — Gerenciamento de schedules CRON com scheduler em background
+- 🏷️ **Tags de documentos** — Edição e filtragem de tags por documento
+- 📊 **Painel de analytics** — Volume de consultas, queries lentas, análise de zero resultados
+- 🔌 **Conectores empresariais** — Confluence, JIRA e Git como fontes de documentos
+- 🔒 **Rate limiting de login** — 5 tentativas por janela de 60s
+- 🚀 **Otimizações de performance** — Cache de config com TTL, croniter para schedules O(1), JOIN otimizado
+- ✅ **14 testes E2E** — Fluxos de autenticação, admin e agendamento
 
 ---
 

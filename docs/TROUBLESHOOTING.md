@@ -1287,4 +1287,4 @@ For Qdrant-specific issues: [Database Issues](#database-issues)
 
 ---
 
-*Last updated: v0.1.4 - 2026-06-11*
+*Last updated: v0.1.5 - 2026-06-29*

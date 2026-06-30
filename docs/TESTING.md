@@ -26,8 +26,8 @@
 
 ## Test Count
 
-- **1095** core unit tests (in `tests/`, excluding e2e and SSE handler)
-- **12** skipped (require Qdrant — integration/e2e)
+- **1541** core unit tests (in `tests/`, excluding e2e and SSE handler)
+- **14** skipped (require Qdrant — integration/e2e)
 - Run all tests:
   ```bash
   pytest tests/ -v
@@ -88,4 +88,4 @@ python scripts/logging-audit.py
 
 ---
 
-*Last updated: 2026-06-11 for v0.1.4*
+*Last updated: 2026-06-29 for v0.1.5*

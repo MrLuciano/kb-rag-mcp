@@ -16,7 +16,7 @@ TXT, Markdown y código fuente. Compatible con **Claude Code**,
 
 - 🔍 **Búsqueda semántica** en documentación técnica
 - 📚 **Soporte multi-formato**: PDF, DOCX, XLSX, PPTX, TXT, código
-- ✅ **585+ pruebas** — Aislamiento total con mocks, sin dependencias externas
+- ✅ **1541+ pruebas** — Aislamiento total con mocks, sin dependencias externas
 - ✅ **Pipeline CI/CD** — Gate de cobertura (90% branch), lint Helm
 - ✅ **Auto-clasificación** — Vendor, producto, subsistema, versión
 - ✅ **Kubernetes/Helm** — Helm chart para despliegue multi-réplica
@@ -24,6 +24,15 @@ TXT, Markdown y código fuente. Compatible con **Claude Code**,
 - 🔄 **Sistema de caché** — LRU con auto-ajuste de RAM o Redis (80%+ hit rate)
 - 🔧 **Multi-backend** — LM Studio, Ollama o APIs compatibles con OpenAI
 - 🛠️ **Operaciones** — Instalación automatizada, backup/restore, actualizaciones
+- 🔐 **Autenticación y control de acceso** — Login con contraseña, claves API, sesiones JWT, admin SPA
+- 📋 **Panel Admin SPA** — Interfaz web para navegación, búsqueda, monitoreo y configuración
+- ⏰ **Programación de ingesta** — Gestión de schedules CRON con scheduler en segundo plano
+- 🏷️ **Etiquetas de documentos** — Edición y filtrado de etiquetas por documento
+- 📊 **Panel de analytics** — Volumen de consultas, queries lentas, análisis de cero resultados
+- 🔌 **Conectores empresariales** — Confluence, JIRA y Git como fuentes de documentos
+- 🔒 **Rate limiting de inicio de sesión** — 5 intentos por ventana de 60s
+- 🚀 **Optimizaciones de rendimiento** — Caché de config con TTL, croniter para schedules O(1), JOIN optimizado
+- ✅ **14 pruebas E2E** — Flujos de autenticación, admin y programación
 
 ---
 
