@@ -2,16 +2,18 @@
 gsd_state_version: 1.0
 milestone: v0.1.5
 milestone_name: Streamable HTTP & Management Platform
-current_phase: complete
-current_phase_name: milestone-complete
-status: shipped
-last_updated: "2026-06-29T18:10:00.000Z"
+current_phase: 28c
+current_phase_name: admin-spa-gap-closure
+status: completed
+last_updated: "2026-06-30T00:12:03.484Z"
+last_activity: 2026-06-30
+last_activity_desc: Milestone 0.1.5 completed and archived
 progress:
-  total_phases: 18
-  completed_phases: 18
-  total_plans: 28
-  completed_plans: 28
-  percent: 100
+  total_phases: 20
+  completed_phases: 17
+  total_plans: 24
+  completed_plans: 24
+  percent: 85
 ---
 
 # Project State
@@ -25,16 +27,17 @@ See: .planning/PROJECT.md (updated 2026-06-15)
 
 ## Current Position
 
-Milestone: v0.1.5 (Streamable HTTP & Management Platform) — SHIPPED
-Status: All 18 phases complete, ready for milestone archive
-Next: Milestone v0.1.5 completion archive
+Phase: Milestone 0.1.5 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-30 — Milestone 0.1.5 completed and archived
 
 ## Phase 28c-fixes Outcomes
 
 ### Status
 
 - **Phase:** 28c-fixes (admin-spa-gap-closure)
-- **Status:** Phase 28b complete
+- **Status:** 0.1.5 milestone complete
 - **Completed:** 2026-06-17
 
 ### Plans Executed
@@ -868,6 +871,16 @@ All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete 
 - **Blocker resolution:** Entrypoint script starts health server in background (PID 7), then MCP server in foreground (via `exec`)
 - **Production validation:** Verified on both dev (WSL Ubuntu) and production (acemagic) machines
 
+## Deferred Items
+
+Items acknowledged at milestone close on 2026-06-29:
+
+| Category | Item | Status |
+|----------|------|--------|
+| quick_task | 260619-004154-unify-auth-systems | Complete (commit 90ff5d4, SUMMARY exists) |
+| uat_gap | Phase 28b: 28b-UAT.md | Passed (0 pending scenarios) |
+| uat_gap | Phase 28c: 28c-fixes-UAT.md | Done (0 pending scenarios) |
+
 ## Accumulated Context
 
 ### Key Decisions (v0.1.0)
@@ -906,3 +919,8 @@ All 15 phases (23-37) of v0.1.4 "Platform, Analytics & Enterprise" are complete 
 | 8 | Downgrade 'No chunks found' log from warning to debug | 2026-06-17 | f99d138 | Verified | — |
 | 9 | Fix kb-rag db create-indexes CLI + create Qdrant payload indexes | 2026-06-19 | 03ec76c | Verified | — |
 | 10 | Zip ingestion already supports extracting supported docs, skipping unsupported | 2026-06-20 | — | Verified | — |
+| 11 | Unify auth systems — single auth for CLI, web UI, and transport | 2026-06-19 | 90ff5d4 | Verified | [unify-auth-systems](./quick/260619-004154-unify-auth-systems/) |
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
