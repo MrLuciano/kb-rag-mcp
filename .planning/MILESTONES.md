@@ -1,5 +1,22 @@
 # Milestones
 
+## 0.1.5 Streamable HTTP & Management Platform (Shipped: 2026-06-30)
+
+**Phases completed:** 19 phases, 28 plans, 23 tasks
+
+**Key accomplishments:**
+
+- Session limit enforcement via _SessionTracker with oldest-idle eviction, Prometheus active-session/eviction metrics, and 60-second background sweep task.
+- [x-cloak] CSS rule, htmx:afterSettle Alpine.initTree handler, session-cookie auth refactor, and CSP-compatible toggle method to unblock Admin UI user creation
+- Fix admin login overlay not appearing — `@alpinejs/csp` silently rejected `x-data="adminApp()"` (global function calls unsupported in CSP build).
+- Config system wired into production server: health server mounts REST API, server.py replaces os.getenv with ConfigLoader.get(), and hot-reload callbacks log runtime config changes
+- COMPLETE
+- COMPLETE
+- Implementation: Cron matcher, schedule CRUD, API router, background scheduler, Admin UI.
+- 2026-06-29
+
+---
+
 ## v0.1.0 — Release-Readiness
 
 **Shipped:** 2026-05-19
