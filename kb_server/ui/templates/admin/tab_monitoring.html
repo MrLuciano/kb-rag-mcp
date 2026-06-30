@@ -1,0 +1,40 @@
+<h2 class="h3">Monitoring</h2>
+<p class="text-muted">System health and Grafana dashboards.</p>
+
+<!-- Monitor Lights -->
+<div id="monitor-lights"
+     hx-get="/admin/tabs/monitor-lights"
+     hx-trigger="every 30s"
+     hx-target="this"></div>
+
+<hr>
+
+<!-- Grafana Embed -->
+{% set grafana_url = build_grafana_embed_url() %}
+{% if grafana_url %}
+<div x-data="grafanaDashboard">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="h5 mb-0">Grafana Dashboard</h3>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary"
+                    :class="{ 'active': timeRange === '1h' }"
+                    data-action="grafana-range" data-range="1h">1h</button>
+            <button class="btn btn-outline-secondary"
+                    :class="{ 'active': timeRange === '6h' }"
+                    data-action="grafana-range" data-range="6h">6h</button>
+            <button class="btn btn-outline-secondary"
+                    :class="{ 'active': timeRange === '24h' }"
+                    data-action="grafana-range" data-range="24h">24h</button>
+            <button class="btn btn-outline-secondary"
+                    :class="{ 'active': timeRange === '7d' }"
+                    data-action="grafana-range" data-range="7d">7d</button>
+        </div>
+    </div>
+    <iframe :src="url" class="monitoring-iframe"></iframe>
+</div>
+{% else %}
+<div class="alert alert-info">
+    Grafana not configured. Set <code>GRAFANA_URL</code> and
+    <code>GRAFANA_DASHBOARD_UID</code> env vars.
+</div>
+{% endif %}

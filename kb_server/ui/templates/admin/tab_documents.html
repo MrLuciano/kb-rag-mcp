@@ -1,0 +1,12 @@
+<h2 class="h3">Documents</h2>
+<p class="text-muted">Browse and manage indexed documents.</p>
+
+<div id="admin-documents-content"
+     hx-get="/admin/tabs/documents-content"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <div class="text-center text-muted py-3">
+        <div class="spinner-border spinner-border-sm" role="status"></div>
+        <span class="ms-2">Loading documents...</span>
+    </div>
+</div>

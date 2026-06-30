@@ -10,6 +10,7 @@ multi-collection routing, and query logging.
 
 import asyncio
 import contextvars
+import hashlib
 import logging
 import os
 import sys
@@ -19,18 +20,33 @@ from typing import Any
 
 # ── Load .env before any os.getenv reads
 from config.bootstrap_env import bootstrap_env
+
 bootstrap_env()
 
 import mcp.types as types
-from kb_server.embed_client import get_embedding
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from mcp.server.stdio import stdio_server
-from kb_server.vector_store import VectorStore
-from kb_server.telemetry.query_logger import QueryLogger
+
+from kb_server.auth.erasure import ErasureManager
+from kb_server.auth.router import router as auth_router
+from kb_server.auth.service import AuthService
+from kb_server.cache.request_cache import RetrievalCache  # PHASE 37
 from kb_server.collections.manager import CollectionManager
-from kb_server.collections.router import CollectionRouter, CollectionNotFoundError
+from kb_server.collections.router import (
+    CollectionNotFoundError,
+    CollectionRouter,
+)
+from kb_server.config import config
+from kb_server.embed_client import get_embedding
 from kb_server.filter_terms_cache import FilterTermsCache  # PHASE 17
+from kb_server.observability.percentiles import get_percentile_tracker
+from kb_server.telemetry.query_logger import QueryLogger
+from kb_server.vector_store import VectorStore
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+from observability.metrics import record_active_sessions  # PHASE 28
+from observability.metrics import record_session_evicted  # PHASE 28
 from observability.metrics import (
     record_query,
     record_query_error,
@@ -39,11 +55,14 @@ from observability.metrics import (
     record_retrieval_cache_op,
     update_rate_limit_subjects,
 )
-from kb_server.cache.request_cache import RetrievalCache  # PHASE 37
 
 # ── Logging ───────────────────────────────────────────────────────
-_log_path = os.getenv("LOG_PATH", "/tmp/kb-mcp.log")
-os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+_log_path = config.get("LOG_PATH", "/tmp/kb-mcp.log")
+try:
+    os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+except PermissionError:
+    _log_path = "/tmp/kb-mcp.log"
+    os.makedirs(os.path.dirname(_log_path), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -54,45 +73,114 @@ logging.basicConfig(
 )
 log = logging.getLogger("kb-mcp")
 
+
+def _hash_subject(subject: str) -> str:
+    """Produce a stable, non-reversible rate-limit subject identifier."""
+    return hashlib.sha256(subject.encode()).hexdigest()[:16]
+
+
 # ── Config ────────────────────────────────────────────────────────
-TRANSPORT = os.getenv("MCP_TRANSPORT", "stdio")  # stdio | sse
-SSE_HOST = os.getenv("SSE_HOST", "127.0.0.1")
-SSE_PORT = int(os.getenv("SSE_PORT", "8765"))
-TOP_K = int(os.getenv("DEFAULT_TOP_K", "5"))
+TRANSPORT = config.get("MCP_TRANSPORT", "stdio")  # stdio | sse
+SSE_HOST = config.get("SSE_HOST", "127.0.0.1")
+SSE_PORT = int(config.get("SSE_PORT", "8765"))
+TOP_K = int(config.get("DEFAULT_TOP_K", "5"))
 
 # PHASE 33: Rate limiting config
-RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "false").lower() in (
-    "true", "1", "yes"
+RATE_LIMIT_ENABLED = str(
+    config.get("RATE_LIMIT_ENABLED", "false")
+).lower() in (
+    "true",
+    "1",
+    "yes",
 )
-RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
-RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+RATE_LIMIT_REQUESTS = int(config.get("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(config.get("RATE_LIMIT_WINDOW", "60"))
 
 # Per-subject tracking for rate limiting across transport sessions
-_current_subject: contextvars.ContextVar[str | None] = (
-    contextvars.ContextVar("current_subject", default=None)
+_current_subject: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "current_subject", default=None
 )
-_current_transport: contextvars.ContextVar[str] = (
-    contextvars.ContextVar("current_transport", default="stdio")
+_current_transport: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "current_transport", default="stdio"
 )
 
 # PHASE 37: Retrieval cache configuration
-RLCACHE_ENABLED = os.getenv("RLCACHE_ENABLED", "true").lower() in (
-    "true", "1", "yes"
+RLCACHE_ENABLED = str(config.get("RLCACHE_ENABLED", "true")).lower() in (
+    "true",
+    "1",
+    "yes",
 )
-RLCACHE_TTL = int(os.getenv("RLCACHE_TTL", "300"))
-RLCACHE_MAX_ENTRIES = int(os.getenv("RLCACHE_MAX_ENTRIES", "1000"))
+RLCACHE_TTL = int(config.get("RLCACHE_TTL", "300"))
+RLCACHE_MAX_ENTRIES = int(config.get("RLCACHE_MAX_ENTRIES", "1000"))
 
 # PHASE 14: Query logging configuration
-QUERY_LOG_ENABLED = os.getenv("QUERY_LOG_ENABLED", "true").lower() in (
-    "true", "1", "yes"
+QUERY_LOG_ENABLED = str(config.get("QUERY_LOG_ENABLED", "true")).lower() in (
+    "true",
+    "1",
+    "yes",
 )
-QUERY_LOG_PATH = Path(
-    os.getenv("QUERY_LOG_PATH", "data/kb_metadata.db")
-)
-QUERY_LOG_RETENTION_DAYS = int(os.getenv("QUERY_LOG_RETENTION_DAYS", "90"))
+QUERY_LOG_PATH = Path(config.get("QUERY_LOG_PATH", "data/kb_metadata.db"))
+QUERY_LOG_RETENTION_DAYS = int(config.get("QUERY_LOG_RETENTION_DAYS", "90"))
 QUERY_LOG_CLEANUP_INTERVAL_HOURS = int(
-    os.getenv("QUERY_LOG_CLEANUP_INTERVAL_HOURS", "24")
+    config.get("QUERY_LOG_CLEANUP_INTERVAL_HOURS", "24")
 )
+
+
+# ── Hot-reload callbacks ────────────────────────────────────────
+@config.on_change("RATE_LIMIT_ENABLED")
+def _on_rate_limit_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for rate limiter)",
+        key,
+        value,
+    )
+
+
+@config.on_change("QUERY_LOG_ENABLED")
+def _on_query_log_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for query logger)",
+        key,
+        value,
+    )
+
+
+@config.on_change("RLCACHE_ENABLED")
+def _on_cache_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for retrieval cache)",
+        key,
+        value,
+    )
+
+
+@config.on_change("SSE_PORT")
+def _on_sse_port_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for SSE server)", key, value
+    )
+
+
+@config.on_change("SSE_HOST")
+def _on_sse_host_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for SSE server)", key, value
+    )
+
+
+@config.on_change("MCP_PORT")
+def _on_mcp_port_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for MCP server)", key, value
+    )
+
+
+@config.on_change("MCP_HOST")
+def _on_mcp_host_changed(key: str, value: Any) -> None:
+    log.info(
+        "Config change: %s = %s (restart required for MCP server)", key, value
+    )
+
 
 # ── Initialization ────────────────────────────────────────────────
 app = Server("kb-rag")
@@ -114,7 +202,8 @@ if RLCACHE_ENABLED:
         )
         log.info(
             "Retrieval cache enabled: max_entries=%d ttl=%d",
-            RLCACHE_MAX_ENTRIES, RLCACHE_TTL,
+            RLCACHE_MAX_ENTRIES,
+            RLCACHE_TTL,
         )
     except Exception as e:
         log.error(f"Failed to initialise retrieval cache: {e}")
@@ -206,14 +295,30 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "Filter by product. "
-                            f"{_fmt('product', 'Examples: AppServer, DataSync, AdminPortal, Adobe, SAP, ISO, general')}"
+                            + _fmt(
+                                "product",
+                                "Examples: AppServer, DataSync, "
+                                "AdminPortal, Adobe, SAP, ISO, general",
+                            )
                         ),
                     },
                     "doc_type": {
                         "type": "string",
                         "description": (
                             "Filter by content type. "
-                            f"{_fmt('doc_type', 'admin_guide=administration, install_guide=installation, upgrade_guide=upgrade/migration, config_guide=configuration, release_notes=release notes, api_guide=API/SDK, howto=tutorials/case studies, training=training, overview=overview, standard=ISO standards/regulations, reference=technical reference')}"
+                            + _fmt(
+                                "doc_type",
+                                "admin_guide=administration, "
+                                "install_guide=installation, "
+                                "upgrade_guide=upgrade/migration, "
+                                "config_guide=configuration, "
+                                "release_notes=release notes, "
+                                "api_guide=API/SDK, "
+                                "howto=tutorials/case studies, "
+                                "training=training, overview=overview, "
+                                "standard=ISO standards/regulations, "
+                                "reference=technical reference",
+                            )
                         ),
                         "enum": doc_type_enum,
                     },
@@ -229,22 +334,31 @@ async def list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": (
                             "PHASE 11.1: Filter by vendor. "
-                            f"{_fmt('vendor', 'Examples: OpenText, Adobe, SAP, ISO, general')}"
+                            + _fmt(
+                                "vendor",
+                                "Examples: OpenText, Adobe, "
+                                "SAP, ISO, general",
+                            )
                         ),
                     },
                     "subsystem": {
                         "type": "string",
                         "description": (
-                            "PHASE 11.1: Filter by subsystem/module within a product. "
-                            f"{_fmt('subsystem', '')}"
+                            "PHASE 11.1: Filter by subsystem/module "
+                            "within a product. " + _fmt("subsystem", "")
                         ),
                     },
                     "module": {
                         "type": "string",
                         "description": (
-                            "PHASE 17: Filter by module/sub-module within a "
-                            "product. "
-                            f"{_fmt('module', 'Examples: Administration, Configuration, API, Security, Connectors, User Management')}"
+                            "PHASE 17: Filter by module/sub-module "
+                            "within a product. "
+                            + _fmt(
+                                "module",
+                                "Examples: Administration, "
+                                "Configuration, API, Security, "
+                                "Connectors, User Management",
+                            )
                         ),
                     },
                     "filter_type": {
@@ -370,8 +484,7 @@ async def list_tools() -> list[types.Tool]:
                 "properties": {
                     "chunk_id": {
                         "type": "string",
-                        "description": "Chunk ID (returned by "
-                        "search_kb)",
+                        "description": "Chunk ID (returned by " "search_kb)",
                     },
                     "context_window": {
                         "type": "integer",
@@ -560,14 +673,16 @@ async def call_tool(
 
     # PHASE 33: Rate-limit check for tool calls
     if RATE_LIMIT_ENABLED and rate_limiter is not None:
-        subject = _current_subject.get() or "unknown"
+        subject = _hash_subject(_current_subject.get() or "unknown")
         transport = _current_transport.get()
         allowed, retry_after = await rate_limiter.check(subject)
         if not allowed:
             record_rate_limit_rejected(transport)
             log.warning(
                 "Rate limit exceeded for subject=%s transport=%s tool=%s",
-                subject, transport, name,
+                subject,
+                transport,
+                name,
             )
             return [
                 types.TextContent(
@@ -599,11 +714,12 @@ async def call_tool(
             result = await _explore_topic(arguments)
         else:
             result = [
-                types.TextContent(
-                    type="text", text=f"Unknown tool: {name}"
-                )
+                types.TextContent(type="text", text=f"Unknown tool: {name}")
             ]
-        record_query(name, "success", time.time() - start)
+        elapsed = time.time() - start
+        record_query(name, "success", elapsed)
+        if name in ("search_kb", "list_documents", "get_chunk", "kb_stats"):
+            get_percentile_tracker().record(name, elapsed * 1000)
         return result
     except Exception as e:
         latency = time.time() - start
@@ -611,8 +727,8 @@ async def call_tool(
         record_query(name, "error", latency)
         record_query_error(name)
         return [
-                types.TextContent(
-                    type="text", text=f"Error executing {name}: {str(e)}"
+            types.TextContent(
+                type="text", text=f"Error executing {name}: {str(e)}"
             )
         ]
 
@@ -624,7 +740,7 @@ async def call_tool(
 
 async def _search_kb(args: dict) -> list[types.TextContent]:
     start_time = time.time()
-    
+
     query = args["query"]
     top_k = args.get("top_k", TOP_K)
     filter_type = args.get("filter_type")
@@ -643,7 +759,9 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
     target_collection = getattr(store, "collection", None)
     if collection_router is not None and not kb_ids:
         try:
-            target_collection = await collection_router.resolve(collection_param)
+            target_collection = await collection_router.resolve(
+                collection_param
+            )
         except CollectionNotFoundError as exc:
             return [types.TextContent(type="text", text=str(exc))]
 
@@ -688,20 +806,41 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             record_retrieval_cache_op("hit")
             log.info(
                 "Retrieval cache hit: key=%s query='%s' results=%d",
-                cache_key[:16], query, len(results),
+                cache_key[:16],
+                query,
+                len(results),
             )
         else:
             record_retrieval_cache_op("miss")
 
     if results is None:
         # ── Full search pipeline (cache miss) ─────────────────────
-        vector = await get_embedding(query)
+        try:
+            vector = await get_embedding(query)
+        except Exception as e:
+            log.error(
+                "Embedding backend unavailable: %s — start LM Studio or "
+                "check EMBED_BACKEND config. See docs/OPERATIONS.md",
+                e,
+            )
+            return [
+                types.TextContent(
+                    type="text",
+                    text=(
+                        "Embedding backend unavailable — start LM Studio or "
+                        "check EMBED_BACKEND config. "
+                        "See docs/OPERATIONS.md for troubleshooting."
+                    ),
+                )
+            ]
 
         # PHASE 12: Determine retrieve_k for reranking
         retrieve_k = top_k
         if rerank:
             retrieve_k = min(top_k * 4, 20)
-            log.info(f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}")
+            log.info(
+                f"Reranking enabled: retrieving {retrieve_k} for reranking to {top_k}"
+            )
 
         # PHASE 35: Multi-KB aggregated search path
         if multi_collections:
@@ -726,7 +865,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             )
             log.info(
                 "Multi-KB search: %d collections → %d results",
-                len(multi_collections), len(results),
+                len(multi_collections),
+                len(results),
             )
         # PHASE 12: Route to hybrid search if enabled
         elif hybrid:
@@ -758,14 +898,18 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
                 module=module,  # PHASE 17
             )
             if target_collection is not None:
-                _search_kwargs["collection_name"] = target_collection  # PHASE 15
+                _search_kwargs["collection_name"] = (
+                    target_collection  # PHASE 15
+                )
             results = await store.search(**_search_kwargs)
 
         # PHASE 12: Apply reranking if enabled (skip for multi-KB — already merged)
         if rerank and results and not multi_collections:
             from kb_server.retrieval.reranker import get_reranker
 
-            log.info(f"Applying cross-encoder reranking to {len(results)} results")
+            log.info(
+                f"Applying cross-encoder reranking to {len(results)} results"
+            )
             reranker = get_reranker()
             try:
                 results = await reranker.rerank(
@@ -773,7 +917,9 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
                     results=results,
                     top_k=top_k,
                 )
-                log.info(f"Reranking complete: {len(results)} results returned")
+                log.info(
+                    f"Reranking complete: {len(results)} results returned"
+                )
             except Exception as e:
                 log.error(f"Reranking failed: {e}", exc_info=True)
                 log.warning("Falling back to original results")
@@ -789,12 +935,12 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             try:
                 filters = {}
                 if product:
-                    filters['product'] = product
+                    filters["product"] = product
                 if doc_type:
-                    filters['doc_type'] = doc_type
+                    filters["doc_type"] = doc_type
                 if filter_type:
-                    filters['file_type'] = filter_type
-                
+                    filters["file_type"] = filter_type
+
                 query_logger.log_query(
                     query_text=query,
                     top_k=top_k,
@@ -803,11 +949,11 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
                     version_filter=version,
                     result_count=0,
                     scores=[],
-                    latency_ms=latency_ms
+                    latency_ms=latency_ms,
                 )
             except Exception as e:
                 log.error(f"Failed to log query: {e}")
-        
+
         return [
             types.TextContent(
                 type="text",
@@ -817,27 +963,25 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         ]
 
     lines = [f'## Results for: "{query}"\n']
-    
+
     mode_indicators = []
     if multi_collections:
-        mode_indicators.append(
-            f"multi-KB ({', '.join(multi_collections)})"
-        )
+        mode_indicators.append(f"multi-KB ({', '.join(multi_collections)})")
     if hybrid:
         mode_indicators.append("hybrid")
     if rerank:
         mode_indicators.append("reranked")
     if mode_indicators:
         lines.append(f"*Search {' + '.join(mode_indicators)}*\n")
-    
+
     for i, r in enumerate(results, 1):
         score_pct = f"{r['score'] * 100:.1f}%"
-        source = r['source_file']
+        source = r["source_file"]
         coll_tag = r.get("_collection", "")
         meta = (
             f"**ID:** `{r['chunk_id']}`  |  "
-            f"**Product:** {r.get('product','n/a')}  |  "
-            f"**Type:** {r.get('doc_type','n/a')}  |  "
+            f"**Product:** {r.get('product', 'n/a')}  |  "
+            f"**Type:** {r.get('doc_type', 'n/a')}  |  "
             f"**Format:** {r['file_type']}"
         )
         if coll_tag:
@@ -845,8 +989,8 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
             meta = (
                 f"**ID:** `{r['chunk_id']}`  |  "
                 f"**KB:** `{coll_tag}`  |  "
-                f"**Product:** {r.get('product','n/a')}  |  "
-                f"**Type:** {r.get('doc_type','n/a')}"
+                f"**Product:** {r.get('product', 'n/a')}  |  "
+                f"**Type:** {r.get('doc_type', 'n/a')}"
             )
         lines.append(f"### [{i}] {source}  (relevance: {score_pct})")
         lines.append(meta)
@@ -857,20 +1001,20 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
         lines.append("\n---")
 
     lines.append("\n*Use `get_chunk` with the ID to get expanded context.*")
-    
+
     latency_ms = (time.time() - start_time) * 1000
     if query_logger:
         try:
             filters = {}
             if product:
-                filters['product'] = product
+                filters["product"] = product
             if doc_type:
-                filters['doc_type'] = doc_type
+                filters["doc_type"] = doc_type
             if filter_type:
-                filters['file_type'] = filter_type
-            
-            scores = [r['score'] for r in results]
-            
+                filters["file_type"] = filter_type
+
+            scores = [r["score"] for r in results]
+
             query_logger.log_query(
                 query_text=query,
                 top_k=top_k,
@@ -879,11 +1023,11 @@ async def _search_kb(args: dict) -> list[types.TextContent]:
                 version_filter=version,
                 result_count=len(results),
                 scores=scores,
-                latency_ms=latency_ms
+                latency_ms=latency_ms,
             )
         except Exception as e:
             log.error(f"Failed to log query: {e}")
-    
+
     return [types.TextContent(type="text", text="\n".join(lines))]
 
 
@@ -892,7 +1036,9 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
     target_collection = getattr(store, "collection", None)
     if collection_router is not None:
         try:
-            target_collection = await collection_router.resolve(collection_param)
+            target_collection = await collection_router.resolve(
+                collection_param
+            )
         except CollectionNotFoundError as exc:
             return [types.TextContent(type="text", text=str(exc))]
 
@@ -911,9 +1057,9 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
 
     if not docs:
         return [
-                types.TextContent(
-                    type="text", text="No documents indexed in the knowledge base."
-                )
+            types.TextContent(
+                type="text", text="No documents indexed in the knowledge base."
+            )
         ]
 
     lines = [f"## Documents in the Knowledge Base ({len(docs)} found)\n"]
@@ -924,16 +1070,28 @@ async def _list_documents(args: dict) -> list[types.TextContent]:
     for dt, items in sorted(by_dt.items()):
         lines.append(f"### {dt}  ({len(items)} documents)")
         for d in items:
-            vendor_info = f" | vendor: {d.get('vendor','n/a')}" if d.get('vendor') else ""
-            subsystem_info = f" | subsystem: {d.get('subsystem','n/a')}" if d.get('subsystem') else ""
-            module_info = f" | module: {d.get('module','n/a')}" if d.get('module') else ""
+            vendor_info = (
+                f" | vendor: {d.get('vendor', 'n/a')}"
+                if d.get("vendor")
+                else ""
+            )
+            subsystem_info = (
+                f" | subsystem: {d.get('subsystem', 'n/a')}"
+                if d.get("subsystem")
+                else ""
+            )
+            module_info = (
+                f" | module: {d.get('module', 'n/a')}"
+                if d.get("module")
+                else ""
+            )
             lines.append(
-            f"- `{d['source_file']}` — {d['chunk_count']} chunks"
-            f" | product: {d.get('product','n/a')}"
-            f"{vendor_info}"
-            f"{subsystem_info}"
-            f"{module_info}"
-            f" | format: {d['file_type']}"
+                f"- `{d['source_file']}` — {d['chunk_count']} chunks"
+                f" | product: {d.get('product', 'n/a')}"
+                f"{vendor_info}"
+                f"{subsystem_info}"
+                f"{module_info}"
+                f" | format: {d['file_type']}"
             )
         lines.append("")
 
@@ -954,9 +1112,7 @@ async def _get_chunk(args: dict) -> list[types.TextContent]:
 
     lines = [f"## Chunk `{chunk_id}` with context\n"]
     for c in chunks:
-        marker = (
-            "→ **[requested chunk]**" if c["chunk_id"] == chunk_id else ""
-        )
+        marker = "→ **[requested chunk]**" if c["chunk_id"] == chunk_id else ""
         lines.append(
             f"### {c['source_file']} — chunk {c['chunk_index']} {marker}"
         )
@@ -993,10 +1149,15 @@ async def _kb_stats() -> list[types.TextContent]:
 # ENTRYPOINT
 # ──────────────────────────────────────────────────────────────────
 
+
 async def _list_collections() -> list[types.TextContent]:
     """PHASE 15: List all Qdrant collections."""
     if collection_manager is None:
-        return [types.TextContent(type="text", text="CollectionManager not initialized.")]
+        return [
+            types.TextContent(
+                type="text", text="CollectionManager not initialized."
+            )
+        ]
     names = await collection_manager.list_collections()
     if not names:
         return [types.TextContent(type="text", text="No collections found.")]
@@ -1019,7 +1180,9 @@ async def _list_filter_options(args: dict) -> list[types.TextContent]:
     target_collection = getattr(store, "collection", None)
     if collection_router is not None and collection_param:
         try:
-            target_collection = await collection_router.resolve(collection_param)
+            target_collection = await collection_router.resolve(
+                collection_param
+            )
         except CollectionNotFoundError as exc:
             return [types.TextContent(type="text", text=str(exc))]
 
@@ -1057,11 +1220,13 @@ async def _list_filter_options(args: dict) -> list[types.TextContent]:
                 f"({len(values)} values):\n"
             )
             for item in values[:10]:
-                lines.append(f"- `{item['value']}` - {item['count']} document(s)")
+                lines.append(
+                    f"- `{item['value']}` - {item['count']} document(s)"
+                )
             if len(values) > 10:
                 lines.append(
                     f"  *(+{len(values) - 10} more - "
-                    f"use `field=\"{f}\"` for full list)*\n"
+                    f'use `field="{f}"` for full list)*\n'
                 )
         else:
             lines.append(
@@ -1149,7 +1314,9 @@ async def _explore_topic(
             )
         ]
     )
-    results, _ = await store.client.scroll(
+    client = store.client
+    assert client is not None
+    results, _ = await client.scroll(
         collection_name=target or store.collection,
         scroll_filter=query_filter,
         limit=limit,
@@ -1164,12 +1331,10 @@ async def _explore_topic(
             )
         ]
 
-    lines = [
-        f"## Documents for topic `{topic}` "
-        f"({len(results)} chunks)\n"
-    ]
+    lines = [f"## Documents for topic `{topic}` " f"({len(results)} chunks)\n"]
     seen: set[str] = set()
     for r in results:
+        assert r.payload is not None
         sf = r.payload.get("source_file", "")
         if sf not in seen:
             seen.add(sf)
@@ -1180,8 +1345,7 @@ async def _explore_topic(
             )
 
     lines.append(
-        f"\n*Total: {len(seen)} unique documents, "
-        f"{len(results)} chunks*"
+        f"\n*Total: {len(seen)} unique documents, " f"{len(results)} chunks*"
     )
     return [types.TextContent(type="text", text="\n".join(lines))]
 
@@ -1215,6 +1379,86 @@ async def _schedule_metric_updates() -> None:
         await _update_rate_limit_subject_metric()
 
 
+async def _schedule_scheduler_loop() -> None:
+    """Phase 52: Background ingestion scheduler - runs every 30s."""
+    SHED_LOOP: str | None = config.get("SCHEDULER_LOOP", "true")
+    if SHED_LOOP is None or SHED_LOOP.lower() not in ("true", "1", "yes"):
+        log.info("Ingestion scheduler loop disabled via SCHEDULER_LOOP")
+        return
+    from datetime import datetime
+    from ingest.core.cron import cron_matches, next_cron_time
+    from ingest.core.metadata import MetadataStore
+    from ingest.job.manager import JobManager
+    from ingest.job.models import JobPriority
+
+    try:
+        sched_store = MetadataStore(Path("data/kb_metadata.db"))
+        sched_store.connect()
+        job_mgr = JobManager(sched_store)
+    except Exception as e:
+        log.error("Failed to init scheduler metadata store: %s", e)
+        return
+
+    while True:
+        await asyncio.sleep(30)
+        try:
+            now = datetime.now()
+            now_ts = now.timestamp()
+            due = sched_store.get_enabled_schedules_due()
+            for s in due:
+                name = s.get("name", "?")
+                sid = s.get("id", "")
+                cron_expr = s.get("cron_expr", "")
+
+                if not cron_matches(now, cron_expr):
+                    continue
+
+                log.info(
+                    "Scheduler trigger: schedule='%s' cron=%s docs_path=%s",
+                    name, cron_expr, s.get("docs_path", ""),
+                )
+                try:
+                    priority_str = s.get("priority", "normal")
+                    priority_map = {
+                        "low": JobPriority.LOW,
+                        "normal": JobPriority.NORMAL,
+                        "high": JobPriority.HIGH,
+                    }
+                    job = job_mgr.create_job(
+                        docs_path=s.get("docs_path", ""),
+                        priority=priority_map.get(priority_str, JobPriority.NORMAL),
+                        product_override=s.get("product"),
+                        workers=int(s.get("workers", 2)),
+                        clean=bool(s.get("clean", False)),
+                        force=bool(s.get("force", False)),
+                    )
+                    next_run = next_cron_time(now, cron_expr)
+                    sched_store.update_schedule_run(
+                        schedule_id=sid,
+                        last_run_at=now_ts,
+                        last_run_status="triggered",
+                        next_run_at=next_run.timestamp() if next_run else None,
+                    )
+                    log.info(
+                        "Scheduler triggered job=%s from schedule='%s'",
+                        job.job_id, name,
+                    )
+                except Exception as e:
+                    log.error(
+                        "Scheduler failed to create job for schedule='%s': %s",
+                        name, e,
+                    )
+                    next_run = next_cron_time(now, cron_expr)
+                    sched_store.update_schedule_run(
+                        schedule_id=sid,
+                        last_run_at=now_ts,
+                        last_run_status="error",
+                        next_run_at=next_run.timestamp() if next_run else None,
+                    )
+        except Exception as e:
+            log.error("Scheduler loop error: %s", e, exc_info=True)
+
+
 async def _schedule_log_cleanup() -> None:
     """CR-04: Periodically purge query log entries older than retention window.
 
@@ -1226,7 +1470,9 @@ async def _schedule_log_cleanup() -> None:
         await asyncio.sleep(interval_seconds)
         if query_logger:
             try:
-                deleted = query_logger.cleanup_old_queries(QUERY_LOG_RETENTION_DAYS)
+                deleted = query_logger.cleanup_old_queries(
+                    QUERY_LOG_RETENTION_DAYS
+                )
                 log.info(
                     f"Query log cleanup: {deleted} entries older than "
                     f"{QUERY_LOG_RETENTION_DAYS}d removed"
@@ -1245,10 +1491,85 @@ def invalidate_retrieval_cache() -> None:
     operation that changes the underlying data so subsequent searches
     reflect the new state.
     """
-    global retrieval_cache
     if retrieval_cache is not None:
         retrieval_cache.invalidate_all()
         log.info("Retrieval cache invalidated by external signal")
+
+
+class _SessionTracker:
+    """Enforce max session limit via oldest-idle eviction.
+
+    Wraps ``StreamableHTTPSessionManager`` and tracks session
+    last-active times. When a new-session request arrives and
+    the active count is at ``MCP_MAX_SESSIONS``, the oldest
+    tracked session is evicted from the underlying manager's
+    ``sessions`` dict. The mcp library automatically returns
+    JSON-RPC error ``-32000`` ("Session not found") when an
+    evicted client reconnects with its old session ID
+    (per D-03).
+
+    This class does NOT add or remove any sessions itself
+    outside of ``evict_if_needed``; ``StreamableHTTPSessionManager``
+    owns the full session lifecycle.
+    """
+
+    __slots__ = ("_mgr", "_max", "_last_active")
+
+    def __init__(
+        self,
+        mgr: Any,
+        max_sessions: int,
+    ) -> None:
+        self._mgr = mgr
+        self._max = max_sessions
+        self._last_active: dict[str, float] = {}
+
+    def mark_active(self, session_id: str | None) -> None:
+        """Record that *session_id* was active *now*."""
+        if session_id:
+            self._last_active[session_id] = time.time()
+
+    def evict_if_needed(self) -> str | None:
+        """Evict oldest idle session if at capacity.
+
+        Returns the evicted session ID (for logging / metrics)
+        or ``None`` if no eviction was needed.
+        """
+        sessions = self._mgr.sessions
+        if len(sessions) < self._max:
+            return None
+
+        now = time.time()
+        oldest_id: str | None = None
+        oldest_time = now
+
+        for sid in sessions:
+            last_active = self._last_active.get(sid, now)
+            if last_active <= oldest_time:
+                oldest_time = last_active
+                oldest_id = sid
+
+        if oldest_id is not None:
+            del self._mgr.sessions[oldest_id]
+            self._last_active.pop(oldest_id, None)
+            return oldest_id
+        return None
+
+    def cleanup(self) -> int:
+        """Remove tracking entries for sessions no longer active.
+
+        Returns the number of stale entries removed.
+        """
+        sessions = self._mgr.sessions
+        stale = [sid for sid in self._last_active if sid not in sessions]
+        for sid in stale:
+            self._last_active.pop(sid, None)
+        return len(stale)
+
+    @property
+    def active_count(self) -> int:
+        """Number of active sessions in the underlying manager."""
+        return len(self._mgr.sessions)
 
 
 async def main():
@@ -1259,21 +1580,40 @@ async def main():
     the MCP server on either stdio or SSE transport based on the
     MCP_TRANSPORT environment variable.
     """
-    global collection_manager, collection_router, rate_limiter, retrieval_cache
+    global collection_manager, collection_router, rate_limiter
     log.info(f"KB RAG MCP Server starting (transport={TRANSPORT})")
     await store.connect()
+
+    # Initialize auth service
+    from pathlib import Path
+
+    auth_db_path = Path(config.get("AUTH_DB_PATH", "data/auth.db"))
+    auth_service = AuthService(db_path=auth_db_path)
+    erasure_manager = ErasureManager(auth_service.session)
+
+    def _build_auth_app():
+        """Build a FastAPI sub-app with mounted auth router."""
+        from fastapi import FastAPI
+
+        auth_app = FastAPI()
+        auth_app.state.auth_service = auth_service
+        auth_app.state.erasure_manager = erasure_manager
+        auth_app.include_router(auth_router)
+        return auth_app
 
     # PHASE 33: Initialize rate limiter
     if RATE_LIMIT_ENABLED:
         from kb_server.rate_limiter import ServerRateLimiter
 
         rate_limiter = ServerRateLimiter(
-            requests_per_minute=RATE_LIMIT_REQUESTS / (RATE_LIMIT_WINDOW / 60.0),
+            requests_per_minute=RATE_LIMIT_REQUESTS
+            / (RATE_LIMIT_WINDOW / 60.0),
             cleanup_interval=300,
         )
         log.info(
             "Rate limiting enabled: %d requests per %ds window",
-            RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW,
+            RATE_LIMIT_REQUESTS,
+            RATE_LIMIT_WINDOW,
         )
 
     # Pre-flight health checks
@@ -1283,10 +1623,26 @@ async def main():
     if not embedding_status.healthy:
         log.warning(
             f"Embedding backend unreachable: {embedding_status.message} — "
-            f"queries will fail. Configure EMBED_BACKEND or start LM Studio."
+            f"queries will fail. Configure EMBED_BACKEND, start LM Studio, "
+            f"or see OPERATIONS.md for troubleshooting."
         )
     else:
         log.info(f"Embedding backend healthy: {embedding_status.message}")
+
+    from kb_server.auth import is_auth_enabled
+
+    if not is_auth_enabled() and TRANSPORT != "stdio":
+        log.warning(
+            "SECURITY: AUTH_ENABLED=false in HTTP/SSE mode — "
+            "all endpoints are accessible without authentication. "
+            "Set AUTH_ENABLED=true in production."
+        )
+    if is_auth_enabled() and not os.getenv("JWT_SECRET"):
+        log.warning(
+            "SECURITY: JWT_SECRET is not set. Session tokens use a "
+            "predictable fallback secret. Set JWT_SECRET to a random "
+            "64-character hex string in production."
+        )
 
     vector_status = await check_vector_store()
     if not vector_status.healthy:
@@ -1298,7 +1654,9 @@ async def main():
         log.info(f"Qdrant healthy: {vector_status.message}")
 
     collection_manager = CollectionManager(store.client, vector_size=store.dim)
-    collection_router = CollectionRouter(collection_manager, default_collection=store.collection)
+    collection_router = CollectionRouter(
+        collection_manager, default_collection=store.collection
+    )
     log.info(f"CollectionRouter initialized (default='{store.collection}')")
 
     # PHASE 17: Initialize filter terms cache
@@ -1323,6 +1681,10 @@ async def main():
     if RATE_LIMIT_ENABLED:
         asyncio.create_task(_schedule_metric_updates())
         log.info("Rate-limit metric updates scheduled every 60s")
+
+    # PHASE 52: Start background ingestion scheduler
+    asyncio.create_task(_schedule_scheduler_loop())
+    log.info("Ingestion scheduler loop started (30s interval)")
 
     if TRANSPORT == "sse":
         import uvicorn
@@ -1371,13 +1733,16 @@ async def main():
 
             # PHASE 33: Rate-limit the SSE connection itself
             if RATE_LIMIT_ENABLED and rate_limiter is not None:
-                allowed, retry_after = await rate_limiter.check(sse_subject)
+                allowed, retry_after = await rate_limiter.check(
+                    _hash_subject(sse_subject)
+                )
                 if not allowed:
                     record_rate_limit_rejected("sse")
                     log.warning(
                         "Rate-limit connection rejected for subject=%s "
                         "retry_after=%ds",
-                        sse_subject, retry_after,
+                        sse_subject,
+                        retry_after,
                     )
                     return Response(
                         content='{"error":"Rate limit exceeded"}',
@@ -1401,22 +1766,221 @@ async def main():
 
         async def handle_health(request):
             """Simple health check endpoint for Docker healthchecks."""
-            return Response(content='{"status":"ok","service":"kb-rag"}', media_type="application/json")
+            return Response(
+                content='{"status":"ok","service":"kb-rag"}',
+                media_type="application/json",
+            )
+
+        async def handle_metrics(request):
+            """Prometheus metrics endpoint — served from MCP process for real data."""
+            return Response(
+                content=generate_latest(),
+                media_type=CONTENT_TYPE_LATEST,
+            )
 
         starlette_app = Starlette(
             routes=[
                 Route("/sse", endpoint=handle_sse),
                 Route("/health", endpoint=handle_health),
+                Route("/metrics", endpoint=handle_metrics),
                 Mount("/messages/", app=sse.handle_post_message),
+                Mount("/api/v1", app=_build_auth_app()),
             ]
         )
 
+        log.info("Auth router mounted on SSE transport")
         log.info(f"SSE server at http://{SSE_HOST}:{SSE_PORT}/sse")
-        config = uvicorn.Config(
+        _uvicorn_config = uvicorn.Config(
             starlette_app, host=SSE_HOST, port=SSE_PORT, log_level="info"
         )
-        server = uvicorn.Server(config)
+        server = uvicorn.Server(_uvicorn_config)
         await server.serve()
+    elif TRANSPORT == "streamable-http":
+        import uvicorn
+        from mcp.server.streamable_http_manager import (
+            StreamableHTTPSessionManager,
+            TransportSecuritySettings,
+        )
+        from starlette.applications import Starlette
+        from starlette.middleware import Middleware
+        from starlette.middleware.cors import CORSMiddleware
+        from starlette.responses import Response
+        from starlette.routing import Mount, Route
+
+        MCP_HOST = config.get("MCP_HOST", "127.0.0.1")
+        MCP_PORT = int(config.get("MCP_PORT", "8765"))
+        MCP_ENDPOINT = config.get("MCP_ENDPOINT", "/mcp")
+        MCP_JSON_RESPONSE = str(
+            config.get("MCP_JSON_RESPONSE", "false")
+        ).lower() in (
+            "true",
+            "1",
+        )
+        MCP_STATELESS = str(config.get("MCP_STATELESS", "false")).lower() in (
+            "true",
+            "1",
+        )
+        MCP_SESSION_TIMEOUT = float(config.get("MCP_SESSION_TIMEOUT", "300"))
+        MCP_MAX_SESSIONS = int(config.get("MCP_MAX_SESSIONS", "50"))
+
+        security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=[MCP_HOST] if MCP_HOST != "0.0.0.0" else [],
+            allowed_origins=[],
+        )
+
+        async def handle_mcp(request):
+            # ── Session limit enforcement ─────────────────────────
+            mcp_session_id = request.headers.get("Mcp-Session-Id")
+            if not mcp_session_id and not MCP_STATELESS:
+                evicted_id = session_tracker.evict_if_needed()
+                if evicted_id:
+                    record_session_evicted("streamable-http")
+                    log.info(
+                        "Session limit reached: evicted %s",
+                        evicted_id[:12],
+                    )
+
+            from kb_server.auth import is_auth_enabled, verify_request
+
+            subject = "unknown"
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                key = auth_header[7:]
+                prefix = key[:8] if len(key) >= 8 else key
+                subject = f"key:{prefix}"
+            else:
+                forwarded = request.headers.get("X-Forwarded-For", "")
+                subject = forwarded.split(",")[0].strip() or (
+                    request.client.host if request.client else "unknown"
+                )
+            _current_subject.set(subject)
+            _current_transport.set("streamable-http")
+
+            if is_auth_enabled():
+                ok, err = verify_request(auth_header)
+                if not ok:
+                    return Response(
+                        content=f'{{"error":"{err}"}}',
+                        status_code=401,
+                        media_type="application/json",
+                    )
+
+            if RATE_LIMIT_ENABLED and rate_limiter is not None:
+                allowed, retry_after = await rate_limiter.check(
+                    _hash_subject(subject)
+                )
+                if not allowed:
+                    record_rate_limit_rejected("streamable-http")
+                    return Response(
+                        content='{"error":"Rate limit exceeded"}',
+                        status_code=429,
+                        media_type="application/json",
+                        headers={"Retry-After": str(retry_after)},
+                    )
+                record_rate_limit_allowed("streamable-http")
+
+            # Track session activity for eviction ordering
+            session_tracker.mark_active(mcp_session_id)
+
+            await session_mgr.handle_request(
+                request.scope, request.receive, request._send
+            )
+
+        starlette_app = Starlette(
+            routes=[
+                Route(
+                    MCP_ENDPOINT,
+                    endpoint=handle_mcp,
+                    methods=["GET", "POST", "DELETE", "OPTIONS"],
+                ),
+                Route(
+                    "/health",
+                    endpoint=lambda r: Response(
+                        content='{"status":"ok","service":"kb-rag"}',
+                        media_type="application/json",
+                    ),
+                ),
+                Route(
+                    "/metrics",
+                    endpoint=lambda r: Response(
+                        content=generate_latest(),
+                        media_type=CONTENT_TYPE_LATEST,
+                    ),
+                ),
+                Mount("/api/v1", app=_build_auth_app()),
+            ],
+            middleware=[
+                Middleware(
+                    CORSMiddleware,
+                    allow_origins=["*"],
+                    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+                    allow_headers=[
+                        "Content-Type",
+                        "Accept",
+                        "Authorization",
+                        "Mcp-Session-Id",
+                        "Last-Event-ID",
+                        "MCP-Protocol-Version",
+                    ],
+                    expose_headers=["Mcp-Session-Id", "Content-Type"],
+                ),
+            ],
+        )
+
+        session_mgr = StreamableHTTPSessionManager(
+            app=app,
+            json_response=MCP_JSON_RESPONSE,
+            stateless=MCP_STATELESS,
+            security_settings=security,
+            session_idle_timeout=MCP_SESSION_TIMEOUT,
+        )
+
+        session_tracker = _SessionTracker(session_mgr, MCP_MAX_SESSIONS)
+        log.info(
+            "Session limit: max_sessions=%d (tracking initialized)",
+            MCP_MAX_SESSIONS,
+        )
+
+        async def _session_sweep() -> None:
+            """Periodic session housekeeping every 60s (per D-04).
+
+            Removes stale tracking entries from ``session_tracker``
+            and records active session count as a Prometheus gauge.
+            """
+            while True:
+                await asyncio.sleep(60)
+                try:
+                    stale = session_tracker.cleanup()
+                    count = session_tracker.active_count
+                    record_active_sessions(count, "streamable-http")
+                    log.debug(
+                        "Session sweep: %d active, %d stale cleaned",
+                        count,
+                        stale,
+                    )
+                except Exception:
+                    log.exception("Session sweep error")
+
+        asyncio.create_task(_session_sweep())
+        log.info(
+            "Session sweep scheduled every 60s (max_sessions=%d)",
+            MCP_MAX_SESSIONS,
+        )
+
+        log.info(
+            f"Streamable HTTP server at http://{MCP_HOST}:{MCP_PORT}{MCP_ENDPOINT} "
+            f"(json_response={MCP_JSON_RESPONSE}, stateless={MCP_STATELESS})"
+        )
+        async with session_mgr.run():
+            _uvicorn_config = uvicorn.Config(
+                starlette_app,
+                host=MCP_HOST,
+                port=MCP_PORT,
+                log_level="info",
+            )
+            server = uvicorn.Server(_uvicorn_config)
+            await server.serve()
     else:
         log.info("stdio transport active")
         # Set context for tool-level rate-limit checks

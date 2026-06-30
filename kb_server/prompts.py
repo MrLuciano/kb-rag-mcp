@@ -10,7 +10,6 @@ handles registration, not template content.
 """
 
 import logging
-from typing import Any
 
 import mcp.types as types
 

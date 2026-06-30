@@ -73,17 +73,13 @@ class VersionExtractor:
                 if match:
                     # Get the full match (includes prefix like CE, v)
                     version = match.group(0)
-                    log.debug(
-                        f"Extracted version '{version}' from '{source}'"
-                    )
+                    log.debug(f"Extracted version '{version}' from '{source}'")
                     return version
 
         log.debug(f"No version found in path: {file_path}")
         return None
 
-    def extract_batch(
-        self, file_paths: list[Path]
-    ) -> dict[Path, str | None]:
+    def extract_batch(self, file_paths: list[Path]) -> dict[Path, str | None]:
         """
         Extract versions for multiple files.
 

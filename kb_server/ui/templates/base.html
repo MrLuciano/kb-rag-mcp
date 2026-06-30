@@ -4,59 +4,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}KB-RAG Web UI{% endblock %}</title>
-    
+
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
+          crossorigin="anonymous">
+
+    <!-- Project styles -->
+    <link rel="stylesheet" href="/static/styles.css">
+
     <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    
-    <style>
-        .status-completed { color: #198754; }
-        .status-failed { color: #dc3545; }
-        .status-pending { color: #ffc107; }
-        .score-high { color: #198754; font-weight: bold; }
-        .score-medium { color: #fd7e14; }
-        .score-low { color: #6c757d; }
-    </style>
-    
+    <script src="https://unpkg.com/htmx.org@1.9.10"
+            integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+            crossorigin="anonymous"></script>
+
+    <!-- Alpine.js (unsafe-eval CSP) -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"
+            integrity="sha384-BxpSbjbDhVKwnC1UfcjsNEuMuxg4af5IXOaSi1Iq5rASQ/9a7uslhEXbP9UI/fXo"
+            crossorigin="anonymous"
+            defer></script>
+
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+    <body>
+    {% set active_page = active_page | default('') %}
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">KB-RAG Web UI</a>
-            <button class="navbar-toggler" type="button" 
-                    data-bs-toggle="collapse" 
+            <button class="navbar-toggler" type="button"
+                    data-bs-toggle="collapse"
                     data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="/ui/browse">
-                            Browse Documents
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/ui/search">
-                            Search Tester
-                        </a>
-                    </li>
+                        <a class="nav-link fs-6 {% if active_page == 'browse' %}active" aria-current="page{% endif %}"
+                           href="/ui/browse">
+                             Browse Documents
+                         </a>
+                     </li>
+                     <li class="nav-item">
+                         <a class="nav-link fs-6 {% if active_page == 'search' %}active" aria-current="page{% endif %}"
+                            href="/ui/search">
+                             Search Tester
+                         </a>
+                     </li>
+                     <li class="nav-item">
+                         <a class="nav-link fs-6 {% if active_page == 'admin' %}active" aria-current="page{% endif %}"
+                            href="/admin">
+                             Admin
+                         </a>
+                     </li>
                 </ul>
             </div>
         </div>
     </nav>
-    
+
     <!-- Main Content -->
     <div class="container mt-4">
         {% block content %}{% endblock %}
     </div>
-    
+
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+            crossorigin="anonymous"></script>
+
+    <script nonce="{{ get_nonce(request) }}">
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            var key = localStorage.getItem('kb_api_key');
+            if (key) {
+                evt.detail.requestHeaders['Authorization'] = 'Bearer ' + key;
+            }
+        });
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            if (evt.detail.xhr.status === 401) {
+                window.dispatchEvent(new CustomEvent('show-login'));
+            }
+        });
+        document.addEventListener('htmx:responseError', function(event) {
+            var target = event.detail.target;
+            if (target && event.detail.xhr.status !== 401) {
+                var msg = 'Failed to load content. Please try again later.';
+                if (event.detail.xhr.status === 404) {
+                    msg = 'Page not found. The requested resource does not exist.';
+                } else if (event.detail.xhr.status >= 500) {
+                    msg = 'Server error. Please try again later.';
+                }
+                target.innerHTML = '<div class="alert alert-danger" role="alert">' +
+                    msg + '</div>';
+            }
+        });
+        document.addEventListener('htmx:sendError', function(event) {
+            var target = event.detail.target;
+            if (target) {
+                target.innerHTML = '<div class="alert alert-danger" role="alert">' +
+                    'Network error. Please check your connection.' +
+                    '</div>';
+            }
+        });
+    </script>
+
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

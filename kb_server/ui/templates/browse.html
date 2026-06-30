@@ -5,6 +5,7 @@
 {% block content %}
 <h1>Browse Documents</h1>
 
+<h2 class="visually-hidden">Filters</h2>
 <!-- Filters -->
 <div class="card mb-4">
     <div class="card-body">
@@ -52,8 +53,9 @@
                 </select>
             </div>
             <div class="col-12">
-                <button type="submit" class="btn btn-primary">
-                    Filter
+                <button type="submit" class="btn btn-primary" id="filter-btn">
+                    <span class="btn-text">Filter</span>
+                    <span class="spinner-border spinner-border-sm d-none" id="filter-spinner" role="status" aria-hidden="true"></span>
                 </button>
                 <a href="/ui/browse" class="btn btn-secondary">
                     Clear
@@ -63,6 +65,7 @@
     </div>
 </div>
 
+<h2 class="visually-hidden">Results</h2>
 <!-- Results count -->
 <p class="text-muted">
     Showing {{ documents|length }} of {{ total }} documents
@@ -97,9 +100,13 @@
                 <td>{{ doc.doc_type or 'N/A' }}</td>
                 <td>{{ doc.version or 'N/A' }}</td>
                 <td>
-                    <span class="status-{{ doc.status }}">
-                        {{ doc.status }}
-                    </span>
+                    {% if doc.status == 'completed' or doc.status == 'ok' %}
+                    <span class="badge bg-success">{{ doc.status }}</span>
+                    {% elif doc.status == 'failed' or doc.status == 'error' %}
+                    <span class="badge bg-danger">{{ doc.status }}</span>
+                    {% else %}
+                    <span class="badge bg-warning">{{ doc.status }}</span>
+                    {% endif %}
                 </td>
                 <td>{{ doc.chunks_stored or 0 }}</td>
                 <td>
@@ -113,6 +120,13 @@
         </tbody>
     </table>
 </div>
+
+{% if not documents %}
+<div class="alert alert-info">
+    No documents found matching the current filters.
+    <a href="/ui/browse" class="alert-link">Clear filters</a> or ingest documents.
+</div>
+{% endif %}
 
 <!-- Pagination -->
 {% if total_pages > 1 %}
@@ -183,4 +197,21 @@
 </nav>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    var filterForm = document.querySelector('form[action="/ui/browse"]');
+    var filterBtn = document.getElementById('filter-btn');
+    var filterSpinner = document.getElementById('filter-spinner');
+    var filterBtnText = filterBtn.querySelector('.btn-text');
+
+    if (filterForm) {
+        filterForm.addEventListener('submit', function() {
+            filterBtn.disabled = true;
+            filterBtnText.classList.add('d-none');
+            filterSpinner.classList.remove('d-none');
+        });
+    }
+</script>
 {% endblock %}

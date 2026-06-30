@@ -36,6 +36,7 @@ Usage:
 import json
 import logging
 from pathlib import Path
+from typing import cast
 
 log = logging.getLogger("kb-ingest.meta")
 
@@ -86,15 +87,13 @@ class MetaLoader:
             with open(meta_file, "r", encoding="utf-8") as f:
                 meta = json.load(f)
         except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Invalid JSON in {meta_file}: {e}"
-            ) from e
+            raise ValueError(f"Invalid JSON in {meta_file}: {e}") from e
 
         # Validate schema
         self._validate_meta(meta, meta_file)
 
         log.info(f"Loaded metadata overrides from {meta_file}")
-        return meta
+        return cast(dict, meta)
 
     def _validate_meta(self, meta: dict, meta_file: Path):
         """
@@ -119,9 +118,7 @@ class MetaLoader:
         # Validate file-specific overrides
         if "files" in meta:
             if not isinstance(meta["files"], dict):
-                raise ValueError(
-                    f"'files' must be a dict in {meta_file}"
-                )
+                raise ValueError(f"'files' must be a dict in {meta_file}")
 
             for filename, overrides in meta["files"].items():
                 if not isinstance(overrides, dict):
@@ -157,13 +154,9 @@ class MetaLoader:
             # File-specific overrides, fallback to directory defaults
             return {
                 "product": file_meta.get("product", meta.get("product")),
-                "doc_type": file_meta.get(
-                    "doc_type", meta.get("doc_type")
-                ),
+                "doc_type": file_meta.get("doc_type", meta.get("doc_type")),
                 "vendor": file_meta.get("vendor", meta.get("vendor")),
-                "subsystem": file_meta.get(
-                    "subsystem", meta.get("subsystem")
-                ),
+                "subsystem": file_meta.get("subsystem", meta.get("subsystem")),
             }
 
         # Directory-level defaults
@@ -193,9 +186,7 @@ class MetaLoader:
             except Exception as e:
                 log.error(f"Failed to load {meta_file}: {e}")
 
-        log.info(
-            f"Loaded {len(meta_map)} _meta.json files from {directory}"
-        )
+        log.info(f"Loaded {len(meta_map)} _meta.json files from {directory}")
         return meta_map
 
 

@@ -1,0 +1,1084 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - KB-RAG{% endblock %}
+
+{% block content %}
+<div x-data="adminApp" class="d-flex admin-shell">
+    <!-- Hamburger toggle (visible on mobile) -->
+    <button class="btn btn-dark d-md-none position-fixed top-0 start-0 m-2 z-3"
+            data-action="toggle-sidebar" aria-label="Toggle sidebar">
+        &#9776;
+    </button>
+
+    <!-- Sidebar -->
+    <div class="d-flex flex-column bg-dark text-light p-3 admin-sidebar" role="navigation"
+         :class="sidebarClass">
+        <h2 class="h5 text-center mb-4">Admin Panel</h2>
+        <ul class="nav nav-pills flex-column" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link text-light" :class="docsClass"
+                   href="#" data-action="switch-tab" data-tab="documents">&#128196; <span>Documents</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-light" :class="monitorClass"
+                   href="#" data-action="switch-tab" data-tab="monitoring">&#128200; <span>Monitoring</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-light" :class="ingestClass"
+                   href="#" data-action="switch-tab" data-tab="ingestion">&#9889; <span>Ingestion</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-light" :class="ragasClass"
+                   href="#" data-action="switch-tab" data-tab="ragas">&#129514; <span>RAGAS Evaluation</span></a>
+            </li>
+            <li class="nav-item" x-show="isAdmin">
+                <a class="nav-link text-light" :class="usersClass"
+                   href="#" data-action="switch-tab" data-tab="users">&#128101; <span>Users</span></a>
+            </li>
+            <li class="nav-item" x-show="isAdmin">
+                <a class="nav-link text-light" :class="adminClass"
+                   href="#" data-action="switch-tab" data-tab="admin">&#9881; <span>Admin</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-light" :class="analyticsClass"
+                   href="#" data-action="switch-tab" data-tab="analytics">&#128202; <span>Analytics</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-light" :class="profileClass"
+                   href="#" data-action="switch-tab" data-tab="profile">&#128100; <span>Profile</span></a>
+            </li>
+        </ul>
+        <div class="mt-auto">
+            <button class="btn btn-outline-light w-100" data-action="logout"
+                    x-show="isAuthenticated">Log out</button>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="flex-grow-1 p-4 admin-content" id="tab-content">
+        <div class="text-center text-muted py-5">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-2">Loading...</p>
+        </div>
+    </div>
+    <!-- Login Overlay -->
+    <div x-show="showOverlay"
+         style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;"
+         aria-labelledby="login-heading">
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+            <div class="card shadow" style="width: 350px;">
+                <div class="card-body p-4 text-center">
+                    <h3 id="login-heading" class="h3 mb-3">Login to Admin Panel</h3>
+
+                    <!-- Login method tabs -->
+                    <ul class="nav nav-tabs nav-fill mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" :class="loginPasswordTabClass"
+                                    data-action="set-login-method" data-method="password"
+                                    type="button">Password</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" :class="loginApiKeyTabClass"
+                                    data-action="set-login-method" data-method="apikey"
+                                    type="button">API Key</button>
+                        </li>
+                    </ul>
+
+                    <!-- Password login form -->
+                    <div x-show="isPasswordLoginMethod">
+                        <p class="text-muted small mb-3">Enter your username and password.</p>
+                        <input type="text" class="form-control mb-2" id="loginUsername"
+                               placeholder="Username"
+                               aria-label="Username"
+                               :value="loginUsername">
+                        <input type="password" class="form-control mb-2" id="loginPassword"
+                               placeholder="Password"
+                               aria-label="Password"
+                               :value="loginPassword">
+                        <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
+                        <button class="btn btn-primary w-100" data-action="login-password"
+                                :disabled="loggingIn"
+                                x-text="loginButtonLabel"></button>
+                    </div>
+
+                    <!-- API key login form -->
+                    <div x-show="isApiKeyLoginMethod">
+                        <p class="text-muted small mb-3">Enter your API key to access the admin panel.</p>
+                        <input type="password" class="form-control mb-2" id="apiKeyInput"
+                               placeholder="kb_xxxxxxxx..."
+                               aria-label="API key"
+                                :value="apiKeyInput">
+                        <div x-show="loginError" class="alert alert-danger py-2 small" x-text="loginError" role="alert"></div>
+                        <button class="btn btn-primary w-100" data-action="login-apikey"
+                                :disabled="loggingIn"
+                                x-text="loginButtonLabel"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error target for tab loading failures -->
+<div id="tab-error" class="d-none alert alert-danger" role="alert">
+    Failed to load tab content. <a href="/admin" class="alert-link">Refresh</a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script nonce="{{ get_nonce(request) }}">
+        document.addEventListener('htmx:responseError', function(event) {
+            if (event.detail.target && event.detail.target.id === 'tab-content') {
+                if (event.detail.xhr.status === 401) {
+                    return;
+                }
+                var tabError = document.getElementById('tab-error');
+                if (tabError) {
+                    tabError.classList.remove('d-none');
+                }
+            }
+        });
+        document.addEventListener('htmx:beforeRequest', function(event) {
+            if (event.detail.target && event.detail.target.id === 'tab-content') {
+                var tabError = document.getElementById('tab-error');
+                if (tabError) {
+                    tabError.classList.add('d-none');
+                }
+            }
+        });
+        // Initialize Alpine components in HTMX-swapped content
+        document.addEventListener('htmx:afterSettle', function(evt) {
+            Alpine.initTree(evt.detail.target);
+        });
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('docBrowser', () => ({
+                selected: [],
+                toggleSelectAll() {
+                    var checkboxes = document.querySelectorAll('input[type="checkbox"][x-model="selected"]');
+                    if (this.selected.length === checkboxes.length) {
+                        this.selected = [];
+                    } else {
+                        this.selected = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                    }
+                },
+                bulkDelete() {
+                    var ids = this.selected;
+                    if (ids.length === 0) return;
+                    if (!confirm('Delete selected documents: Are you sure you want to delete these documents? This action cannot be undone.')) return;
+                    var promises = ids.map(function(id) {
+                        return fetch('/api/v1/documents/' + id, { method: 'DELETE' });
+                    });
+                    Promise.all(promises).then(function() {
+                        htmx.ajax('GET', '/admin/tabs/documents-content', {target: '#tab-content', swap: 'innerHTML'});
+                    });
+                },
+                bulkReingest() {
+                    var ids = this.selected;
+                    if (ids.length === 0) return;
+                    var promises = ids.map(function(id) {
+                        return fetch('/api/v1/documents/' + id + '/re-ingest', { method: 'POST' });
+                    });
+                    Promise.all(promises).then(function() {
+                        htmx.ajax('GET', '/admin/tabs/documents-content', {target: '#tab-content', swap: 'innerHTML'});
+                    });
+                },
+                init() {
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'doc-bulk-delete') {
+                            comp.bulkDelete();
+                        } else if (action === 'doc-bulk-reingest') {
+                            comp.bulkReingest();
+                        } else if (action === 'doc-toggle-select-all') {
+                            comp.toggleSelectAll();
+                        }
+                    });
+                }
+            }));
+            Alpine.data('ingestionTab', () => ({
+                activeTab: 'manual',
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    htmx.ajax('GET', '/admin/tabs/ingestion-' + tab, {target: '#ingestion-content', swap: 'innerHTML'});
+                },
+                init() {
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'ingestion-switch-tab') {
+                            comp.switchTab(btn.getAttribute('data-tab'));
+                        }
+                    });
+                }
+            }));
+            Alpine.data('scheduleManager', () => ({
+                schedules: [],
+                loading: false,
+                formError: '',
+                formSuccess: '',
+                form: {
+                    name: '',
+                    cron_expr: '',
+                    docs_path: '',
+                    product: '',
+                    workers: 2,
+                    priority: 'normal',
+                    clean: 'false',
+                    force: 'false',
+                },
+                async load() {
+                    this.loading = true;
+                    try {
+                        var resp = await fetch('/api/v1/schedules');
+                        this.schedules = await resp.json();
+                    } catch(e) {
+                        this.formError = 'Failed to load schedules';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                _clearFlash() {
+                    var comp = this;
+                    setTimeout(function() { comp.formError = ''; comp.formSuccess = ''; }, 3000);
+                },
+                async create() {
+                    this.formError = '';
+                    this.formSuccess = '';
+                    try {
+                        var resp = await fetch('/api/v1/schedules', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                name: this.form.name,
+                                cron_expr: this.form.cron_expr,
+                                docs_path: this.form.docs_path,
+                                product: this.form.product || null,
+                                workers: parseInt(this.form.workers),
+                                priority: this.form.priority,
+                                clean: this.form.clean === 'true',
+                                force: this.form.force === 'true',
+                            }),
+                        });
+                        if (!resp.ok) {
+                            var err = await resp.json();
+                            this.formError = err.detail || 'Failed to create schedule';
+                            this._clearFlash();
+                            return;
+                        }
+                        this.formSuccess = 'Schedule created';
+                        this.form.name = '';
+                        this.form.cron_expr = '';
+                        this.form.docs_path = '';
+                        this.form.product = '';
+                        this.form.workers = 2;
+                        this.form.priority = 'normal';
+                        this.form.clean = 'false';
+                        this.form.force = 'false';
+                        await this.load();
+                        this._clearFlash();
+                    } catch(e) {
+                        this.formError = 'Network error';
+                        this._clearFlash();
+                    }
+                },
+                async toggle(id, enabled) {
+                    try {
+                        await fetch('/api/v1/schedules/' + id, {
+                            method: 'PUT',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({enabled: enabled}),
+                        });
+                        await this.load();
+                    } catch(e) {
+                        this.formError = 'Failed to toggle schedule';
+                        this._clearFlash();
+                    }
+                },
+                async remove(id) {
+                    if (!confirm('Delete this schedule?')) return;
+                    try {
+                        await fetch('/api/v1/schedules/' + id, {method: 'DELETE'});
+                        await this.load();
+                    } catch(e) {
+                        this.formError = 'Failed to delete schedule';
+                        this._clearFlash();
+                    }
+                },
+            }));
+            Alpine.data('ragasTab', () => ({
+                activeTab: 'editor',
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    htmx.ajax('GET', '/admin/tabs/ragas-' + tab, {target: '#ragas-content', swap: 'innerHTML'});
+                },
+                init() {
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'ragas-switch-tab') {
+                            comp.switchTab(btn.getAttribute('data-tab'));
+                        }
+                    });
+                }
+            }));
+            Alpine.data('configEditor', () => ({
+                entries: [],
+                editing: '',
+                editValue: '',
+                search: '',
+                saveError: '',
+                get filteredConfig() {
+                    if (!this.search) return this.entries;
+                    var s = this.search.toLowerCase();
+                    return this.entries.filter(function(e) {
+                        return e.key.toLowerCase().includes(s) || e.group_name.toLowerCase().includes(s);
+                    });
+                },
+                _applyDates() {
+                    this.entries.forEach(function(e) {
+                        if (e.updated_at) {
+                            var d = new Date(e.updated_at * 1000);
+                            e.updated_at_display = d.toLocaleDateString();
+                        } else {
+                            e.updated_at_display = '';
+                        }
+                    });
+                },
+                loadConfig() {
+                    var comp = this;
+                    fetch('/api/v1/config')
+                        .then(r => r.json())
+                        .then(data => {
+                            comp.entries = data;
+                            comp._applyDates();
+                        });
+                },
+                startEdit(entry) {
+                    this.editing = entry.key;
+                    this.editValue = entry.value;
+                },
+                init() {
+                    var self = this;
+                    this.loadConfig();
+                    document.addEventListener('htmx:responseError', function(evt) {
+                        var el = evt.detail.elt;
+                        var putPath = el && el.getAttribute('hx-put');
+                        if (putPath && putPath.indexOf('/api/v1/config/') === 0) {
+                            self.saveError = 'Failed to save config value. Check the value format and try again.';
+                        }
+                    });
+                    document.addEventListener('htmx:afterRequest', function(evt) {
+                        var el = evt.detail.elt;
+                        var putPath = el && el.getAttribute('hx-put');
+                        if (putPath && putPath.indexOf('/api/v1/config/') === 0) {
+                            if (evt.detail.successful) {
+                                self.saveError = '';
+                                self.editing = '';
+                                self.loadConfig();
+                            }
+                        }
+                    });
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'config-start-edit') {
+                            self.editing = btn.getAttribute('data-key');
+                            self.editValue = btn.getAttribute('data-value');
+                        }
+                    });
+                    container.addEventListener('dblclick', function(e) {
+                        var el = e.target.closest('[data-action="config-start-edit"]');
+                        if (el) {
+                            self.editing = el.getAttribute('data-key');
+                            self.editValue = el.getAttribute('data-value');
+                        }
+                    });
+                }
+            }));
+            Alpine.data('sessionManager', () => ({
+                sessions: [],
+                init() {
+                    fetch('/api/v1/auth/sessions')
+                        .then(r => r.json())
+                        .then(data => { this.sessions = data; })
+                        .catch(() => {});
+                }
+            }));
+            Alpine.data('credentialManager', () => ({
+                keys: [],
+                newKey: '',
+                init() {
+                    var comp = this;
+                    fetch('/api/v1/api-keys')
+                        .then(r => r.json())
+                        .then(data => { this.keys = data; })
+                        .catch(() => {});
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'credential-generate-key') {
+                            comp.generateKey();
+                        }
+                    });
+                },
+                generateKey() {
+                    fetch('/api/v1/api-keys', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({description: 'Admin panel key'})
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        this.newKey = data.raw_key;
+                        this.keys.unshift({id: data.id, prefix: data.prefix, description: data.description, created_at: data.created_at, last_used_at: null, is_revoked: false});
+                        setTimeout(() => { this.newKey = ''; }, 15000);
+                    })
+                    .catch(() => {});
+                }
+            }));
+            Alpine.data('tagManager', () => ({
+                activeTab: 'browse',
+                tagFilter: '',
+                init() {
+                    this.loadTab('browse');
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'tag-switch-tab') {
+                            comp.switchTab(btn.getAttribute('data-tab'));
+                        }
+                    });
+                    container.addEventListener('input', function(e) {
+                        var el = e.target.closest('[data-action="tag-filter"]');
+                        if (el) comp.filterTags();
+                    });
+                },
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    this.loadTab(tab);
+                },
+                loadTab(tab) {
+                    var target = '';
+                    var url = '';
+                    if (tab === 'browse') {
+                        target = '#tags-table-container';
+                        url = '/admin/tags/table';
+                    } else if (tab === 'bulk') {
+                        target = '#tags-bulk-container';
+                        url = '/admin/tags/bulk-editor';
+                    } else if (tab === 'queue') {
+                        target = '#tags-queue-container';
+                        url = '/admin/tags/reingest-queue';
+                    }
+                    if (target && url) {
+                        htmx.ajax('GET', url, {target: target, swap: 'innerHTML'});
+                    }
+                },
+                filterTags() {
+                    htmx.ajax('GET', '/admin/tags/table?filter=' + encodeURIComponent(this.tagFilter), {
+                        target: '#tags-table-container',
+                        swap: 'innerHTML'
+                    });
+                }
+            }));
+            Alpine.data('userManager', () => ({
+                users: [],
+                loadError: '',
+                showCreateForm: false,
+                newUser: { username: '', email: '', role: 'user' },
+                newKey: '',
+                showNewKey: false,
+                creating: false,
+                createError: '',
+                selectedUser: null,
+                userKeys: [],
+                updatingUser: null,
+                updateForm: { email: '', role: 'user', is_active: true },
+                updateError: '',
+                updating: false,
+                init() {
+                    this.loadUsers();
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'toggle-create-form') {
+                            comp.showCreateForm = !comp.showCreateForm;
+                        } else if (action === 'create-user') {
+                            comp.createUser();
+                        } else if (action === 'copy-key') {
+                            comp.copyKey();
+                        } else if (action === 'dismiss-new-key') {
+                            comp.showNewKey = false;
+                            comp.newKey = '';
+                        } else if (action === 'show-api-keys') {
+                            var userId = btn.getAttribute('data-user-id');
+                            var user = comp.users.find(function(u) { return u.id === userId; });
+                            if (user) comp.showApiKeys(user);
+                        } else if (action === 'delete-user') {
+                            var userId = btn.getAttribute('data-user-id');
+                            var user = comp.users.find(function(u) { return u.id === userId; });
+                            if (user) comp.deleteUser(user);
+                        } else if (action === 'revoke-key') {
+                            var keyId = btn.getAttribute('data-key-id');
+                            var key = comp.userKeys.find(function(k) { return k.id === keyId; });
+                            if (key) comp.revokeKey(key);
+                        } else if (action === 'generate-key-for-user') {
+                            if (comp.selectedUser) comp.generateKeyForUser(comp.selectedUser);
+                        } else if (action === 'update-user') {
+                            var userId = btn.getAttribute('data-user-id');
+                            var user = comp.users.find(function(u) { return u.id === userId; });
+                            if (user) comp.openUpdateModal(user);
+                        } else if (action === 'save-update-user') {
+                            comp.updateUser();
+                        }
+                    });
+                },
+                loadUsers() {
+                    var comp = this;
+                    comp.loadError = '';
+                    fetch('/api/v1/users')
+                        .then(function(r) {
+                            if (!r.ok) throw new Error('HTTP ' + r.status + ' fetching users');
+                            return r.json();
+                        })
+                        .then(function(data) {
+                            var keyPromises = data.map(function(user) {
+                                user.created_at_display = comp._fmtDate(user.created_at);
+                                return fetch('/api/v1/api-keys?user_id=' + user.id)
+                                    .then(function(r) { return r.ok ? r.json() : []; })
+                                    .then(function(keys) {
+                                        var active = keys.filter(function(k) { return !k.is_revoked; });
+                                        user.apiKeyPrefix = active.length > 0 ? active[0].prefix + '...' : null;
+                                        return user;
+                                    });
+                            });
+                            return Promise.all(keyPromises);
+                        })
+                        .then(function(users) {
+                            comp.users = users;
+                            comp.loadError = 'Loaded ' + users.length + ' users';
+                        })
+                        .catch(function(err) {
+                            comp.loadError = 'Error: ' + err.message;
+                        });
+                },
+                createUser() {
+                    var comp = this;
+                    this.createError = '';
+                    if (!comp.newUser.username.trim()) {
+                        this.createError = 'Username is required';
+                        this.creating = false;
+                        return;
+                    }
+                    this.creating = true;
+                    var headers = { 'Content-Type': 'application/json' };
+                    fetch('/api/v1/users', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(comp.newUser)
+                    })
+                    .then(function(r) {
+                        if (r.ok) return r.json();
+                        return r.json().then(function(e) { throw new Error(e.detail || 'Failed to create user'); });
+                    })
+                    .then(function(user) {
+                        return fetch('/api/v1/api-keys', {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({ user_id: user.id, description: 'Auto-generated for ' + user.username })
+                        })
+                        .then(function(r) {
+                            if (r.ok) return r.json();
+                            throw new Error('User created but API key generation failed');
+                        })
+                        .then(function(keyData) {
+                            comp.newKey = keyData.raw_key;
+                            comp.showNewKey = true;
+                            comp.showCreateForm = false;
+                            comp.creating = false;
+                            user.created_at_display = comp._fmtDate(user.created_at);
+                            user.apiKeyPrefix = keyData.raw_key.substring(0, 8) + '...';
+                            comp.users.unshift(user);
+                        });
+                    })
+                    .catch(function(err) {
+                        comp.createError = err.message;
+                        comp.creating = false;
+                    });
+                },
+                toggleCreateForm() {
+                    this.showCreateForm = !this.showCreateForm;
+                },
+                openUpdateModal(user) {
+                    this.updatingUser = user;
+                    this.updateForm = {
+                        email: user.email || '',
+                        role: user.role || 'user',
+                        is_active: user.is_active !== false
+                    };
+                    this.updateError = '';
+                    this.updating = false;
+                    var prev = document.activeElement;
+                    var modalEl = document.getElementById('updateUserModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modalEl.addEventListener('hidden.bs.modal', function() {
+                        modalEl.removeAttribute('aria-hidden');
+                        if (prev && prev.focus) prev.focus();
+                    }, { once: true });
+                    modal.show();
+                },
+                updateUser() {
+                    var comp = this;
+                    var user = this.updatingUser;
+                    if (!user) return;
+                    this.updating = true;
+                    this.updateError = '';
+                    fetch('/api/v1/users/' + user.id, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: comp.updateForm.email || null,
+                            role: comp.updateForm.role,
+                            is_active: comp.updateForm.is_active
+                        })
+                    })
+                    .then(function(r) {
+                        if (r.ok) return r.json();
+                        return r.json().then(function(e) { throw new Error(e.detail || 'Failed to update user'); });
+                    })
+                    .then(function() {
+                        comp.updating = false;
+                        var modalEl = document.getElementById('updateUserModal');
+                        var modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                        var checkBackdrop = function() {
+                            var b = document.querySelectorAll('.modal-backdrop');
+                            b.forEach(function(el) { el.remove(); });
+                            document.body.classList.remove('modal-open');
+                            document.body.style.removeProperty('overflow');
+                        };
+                        setTimeout(checkBackdrop, 300);
+                        comp.loadUsers();
+                    })
+                    .catch(function(err) {
+                        comp.updateError = err.message;
+                        comp.updating = false;
+                    });
+                },
+                deleteUser(user) {
+                    if (!confirm('Delete user "' + user.username + '"? This will also revoke all their API keys.')) return;
+                    var comp = this;
+                    fetch('/api/v1/users/' + user.id, { method: 'DELETE' })
+                        .then(function(r) {
+                            if (r.ok) { comp.loadUsers(); }
+                        });
+                },
+                _fmtDate(dateStr) {
+                    if (!dateStr) return '—';
+                    var d = new Date(dateStr);
+                    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                },
+                showApiKeys(user) {
+                    this.selectedUser = user;
+                    var comp = this;
+                    var prev = document.activeElement;
+                    fetch('/api/v1/api-keys?user_id=' + user.id)
+                        .then(function(r) { return r.ok ? r.json() : []; })
+                        .then(function(keys) {
+                            keys.forEach(function(k) {
+                                k.created_at_display = comp._fmtDate(k.created_at);
+                            });
+                            comp.userKeys = keys;
+                        });
+                    var modalEl = document.getElementById('apiKeysModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modalEl.addEventListener('hidden.bs.modal', function() {
+                        modalEl.removeAttribute('aria-hidden');
+                        if (prev && prev.focus) prev.focus();
+                    }, { once: true });
+                    modal.show();
+                },
+                generateKeyForUser(user) {
+                    var headers = { 'Content-Type': 'application/json' };
+                    var comp = this;
+                    fetch('/api/v1/api-keys', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ user_id: user.id, description: 'Admin generated' })
+                    })
+                    .then(function(r) { return r.ok ? r.json() : null; })
+                    .then(function(data) {
+                        if (data) {
+                            comp.newKey = data.raw_key;
+                            comp.showNewKey = true;
+                            comp.showApiKeys(user);
+                        }
+                    });
+                },
+                revokeKey(key) {
+                    if (!confirm('Revoke this API key?')) return;
+                    var comp = this;
+                    fetch('/api/v1/api-keys/' + key.id, { method: 'DELETE' })
+                        .then(function() { comp.showApiKeys(comp.selectedUser); });
+                },
+                copyKey() {
+                    var input = document.getElementById('new-api-key-input');
+                    if (input) { input.select(); document.execCommand('copy'); }
+                },
+                formatDate(dateStr) {
+                    return this._fmtDate(dateStr);
+                }
+            }));
+            Alpine.data('profilePage', () => ({
+                user: {},
+                keys: [],
+                newKey: '',
+                erasureStatus: '',
+                init() {
+                    var comp = this;
+                    fetch('/api/v1/users/me')
+                        .then(r => r.json())
+                        .then(data => { comp.user = data; comp.loadKeys(); });
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'profile-generate-key') {
+                            comp.generateKey();
+                        } else if (action === 'profile-revoke-key') {
+                            var keyId = parseInt(btn.getAttribute('data-key-id'));
+                            comp.revokeKey(keyId);
+                        } else if (action === 'profile-export') {
+                            comp.exportData();
+                        } else if (action === 'profile-erasure') {
+                            comp.requestErasure();
+                        }
+                    });
+                },
+                loadKeys() {
+                    if (!this.user.id) return;
+                    fetch('/api/v1/api-keys?user_id=' + this.user.id)
+                        .then(r => r.json())
+                        .then(data => { this.keys = data; });
+                },
+                generateKey() {
+                    if (!this.user.id) return;
+                    var headers = { 'Content-Type': 'application/json' };
+                    fetch('/api/v1/api-keys', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ user_id: this.user.id, description: 'Admin UI key' })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        this.newKey = data.raw_key;
+                        this.loadKeys();
+                    });
+                },
+                revokeKey(keyId) {
+                    if (!confirm('Revoke API key: Are you sure you want to revoke this key? Applications using this key will lose access immediately.')) return;
+                    fetch('/api/v1/api-keys/' + keyId, { method: 'DELETE' })
+                        .then(() => { this.loadKeys(); });
+                },
+                exportData() {
+                    fetch('/api/v1/users/' + this.user.id + '/export')
+                        .then(r => r.json())
+                        .then(data => {
+                            var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.href = url; a.download = 'my-data-export.json'; a.click();
+                            URL.revokeObjectURL(url);
+                        });
+                },
+                requestErasure() {
+                    if (!confirm('Request complete erasure of all your data? This will anonymize your account and revoke all API keys.')) return;
+                    var headers = { 'Content-Type': 'application/json' };
+                    fetch('/api/v1/users/' + this.user.id + '/erasure-request', { method: 'POST', headers: headers })
+                        .then(r => r.json())
+                        .then(data => { this.erasureStatus = data.status; });
+                }
+            }));
+            Alpine.data('monitorCard', () => ({
+                expanded: false,
+                toggle() {
+                    this.expanded = !this.expanded;
+                }
+            }));
+            Alpine.data('grafanaDashboard', () => ({
+                timeRange: '6h',
+                url: '{{ build_grafana_embed_url_with_range("6h") }}',
+                setRange(range) {
+                    this.timeRange = range;
+                    var urls = {
+                        '1h': '{{ build_grafana_embed_url_with_range("1h") }}',
+                        '6h': '{{ build_grafana_embed_url_with_range("6h") }}',
+                        '24h': '{{ build_grafana_embed_url_with_range("24h") }}',
+                        '7d': '{{ build_grafana_embed_url_with_range("7d") }}',
+                    };
+                    this.url = urls[range];
+                },
+                init() {
+                    var comp = this;
+                    var container = this.$el;
+                    container.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'grafana-range') {
+                            comp.setRange(btn.getAttribute('data-range'));
+                        }
+                    });
+                }
+            }));
+            Alpine.data('adminApp', () => ({
+                sidebarOpen: false,
+                activeTab: 'documents',
+                isAuthenticated: false,
+                isAdmin: false,
+                loginMethod: 'password',
+                apiKeyInput: '',
+                loginUsername: '',
+                loginPassword: '',
+                loggingIn: false,
+                loginError: '',
+                showOverlay: true,
+                sidebarClass: '',
+                docsClass: '',
+                monitorClass: '',
+                ingestClass: '',
+                ragasClass: '',
+                adminClass: '',
+                usersClass: '',
+                analyticsClass: '',
+                profileClass: '',
+                loginPasswordTabClass: '',
+                loginApiKeyTabClass: '',
+                isPasswordLoginMethod: false,
+                isApiKeyLoginMethod: false,
+                loginButtonLabel: 'Log in',
+                init() {
+                    this._syncClasses();
+                    this._syncLoginMethod();
+                    var comp = this;
+                    var key = localStorage.getItem('kb_api_key');
+                    if (key) {
+                        this.apiKeyInput = key;
+                        this._doAuth('/api/v1/auth/session', key);
+                    } else {
+                        this._checkSession();
+                    }
+                    document.addEventListener('input', function(e) {
+                        var el = e.target;
+                        if (el.id === 'loginUsername') comp.loginUsername = el.value;
+                        else if (el.id === 'loginPassword') comp.loginPassword = el.value;
+                        else if (el.id === 'apiKeyInput') comp.apiKeyInput = el.value;
+                    });
+                    window.addEventListener('show-login', function() {
+                        comp.isAuthenticated = false;
+                        comp.showOverlay = true;
+                    });
+                    document.addEventListener('click', function(e) {
+                        var btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        e.preventDefault();
+                        var action = btn.getAttribute('data-action');
+                        if (action === 'toggle-sidebar') {
+                            comp.sidebarOpen = !comp.sidebarOpen;
+                            comp._syncClasses();
+                        } else if (action === 'switch-tab') {
+                            comp._switchTab(btn.getAttribute('data-tab'));
+                        } else if (action === 'set-login-method') {
+                            comp.loginMethod = btn.getAttribute('data-method');
+                            comp.loginError = '';
+                            comp._syncLoginMethod();
+                        } else if (action === 'login-password') {
+                            comp._loginWithPassword();
+                        } else if (action === 'login-apikey') {
+                            comp._loginWithApiKey();
+                        } else if (action === 'logout') {
+                            comp._logout();
+                        }
+                    });
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            var target = e.target;
+                            if (target.id === 'loginUsername' || target.id === 'loginPassword') {
+                                comp._loginWithPassword();
+                            } else if (target.id === 'apiKeyInput') {
+                                comp._loginWithApiKey();
+                            }
+                        }
+                    });
+                },
+                _syncClasses() {
+                    var t = this.activeTab;
+                    var tabMap = {
+                        documents: 'docsClass', monitoring: 'monitorClass',
+                        ingestion: 'ingestClass', ragas: 'ragasClass',
+                        admin: 'adminClass', users: 'usersClass',
+                        analytics: 'analyticsClass', profile: 'profileClass'
+                    };
+                    var k;
+                    for (k in tabMap) {
+                        this[tabMap[k]] = t === k ? 'active' : '';
+                    }
+                    this.sidebarClass = this.sidebarOpen ? 'show' : '';
+                },
+                _syncLoginMethod() {
+                    var isPw = this.loginMethod === 'password';
+                    this.isPasswordLoginMethod = isPw;
+                    this.isApiKeyLoginMethod = !isPw;
+                    this.loginPasswordTabClass = isPw ? 'active' : '';
+                    this.loginApiKeyTabClass = !isPw ? 'active' : '';
+                },
+                _setLoginLabel() {
+                    this.loginButtonLabel = this.loggingIn ? 'Logging in...' : 'Log in';
+                },
+                _checkSession() {
+                    var comp = this;
+                    fetch('/api/v1/users/me')
+                        .then(function(r) {
+                            if (r.ok) return r.json();
+                            throw new Error('No valid session');
+                        })
+                        .then(function(data) {
+                            comp.isAuthenticated = true;
+                            comp.showOverlay = false;
+                            comp.isAdmin = data.role === 'admin';
+                            htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
+                        })
+                        .catch(function() {
+                            // No valid session — overlay stays visible
+                        });
+                },
+                _switchTab(tab) {
+                    this.activeTab = tab;
+                    this._syncClasses();
+                    var target = '/admin/tabs/' + tab;
+                    htmx.ajax('GET', target, { target: '#tab-content', swap: 'innerHTML' });
+                },
+                _loginWithPassword() {
+                    if (!this.loginUsername || !this.loginPassword) return;
+                    this.loggingIn = true;
+                    this.loginError = '';
+                    this._setLoginLabel();
+                    var comp = this;
+                    fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: this.loginUsername,
+                            password: this.loginPassword
+                        })
+                    })
+                    .then(function(r) {
+                        if (r.ok) return r.json();
+                        if (r.status === 401) throw new Error('Invalid username or password.');
+                        throw new Error('Login failed. Please try again.');
+                    })
+                    .then(function(data) {
+                        comp.isAuthenticated = true;
+                        comp.showOverlay = false;
+                        comp.isAdmin = data.role === 'admin';
+                        comp.loginError = '';
+                        comp.loggingIn = false;
+                        comp._setLoginLabel();
+                        htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
+                    })
+                    .catch(function(err) {
+                        comp.loginError = err.message;
+                        comp.isAuthenticated = false;
+                        comp.showOverlay = true;
+                        comp.loggingIn = false;
+                        comp._setLoginLabel();
+                    });
+                },
+                _loginWithApiKey() {
+                    var key = this.apiKeyInput;
+                    if (!key) return;
+                    this.loggingIn = true;
+                    this.loginError = '';
+                    this._setLoginLabel();
+                    var comp = this;
+                    this._doAuth('/api/v1/auth/session', key, function(data) {
+                        localStorage.setItem('kb_api_key', key);
+                        comp.isAuthenticated = true;
+                        comp.showOverlay = false;
+                        comp.isAdmin = data.role === 'admin';
+                        comp.loginError = '';
+                        comp.loggingIn = false;
+                        comp._setLoginLabel();
+                        htmx.ajax('GET', '/admin/tabs/documents', { target: '#tab-content', swap: 'innerHTML' });
+                    }, function(err) {
+                        localStorage.removeItem('kb_api_key');
+                        comp.loginError = err.message;
+                        comp.isAuthenticated = false;
+                        comp.showOverlay = true;
+                        comp.loggingIn = false;
+                        comp._setLoginLabel();
+                    });
+                },
+                _doAuth(url, key, onSuccess, onError) {
+                    var comp = this;
+                    fetch(url, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + key }
+                    })
+                    .then(function(r) {
+                        if (r.ok) return r.json();
+                        if (r.status === 401 || r.status === 403) {
+                            throw new Error('Invalid API key. Please check your key and try again. If the problem persists, generate a new key.');
+                        }
+                        throw new Error('Login failed. Please try again.');
+                    })
+                    .then(function(data) {
+                        if (onSuccess) onSuccess(data);
+                    })
+                    .catch(function(err) {
+                        if (onError) onError(err);
+                    });
+                },
+                _logout() {
+                    fetch('/api/v1/auth/logout', { method: 'POST' }).catch(function() {});
+                    localStorage.removeItem('kb_api_key');
+                    this.isAuthenticated = false;
+                    this.showOverlay = true;
+                    this.isAdmin = false;
+                    this.loginError = '';
+                }
+            }));
+        });
+    </script>
+{% endblock %}

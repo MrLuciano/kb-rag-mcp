@@ -20,7 +20,11 @@ import httpx
 
 from ingest.connectors.base import ConnectorBase
 from ingest.connectors.factory import register
-from ingest.connectors.models import ConnectorConfig, RemoteDocument, SyncResult
+from ingest.connectors.models import (
+    ConnectorConfig,
+    RemoteDocument,
+    SyncResult,
+)
 from ingest.worker.limiter import MultiRateLimiter
 
 log = logging.getLogger("kb-ingest.connectors.jira")
@@ -105,9 +109,7 @@ def _extract_adf_content(adf: Optional[dict]) -> str:
     _walk(adf)
     result = "".join(texts)
     return "\n".join(
-        line.strip()
-        for line in result.splitlines()
-        if line.strip()
+        line.strip() for line in result.splitlines() if line.strip()
     )
 
 
@@ -172,7 +174,10 @@ class JiraConnector(ConnectorBase):
         jql_filter: Optional[str] = None,
         start_at: int = 0,
         max_results: int = 100,
-        fields: str = "summary,description,priority,status,assignee,labels,project,updated,created",
+        fields: str = (
+            "summary,description,priority,status,"
+            "assignee,labels,project,updated,created"
+        ),
     ) -> str:
         jql = self._build_jql(
             project=project, since=since, jql_filter=jql_filter
@@ -258,9 +263,7 @@ class JiraConnector(ConnectorBase):
             log.error("Failed to connect to JIRA: %s", e)
             raise
 
-    async def fetch_documents(
-        self, since: Optional[str] = None
-    ) -> SyncResult:
+    async def fetch_documents(self, since: Optional[str] = None) -> SyncResult:
         client = self._get_client()
         headers = self._auth_header()
         documents: list[RemoteDocument] = []
@@ -273,9 +276,7 @@ class JiraConnector(ConnectorBase):
             resp = await client.get(projects_url, headers=headers)
             resp.raise_for_status()
             projects_data = resp.json()
-            projects = [
-                p["key"] for p in projects_data if isinstance(p, dict)
-            ]
+            projects = [p["key"] for p in projects_data if isinstance(p, dict)]
         except Exception as e:
             return SyncResult(
                 source_key=self.source_key,
@@ -301,18 +302,14 @@ class JiraConnector(ConnectorBase):
                     resp.raise_for_status()
                     data = resp.json()
                 except Exception as e:
-                    errors.append(
-                        f"Project {project} startAt={start_at}: {e}"
-                    )
+                    errors.append(f"Project {project} startAt={start_at}: {e}")
                     break
 
                 for issue in data.get("issues", []):
                     doc = self._parse_issue(issue)
                     if doc:
                         documents.append(doc)
-                        checkpoint = self._update_checkpoint(
-                            checkpoint, doc
-                        )
+                        checkpoint = self._update_checkpoint(checkpoint, doc)
 
                 total = data.get("total", 0)
                 start_at += data.get("maxResults", max_results)
@@ -327,14 +324,10 @@ class JiraConnector(ConnectorBase):
             errors=errors,
         )
 
-    async def fetch_document(
-        self, remote_id: str
-    ) -> Optional[RemoteDocument]:
+    async def fetch_document(self, remote_id: str) -> Optional[RemoteDocument]:
         client = self._get_client()
         headers = self._auth_header()
-        url = (
-            f"{self.config.endpoint}/issue/{remote_id}"
-        )
+        url = f"{self.config.endpoint}/issue/{remote_id}"
 
         try:
             await self._rate_limiter.acquire("jira")
@@ -357,9 +350,7 @@ class JiraConnector(ConnectorBase):
             self._client = None
 
     @staticmethod
-    def _update_checkpoint(
-        current: Optional[str], doc: RemoteDocument
-    ) -> str:
+    def _update_checkpoint(current: Optional[str], doc: RemoteDocument) -> str:
         if doc.remote_mtime is None:
             return current or ""
         dt = datetime.fromtimestamp(doc.remote_mtime, tz=timezone.utc)

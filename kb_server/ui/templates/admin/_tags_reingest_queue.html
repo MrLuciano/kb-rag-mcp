@@ -1,0 +1,43 @@
+<!-- Re-ingest Queue Partial -->
+{% if pending_docs %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>File</th>
+                <th>Status</th>
+                <th>Last Error</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in pending_docs %}
+            <tr>
+                <td>{{ doc.path }}</td>
+                <td><span class="badge bg-warning">{{ doc.status }}</span></td>
+                <td>
+                    {% if doc.error_msg %}
+                        <span class="text-danger small">{{ doc.error_msg }}</span>
+                    {% else %}
+                        <span class="text-muted small">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            hx-post="/admin/tags/cancel-reingest"
+                            hx-vals='{"path": "{{ doc.path }}"}'
+                            hx-target="#tags-queue-container"
+                            hx-swap="innerHTML"
+                            hx-confirm="Cancel re-ingest for this document?">Cancel</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="text-muted small">{{ pending_docs|length }} documents pending re-ingest</p>
+{% else %}
+<div class="alert alert-info">
+    No documents in re-ingest queue. Documents marked for re-ingest will appear here.
+</div>
+{% endif %}

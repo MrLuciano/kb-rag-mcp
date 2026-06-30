@@ -2,11 +2,20 @@
 
 FASE 25: Optimization Experiments
 """
+
 import asyncio
+import sys
+import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+# Ensure docling module stubs exist so tests can patch docling.chunking.HybridChunker
+# without requiring the real docling package to be installed.
+sys.modules.setdefault("docling", types.ModuleType("docling"))
+sys.modules.setdefault("docling.chunking", types.ModuleType("docling.chunking"))
+sys.modules["docling.chunking"].HybridChunker = None
 
 from kb_server.optimization.chunking_experiments import (
     ChunkingEngine,
@@ -16,6 +25,7 @@ from kb_server.optimization.chunking_experiments import (
     SemanticStrategy,
     create_strategy,
 )
+
 pytestmark = pytest.mark.fase25
 
 
@@ -152,9 +162,7 @@ class TestChunkingEngine:
         mock_dataset = MagicMock()
         mock_dataset.examples = []
         engine = ChunkingEngine(strategy, mock_store, mock_dataset)
-        with patch(
-            "kb_server.collections.manager.CollectionManager"
-        ):
+        with patch("kb_server.collections.manager.CollectionManager"):
             with patch(
                 "kb_server.embed_client.get_embedding",
             ):
@@ -179,16 +187,12 @@ class TestChunkingEngine:
             }
         ]
         engine = ChunkingEngine(strategy, mock_store, mock_dataset)
-        with patch(
-            "kb_server.collections.manager.CollectionManager"
-        ):
+        with patch("kb_server.collections.manager.CollectionManager"):
             with patch(
                 "kb_server.embed_client.get_embedding",
                 return_value=[0.1] * 384,
             ):
-                mock_store.search.return_value = [
-                    {"source_file": "doc1.txt"}
-                ]
+                mock_store.search.return_value = [{"source_file": "doc1.txt"}]
                 result = asyncio.run(
                     engine.run_experiment(Path("/tmp/empty"), clean=False)
                 )

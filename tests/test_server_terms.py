@@ -6,8 +6,10 @@ import pytest
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_list_tools_search_kb_has_module_param():
     import kb_server.server as srv
+
     tools = await srv.list_tools()
     for tool in tools:
         if tool.name == "search_kb":
@@ -19,8 +21,10 @@ async def test_list_tools_search_kb_has_module_param():
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_list_tools_list_docs_has_module_param():
     import kb_server.server as srv
+
     tools = await srv.list_tools()
     for tool in tools:
         if tool.name == "list_documents":

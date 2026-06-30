@@ -55,7 +55,10 @@ class Debouncer:
         self.events: dict[str, list[str]] = defaultdict(list)
 
     def schedule(
-        self, path: str, event_type: str, callback: Callable[[str, list[str]], None]
+        self,
+        path: str,
+        event_type: str,
+        callback: Callable[[str, list[str]], None],
     ):
         """
         Schedule callback after debounce window.
@@ -194,8 +197,7 @@ class DocWatcher(FileSystemEventHandler):
                 self.delete_handler(event.src_path)
             except Exception as e:
                 log.error(
-                    f"Failed to handle deletion for "
-                    f"{event.src_path}: {e}",
+                    f"Failed to handle deletion for " f"{event.src_path}: {e}",
                     exc_info=True,
                 )
 
@@ -248,6 +250,7 @@ def main():
 
     # Load environment
     from config.bootstrap_env import bootstrap_env
+
     bootstrap_env()
 
     # Get configuration
@@ -264,7 +267,9 @@ def main():
     debounce_seconds = int(os.getenv("WATCH_DEBOUNCE_SECONDS", "30"))
     recursive = os.getenv("WATCH_RECURSIVE", "true").lower() == "true"
     ignore_patterns_str = os.getenv("WATCH_IGNORE_PATTERNS", "")
-    ignore_patterns = [p.strip() for p in ignore_patterns_str.split(",") if p.strip()]
+    ignore_patterns = [
+        p.strip() for p in ignore_patterns_str.split(",") if p.strip()
+    ]
 
     log.info(f"Starting file watcher on {watch_path}")
     log.info(f"Recursive: {recursive}, Debounce: {debounce_seconds}s")
@@ -272,11 +277,11 @@ def main():
         log.info(f"Additional ignore patterns: {ignore_patterns}")
 
     # Initialize components
-    from ingest.core.metadata import MetadataStore
+    import asyncio
+
+    from ingest.core.metadata import IngestRegistry, MetadataStore
     from ingest.job.manager import JobManager
     from kb_server.vector_store import VectorStore
-    from ingest.core.metadata import IngestRegistry
-    import asyncio
 
     db_path = Path(os.getenv("KB_METADATA_DB", "kb_metadata.db"))
     store = MetadataStore(db_path)
@@ -318,9 +323,7 @@ def main():
     observer.schedule(handler, str(watch_path), recursive=recursive)
     observer.start()
 
-    log.info(
-        "File watcher started successfully. Press Ctrl+C to stop."
-    )
+    log.info("File watcher started successfully. Press Ctrl+C to stop.")
 
     try:
         while True:

@@ -7,7 +7,7 @@ Manages multiple async workers with task queue and graceful shutdown.
 import asyncio
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, cast
 
 from ingest.worker.limiter import RateLimiter
 from ingest.worker.worker import FileWorker, WorkerResult, WorkerStats
@@ -170,7 +170,7 @@ class WorkerPool:
                 )
             else:
                 result = await self.result_queue.get()
-            return result
+            return cast(WorkerResult | None, result)
         except asyncio.TimeoutError:
             return None
 

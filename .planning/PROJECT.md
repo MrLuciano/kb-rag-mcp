@@ -8,29 +8,23 @@ A production-grade RAG (Retrieval-Augmented Generation) MCP server that connects
 
 AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
 
-## Current Milestone: v0.1.5 Streamable HTTP & Management Platform
+## Shipped: v0.1.5 Streamable HTTP & Management Platform
 
-**Goal:** Implement MCP Streamable HTTP transport, build the Management SPA with auth, user management, admin panel, and Grafana dashboard embedding.
+**Goal:** MCP Streamable HTTP transport, Auth & User Management API, Admin SPA Panel, Grafana dashboard embedding, observability, config with hot-reload, provider aliases, query analytics, chunk preview, document tags, ingestion schedules, and quality polish.
 
-**Target features:**
-- Phase 28: MCP Streamable HTTP Transport — browser-compatible `/mcp` endpoint
-- SPA-01: Management SPA Panel — full web UI with document browse, Grafana embed, admin panel, personal area
-- Auth/User CRUD API — REST endpoints for users and API keys
-- User roles — admin vs regular users with controlled access
-- OBS-01: Health/Readiness Endpoints
-- CONF-01: Hot-reload Configuration
-- METRICS-01: Per-operation Percentile Metrics
-- PROV-01: Provider Aliases
-- OBS-02: Request Identity Middleware
+**18 phases shipped (28–53):** Streamable HTTP transport with session lifecycle and auth middleware; full Auth API with SQLAlchemy models, RBAC, GDPR erasure; Admin SPA (Alpine.js+HTMX) with login, documents, config, monitoring, schedules, tags; Grafana dashboard embedding; request ID middleware and percentile latency metrics; SQLite config with hot-reload; provider aliases; query analytics dashboard; chunk preview; auth security hardening; database reliability; code quality cleanup; LM Studio graceful fallback; SSE test consolidation; document tag management; cron-based ingestion scheduler; E2E tests (14), security audit, performance optimization.
 
-## Current State (v0.1.5 — planning)
+## Current State (v0.1.5 shipped)
 
-- **Tests:** 656 passing, 9 pre-existing failures unchanged
+- **Tests:** 1541 passing, 14 skipped, 26 warnings
 - **Coverage:** 90% branch target enforced (kb_server/ + ingest/)
-- **Codebase:** ~251k LOC Python; single canonical module `kb_server/`
+- **Codebase:** ~57k LOC Python; single canonical module `kb_server/`
 - **Deployment:** Docker Compose + bare metal systemd + Kubernetes/Helm
 - **CI:** GitHub Actions on every push/PR to `master` — English audit, Helm lint, integration checks
 - **Monitoring:** Grafana + Prometheus with 6-tab dashboard, 28 metrics
+- **Auth:** API key + JWT session cookie for MCP and Admin SPA
+- **Admin SPA:** Alpine.js+HTMX+Bootstrap 5 on Jinja2 FastAPI backend (port 8001)
+- **Config:** SQLite config table with hot-reload, layered chain: SQLite → `.env` → env defaults
 
 ## Requirements
 
@@ -78,35 +72,49 @@ AI assistants stop hallucinating about closed-source products — every answer i
 - ✓ `pyproject.toml` `fail_under = 90` set and verified — v0.1.1
 - ✓ All public functions/classes in kb_server/ + ingest/ have English Google-style docstrings — v0.1.1
 - ✓ `docs/` updated: ARCHITECTURE.md (Mermaid), OPERATIONS.md (remote deploy), INDEX.md, REFERENCE.md — v0.1.1
+- ✓ **PH28**: MCP Streamable HTTP Transport — browser-compatible `/mcp` endpoint with session lifecycle and auth middleware — v0.1.5
+- ✓ **PH28b**: Auth & User Management API — SQLAlchemy models, CRUD REST endpoints, GDPR erasure — v0.1.5
+- ✓ **PH28c**: Admin SPA Panel — Alpine.js+HTMX tabbed UI at `/admin/`, login modal, role gating — v0.1.5
+- ✓ **PH28c-fixes**: Admin SPA Gap Closure — UAT fixes: auth flow, document browse, CSP/SRI, monitor lights, config editor, partials, session management — v0.1.5
+- ✓ **PH38**: Grafana Dashboard Embedding — iframe embed, time range selector, Jinja2 globals — v0.1.5
+- ✓ **PH39**: Observability Backlog — health checks, request ID middleware, percentile metrics — v0.1.5
+- ✓ **PH40**: Configuration Backlog — SQLite config table + ConfigLoader + REST API — v0.1.5
+- ✓ **PH41**: Provider Alias — provider alias resolution + hot-reload — v0.1.5
+- ✓ **PH42**: Query Analytics Dashboard — popular queries, no-results queries, latency distribution — v0.1.5
+- ✓ **PH43**: Chunk Preview in Document Detail — inline chunk viewer with term highlighting — v0.1.5
+- ✓ **PH44**: Auth Security Hardening — erasure separation, ownership checks, secure cookies — v0.1.5
+- ✓ **PH45**: Database Reliability — SQLite connection management, FK enforcement, indexes — v0.1.5
+- ✓ **PH46**: Code Quality & Coverage — utcnow migration, unused import cleanup, integration tags — v0.1.5
+- ✓ **PH47**: LM Studio Dependency Handling — graceful fallback, startup health-check — v0.1.5
+- ✓ **PH50**: SSE Test Consolidation — per-function @patch instead of module-level stubs — v0.1.5
+- ✓ **PH51**: Document Tag Management — CLI + Web UI tag editor, re-ingest control — v0.1.5
+- ✓ **PH52**: Ingestion Schedule Management — cron-based scheduler, Admin UI, background jobs — v0.1.5
+- ✓ **PH53**: Quality & Polish — bug bash, E2E tests, security audit, docs, performance tuning — v0.1.5
+- ✓ **SPA-04**: Export Filtered Results — CSV/JSON export from document browse in SPA — v0.1.5
+- ✓ **SPA-05**: Advanced Filters — date range, file type, vendor, product filters in SPA — v0.1.5
 
 ### Active
 
-- [ ] **DOCS**: Documentation reorganized by deployment mode (Docker Compose, Helm, systemd, manual)
-- [ ] **DOCS**: README, INSTRUCTIONS, OPERATIONS, TROUBLESHOOTING refreshed and grouped
-- [ ] **DOCS**: CHANGELOG and REFERENCE.md updated with v0.1.3/v0.1.4 changes
-- [ ] **EVAL**: RAGAS evaluation pipeline implemented with metrics (hit rate, MRR, faithfulness)
-- [ ] **EVAL**: Evaluation results exposed via CLI or MCP tool
-- [ ] **OPT**: Chunking optimization experiments executable with configurable parameters
-- [ ] **OPT**: Scoring/reranking optimization experiments executable
+*(Next milestone features to be determined)*
 
 ### Out of Scope
 
-- Authentication / multi-user access control — internal team tool, trusted network
 - Cloud-managed vector store — self-hosted Qdrant only for data sovereignty
 - Real-time streaming ingest from external APIs — file-based ingest only
-- GUI for doc management — CLI + MCP tools are sufficient
+- Real-time chat / collaborative editing — not related to doc RAG
 
 ## Context
 
-- v0.1.4 in planning: documentation overhaul, RAGAS evaluation, optimization experiments
-- v0.1.3 shipped 2026-05-27: 11 phases delivered across all backlog items
-- All 3 backlog items (999.1, 999.2, 999.3) promoted to v0.1.4 active scope
+- v0.1.5 shipped 2026-06-29: 18 phases (28-53), 28 plans, 1541 passing tests. Full Streamable HTTP + Auth + Admin SPA + Observability + Config + Schedules platform
+- v0.1.4 shipped 2026-06-11: 15 phases (23-37) across documentation overhaul, RAGAS evaluation, optimization experiments, enterprise connectors, knowledge graph, auth, rate limiting, quotas, circuit breakers, and retrieval caching
 - `kb_server/` is the single canonical package; `server/` deleted; `ingest/core/metadata.py` is the registry
-- Committed `.env` files resolved: removed from tracking; `CONTRIBUTING.md` documents git history cleanup
 - Embedding model: local LM Studio (`http://<LM_STUDIO_HOST>:1234`); configurable via `EMBED_BACKEND`
 - Vector store: Qdrant (local or remote); multi-collection support
-- Pre-existing test note: `test_payload_indexes.py` schema type assertion weakened (MagicMock pollution from qdrant_client stub)
+- Admin SPA built with Alpine.js + HTMX + Bootstrap 5 on existing Jinja2 FastAPI backend (port 8001)
+- All env vars configurable via SQLite config table with hot-reload
+- Auth: API key + JWT session cookie; optional AUTH_ENABLED toggle; login rate limiting (5/60s)
 - `asyncio_mode = STRICT` in `pyproject.toml` — all async tests need `@pytest.mark.asyncio`
+- Phase 53 performance: croniter for O(1) cron matching, joinedload for single-query verify_key, TTL cache on ConfigLoader refresh
 
 ## Constraints
 
@@ -114,8 +122,8 @@ AI assistants stop hallucinating about closed-source products — every answer i
 - **Dependencies**: pip-tools (`requirements.in` → `requirements.txt`), `.venv/` virtual env
 - **Compatibility**: CLI interface must remain backward-compatible; deprecation warnings for removed flags
 - **Deployment**: Must support bare metal (systemd), Docker Compose, and Kubernetes/Helm
-- **No auth**: Internal use only — no authentication layer planned
-- **Test baseline**: 491 passing tests; no regressions allowed
+- **Auth**: API key + JWT session cookie for MCP and Admin SPA
+- **Test baseline**: 1541 passing tests; no regressions allowed
 
 ## Key Decisions
 
@@ -129,7 +137,15 @@ AI assistants stop hallucinating about closed-source products — every answer i
 | `asyncio_mode = STRICT` in pyproject.toml | Enforce explicit async test marking; prevents silent sync execution | ✓ Good |
 | `bootstrap_env()` single entry point | Eliminate 6+ copy-pasted `load_dotenv` blocks | ✓ Good — v0.1.0 |
 | fastembed BM25 for sparse vectors | No separate sparse model server needed; embedded in process | ✓ Good |
+| Admin SPA via Alpine.js+HTMX+Bootstrap 5 | No build step; leverages existing Jinja2 FastAPI backend | ✓ Good |
+| Passwordless API key + JWT session auth | Works for both MCP (Bearer header) and browser (cookie); no password infrastructure needed | ✓ Good |
+| SQLite config table with hot-reload | All env vars configurable from admin UI; chain: SQLite → `.env` → env defaults | ✓ Good |
 | Weaken `PayloadSchemaType` enum assertion in test | MagicMock pollution across test suite; assertion redundant | — Acceptable tech debt |
+| Login rate limiting (5 req / 60s window) | In-memory token bucket, lost on restart; sufficient for internal tool | ✓ Good — v0.1.5 |
+| `croniter` for O(1) cron matching | Replaced brute-force minute scan; preserves validate_cron pre-check | ✓ Good — v0.1.5 |
+| `verify_key` optimization with `joinedload` | Single-query JOIN instead of two sequential queries | ✓ Good — v0.1.5 |
+| ConfigLoader TTL cache (1s default) | In-memory time gate avoids persistent connection overhead for thread safety | ✓ Good — v0.1.5 |
+| stdio no-auth accepted as design | Internal tool; auth is deployer's responsibility for stdio transport | — Accepted per security audit |
 
 ## Evolution
 
@@ -146,4 +162,4 @@ AI assistants stop hallucinating about closed-source products — every answer i
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-27 — v0.1.4 milestone started*
+*Last updated: 2026-06-29 — v0.1.5 milestone shipped*

@@ -3,6 +3,7 @@ Unit tests for kb_server/retrieval/reranker.py — CrossEncoderReranker.
 
 No real cross-encoder model is loaded; self.model is injected directly.
 """
+
 from __future__ import annotations
 
 # Stub out heavy optional deps that may be missing in CI
@@ -22,7 +23,6 @@ import numpy as np
 import pytest
 
 from kb_server.retrieval.reranker import CrossEncoderReranker
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -44,6 +44,7 @@ def _make_result(i: int, score: float = 0.5) -> dict:
 def _make_mock_model(scores: list[float]):
     """Return a mock that mimics CrossEncoder.predict."""
     from unittest.mock import MagicMock
+
     m = MagicMock()
     m.predict.return_value = np.array(scores)
     return m
@@ -109,7 +110,9 @@ async def test_rerank_with_cache_returns_same_as_rerank():
     direct = await reranker.rerank("query", results)
     # Reset model mock so predict returns same values
     reranker.model = _make_mock_model(scores)
-    cached = await reranker.rerank_with_cache("query", results, cache_manager=None)
+    cached = await reranker.rerank_with_cache(
+        "query", results, cache_manager=None
+    )
 
     assert [r["chunk_id"] for r in direct] == [r["chunk_id"] for r in cached]
 
@@ -122,8 +125,10 @@ async def test_load_model_failure_propagates():
 
     with pytest.raises(Exception):
         with pytest.MonkeyPatch().context() as mp:
+
             def bad_load(self):  # noqa: N803
                 raise RuntimeError("model load failed")
+
             mp.setattr(CrossEncoderReranker, "_load_model", bad_load)
             await reranker.rerank("query", [_make_result(0)])
 
@@ -221,7 +226,9 @@ async def test_rerank_with_cache_stores_result():
     # Cache must have been populated
     assert len(_store) == 1
     cached_value = list(_store.values())[0]
-    assert [r["chunk_id"] for r in out] == [r["chunk_id"] for r in cached_value]
+    assert [r["chunk_id"] for r in out] == [
+        r["chunk_id"] for r in cached_value
+    ]
 
 
 # ---------------------------------------------------------------------------

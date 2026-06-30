@@ -13,7 +13,7 @@ from ingest.validation.base import (
 )
 
 
-def format_bytes(bytes_val: int) -> str:
+def format_bytes(bytes_val: float) -> str:
     """Format bytes as human-readable string."""
     for unit in ["B", "KB", "MB", "GB"]:
         if bytes_val < 1024.0:

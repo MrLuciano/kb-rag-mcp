@@ -63,9 +63,7 @@ async def test_unhealthy_embedding_logs_warning(caplog):
     mock_emb = AsyncMock(
         return_value=MagicMock(healthy=False, message="connection refused")
     )
-    mock_vec = AsyncMock(
-        return_value=MagicMock(healthy=True, message="ok")
-    )
+    mock_vec = AsyncMock(return_value=MagicMock(healthy=True, message="ok"))
 
     with patch("kb_server.health.check_embedding_service", mock_emb):
         with patch("kb_server.health.check_vector_store", mock_vec):
@@ -94,9 +92,7 @@ async def test_unhealthy_embedding_logs_warning(caplog):
 @pytest.mark.asyncio
 async def test_unhealthy_vector_store_logs_warning(caplog):
     """Unhealthy Qdrant produces a WARNING log message."""
-    mock_emb = AsyncMock(
-        return_value=MagicMock(healthy=True, message="ok")
-    )
+    mock_emb = AsyncMock(return_value=MagicMock(healthy=True, message="ok"))
     mock_vec = AsyncMock(
         return_value=MagicMock(healthy=False, message="connection timeout")
     )
@@ -149,9 +145,7 @@ async def test_healthy_checks_log_info(caplog):
 
             emb_status = await emb_fn()
             if emb_status.healthy:
-                log.info(
-                    f"Embedding backend healthy: {emb_status.message}"
-                )
+                log.info(f"Embedding backend healthy: {emb_status.message}")
 
             vec_status = await vec_fn()
             if vec_status.healthy:

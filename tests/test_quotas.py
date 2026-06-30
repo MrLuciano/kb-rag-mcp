@@ -14,7 +14,6 @@ from click.testing import CliRunner
 from ingest.cli.main import cli
 from ingest.core.metadata import MetadataStore
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -202,7 +201,7 @@ class TestQuotaSchemaMigration:
         ]
         assert "quota_config" in tables
         assert "quota_usage" in tables
-        assert store2._get_schema_version() == 4
+        assert store2._get_schema_version() == 6
         store2.close()
 
 
@@ -271,10 +270,14 @@ class TestQuotaCLI:
         result = runner.invoke(
             cli,
             [
-                "--db", str(db_path),
-                "quota", "set",
-                "--max-chunks-per-index", "50000",
-                "--max-documents-per-index", "1000",
+                "--db",
+                str(db_path),
+                "quota",
+                "set",
+                "--max-chunks-per-index",
+                "50000",
+                "--max-documents-per-index",
+                "1000",
             ],
         )
         assert result.exit_code == 0

@@ -3,6 +3,7 @@ Unit tests for kb_server/embed_client.py.
 
 All HTTP calls are mocked so no real embedding server is needed.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +13,6 @@ import pytest
 import httpx
 
 import kb_server.embed_client as ec
-
 
 # ---------------------------------------------------------------------------
 # Helpers

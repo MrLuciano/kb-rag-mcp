@@ -12,7 +12,7 @@ Features:
 import json
 import logging
 import pickle
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +151,7 @@ class RedisCache:
         """
         try:
             redis_key = self._make_key(key)
-            deleted = self._client.delete(redis_key)
+            deleted = int(self._client.delete(redis_key))
             return deleted > 0
         except Exception as e:
             logger.error("Redis DELETE error for %s: %s", key, e)
@@ -179,7 +179,7 @@ class RedisCache:
             info = self._client.info("memory")
             pattern = f"{self._key_prefix}*"
             cursor, keys = self._client.scan(0, match=pattern, count=1000)
-            entry_count = len(keys)
+            entry_count: Union[int, str] = len(keys)
             # Approximate count if scan incomplete
             if cursor != 0:
                 entry_count = f"~{entry_count}+"

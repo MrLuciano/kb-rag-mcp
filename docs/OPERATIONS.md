@@ -987,6 +987,8 @@ python -m ingest.cli.main connectors stage --type confluence \
 
 ## Auth Operations (Phase 32)
 
+### Managing API Keys
+
 ```bash
 # Create a new API key
 python -m ingest.cli.main auth create --scope global --description "CI key"
@@ -998,7 +1000,58 @@ python -m ingest.cli.main auth list
 python -m ingest.cli.main auth revoke <8-char-prefix>
 ```
 
-Keys are stored as SHA-256 hashes. Enable with AUTH_ENABLED=true in .env.
+Keys are stored as SHA-256 hashes. Enable with `AUTH_ENABLED=true` in `.env`.
+
+### API Key Rotation
+
+Regular key rotation reduces risk of compromised credentials:
+
+```bash
+# 1. Create new key with same scope
+python -m ingest.cli.main auth create --scope global --description "Rotation replacement"
+
+# Output: New key: kb_rag_abc123def456... (shown once, cannot be retrieved again)
+# Save this key immediately!
+
+# 2. Update all clients to use the new key
+
+# 3. Revoke old key after confirming all clients updated
+python -m ingest.cli.main auth revoke <old-key-prefix>
+
+# 4. Verify old key is revoked
+python -m ingest.cli.main auth list
+# Old key should no longer appear in the list
+```
+
+**Rotation frequency:** Every 90 days for production deployments.
+
+### Scopes
+
+| Scope | Access |
+|-------|--------|
+| `global` | Full access to all MCP tools and APIs |
+| `read` | Read-only: search, list documents, get chunk, stats |
+| `ingest` | Ingestion operations only |
+| `admin` | All operations including configuration changes |
+
+### Admin Dashboard
+
+The Auth management dashboard is available at `http://localhost:8080/auth/admin` when the
+health server is running. It provides a web UI for:
+- Viewing active API keys (prefixes + scopes)
+- Creating new keys with scope selection
+- Revoking keys
+- Viewing access logs per key
+
+Enable the admin dashboard by setting `AUTH_DASHBOARD_ENABLED=true` in `.env`.
+
+### Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AUTH_ENABLED` | `false` | Enable API key authentication |
+| `AUTH_DASHBOARD_ENABLED` | `false` | Enable auth admin web UI |
+| `AUTH_RATE_LIMIT` | `100` | Max requests per minute per key |
 
 ## Quota Operations (Phase 34)
 
@@ -1015,12 +1068,214 @@ python -m ingest.cli.main quota reset
 
 ## Provider Resilience (Phase 36)
 
-Circuit breaker and budget system protects against cascading provider failures:
-- CLOSED → OPEN after CIRCUIT_BREAKER_THRESHOLD failures
-- OPEN → HALF_OPEN after cooldown (exponential backoff: 30s, 60s, 120s...)
-- HALF_OPEN → CLOSED on success, → OPEN on failure
+The provider resilience system protects against cascading provider failures using a
+circuit breaker pattern combined with a budget-based failover system.
 
-Fallback chain: semicolon-separated EMBED_BACKEND (e.g., "lmstudio;ollama")
+### Circuit Breaker
+
+The circuit breaker monitors provider health and prevents repeated calls to failing providers:
+
+```
+States: CLOSED → OPEN → HALF_OPEN → CLOSED (or back to OPEN)
+```
+
+| Transition | Trigger | Behavior |
+|------------|---------|----------|
+| CLOSED → OPEN | `CIRCUIT_BREAKER_THRESHOLD` consecutive failures | All requests to this provider are immediately rejected |
+| OPEN → HALF_OPEN | Cooldown expires (exponential backoff: 30s, 60s, 120s, max 300s) | Single test request is allowed |
+| HALF_OPEN → CLOSED | Test request succeeds | Normal operation resumes |
+| HALF_OPEN → OPEN | Test request fails | Returns to OPEN state with increased backoff |
+
+### Budget System
+
+Each provider has a configurable budget that limits resource consumption:
+
+- **Budget replenishment:** Tokens refill at a configurable rate (per-minute)
+- **Budget exhaustion:** Provider is skipped when budget depleted (logged as `skipped_budget_exhausted`)
+- **Budget recovery:** Tokens replenish over time as the provider recovers
+
+### Fallback Chain
+
+Configure multiple providers with a semicolon-separated list in `EMBED_BACKEND`:
+
+```bash
+# Primary: lmstudio → Fallback: ollama → Final fallback: openai-compat
+export EMBED_BACKEND="lmstudio;ollama;openai-compat"
+```
+
+When a provider fails or is circuit-open, the next provider in the chain is tried automatically.
+
+### Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CIRCUIT_BREAKER_THRESHOLD` | 5 | Consecutive failures before circuit opens |
+| `CIRCUIT_BREAKER_COOLDOWN_BASE` | 30 | Initial cooldown in seconds |
+| `CIRCUIT_BREAKER_COOLDOWN_MAX` | 300 | Maximum cooldown in seconds |
+| `PROVIDER_BUDGET_TOKENS` | 1000 | Max tokens per provider per interval |
+| `PROVIDER_BUDGET_INTERVAL` | 60 | Budget refill interval in seconds |
+| `PROVIDER_BUDGET_REFILL` | 100 | Tokens refilled per interval |
+
+### Monitoring
+
+Prometheus metrics for provider resilience:
+
+- `kb_rag_provider_requests_total{provider}` — Request count per provider
+- `kb_rag_provider_errors_total{provider}` — Error count per provider
+- `kb_rag_provider_circuit_state{provider,state}` — Current circuit breaker state
+- `kb_rag_provider_fallbacks_total{from_provider,to_provider}` — Fallback activations
+- `kb_rag_provider_budget_remaining{provider}` — Remaining budget tokens
+- `kb_rag_provider_skipped_total{provider,reason}` — Skipped requests (circuit/budget)
+
+### Health Impact
+
+The health endpoint (`/health/detailed`) reports provider status:
+
+```json
+{
+  "provider_resilience": {
+    "healthy": true,
+    "details": {
+      "providers": ["lmstudio", "ollama"],
+      "circuit_states": {"lmstudio": "CLOSED", "ollama": "CLOSED"},
+      "budget_remaining": {"lmstudio": 850, "ollama": 1000},
+      "total_fallbacks": 3
+    }
+  }
+}
+```
+
+---
+
+## Config API (Phase 33)
+
+The Config API provides REST CRUD operations for server configuration at runtime.
+
+### Viewing Configuration
+
+```bash
+# Get all configuration
+curl http://localhost:8080/config
+
+# Get specific section
+curl http://localhost:8080/config/embedding
+curl http://localhost:8080/config/retrieval
+curl http://localhost:8080/config/cache
+
+# Get specific key
+curl http://localhost:8080/config/embedding/EMBED_BACKEND
+```
+
+### Updating Configuration
+
+```bash
+# Update a single value
+curl -X PUT http://localhost:8080/config/embedding/EMBED_BACKEND \
+  -H "Content-Type: application/json" \
+  -d '{"value": "ollama"}'
+
+# Update a section (merge)
+curl -X PATCH http://localhost:8080/config/retrieval \
+  -H "Content-Type: application/json" \
+  -d '{"TOP_K": 10, "SCORE_THRESHOLD": 0.5}'
+
+# Bulk update from file
+curl -X PUT http://localhost:8080/config \
+  -H "Content-Type: application/json" \
+  -d @config-update.json
+```
+
+### Configuration Sections
+
+| Section | Keys | Description |
+|---------|------|-------------|
+| `embedding` | `EMBED_BACKEND`, `EMBED_MODEL`, `EMBED_BASE_URL` | Embedding provider settings |
+| `retrieval` | `TOP_K`, `SCORE_THRESHOLD`, `HYBRID_ENABLED`, `RERANK_ENABLED` | Search behavior |
+| `cache` | `CACHE_MAX_SIZE_MB`, `CACHE_BACKEND`, `REDIS_HOST` | Cache configuration |
+| `auth` | `AUTH_ENABLED`, `AUTH_RATE_LIMIT` | Authentication settings |
+| `rate_limiting` | `RATE_LIMIT_TOKENS`, `RATE_LIMIT_REFILL`, `RATE_LIMIT_BURST` | Rate limiting config |
+| `logging` | `LOG_LEVEL`, `LOG_FORMAT`, `METRICS_ENABLED` | Logging and metrics |
+
+### Persistence
+
+Config changes are persisted to a JSON file (`data/config.json`) and survive server restarts.
+The `.env` file is **not** overwritten — runtime config overrides are separate from boot config.
+
+### CLI Equivalent
+
+```bash
+# View config via CLI
+kb-rag config get embedding.EMBED_BACKEND
+
+# Update config via CLI
+kb-rag config set embedding.EMBED_BACKEND=ollama
+
+# List all config
+kb-rag config list
+```
+
+---
+
+## Rate Limiting (Phase 35)
+
+Rate limiting uses a per-subject token bucket algorithm with burst protection.
+
+### How It Works
+
+- Each subject (API key or IP address) has a token bucket
+- Tokens refill at a configurable rate
+- Burst requests consume from a separate burst allowance
+- When both token bucket and burst allowance are exhausted, requests are throttled
+
+### Configuration
+
+```bash
+# In .env or via Config API
+
+# Base rate: requests per minute per subject
+RATE_LIMIT_TOKENS=60
+
+# Token refill rate (tokens per second)
+RATE_LIMIT_REFILL=1
+
+# Burst allowance (additional requests above base rate)
+RATE_LIMIT_BURST=20
+
+# Subject identification mode
+RATE_LIMIT_IDENTIFY=ip      # ip, api_key, or both
+```
+
+### Subject Types
+
+| Subject | Identifier | Use Case |
+|---------|------------|----------|
+| IP address | `X-Forwarded-For` or remote IP | Non-authenticated requests |
+| API key | First 8 chars of key hash | Authenticated requests |
+| Both | Combined key + IP | Maximum granularity |
+
+### Monitoring
+
+```bash
+# Check current rate limit status
+curl http://localhost:8080/health/detailed | jq '.components.rate_limiter'
+
+# Prometheus metrics
+kb_rag_rate_limit_tokens_available{subject}  # Current token balance
+kb_rag_rate_limit_tokens_refilled_total{subject}  # Tokens refilled
+kb_rag_rate_limit_requests_burst_total{subject}  # Burst requests
+kb_rag_rate_limit_requests_throttled_total{subject}  # Throttled requests
+```
+
+### Response Headers
+
+Throttled requests receive `429 Too Many Requests` with headers:
+
+```http
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1623456789
+Retry-After: 5
+```
 
 ---
 
@@ -1342,6 +1597,135 @@ sudo systemctl restart kb-rag-server
 
 ---
 
+## Tag Management (Phase 51)
+
+Document tags provide a flexible way to categorize and manage documents beyond the automatic classification (product, type, version, vendor, subsystem, module). Tags are free-form strings that administrators can add, remove, or bulk-edit via CLI or Web UI.
+
+### Tag Concepts
+
+- **Free-form**: Any alphanumeric string (max 50 chars, no whitespace, case-insensitive)
+- **Document-level**: Tags apply to all chunks of a document
+- **Complementary**: Tags exist alongside auto-classified fields, never replace them
+- **Maximum**: 20 tags per document
+
+### CLI Commands
+
+#### List Tags
+
+```bash
+kb-rag tags list
+kb-rag tags list --product MyApp --type documentation
+```
+
+Shows tag counts across documents with optional filters.
+
+#### Update Tags
+
+```bash
+# Add tags
+kb-rag tags update --add "legacy,needs-review" --filter "product=OldApp"
+
+# Remove tags
+kb-rag tags update --remove "obsolete" --filter "type=doc"
+
+# Replace all tags
+kb-rag tags update --replace "v2,migrated" --filter "product=MyApp"
+```
+
+Always use `--dry-run` first to preview changes:
+
+```bash
+kb-rag tags update --add "urgent" --filter "product=MyApp" --dry-run
+```
+
+#### Remove Documents
+
+```bash
+kb-rag tags remove --filter "product=BadProduct" --dry-run
+kb-rag tags remove --filter "product=BadProduct" --yes
+```
+
+Deletes documents from both registry and Qdrant.
+
+#### Re-ingest Documents
+
+```bash
+kb-rag tags reingest --filter "type=legacy" --dry-run
+kb-rag tags reingest --filter "type=legacy" --yes
+```
+
+Queues documents for re-ingestion (sets status=pending, deletes Qdrant chunks).
+
+#### Delete Tag (Cascade)
+
+```bash
+kb-rag tags delete-tag "obsolete" --dry-run
+kb-rag tags delete-tag "obsolete" --yes
+```
+
+Removes a tag from ALL documents that have it.
+
+### Web UI
+
+Navigate to `/admin/tags` in the Admin SPA.
+
+#### Browse Tags Tab
+
+- View all documents with their tags
+- Filter by tag name
+- Select documents via checkboxes
+- Bulk actions: Add Tags, Remove Tags, Delete, Re-ingest
+- Edit tags inline per document
+
+#### Bulk Edit Tab
+
+- Filter documents by metadata (e.g., `product=MyApp,type=doc`)
+- Choose operation: Add, Remove, or Replace
+- Enter comma-separated tags
+- Dry-run preview before applying
+
+#### Re-ingest Queue Tab
+
+- View documents with `status=pending`
+- See last error (if any)
+- Cancel re-ingest for individual documents
+
+### Validation Rules
+
+| Rule | Limit |
+|------|-------|
+| Max length | 50 characters |
+| Whitespace | Not allowed |
+| Case | Case-insensitive (stored lowercase) |
+| Max per document | 20 tags |
+| Duplicates | Not allowed on same document |
+
+### Enabling Tag Search
+
+By default, tags are stored in Qdrant payload but not indexed for search. To enable:
+
+```bash
+# Set environment variable
+export TAGS_SEARCH_ENABLED=true
+
+# Or via admin config
+kb-rag config set TAGS_SEARCH_ENABLED true
+```
+
+Restart the server after enabling.
+
+### Audit Trail
+
+All tag mutations are logged to the `tags_history` table in the registry database:
+
+```bash
+sqlite3 data/kb_metadata.db "SELECT * FROM tags_history ORDER BY timestamp DESC LIMIT 10"
+```
+
+Columns: `timestamp`, `user_id`, `source_file`, `action`, `tag_values`
+
+---
+
 ## Emergency Procedures
 
 ### Service Won't Start
@@ -1530,6 +1914,49 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 
 ---
 
+## v0.1.5 Features
+
+### Admin SPA
+
+The Admin SPA is served at `/admin/` when the server is running in HTTP mode (SSE or streamable-http transport). It provides:
+
+- **Dashboard** — System overview with monitor lights
+- **Config Editor** — View and edit all configuration values
+- **Document Browser** — Browse ingested documents with filters and search
+- **Schedule Management** — Create, view, update, and delete ingestion schedules
+- **User Management** — Create and manage users and API keys
+- **Monitoring** — Grafana dashboard embed and component health lights
+- **Analytics** — Query logging visualization
+- **Tag Management** — Edit document tags
+
+Access: Open `http://<host>:<port>/admin/` in a browser.
+
+### Ingestion Schedules
+
+Schedules use standard 5-field CRON expressions. The scheduler loop runs every 30 seconds and triggers ingestion jobs.
+
+Environment variables:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SCHEDULER_INTERVAL` | `30` | Scheduler loop interval in seconds |
+
+### Login Rate Limiting
+
+When `AUTH_ENABLED=true`, the `/auth/login` endpoint is rate-limited:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOGIN_RATE_LIMIT_WINDOW` | `60` | Time window in seconds |
+| `LOGIN_RATE_LIMIT_MAX` | `5` | Max attempts per window |
+
+### Security Notes
+
+#### Startup Warnings
+- When `AUTH_ENABLED=false` in HTTP/SSE mode, a startup warning reminds you to enable auth in production.
+- When `AUTH_ENABLED=true` and `JWT_SECRET` is not set, a startup warning recommends setting a strong random secret.
+
+---
+
 ## Quick Command Reference
 
 | Task | Command |
@@ -1544,6 +1971,12 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 | Check status | `python -m ingest.ingest --status` |
 | Ingest docs | `python -m ingest.ingest --docs <path>` |
 | Clear cache | `sudo systemctl restart kb-rag-server` |
+| Reclassify docs | `kb-rag reclassify run "**/*.pdf"` |
+| Verify reclassify | `kb-rag reclassify verify "**/*.pdf"` |
+| List reclassify sessions | `kb-rag reclassify sessions` |
+| Rollback reclassify | `kb-rag reclassify rollback --session <ts>` |
+| Health CLI | `kb-rag check health` |
+| MCP tool test | `kb-rag test search "query"` |
 | List connectors | `python -m ingest.cli.main connectors list` |
 | Stage connector | `python -m ingest.cli.main connectors stage --type confluence` |
 | Create API key | `python -m ingest.cli.main auth create --scope global` |
@@ -1564,5 +1997,5 @@ For manual setup instructions: [INSTRUCTIONS.md → Manual](INSTRUCTIONS.md#manu
 
 ---
 
-*Quick reference for KB-RAG-MCP v0.1.1 operations*  
+*Quick reference for KB-RAG-MCP v0.1.5 operations*  
 *Last updated: 2026-06-11*

@@ -1,0 +1,127 @@
+<div x-show="loadError && users.length === 0" class="alert alert-info py-2 small mb-2" x-text="loadError"></div>
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>API Key Prefix</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="user in users" :key="user.id">
+                <tr>
+                    <td x-text="user.username"></td>
+                    <td x-text="user.email || '—'"></td>
+                    <td>
+                        <span class="badge" :class="user.role === 'admin' ? 'bg-warning text-dark' : 'bg-info'"
+                              x-text="user.role"></span>
+                    </td>
+                    <td>
+                        <span x-text="user.apiKeyPrefix || '—'" class="font-monospace small"></span>
+                        <button class="btn btn-sm btn-outline-secondary ms-1 py-0 px-1"
+                                data-action="show-api-keys"
+                                :data-user-id="user.id"
+                                title="View API keys">&hellip;</button>
+                    </td>
+                    <td x-text="user.created_at_display" class="small"></td>
+                    <td>
+                        <span class="badge" :class="user.is_active ? 'bg-success' : 'bg-secondary'"
+                              x-text="user.is_active ? 'Active' : 'Inactive'"></span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"
+                                data-action="update-user"
+                                :data-user-id="user.id"
+                                x-show="user.username !== 'admin'">Update</button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-action="delete-user"
+                                :data-user-id="user.id"
+                                x-show="user.username !== 'admin'">Delete</button>
+                    </td>
+                </tr>
+            </template>
+            <tr x-show="users.length === 0">
+                <td colspan="7" class="text-center text-muted py-4">No users found.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- API Keys Modal -->
+<div class="modal fade" id="apiKeysModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" x-text="'API Keys: ' + ((selectedUser || {}).username || '')"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group" x-show="userKeys.length > 0">
+                    <template x-for="key in userKeys" :key="key.id">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <code class="font-monospace" x-text="key.prefix + '...'"></code>
+                                <small class="text-muted ms-2" x-text="key.description"></small>
+                            </div>
+                            <div>
+                                <span class="badge" :class="key.is_revoked ? 'bg-danger' : 'bg-success'"
+                                      x-text="key.is_revoked ? 'Revoked' : 'Active'"></span>
+                                <button class="btn btn-sm btn-outline-danger ms-2"
+                                        data-action="revoke-key"
+                                        :data-key-id="key.id"
+                                        x-show="!key.is_revoked">Revoke</button>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+                <p x-show="userKeys.length === 0" class="text-muted text-center mb-0">No API keys for this user.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-action="generate-key-for-user">Generate New Key</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update User Modal -->
+<div class="modal fade" id="updateUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" x-text="'Update User: ' + ((updatingUser || {}).username || '')"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div x-show="updateError" class="alert alert-danger py-2 small" x-text="updateError" x-cloak></div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" x-model="updateForm.email">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Role</label>
+                    <select class="form-select" x-model="updateForm.role">
+                        <option value="user">user</option>
+                        <option value="admin">admin</option>
+                    </select>
+                </div>
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="update-active" x-model="updateForm.is_active">
+                    <label class="form-check-label" for="update-active">Active</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" data-action="save-update-user" :disabled="updating">
+                    <span x-show="updating" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    <span x-text="updating ? 'Saving...' : 'Save'"></span>
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

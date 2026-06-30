@@ -1,4 +1,5 @@
 """CollectionManager — CRUD operations for Qdrant collections."""
+
 from __future__ import annotations
 
 import logging
@@ -13,16 +14,22 @@ log = logging.getLogger(__name__)
 _HNSW_M = 16
 _HNSW_EF = 100
 _PAYLOAD_INDEXES = [
-    "product", "doc_type", "source",
+    "product",
+    "doc_type",
+    "source",
     # PHASE 30: Graph metadata fields
-    "doc_graph_id", "graph_topics", "graph_related",
+    "doc_graph_id",
+    "graph_topics",
+    "graph_related",
 ]
 
 
 class CollectionManager:
     """Wraps AsyncQdrantClient with collection lifecycle helpers."""
 
-    def __init__(self, client: "AsyncQdrantClient", vector_size: int = 1024) -> None:
+    def __init__(
+        self, client: "AsyncQdrantClient", vector_size: int = 1024
+    ) -> None:
         self.client = client
         self.vector_size = vector_size
         log.info("CollectionManager initialized: vector_size=%d", vector_size)
@@ -58,8 +65,9 @@ class CollectionManager:
     ) -> bool:
         """Create a collection if it does not exist.
 
-        ``vectors_config`` and ``hnsw_config`` are optional; if omitted they are
-        built from qdrant_client.models using ``vector_size``.
+        ``vectors_config`` and ``hnsw_config`` are optional;
+        if omitted they are built from qdrant_client.models
+        using ``vector_size``.
 
         Returns:
             True  — collection was created now.
@@ -76,9 +84,12 @@ class CollectionManager:
                 HnswConfigDiff,
                 VectorParams,
             )
+
             size = vector_size if vector_size is not None else self.vector_size
             if vectors_config is None:
-                vectors_config = VectorParams(size=size, distance=Distance.COSINE)
+                vectors_config = VectorParams(
+                    size=size, distance=Distance.COSINE
+                )
             if hnsw_config is None:
                 hnsw_config = HnswConfigDiff(m=_HNSW_M, ef_construct=_HNSW_EF)
         else:
@@ -97,10 +108,15 @@ class CollectionManager:
                 await self.client.create_payload_index(
                     collection_name=name,
                     field_name=field,
-                    field_schema="keyword",
+                    field_schema="keyword",  # type: ignore[arg-type]
                 )
             except Exception as exc:  # pylint: disable=broad-except
-                log.warning("Could not create payload index '%s' on '%s': %s", field, name, exc)
+                log.warning(
+                    "Could not create payload index '%s' on '%s': %s",
+                    field,
+                    name,
+                    exc,
+                )
 
         return True
 
@@ -112,7 +128,9 @@ class CollectionManager:
             False — collection did not exist.
         """
         if not await self.collection_exists(name):
-            log.debug("Collection '%s' does not exist, nothing to delete.", name)
+            log.debug(
+                "Collection '%s' does not exist, nothing to delete.", name
+            )
             return False
         await self.client.delete_collection(collection_name=name)
         log.info("Collection '%s' deleted.", name)

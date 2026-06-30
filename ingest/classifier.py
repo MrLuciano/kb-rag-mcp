@@ -344,8 +344,14 @@ FILENAME_VENDOR_PATTERNS: list[tuple[str, list[str]]] = [
 # Patterns to detect functional subsystem from filename
 
 SUBSYSTEM_PATTERNS: list[tuple[str, list[str]]] = [
-    ("API", [r"\bapi\b", r"\bsdk\b", r"\brest\b", r"\bsoap\b", r"\bwebservice"]),
-    ("Security", [r"\bsecurity\b", r"\bauth\b", r"\bpermission\b", r"\bacl\b"]),
+    (
+        "API",
+        [r"\bapi\b", r"\bsdk\b", r"\brest\b", r"\bsoap\b", r"\bwebservice"],
+    ),
+    (
+        "Security",
+        [r"\bsecurity\b", r"\bauth\b", r"\bpermission\b", r"\bacl\b"],
+    ),
     ("Admin", [r"\badmin\b", r"\badministration\b", r"\boperator\b"]),
     ("Integration", [r"\bintegration\b", r"\bconnector\b"]),
     ("Migration", [r"\bmigration\b", r"\bupgrade\b", r"\bupgrad"]),
@@ -506,10 +512,13 @@ def infer_subsystem(file_path: Path, docs_root: Path) -> str:
         relative = file_path.relative_to(docs_root)
         parts = list(relative.parts)
 
-        # If there are at least 3 parts: [product_dir, subsystem_dir, ..., filename]
-        # OR at least 2 parts where the first is not a skip-dir and not the file
+        # If there are at least 3 parts:
+        # [product_dir, subsystem_dir, ..., filename]
+        # OR at least 2 parts where the first is not a skip-dir
+        # and not the file
         if len(parts) >= 2:
-            # Find the first real directory (skip "varios", "templates", "archive")
+            # Find the first real directory
+            # (skip "varios", "templates", "archive")
             candidate_idx = 0
             while (
                 candidate_idx < len(parts) - 1
@@ -529,7 +538,9 @@ def infer_subsystem(file_path: Path, docs_root: Path) -> str:
             if len(dir_parts) >= 2:
                 # Skip skip-list directories at any level
                 filtered = [
-                    d for d in dir_parts if d.lower() not in SKIP_SUBSYSTEM_DIRS
+                    d
+                    for d in dir_parts
+                    if d.lower() not in SKIP_SUBSYSTEM_DIRS
                 ]
                 # If there are 2+ filtered dirs, the 2nd one is the subsystem
                 # e.g., [WebReports, Designer, ...] → Designer
@@ -642,7 +653,8 @@ def infer_product(
 
 def extract_document_metadata(file_path: Path) -> dict[str, str]:
     """
-    Extract metadata fields from PDF/DOCX documents for gap-filling classification.
+    Extract metadata fields from PDF/DOCX documents
+    for gap-filling classification.
 
     Uses PyMuPDF for PDFs and python-docx for DOCX files. Returns empty dict
     for unsupported formats or on any error (always degrades gracefully).
@@ -671,7 +683,9 @@ def extract_document_metadata(file_path: Path) -> dict[str, str]:
             finally:
                 doc.close()
         except ImportError:
-            log.warning("fitz (PyMuPDF) not available for PDF metadata extraction")
+            log.warning(
+                "fitz (PyMuPDF) not available for PDF metadata extraction"
+            )
             return {}
         except Exception:
             log.warning(f"Failed to extract PDF metadata from {file_path}")
@@ -690,7 +704,9 @@ def extract_document_metadata(file_path: Path) -> dict[str, str]:
                 "keywords": cp.keywords or "",
             }
         except ImportError:
-            log.warning("python-docx not available for DOCX metadata extraction")
+            log.warning(
+                "python-docx not available for DOCX metadata extraction"
+            )
             return {}
         except Exception:
             log.warning(f"Failed to extract DOCX metadata from {file_path}")
@@ -773,7 +789,8 @@ def enrich_classification(
     # Determine which fields need gap-filling
     defaults = {"", "geral", "document"}
     gaps = {
-        k for k in ("vendor", "product", "doc_type")
+        k
+        for k in ("vendor", "product", "doc_type")
         if result.get(k) in defaults or not result.get(k)
     }
 
@@ -858,9 +875,7 @@ def classify(
     auto_product = infer_product(file_path, docs_root, product_override)
     auto_doc_type = infer_doc_type(file_path)
     # PHASE 11: Auto-infer vendor and subsystem
-    auto_vendor = infer_vendor(
-        file_path, product_override or auto_product
-    )
+    auto_vendor = infer_vendor(file_path, product_override or auto_product)
     auto_subsystem = infer_subsystem(file_path, docs_root)
     # PHASE 17: Auto-infer module
     auto_module = infer_module(file_path, docs_root)
@@ -880,6 +895,7 @@ def classify(
         "vendor": vendor,
         "subsystem": subsystem,
         "module": module,
+        "tags": [],
     }
 
     # PHASE 11-02: Apply enrichment from document metadata (gap-fill only,

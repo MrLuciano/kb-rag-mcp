@@ -45,7 +45,10 @@ def show(ctx: click.Context) -> None:
     click.echo("Upload / Index Quotas")
     click.echo("=" * 50)
     click.echo(
-        f"  Max files per upload:    {_fmt(quotas.get('max_files_per_upload'))}"
+        (
+            f"  Max files per upload:    "
+            f"{_fmt(quotas.get('max_files_per_upload'))}"
+        )
     )
     click.echo(
         f"  Max bytes per upload:    "
@@ -77,16 +80,40 @@ def show(ctx: click.Context) -> None:
     click.echo(f"  Chars:      {_human(usage.get('total_chars', 0))}")
     updated = usage.get("updated_at")
     if updated:
-        click.echo(f"  Updated:    {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(updated))}")
+        click.echo(
+            f"  Updated:    "
+            f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(updated))}"
+        )
 
 
 @quota_group.command()
-@click.option("--max-files-per-upload", type=int, default=None, help="Max files per ingest call")
-@click.option("--max-bytes-per-upload", type=int, default=None, help="Max bytes per ingest call")
-@click.option("--max-bytes-per-file", type=int, default=None, help="Max bytes per file")
-@click.option("--max-documents-per-index", type=int, default=None, help="Max documents in KB")
-@click.option("--max-chunks-per-index", type=int, default=None, help="Max chunks in KB")
-@click.option("--max-chars-per-index", type=int, default=None, help="Max chars in KB")
+@click.option(
+    "--max-files-per-upload",
+    type=int,
+    default=None,
+    help="Max files per ingest call",
+)
+@click.option(
+    "--max-bytes-per-upload",
+    type=int,
+    default=None,
+    help="Max bytes per ingest call",
+)
+@click.option(
+    "--max-bytes-per-file", type=int, default=None, help="Max bytes per file"
+)
+@click.option(
+    "--max-documents-per-index",
+    type=int,
+    default=None,
+    help="Max documents in KB",
+)
+@click.option(
+    "--max-chunks-per-index", type=int, default=None, help="Max chunks in KB"
+)
+@click.option(
+    "--max-chars-per-index", type=int, default=None, help="Max chars in KB"
+)
 @click.pass_context
 def set(
     ctx: click.Context,

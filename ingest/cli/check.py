@@ -58,14 +58,24 @@ def health(verbose: bool) -> None:
 
     critical_unhealthy = 0
 
-    for name in ["embedding", "vector_store", "cache", "database", "filesystem"]:
+    for name in [
+        "embedding",
+        "vector_store",
+        "cache",
+        "database",
+        "filesystem",
+    ]:
         status = components.get(name)
         if status is None:
-            table.add_row(name, "[yellow]SKIP[/yellow]", "Not checked", "\u2014")
+            table.add_row(
+                name, "[yellow]SKIP[/yellow]", "Not checked", "\u2014"
+            )
             continue
 
         status_text = (
-            "[green]Healthy[/green]" if status.healthy else "[red]Unhealthy[/red]"
+            "[green]Healthy[/green]"
+            if status.healthy
+            else "[red]Unhealthy[/red]"
         )
         latency = (
             f"{status.latency_ms:.0f}ms"
@@ -81,7 +91,11 @@ def health(verbose: bool) -> None:
 
         table.add_row(name, status_text, details, latency)
 
-        if not status.healthy and name in ("embedding", "vector_store", "database"):
+        if not status.healthy and name in (
+            "embedding",
+            "vector_store",
+            "database",
+        ):
             critical_unhealthy += 1
 
     panel = Panel(
@@ -93,8 +107,45 @@ def health(verbose: bool) -> None:
 
     if critical_unhealthy > 0:
         console.print(
-            f"[red]✗ {critical_unhealthy} critical component(s) unhealthy[/red]"
+            f"[red]✗ {critical_unhealthy} critical "
+            f"component(s) unhealthy[/red]"
         )
         sys.exit(1)
     else:
         console.print("[green]✓ All critical components healthy[/green]")
+
+
+@check_group.command(name="embedding")
+@click.option(
+    "--verbose", "-v", is_flag=True, help="Show detailed backend info"
+)
+def embedding(verbose: bool) -> None:
+    """Validate embedding backend connectivity."""
+    try:
+        from kb_server.health import check_embedding_service
+
+        status = asyncio.run(check_embedding_service())
+    except Exception as e:
+        console.print(
+            f"[red]✗ Embedding backend unavailable — "
+            f"{e}[/red]"
+        )
+        sys.exit(1)
+
+    if status.healthy:
+        details = status.message
+        if verbose and status.details:
+            extra = "; ".join(
+                f"{k}={v}" for k, v in status.details.items()
+            )
+            details = f"{details} | {extra}"
+        console.print(
+            f"[green]✓ Embedding backend: {details}[/green]"
+        )
+        sys.exit(0)
+    else:
+        console.print(
+            f"[red]✗ Embedding backend unavailable — "
+            f"{status.message}[/red]"
+        )
+        sys.exit(1)

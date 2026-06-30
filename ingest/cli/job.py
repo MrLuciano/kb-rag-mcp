@@ -167,7 +167,7 @@ def list_jobs(ctx: click.Context, status: str | None, limit: int) -> None:
             )
 
         if not jobs:
-            console.print(f"[yellow]No jobs found[/yellow]")
+            console.print("[yellow]No jobs found[/yellow]")
             return
 
         # Create table
@@ -283,6 +283,7 @@ def show(ctx: click.Context, job_id: str) -> None:
             )
 
             # Duration
+            assert job.started_at is not None
             duration = (job.completed_at - job.started_at).total_seconds()
             console.print(f"Duration:     {duration:.1f}s")
 

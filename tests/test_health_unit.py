@@ -12,6 +12,7 @@ Covers:
 - is_system_healthy: all healthy, missing component, unhealthy component (lines 359-381)
 - get_health_summary: healthy and degraded (lines 384-400)
 """
+
 from __future__ import annotations
 
 import pytest
@@ -28,7 +29,6 @@ from kb_server.health import (
     get_health_summary,
     is_system_healthy,
 )
-
 
 # ---------------------------------------------------------------------------
 # HealthStatus
@@ -82,7 +82,10 @@ async def test_check_embedding_service_ok():
         "model": "nomic-embed",
         "dims": 768,
     }
-    with patch("kb_server.embed_client.health_check", new=AsyncMock(return_value=mock_result)):
+    with patch(
+        "kb_server.embed_client.health_check",
+        new=AsyncMock(return_value=mock_result),
+    ):
         result = await check_embedding_service()
 
     assert result.name == "embedding"
@@ -95,7 +98,10 @@ async def test_check_embedding_service_ok():
 async def test_check_embedding_service_non_ok_status():
     """When health_check returns non-ok status, returns unhealthy HealthStatus."""
     mock_result = {"status": "error", "error": "connection refused"}
-    with patch("kb_server.embed_client.health_check", new=AsyncMock(return_value=mock_result)):
+    with patch(
+        "kb_server.embed_client.health_check",
+        new=AsyncMock(return_value=mock_result),
+    ):
         result = await check_embedding_service()
 
     assert result.name == "embedding"
@@ -106,7 +112,10 @@ async def test_check_embedding_service_non_ok_status():
 @pytest.mark.asyncio
 async def test_check_embedding_service_exception():
     """When health_check raises, returns unhealthy HealthStatus with error message."""
-    with patch("kb_server.embed_client.health_check", new=AsyncMock(side_effect=ConnectionError("no host"))):
+    with patch(
+        "kb_server.embed_client.health_check",
+        new=AsyncMock(side_effect=ConnectionError("no host")),
+    ):
         result = await check_embedding_service()
 
     assert result.name == "embedding"
@@ -167,7 +176,9 @@ async def test_check_cache_success():
         "size_mb": 2.5,
         "hit_rate": 0.85,
     }
-    with patch("kb_server.embed_client.get_cache_stats", return_value=mock_stats):
+    with patch(
+        "kb_server.embed_client.get_cache_stats", return_value=mock_stats
+    ):
         result = await check_cache()
 
     assert result.name == "cache"
@@ -180,7 +191,9 @@ async def test_check_cache_success():
 async def test_check_cache_disabled():
     """When cache is disabled, returns healthy status with 'disabled' message."""
     mock_stats = {"status": "disabled"}
-    with patch("kb_server.embed_client.get_cache_stats", return_value=mock_stats):
+    with patch(
+        "kb_server.embed_client.get_cache_stats", return_value=mock_stats
+    ):
         result = await check_cache()
 
     assert result.name == "cache"
@@ -191,7 +204,10 @@ async def test_check_cache_disabled():
 @pytest.mark.asyncio
 async def test_check_cache_exception():
     """When get_cache_stats raises, returns unhealthy status."""
-    with patch("kb_server.embed_client.get_cache_stats", side_effect=RuntimeError("redis down")):
+    with patch(
+        "kb_server.embed_client.get_cache_stats",
+        side_effect=RuntimeError("redis down"),
+    ):
         result = await check_cache()
 
     assert result.name == "cache"
@@ -226,7 +242,10 @@ async def test_check_database_success():
 @pytest.mark.asyncio
 async def test_check_database_exception():
     """When MetadataStore raises, returns unhealthy status."""
-    with patch("ingest.core.metadata.MetadataStore", side_effect=Exception("sqlite error")):
+    with patch(
+        "ingest.core.metadata.MetadataStore",
+        side_effect=Exception("sqlite error"),
+    ):
         result = await check_database()
 
     assert result.name == "database"
@@ -246,8 +265,8 @@ async def test_check_filesystem_success(tmp_path):
 
     # 100GB total, 50GB free = 50% free
     mock_usage = MagicMock()
-    mock_usage.free = 50 * (1024 ** 3)
-    mock_usage.total = 100 * (1024 ** 3)
+    mock_usage.free = 50 * (1024**3)
+    mock_usage.total = 100 * (1024**3)
 
     with patch("kb_server.health.Path") as MockPath:
         mock_data_dir = MagicMock()
@@ -269,8 +288,8 @@ async def test_check_filesystem_low_disk(tmp_path):
     import shutil as shutil_mod
 
     mock_usage = MagicMock()
-    mock_usage.free = 5 * (1024 ** 3)   # 5GB free
-    mock_usage.total = 100 * (1024 ** 3)  # 100GB total = 5% free
+    mock_usage.free = 5 * (1024**3)  # 5GB free
+    mock_usage.total = 100 * (1024**3)  # 100GB total = 5% free
 
     with patch("kb_server.health.Path") as MockPath:
         mock_data_dir = MagicMock()
@@ -289,7 +308,9 @@ async def test_check_filesystem_low_disk(tmp_path):
 @pytest.mark.asyncio
 async def test_check_filesystem_exception():
     """When filesystem check raises, returns unhealthy status."""
-    with patch("kb_server.health.Path", side_effect=OSError("permission denied")):
+    with patch(
+        "kb_server.health.Path", side_effect=OSError("permission denied")
+    ):
         result = await check_filesystem()
 
     assert result.name == "filesystem"
@@ -304,24 +325,49 @@ async def test_check_filesystem_exception():
 
 @pytest.mark.asyncio
 async def test_check_all_components_all_healthy():
-    """check_all_components returns all 5 components when all succeed."""
+    """check_all_components returns all 6 components when all succeed."""
     mock_statuses = [
         HealthStatus("embedding", True, "ok"),
         HealthStatus("vector_store", True, "ok"),
         HealthStatus("cache", True, "ok"),
         HealthStatus("database", True, "ok"),
         HealthStatus("filesystem", True, "ok"),
+        HealthStatus("grafana", True, "ok"),
     ]
 
-    with patch("kb_server.health.check_embedding_service", new=AsyncMock(return_value=mock_statuses[0])):
-        with patch("kb_server.health.check_vector_store", new=AsyncMock(return_value=mock_statuses[1])):
-            with patch("kb_server.health.check_cache", new=AsyncMock(return_value=mock_statuses[2])):
-                with patch("kb_server.health.check_database", new=AsyncMock(return_value=mock_statuses[3])):
-                    with patch("kb_server.health.check_filesystem", new=AsyncMock(return_value=mock_statuses[4])):
-                        result = await check_all_components()
+    with patch(
+        "kb_server.health.check_embedding_service",
+        new=AsyncMock(return_value=mock_statuses[0]),
+    ):
+        with patch(
+            "kb_server.health.check_vector_store",
+            new=AsyncMock(return_value=mock_statuses[1]),
+        ):
+            with patch(
+                "kb_server.health.check_cache",
+                new=AsyncMock(return_value=mock_statuses[2]),
+            ):
+                with patch(
+                    "kb_server.health.check_database",
+                    new=AsyncMock(return_value=mock_statuses[3]),
+                ):
+                    with patch(
+                        "kb_server.health.check_filesystem",
+                        new=AsyncMock(return_value=mock_statuses[4]),
+                    ):
+                        with patch(
+                            "kb_server.health.check_grafana",
+                            new=AsyncMock(return_value=mock_statuses[5]),
+                        ):
+                            result = await check_all_components()
 
     assert set(result.keys()) == {
-        "embedding", "vector_store", "cache", "database", "filesystem"
+        "embedding",
+        "vector_store",
+        "cache",
+        "database",
+        "filesystem",
+        "grafana",
     }
     assert all(v.healthy for v in result.values())
 
@@ -334,11 +380,28 @@ async def test_check_all_components_exception_from_check_is_skipped():
     async def raise_exc():
         raise RuntimeError("network error")
 
-    with patch("kb_server.health.check_embedding_service", new=AsyncMock(return_value=healthy)):
-        with patch("kb_server.health.check_vector_store", new=AsyncMock(side_effect=RuntimeError("qdrant down"))):
-            with patch("kb_server.health.check_cache", new=AsyncMock(return_value=HealthStatus("cache", True))):
-                with patch("kb_server.health.check_database", new=AsyncMock(return_value=HealthStatus("database", True))):
-                    with patch("kb_server.health.check_filesystem", new=AsyncMock(return_value=HealthStatus("filesystem", True))):
+    with patch(
+        "kb_server.health.check_embedding_service",
+        new=AsyncMock(return_value=healthy),
+    ):
+        with patch(
+            "kb_server.health.check_vector_store",
+            new=AsyncMock(side_effect=RuntimeError("qdrant down")),
+        ):
+            with patch(
+                "kb_server.health.check_cache",
+                new=AsyncMock(return_value=HealthStatus("cache", True)),
+            ):
+                with patch(
+                    "kb_server.health.check_database",
+                    new=AsyncMock(return_value=HealthStatus("database", True)),
+                ):
+                    with patch(
+                        "kb_server.health.check_filesystem",
+                        new=AsyncMock(
+                            return_value=HealthStatus("filesystem", True)
+                        ),
+                    ):
                         result = await check_all_components()
 
     # vector_store raised — it's absent from result
@@ -397,13 +460,18 @@ async def test_get_health_summary_healthy():
     """get_health_summary returns status=ok when all critical components healthy."""
     mock_components = {
         "embedding": HealthStatus("embedding", True, "ok", latency_ms=5.0),
-        "vector_store": HealthStatus("vector_store", True, "ok", latency_ms=10.0),
+        "vector_store": HealthStatus(
+            "vector_store", True, "ok", latency_ms=10.0
+        ),
         "database": HealthStatus("database", True, "ok", latency_ms=2.0),
         "cache": HealthStatus("cache", True, "ok"),
         "filesystem": HealthStatus("filesystem", True, "ok"),
     }
 
-    with patch("kb_server.health.check_all_components", new=AsyncMock(return_value=mock_components)):
+    with patch(
+        "kb_server.health.check_all_components",
+        new=AsyncMock(return_value=mock_components),
+    ):
         result = await get_health_summary()
 
     assert result["status"] == "ok"
@@ -422,7 +490,10 @@ async def test_get_health_summary_degraded():
         "database": HealthStatus("database", True, "ok"),
     }
 
-    with patch("kb_server.health.check_all_components", new=AsyncMock(return_value=mock_components)):
+    with patch(
+        "kb_server.health.check_all_components",
+        new=AsyncMock(return_value=mock_components),
+    ):
         result = await get_health_summary()
 
     assert result["status"] == "degraded"
@@ -434,14 +505,20 @@ async def test_get_health_summary_includes_component_dicts():
     """Components in summary are serialized via to_dict()."""
     mock_components = {
         "embedding": HealthStatus(
-            "embedding", True, "backend: lmstudio",
-            latency_ms=7.3, details={"dims": 768}
+            "embedding",
+            True,
+            "backend: lmstudio",
+            latency_ms=7.3,
+            details={"dims": 768},
         ),
         "vector_store": HealthStatus("vector_store", True),
         "database": HealthStatus("database", True),
     }
 
-    with patch("kb_server.health.check_all_components", new=AsyncMock(return_value=mock_components)):
+    with patch(
+        "kb_server.health.check_all_components",
+        new=AsyncMock(return_value=mock_components),
+    ):
         result = await get_health_summary()
 
     emb = result["components"]["embedding"]

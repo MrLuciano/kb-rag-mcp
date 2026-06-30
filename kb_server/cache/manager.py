@@ -7,10 +7,14 @@ Provides a single interface for LRU and Redis backends with:
 """
 
 import logging
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, cast
 
-from observability.metrics import MetricsCollector
 from kb_server.cache.lru import LRUCache
+
+try:
+    from observability.metrics import MetricsCollector
+except ImportError:
+    MetricsCollector = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +105,7 @@ class CacheManager:
         Returns:
             True if key was present and removed
         """
-        result = self._cache.invalidate(key)
+        result = cast(bool, self._cache.invalidate(key))
         logger.debug("Cache invalidate: key='%s' removed=%s", key, result)
         return result
 
@@ -112,7 +116,7 @@ class CacheManager:
 
     def stats(self) -> dict[str, Any]:
         """Return cache statistics."""
-        base_stats = self._cache.stats()
+        base_stats = cast(dict[str, Any], self._cache.stats())
         base_stats["backend"] = self._backend_type
         logger.debug("Cache stats requested")
         return base_stats

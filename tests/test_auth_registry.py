@@ -3,13 +3,12 @@ Tests for Phase 32 API key authentication.
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from kb_server.auth import extract_bearer_token, is_auth_enabled, verify_request
+from kb_server.auth import extract_bearer_token, verify_request
 from kb_server.auth_registry import AuthRegistry
-
 
 # ---------------------------------------------------------------------------
 # Auth Registry
@@ -89,31 +88,31 @@ class TestExtractBearerToken:
 
 
 class TestVerifyRequest:
-    @patch("kb_server.auth.AUTH_ENABLED", False)
+    @patch("kb_server.auth.legacy.AUTH_ENABLED", False)
     def test_auth_disabled_always_passes(self):
         ok, err = verify_request(None)
         assert ok is True
         assert err is None
 
-    @patch("kb_server.auth.AUTH_ENABLED", True)
+    @patch("kb_server.auth.legacy.AUTH_ENABLED", True)
     def test_auth_enabled_no_header(self):
         ok, err = verify_request(None)
         assert ok is False
         assert "Missing" in err
 
-    @patch("kb_server.auth.AUTH_ENABLED", True)
+    @patch("kb_server.auth.legacy.AUTH_ENABLED", True)
     def test_auth_enabled_invalid_key(self):
         ok, err = verify_request("Bearer invalidkey")
         assert ok is False
         assert "Invalid" in err
 
-    @patch("kb_server.auth.AUTH_ENABLED", True)
+    @patch("kb_server.auth.legacy.AUTH_ENABLED", True)
     def test_auth_enabled_valid_key(self, tmp_path):
         registry = AuthRegistry(tmp_path / "test_auth.db")
         raw = registry.create_key()
 
         with patch(
-            "kb_server.auth.get_registry", return_value=registry
+            "kb_server.auth.legacy.get_registry", return_value=registry
         ):
             ok, err = verify_request(f"Bearer {raw}")
             assert ok is True
@@ -127,8 +126,11 @@ class TestVerifyRequest:
 
 class TestSSEHandlerAuth:
     @pytest.mark.asyncio
-    @patch("kb_server.auth.is_auth_enabled", return_value=True)
-    @patch("kb_server.auth.verify_request", return_value=(False, "Invalid key"))
+    @patch("kb_server.auth.legacy.is_auth_enabled", return_value=True)
+    @patch(
+        "kb_server.auth.legacy.verify_request",
+        return_value=(False, "Invalid key"),
+    )
     async def test_sse_rejects_unauthenticated(
         self, mock_verify, mock_enabled
     ):
@@ -145,7 +147,7 @@ class TestSSEHandlerAuth:
             assert resp.status_code == 401
 
     @pytest.mark.asyncio
-    @patch("kb_server.auth.is_auth_enabled", return_value=False)
+    @patch("kb_server.auth.legacy.is_auth_enabled", return_value=False)
     async def test_sse_auth_disabled_no_check(self, mock_enabled):
         from kb_server.server import list_tools
 

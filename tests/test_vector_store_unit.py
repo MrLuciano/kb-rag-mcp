@@ -23,8 +23,8 @@ import os
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch, call
 
-
 # ── Bootstrap stubs (idempotent — safe if test_vector_store.py ran first) ────
+
 
 def _ensure_stubs():
     """Register lightweight stubs so vector_store can be imported without
@@ -66,11 +66,15 @@ from kb_server.vector_store import VectorStore  # noqa: E402
 # some tests that access VectorStore module internals.
 import kb_server.vector_store as _vs_mod  # noqa: E402
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _run(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 def _make_point(chunk_id="abc", score=0.9, **extra_payload):
@@ -110,6 +114,7 @@ def store():
 
 # ── connect() ─────────────────────────────────────────────────────────────────
 
+
 class TestConnect:
 
     def test_connect_embedded_mode(self):
@@ -117,10 +122,14 @@ class TestConnect:
         vs = VectorStore()
         fake_client = AsyncMock()
 
-        with patch("kb_server.vector_store.QDRANT_PATH", "/data/qdrant"), \
-             patch("kb_server.vector_store.AsyncQdrantClient",
-                   return_value=fake_client) as MockClient, \
-             patch.object(vs, "_ensure_collection", new=AsyncMock()):
+        with (
+            patch("kb_server.vector_store.QDRANT_PATH", "/data/qdrant"),
+            patch(
+                "kb_server.vector_store.AsyncQdrantClient",
+                return_value=fake_client,
+            ) as MockClient,
+            patch.object(vs, "_ensure_collection", new=AsyncMock()),
+        ):
             _run(vs.connect())
 
         called_kwargs = MockClient.call_args[1]
@@ -131,11 +140,15 @@ class TestConnect:
         vs = VectorStore()
         fake_client = AsyncMock()
 
-        with patch("kb_server.vector_store.QDRANT_PATH", ""), \
-             patch("kb_server.vector_store.QDRANT_GRPC", True), \
-             patch("kb_server.vector_store.AsyncQdrantClient",
-                   return_value=fake_client) as MockClient, \
-             patch.object(vs, "_ensure_collection", new=AsyncMock()):
+        with (
+            patch("kb_server.vector_store.QDRANT_PATH", ""),
+            patch("kb_server.vector_store.QDRANT_GRPC", True),
+            patch(
+                "kb_server.vector_store.AsyncQdrantClient",
+                return_value=fake_client,
+            ) as MockClient,
+            patch.object(vs, "_ensure_collection", new=AsyncMock()),
+        ):
             _run(vs.connect())
 
         called_kwargs = MockClient.call_args[1]
@@ -147,11 +160,15 @@ class TestConnect:
         vs = VectorStore()
         fake_client = AsyncMock()
 
-        with patch("kb_server.vector_store.QDRANT_PATH", ""), \
-             patch("kb_server.vector_store.QDRANT_GRPC", False), \
-             patch("kb_server.vector_store.AsyncQdrantClient",
-                   return_value=fake_client) as MockClient, \
-             patch.object(vs, "_ensure_collection", new=AsyncMock()):
+        with (
+            patch("kb_server.vector_store.QDRANT_PATH", ""),
+            patch("kb_server.vector_store.QDRANT_GRPC", False),
+            patch(
+                "kb_server.vector_store.AsyncQdrantClient",
+                return_value=fake_client,
+            ) as MockClient,
+            patch.object(vs, "_ensure_collection", new=AsyncMock()),
+        ):
             _run(vs.connect())
 
         called_kwargs = MockClient.call_args[1]
@@ -160,6 +177,7 @@ class TestConnect:
 
 
 # ── _ensure_collection() ──────────────────────────────────────────────────────
+
 
 class TestEnsureCollection:
 
@@ -221,14 +239,16 @@ class TestEnsureCollection:
 
 # ── search() ──────────────────────────────────────────────────────────────────
 
+
 class TestSearch:
 
     def test_search_returns_flat_dicts(self, store):
         """Lines 195-208: results mapped to flat dicts."""
         vs, mc = store
         mc.query_points = AsyncMock(
-            return_value=_make_query_response([_make_point("id1", 0.9),
-                                              _make_point("id2", 0.7)])
+            return_value=_make_query_response(
+                [_make_point("id1", 0.9), _make_point("id2", 0.7)]
+            )
         )
 
         results = _run(vs.search(vector=[0.1, 0.2, 0.3, 0.4]))
@@ -241,9 +261,7 @@ class TestSearch:
     def test_search_with_product_filter(self, store):
         """Lines 167-170: product filter added to query."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
         _run(vs.search(vector=[0.1] * 4, product="acme"))
 
@@ -254,9 +272,7 @@ class TestSearch:
     def test_search_with_doc_type_filter(self, store):
         """Lines 171-175: doc_type filter added."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
         _run(vs.search(vector=[0.1] * 4, doc_type="api"))
 
@@ -266,9 +282,7 @@ class TestSearch:
     def test_search_with_version_filter(self, store):
         """Lines 177-182: version filter added (FASE 13)."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
         _run(vs.search(vector=[0.1] * 4, version="2.0"))
 
@@ -278,9 +292,7 @@ class TestSearch:
     def test_search_with_filter_type(self, store):
         """Lines 161-166: file_type filter added."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
         _run(vs.search(vector=[0.1] * 4, filter_type="pdf"))
 
@@ -290,9 +302,7 @@ class TestSearch:
     def test_search_collection_name_override(self, store):
         """Line 187: collection_name param overrides default."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
         _run(vs.search(vector=[0.1] * 4, collection_name="other_col"))
 
@@ -302,9 +312,7 @@ class TestSearch:
     def test_search_no_filters_passes_none_filter(self, store):
         """Line 184: no conditions → query_filter=None."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
         _run(vs.search(vector=[0.1] * 4))
 
@@ -314,9 +322,7 @@ class TestSearch:
     def test_search_with_module_filter(self, store):
         """Phase 17: module filter condition built."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
         _run(vs.search(vector=[0.1] * 4, module="Administration"))
 
@@ -325,6 +331,7 @@ class TestSearch:
 
 
 # ── search_sparse() ───────────────────────────────────────────────────────────
+
 
 class TestSearchSparse:
 
@@ -366,15 +373,15 @@ class TestSearchSparse:
     def test_search_sparse_with_product_and_doctype_filters(self, store):
         """Lines 240-256: product + doc_type → filter built."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
-        _run(vs.search_sparse(
-            sparse_vector={1: 0.9},
-            product="prod",
-            doc_type="guide",
-        ))
+        _run(
+            vs.search_sparse(
+                sparse_vector={1: 0.9},
+                product="prod",
+                doc_type="guide",
+            )
+        )
 
         kwargs = mc.query_points.call_args[1]
         assert kwargs.get("query_filter") is not None
@@ -382,14 +389,14 @@ class TestSearchSparse:
     def test_search_sparse_with_filter_type(self, store):
         """Lines 234-239: filter_type → filter built."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
-        _run(vs.search_sparse(
-            sparse_vector={1: 0.9},
-            filter_type="pdf",
-        ))
+        _run(
+            vs.search_sparse(
+                sparse_vector={1: 0.9},
+                filter_type="pdf",
+            )
+        )
 
         kwargs = mc.query_points.call_args[1]
         assert kwargs.get("query_filter") is not None
@@ -397,14 +404,14 @@ class TestSearchSparse:
     def test_search_sparse_with_version_filter(self, store):
         """Lines 252-257: version → filter built."""
         vs, mc = store
-        mc.query_points = AsyncMock(
-            return_value=_make_query_response([])
-        )
+        mc.query_points = AsyncMock(return_value=_make_query_response([]))
 
-        _run(vs.search_sparse(
-            sparse_vector={1: 0.9},
-            version="3.0",
-        ))
+        _run(
+            vs.search_sparse(
+                sparse_vector={1: 0.9},
+                version="3.0",
+            )
+        )
 
         kwargs = mc.query_points.call_args[1]
         assert kwargs.get("query_filter") is not None
@@ -412,14 +419,18 @@ class TestSearchSparse:
 
 # ── upsert_chunks() ───────────────────────────────────────────────────────────
 
+
 class TestUpsertChunks:
 
     def test_upsert_raises_if_not_connected(self):
         """Line 299-300: client None → RuntimeError."""
         vs = VectorStore()
         with pytest.raises(RuntimeError, match="not connected"):
-            _run(vs.upsert_chunks([{"vector": [0.1] * 4, "text": "x",
-                                    "source_file": "a.md"}]))
+            _run(
+                vs.upsert_chunks(
+                    [{"vector": [0.1] * 4, "text": "x", "source_file": "a.md"}]
+                )
+            )
 
     def test_upsert_empty_list_does_nothing(self, store):
         """Lines 314-316: empty list → early return, upsert not called."""
@@ -436,8 +447,11 @@ class TestUpsertChunks:
         mc.upsert = AsyncMock()
 
         chunks = [
-            {"vector": [0.1, 0.2, 0.3, 0.4], "text": f"chunk {i}",
-             "source_file": "doc.md"}
+            {
+                "vector": [0.1, 0.2, 0.3, 0.4],
+                "text": f"chunk {i}",
+                "source_file": "doc.md",
+            }
             for i in range(5)
         ]
 
@@ -450,9 +464,17 @@ class TestUpsertChunks:
         vs, mc = store
         mc.upsert = AsyncMock()
 
-        _run(vs.upsert_chunks([
-            {"vector": [0.1] * 4, "text": "no id here", "source_file": "x"}
-        ]))
+        _run(
+            vs.upsert_chunks(
+                [
+                    {
+                        "vector": [0.1] * 4,
+                        "text": "no id here",
+                        "source_file": "x",
+                    }
+                ]
+            )
+        )
 
         mc.upsert.assert_called_once()
         args_kwargs = mc.upsert.call_args[1]
@@ -463,6 +485,7 @@ class TestUpsertChunks:
 
 
 # ── delete_document() ─────────────────────────────────────────────────────────
+
 
 class TestDeleteDocument:
 
@@ -485,14 +508,17 @@ class TestDeleteDocument:
 
 # ── list_documents() ──────────────────────────────────────────────────────────
 
+
 class TestListDocuments:
 
     def test_list_documents_returns_docs(self, store):
         """Lines 406-430: scroll returns points → list of source dicts."""
         vs, mc = store
         mc.scroll = AsyncMock(
-            return_value=([_make_point("p1"), _make_point("p2",
-                           source_file="other.md")], None)
+            return_value=(
+                [_make_point("p1"), _make_point("p2", source_file="other.md")],
+                None,
+            )
         )
 
         results = _run(vs.list_documents())
@@ -568,6 +594,7 @@ class TestListDocuments:
 
 # ── get_chunk_with_context() ──────────────────────────────────────────────────
 
+
 class TestGetChunkWithContext:
 
     def test_get_chunk_returns_empty_if_not_found(self, store):
@@ -589,9 +616,9 @@ class TestGetChunkWithContext:
         far = _make_point("far", chunk_index=10, source_file="a.md")
 
         mc.retrieve = AsyncMock(return_value=[target])
-        mc.scroll = AsyncMock(return_value=(
-            [neighbor0, target, neighbor1, far], None
-        ))
+        mc.scroll = AsyncMock(
+            return_value=([neighbor0, target, neighbor1, far], None)
+        )
 
         result = _run(vs.get_chunk_with_context("target", context_window=1))
 
@@ -612,6 +639,7 @@ class TestGetChunkWithContext:
 
 # ── get_stats() ───────────────────────────────────────────────────────────────
 
+
 class TestGetStats:
 
     def test_get_stats_returns_dict_with_expected_keys(self, store):
@@ -622,10 +650,12 @@ class TestGetStats:
         mc.get_collection = AsyncMock(return_value=fake_info)
 
         sample_points = [
-            _make_point("a", file_type="md", doc_type="guide",
-                        source_file="doc1.md"),
-            _make_point("b", file_type="pdf", doc_type="api",
-                        source_file="doc2.pdf"),
+            _make_point(
+                "a", file_type="md", doc_type="guide", source_file="doc1.md"
+            ),
+            _make_point(
+                "b", file_type="pdf", doc_type="api", source_file="doc2.pdf"
+            ),
         ]
         mc.scroll = AsyncMock(return_value=(sample_points, None))
 
@@ -640,6 +670,7 @@ class TestGetStats:
 
 
 # ── upsert_chunks_parallel() ─────────────────────────────────────────────────
+
 
 class TestUpsertChunksParallel:
 
@@ -675,6 +706,7 @@ class TestUpsertChunksParallel:
 
 # ── close() ──────────────────────────────────────────────────────────────────
 
+
 class TestClose:
 
     def test_close_calls_client_close_and_sets_none(self, store):
@@ -696,13 +728,16 @@ class TestClose:
 
 # ── multi_search() ────────────────────────────────────────────────────────────
 
+
 class TestMultiSearch:
 
     def test_multi_search_no_client_raises(self):
         """multi_search with client=None → RuntimeError."""
         vs = VectorStore()
         with pytest.raises(RuntimeError, match="not connected"):
-            _run(vs.multi_search(vector=[0.1] * 4, collection_names=["a", "b"]))
+            _run(
+                vs.multi_search(vector=[0.1] * 4, collection_names=["a", "b"])
+            )
 
     def test_multi_search_empty_collections_returns_empty_dict(self, store):
         """multi_search with no collection names → {}."""
@@ -713,15 +748,21 @@ class TestMultiSearch:
     def test_multi_search_parallel_search_adds_collection_tag(self, store):
         """Each result gets _collection tag from its collection name."""
         vs, mc = store
-        mc.query_points = AsyncMock(return_value=_make_query_response([
-            _make_point("c1", 0.9),
-            _make_point("c2", 0.7),
-        ]))
+        mc.query_points = AsyncMock(
+            return_value=_make_query_response(
+                [
+                    _make_point("c1", 0.9),
+                    _make_point("c2", 0.7),
+                ]
+            )
+        )
 
-        result = _run(vs.multi_search(
-            vector=[0.1] * 4,
-            collection_names=["kb_hr", "kb_eng"],
-        ))
+        result = _run(
+            vs.multi_search(
+                vector=[0.1] * 4,
+                collection_names=["kb_hr", "kb_eng"],
+            )
+        )
 
         assert set(result.keys()) == {"kb_hr", "kb_eng"}
         for coll, items in result.items():
@@ -731,16 +772,22 @@ class TestMultiSearch:
     def test_multi_search_passes_filters(self, store):
         """Filters are forwarded to each underlying search call."""
         vs, mc = store
-        mc.query_points = AsyncMock(return_value=_make_query_response([
-            _make_point("c1", 0.9),
-        ]))
+        mc.query_points = AsyncMock(
+            return_value=_make_query_response(
+                [
+                    _make_point("c1", 0.9),
+                ]
+            )
+        )
 
-        _run(vs.multi_search(
-            vector=[0.1] * 4,
-            collection_names=["k1", "k2"],
-            product="acme",
-            doc_type="guide",
-        ))
+        _run(
+            vs.multi_search(
+                vector=[0.1] * 4,
+                collection_names=["k1", "k2"],
+                product="acme",
+                doc_type="guide",
+            )
+        )
 
         # Each collection should have 1 search call
         assert mc.query_points.await_count == 2
@@ -751,6 +798,7 @@ class TestMultiSearch:
 
 
 # ── Helper (defined after fixture to avoid forward-ref issues) ────────────────
+
 
 def _make_store_with_mock():
     """Alternative to the pytest fixture for use in class methods."""

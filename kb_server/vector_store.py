@@ -11,24 +11,29 @@ import os
 import time
 import uuid
 
-
-from kb_server.embed_client import get_embed_dim
-from observability.metrics import record_batch_upsert
 from qdrant_client import AsyncQdrantClient  # type: ignore[import]
 from qdrant_client import models as qmodels  # type: ignore[import]
-from qdrant_client.models import Distance  # type: ignore[import]
 from qdrant_client.http.models import (  # type: ignore[import]
     NamedSparseVector,
     SparseVector,
 )
+from qdrant_client.models import Distance  # type: ignore[import]
 from qdrant_client.models import (
     FieldCondition,
     Filter,
     MatchValue,
     PayloadSchemaType,
+    PointIdsList,
     PointStruct,
     VectorParams,
 )
+
+from kb_server.embed_client import get_embed_dim
+
+try:
+    from observability.metrics import record_batch_upsert
+except ImportError:
+    record_batch_upsert = None
 
 log = logging.getLogger("kb-mcp.store")
 
@@ -42,12 +47,12 @@ SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.35"))
 # PHASE 8: Connection pool and batch config
 QDRANT_GRPC = os.getenv("QDRANT_GRPC", "false").lower() == "true"
 QDRANT_GRPC_PORT = int(os.getenv("QDRANT_GRPC_PORT", "6334"))
-QDRANT_TIMEOUT = float(os.getenv("QDRANT_TIMEOUT", "60.0"))
+QDRANT_TIMEOUT = int(os.getenv("QDRANT_TIMEOUT", "60"))
 QDRANT_BATCH_SIZE = int(os.getenv("QDRANT_BATCH_SIZE", "100"))
 
 
 class VectorStore:
-    """Abstraction over Qdrant for vector storage, search, and metadata management.
+    """Abstraction over Qdrant for vector storage, search, and metadata.
 
     Provides semantic search with optional filtering by product, doc_type,
     version, and file_type. Supports batch upsert operations, sparse vector
@@ -124,25 +129,31 @@ class VectorStore:
                     size=self.dim, distance=Distance.COSINE
                 ),
             )
-            log.info(f"Collection '{self.collection}' created (dim={self.dim})")
-            
+            log.info(
+                f"Collection '{self.collection}' created (dim={self.dim})"
+            )
+
             # PHASE 12: Create payload indexes for fast filtered queries
             await self._create_payload_indexes()
 
     async def _create_payload_indexes(self) -> None:
         """
         Create payload indexes on product, doc_type, and version fields.
-        
+
         PHASE 12: Accelerates filtered queries from O(n) to O(log n).
         PHASE 13: Added version field index.
         """
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
-        
+
         indexed_fields = [
-            "product", "doc_type", "version",
+            "product",
+            "doc_type",
+            "version",
             # PHASE 30: Graph metadata fields
-            "doc_graph_id", "graph_topics", "graph_related",
+            "doc_graph_id",
+            "graph_topics",
+            "graph_related",
         ]
         for field in indexed_fields:
             try:
@@ -155,9 +166,7 @@ class VectorStore:
                 log.info(f"Index created on field '{field}'")
             except Exception as e:
                 # Non-fatal: indexes improve performance but aren't critical
-                log.warning(
-                    f"Failed to create index on field '{field}': {e}"
-                )
+                log.warning(f"Failed to create index on field '{field}': {e}")
 
     # ── Search ──────────────────────────────────────────────────────
 
@@ -172,7 +181,9 @@ class VectorStore:
         vendor: str | None = None,  # PHASE 11.1: Vendor filter
         subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
         module: str | None = None,  # PHASE 17: Module filter
-        collection_name: str | None = None,  # PHASE 15: multi-collection override
+        collection_name: (
+            str | None
+        ) = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
         """Semantic search with optional filters by
         file_type, product, doc_type, version, vendor, subsystem, and module.
@@ -198,15 +209,11 @@ class VectorStore:
             )
         if version:  # PHASE 13: Version filtering
             conditions.append(
-                FieldCondition(
-                    key="version", match=MatchValue(value=version)
-                )
+                FieldCondition(key="version", match=MatchValue(value=version))
             )
         if vendor:  # PHASE 11.1: Vendor filtering
             conditions.append(
-                FieldCondition(
-                    key="vendor", match=MatchValue(value=vendor)
-                )
+                FieldCondition(key="vendor", match=MatchValue(value=vendor))
             )
         if subsystem:  # PHASE 11.1: Subsystem filtering
             conditions.append(
@@ -216,12 +223,10 @@ class VectorStore:
             )
         if module:  # PHASE 17: Module filtering
             conditions.append(
-                FieldCondition(
-                    key="module", match=MatchValue(value=module)
-                )
+                FieldCondition(key="module", match=MatchValue(value=module))
             )
 
-        query_filter = Filter(must=conditions) if conditions else None
+        query_filter = Filter(must=conditions) if conditions else None  # type: ignore[arg-type]
 
         response = await self.client.query_points(
             collection_name=collection_name or self.collection,
@@ -232,24 +237,27 @@ class VectorStore:
             with_payload=True,
         )
 
-        return [
-            {
-                "chunk_id": str(r.id),
-                "score": r.score,
-                "text": r.payload.get("text", ""),
-                "source_file": r.payload.get("source_file", ""),
-                "file_type": r.payload.get("file_type", ""),
-                "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
-                "product": r.payload.get("product", ""),
-                "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
-                "module": r.payload.get("module", ""),  # PHASE 17
-                "doc_type": r.payload.get("doc_type", "document"),
-                "version": r.payload.get("version", ""),  # PHASE 13
-                "page": r.payload.get("page"),
-                "chunk_index": r.payload.get("chunk_index", 0),
-            }
-            for r in response.points
-        ]
+        search_results = []
+        for r in response.points:
+            assert r.payload is not None
+            search_results.append(
+                {
+                    "chunk_id": str(r.id),
+                    "score": r.score,
+                    "text": r.payload.get("text", ""),
+                    "source_file": r.payload.get("source_file", ""),
+                    "file_type": r.payload.get("file_type", ""),
+                    "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
+                    "product": r.payload.get("product", ""),
+                    "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
+                    "module": r.payload.get("module", ""),  # PHASE 17
+                    "doc_type": r.payload.get("doc_type", "document"),
+                    "version": r.payload.get("version", ""),  # PHASE 13
+                    "page": r.payload.get("page"),
+                    "chunk_index": r.payload.get("chunk_index", 0),
+                }
+            )
+        return search_results
 
     async def multi_search(
         self,
@@ -335,9 +343,7 @@ class VectorStore:
             )
         if product:
             conditions.append(
-                FieldCondition(
-                    key="product", match=MatchValue(value=product)
-                )
+                FieldCondition(key="product", match=MatchValue(value=product))
             )
         if doc_type:
             conditions.append(
@@ -347,15 +353,11 @@ class VectorStore:
             )
         if version:
             conditions.append(
-                FieldCondition(
-                    key="version", match=MatchValue(value=version)
-                )
+                FieldCondition(key="version", match=MatchValue(value=version))
             )
         if vendor:  # PHASE 11.1: Vendor filtering
             conditions.append(
-                FieldCondition(
-                    key="vendor", match=MatchValue(value=vendor)
-                )
+                FieldCondition(key="vendor", match=MatchValue(value=vendor))
             )
         if subsystem:  # PHASE 11.1: Subsystem filtering
             conditions.append(
@@ -365,12 +367,10 @@ class VectorStore:
             )
         if module:  # PHASE 17: Module filtering
             conditions.append(
-                FieldCondition(
-                    key="module", match=MatchValue(value=module)
-                )
+                FieldCondition(key="module", match=MatchValue(value=module))
             )
 
-        query_filter = Filter(must=conditions) if conditions else None
+        query_filter = Filter(must=conditions) if conditions else None  # type: ignore[arg-type]
         indices = list(sparse_vector.keys())
         values = list(sparse_vector.values())
         named_sparse = NamedSparseVector(
@@ -381,28 +381,31 @@ class VectorStore:
         try:
             response = await self.client.query_points(
                 collection_name=collection_name or self.collection,
-                query=named_sparse,
+                query=named_sparse,  # type: ignore[arg-type]
                 limit=top_k,
                 query_filter=query_filter,
                 with_payload=True,
             )
-            return [
-                {
-                    "chunk_id": str(r.id),
-                    "score": r.score,
-                    "text": r.payload.get("text", ""),
-                    "source_file": r.payload.get("source_file", ""),
-                    "file_type": r.payload.get("file_type", ""),
-                    "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
-                    "product": r.payload.get("product", ""),
-                    "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
-                    "doc_type": r.payload.get("doc_type", "document"),
-                    "version": r.payload.get("version", ""),  # PHASE 13
-                    "page": r.payload.get("page"),
-                    "chunk_index": r.payload.get("chunk_index"),
-                }
-                for r in response.points
-            ]
+            sparse_results = []
+            for r in response.points:
+                assert r.payload is not None
+                sparse_results.append(
+                    {
+                        "chunk_id": str(r.id),
+                        "score": r.score,
+                        "text": r.payload.get("text", ""),
+                        "source_file": r.payload.get("source_file", ""),
+                        "file_type": r.payload.get("file_type", ""),
+                        "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
+                        "product": r.payload.get("product", ""),
+                        "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
+                        "doc_type": r.payload.get("doc_type", "document"),
+                        "version": r.payload.get("version", ""),  # PHASE 13
+                        "page": r.payload.get("page"),
+                        "chunk_index": r.payload.get("chunk_index"),
+                    }
+                )
+            return sparse_results
         except Exception as e:
             log.warning(
                 "Sparse search failed "
@@ -430,7 +433,7 @@ class VectorStore:
         if not chunks:
             log.warning("upsert_chunks called with empty list")
             return
-        
+
         points = []
         for chunk in chunks:
             cid = chunk.get("chunk_id") or str(uuid.uuid4())
@@ -446,7 +449,7 @@ class VectorStore:
             f"Upserting {len(points)} chunks in {total_batches} batches "
             f"(batch_size={self.batch_size})"
         )
-        
+
         for batch_num, i in enumerate(
             range(0, len(points), self.batch_size), 1
         ):
@@ -466,7 +469,7 @@ class VectorStore:
                 f"Batch {batch_num}/{total_batches} uploaded "
                 f"({len(batch_points)} points)"
             )
-        
+
         log.info(f"Upserted {len(points)} chunks successfully")
 
     async def delete_document(self, source_file: str) -> None:
@@ -506,7 +509,9 @@ class VectorStore:
         subsystem: str | None = None,  # PHASE 11.1: Subsystem filter
         module: str | None = None,  # PHASE 17: Module filter
         limit: int = 50,
-        collection_name: str | None = None,  # PHASE 15: multi-collection override
+        collection_name: (
+            str | None
+        ) = None,  # PHASE 15: multi-collection override
     ) -> list[dict]:
         """List indexed documents with optional filtering.
 
@@ -550,9 +555,7 @@ class VectorStore:
             )
         if vendor:  # PHASE 11.1: Vendor filtering
             conditions.append(
-                FieldCondition(
-                    key="vendor", match=MatchValue(value=vendor)
-                )
+                FieldCondition(key="vendor", match=MatchValue(value=vendor))
             )
         if subsystem:  # PHASE 11.1: Subsystem filtering
             conditions.append(
@@ -562,12 +565,10 @@ class VectorStore:
             )
         if module:  # PHASE 17: Module filtering
             conditions.append(
-                FieldCondition(
-                    key="module", match=MatchValue(value=module)
-                )
+                FieldCondition(key="module", match=MatchValue(value=module))
             )
 
-        query_filter = Filter(must=conditions) if conditions else None
+        query_filter = Filter(must=conditions) if conditions else None  # type: ignore[arg-type]
 
         docs: dict[str, dict] = {}
         offset = None
@@ -582,6 +583,7 @@ class VectorStore:
                 with_vectors=False,
             )
             for r in results:
+                assert r.payload is not None
                 sf = r.payload.get("source_file", "")
                 if sf not in docs:
                     docs[sf] = {
@@ -589,7 +591,9 @@ class VectorStore:
                         "file_type": r.payload.get("file_type", ""),
                         "vendor": r.payload.get("vendor", ""),  # PHASE 11.1
                         "product": r.payload.get("product", ""),
-                        "subsystem": r.payload.get("subsystem", ""),  # PHASE 11.1
+                        "subsystem": r.payload.get(
+                            "subsystem", ""
+                        ),  # PHASE 11.1
                         "module": r.payload.get("module", ""),  # PHASE 17
                         "doc_type": r.payload.get("doc_type", "document"),
                         "version": r.payload.get("version", ""),  # PHASE 13
@@ -635,6 +639,7 @@ class VectorStore:
             return []
 
         target = results[0].payload
+        assert target is not None
         source_file = target.get("source_file", "")
         target_index = int(target.get("chunk_index", 0))
 
@@ -656,16 +661,20 @@ class VectorStore:
             with_vectors=False,
         )
 
-        chunks = [
-            {
-                "chunk_id": str(n.id),
-                "text": n.payload.get("text", ""),
-                "source_file": n.payload.get("source_file", ""),
-                "chunk_index": int(n.payload.get("chunk_index", 0)),
-            }
-            for n in neighbors
-            if min_idx <= int(n.payload.get("chunk_index", 0)) <= max_idx
-        ]
+        neighbor_chunks = []
+        for n in neighbors:
+            assert n.payload is not None
+            idx = int(n.payload.get("chunk_index", 0))
+            if min_idx <= idx <= max_idx:
+                neighbor_chunks.append(
+                    {
+                        "chunk_id": str(n.id),
+                        "text": n.payload.get("text", ""),
+                        "source_file": n.payload.get("source_file", ""),
+                        "chunk_index": idx,
+                    }
+                )
+        chunks = neighbor_chunks
         chunks.sort(key=lambda c: c["chunk_index"])
         return chunks
 
@@ -709,6 +718,7 @@ class VectorStore:
                     with_vectors=False,
                 )
                 for record in records:
+                    assert record.payload is not None
                     val = record.payload.get(field)
                     if val and isinstance(val, str) and val.strip():
                         all_values[val] = all_values.get(val, 0) + 1
@@ -769,6 +779,7 @@ class VectorStore:
         by_type: dict[str, set] = {}
         by_doc_type: dict[str, set] = {}
         for r in sample:
+            assert r.payload is not None
             ft = r.payload.get("file_type", "unknown")
             dt = r.payload.get("doc_type", "document")
             sf = r.payload.get("source_file", "")
@@ -777,11 +788,13 @@ class VectorStore:
 
         from kb_server.embed_client import BACKEND, MODEL
 
+        source_files = set()
+        for r in sample:
+            assert r.payload is not None
+            source_files.add(r.payload.get("source_file"))
         return {
             "total_chunks": count,
-            "total_documents": len(
-                {r.payload.get("source_file") for r in sample}
-            ),
+            "total_documents": len(source_files),
             "index_size_mb": count * self.dim * 4 / 1024 / 1024,
             "embed_model": MODEL,
             "embed_backend": BACKEND,
@@ -797,20 +810,20 @@ class VectorStore:
     ) -> None:
         """
         PHASE 8: Parallel batch upsert for maximum throughput.
-        
+
         Splits chunks into batches and uploads multiple batches in parallel.
         Use this for large ingestion jobs (>1000 chunks).
-        
+
         Args:
             chunks: List of chunk dicts with vectors and metadata
             max_parallel: Maximum parallel batch uploads (default 3)
         """
         if not chunks:
             return
-        
+
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
-        
+
         points = []
         for chunk in chunks:
             cid = chunk.get("chunk_id") or str(uuid.uuid4())
@@ -819,21 +832,21 @@ class VectorStore:
             points.append(
                 PointStruct(id=cid, vector=chunk["vector"], payload=payload)
             )
-        
+
         # Split into batches
         batches = [
             points[i : i + self.batch_size]
             for i in range(0, len(points), self.batch_size)
         ]
-        
+
         log.info(
             f"Parallel upsert: {len(points)} chunks in {len(batches)} "
             f"batches (max_parallel={max_parallel})"
         )
-        
+
         # Upload batches in parallel (with limit)
         import asyncio
-        
+
         async def upload_batch(batch_num: int, batch: list) -> None:
             """Upload a single batch of points to Qdrant.
 
@@ -841,6 +854,7 @@ class VectorStore:
                 batch_num: Batch number (for logging).
                 batch: List of PointStruct points to upload.
             """
+            assert self.client is not None
             batch_start = time.time()
             await self.client.upsert(
                 collection_name=self.collection,
@@ -856,7 +870,7 @@ class VectorStore:
                 f"Parallel batch {batch_num}/{len(batches)} uploaded "
                 f"({len(batch)} points)"
             )
-        
+
         # Process in chunks of max_parallel
         for i in range(0, len(batches), max_parallel):
             parallel_batches = batches[i : i + max_parallel]
@@ -866,7 +880,7 @@ class VectorStore:
                     for j, batch in enumerate(parallel_batches)
                 ]
             )
-        
+
         log.info(f"Parallel upsert complete: {len(points)} chunks")
 
     # ── Phase 16: Reclassification metadata update ──────────────────────
@@ -901,9 +915,7 @@ class VectorStore:
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
 
-        log.info(
-            f"Updating metadata for {source_file} in {collection_name}"
-        )
+        log.info(f"Updating metadata for {source_file} in {collection_name}")
 
         # Build filter
         must_conditions = [
@@ -918,7 +930,7 @@ class VectorStore:
                 )
             )
 
-        filter_query = Filter(must=must_conditions)
+        filter_query = Filter(must=must_conditions)  # type: ignore[arg-type]
 
         # Scroll to get point IDs
         points, _ = await self.client.scroll(
@@ -930,7 +942,7 @@ class VectorStore:
         )
 
         if not points:
-            log.warning(f"No chunks found for {source_file}")
+            log.debug(f"No chunks found for {source_file}")
             return 0
 
         point_ids = [p.id for p in points]
@@ -943,6 +955,112 @@ class VectorStore:
         )
 
         log.info(f"Updated {len(point_ids)} chunks for {source_file}")
+        return len(point_ids)
+
+    # ── Phase 51: Tag management ──────────────────────────────────────────
+
+    async def update_tags(
+        self,
+        collection_name: str,
+        source_file: str,
+        tags: list[str],
+    ) -> int:
+        """Update tags for all chunks of a document.
+
+        Args:
+            collection_name: Qdrant collection name.
+            source_file: Source file path to filter chunks.
+            tags: List of tag strings to set.
+
+        Returns:
+            Number of chunks updated.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+
+        log.info(
+            f"Updating tags for {source_file} in {collection_name}: {tags}"
+        )
+
+        filter_query = Filter(
+            must=[
+                FieldCondition(
+                    key="source_file", match=MatchValue(value=source_file)
+                )
+            ]
+        )
+
+        points, _ = await self.client.scroll(
+            collection_name=collection_name,
+            scroll_filter=filter_query,
+            limit=10000,
+            with_payload=False,
+            with_vectors=False,
+        )
+
+        if not points:
+            log.debug(f"No chunks found for {source_file}")
+            return 0
+
+        point_ids = [p.id for p in points]
+
+        await self.client.set_payload(
+            collection_name=collection_name,
+            payload={"tags": tags},
+            points=point_ids,
+        )
+
+        log.info(f"Updated tags on {len(point_ids)} chunks for {source_file}")
+        return len(point_ids)
+
+    async def delete_by_filter(
+        self,
+        collection_name: str,
+        filter_dict: dict[str, str],
+    ) -> int:
+        """Delete chunks matching a payload filter.
+
+        Args:
+            collection_name: Qdrant collection name.
+            filter_dict: Dict of key -> value to match.
+
+        Returns:
+            Number of chunks deleted.
+        """
+        if self.client is None:
+            raise RuntimeError("VectorStore client not connected")
+
+        must_conditions = [
+            FieldCondition(key=k, match=MatchValue(value=v))
+            for k, v in filter_dict.items()
+        ]
+        filter_query = Filter(must=must_conditions)
+
+        log.info(
+            f"Deleting chunks from {collection_name} matching {filter_dict}"
+        )
+
+        # Scroll to get point IDs
+        points, _ = await self.client.scroll(
+            collection_name=collection_name,
+            scroll_filter=filter_query,
+            limit=10000,
+            with_payload=False,
+            with_vectors=False,
+        )
+
+        if not points:
+            log.warning("No chunks matched filter")
+            return 0
+
+        point_ids = [p.id for p in points]
+
+        await self.client.delete(
+            collection_name=collection_name,
+            points_selector=PointIdsList(points=point_ids),
+        )
+
+        log.info(f"Deleted {len(point_ids)} chunks")
         return len(point_ids)
 
     # ── PHASE 30: Graph introspection helpers ──────────────────────────────
@@ -980,7 +1098,9 @@ class VectorStore:
             with_payload=True,
             with_vectors=False,
         )
-        return [r.payload for r in results]
+        return [
+            p for r in results if r.payload is not None for p in (r.payload,)
+        ]
 
     async def get_graph_topic_summary(
         self,
@@ -1001,7 +1121,7 @@ class VectorStore:
         if self.client is None:
             raise RuntimeError("VectorStore client not connected")
         counts: dict[str, int] = {}
-        offset: str | None = None
+        offset = None
         while True:
             results, offset = await self.client.scroll(
                 collection_name=collection_name or self.collection,
@@ -1011,6 +1131,7 @@ class VectorStore:
                 with_vectors=False,
             )
             for r in results:
+                assert r.payload is not None
                 topics = r.payload.get("graph_topics", [])
                 if isinstance(topics, list):
                     for t in topics:

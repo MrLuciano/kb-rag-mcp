@@ -4,6 +4,7 @@ Supports comma, semicolon, and tab delimiters.
 Normalizes columns to the GoldenDataset format:
   query, expected_answer, expected_docs, metadata
 """
+
 from __future__ import annotations
 
 import csv
@@ -31,10 +32,12 @@ class CSVDatasetLoader:
             path: Path to the CSV file.
 
         Returns:
-            List of dicts with keys: query, expected_answer, expected_docs, metadata.
+            List of dicts with keys: query, expected_answer,
+            expected_docs, metadata.
 
         Raises:
-            ValueError: If required columns are missing or file is unreadable.
+            ValueError: If required columns are missing
+            or file is unreadable.
         """
         text = path.read_text(encoding="utf-8")
         if not text.strip():
@@ -50,7 +53,8 @@ class CSVDatasetLoader:
         missing = REQUIRED_COLUMNS - fieldnames
         if missing:
             raise ValueError(
-                f"Missing required columns in {path}: {', '.join(sorted(missing))}"
+                f"Missing required columns in {path}: "
+                f"{', '.join(sorted(missing))}"
             )
 
         examples: List[Dict[str, Any]] = []
@@ -76,7 +80,7 @@ class CSVDatasetLoader:
                     example["metadata"] = json.loads(meta_raw)
                 except json.JSONDecodeError:
                     log.warning(
-                        "Invalid JSON in metadata field, treating as string: %r",
+                        "Invalid JSON in metadata field: %r",
                         meta_raw,
                     )
                     example["metadata"] = {"raw": meta_raw.strip()}
@@ -98,7 +102,7 @@ def _detect_delimiter(text: str) -> str:
             # Count occurrences of each candidate delimiter
             counts = {d: line.count(d) for d in DELIMITERS}
             # Prefer the delimiter with the most occurrences
-            best = max(counts, key=counts.get)
+            best = max(counts, key=lambda d: counts[d])
             if counts[best] > 0:
                 return best
             break

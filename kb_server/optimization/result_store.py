@@ -5,12 +5,13 @@ PHASE 25: Optimization Experiments
 Stores experiment runs as JSON files and supports CSV export,
 run listing, and metric comparison across runs.
 """
+
 import csv
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 log = logging.getLogger("kb-mcp.optimization")
 
@@ -55,7 +56,10 @@ class ExperimentResultStore:
         """
         record = {
             "run_id": run_id,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc)
+            .replace(tzinfo=None)
+            .isoformat()
+            + "Z",
             "strategy": strategy,
             "variant": variant,
             "params": params,
@@ -81,7 +85,7 @@ class ExperimentResultStore:
         """
         path = self.output_dir / f"{run_id}.json"
         with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            return cast(dict[str, Any], json.load(f))
 
     def list_runs(self) -> List[Dict[str, Any]]:
         """Return metadata for all stored runs, newest first.
@@ -98,12 +102,14 @@ class ExperimentResultStore:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                runs.append({
-                    "run_id": data.get("run_id", path.stem),
-                    "timestamp": data.get("timestamp", ""),
-                    "strategy": data.get("strategy", ""),
-                    "variant": data.get("variant", ""),
-                })
+                runs.append(
+                    {
+                        "run_id": data.get("run_id", path.stem),
+                        "timestamp": data.get("timestamp", ""),
+                        "strategy": data.get("strategy", ""),
+                        "variant": data.get("variant", ""),
+                    }
+                )
             except Exception as e:
                 log.warning("Skipping unreadable run file %s: %s", path, e)
         return runs
@@ -161,9 +167,9 @@ class ExperimentResultStore:
             except Exception as e:
                 log.warning("Skipping unreadable run file %s: %s", path, e)
 
-        fieldnames = [
-            "run_id", "timestamp", "strategy", "variant"
-        ] + sorted(metric_names)
+        fieldnames = ["run_id", "timestamp", "strategy", "variant"] + sorted(
+            metric_names
+        )
 
         with open(output_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -194,7 +200,7 @@ class ExperimentResultStore:
         baseline_path = self.output_dir / "baseline.json"
         if baseline_path.exists():
             with open(baseline_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                return cast(dict[str, Any] | None, json.load(f))
 
         # Fallback to oldest run
         all_paths = sorted(
@@ -205,7 +211,7 @@ class ExperimentResultStore:
             return None
 
         with open(all_paths[0], "r", encoding="utf-8") as f:
-            return json.load(f)
+            return cast(dict[str, Any] | None, json.load(f))
 
 
 # ── Convenience module-level helpers ────────────────────────────────
@@ -223,7 +229,4 @@ def load_results(
         List of full run records.
     """
     store = ExperimentResultStore(output_dir)
-    return [
-        store.load(r["run_id"])
-        for r in store.list_runs()
-    ]
+    return [store.load(r["run_id"]) for r in store.list_runs()]

@@ -1,0 +1,60 @@
+<div class="d-flex gap-3 flex-wrap mb-3">
+    {% set labels = {
+        "vector_store": "Qdrant",
+        "embedding": "Embedding",
+        "cache": "Cache",
+        "database": "Database",
+        "filesystem": "Filesystem",
+        "grafana": "Grafana",
+        "llm": "LLM",
+    } %}
+    {% set all_components = {
+        "vector_store": true, "embedding": true, "cache": true,
+        "database": true, "filesystem": true, "grafana": true, "llm": true,
+    } %}
+    {% for key, label in labels.items() %}
+        {% set status = components.get(key) %}
+        <div class="card monitor-card" x-data="monitorCard">
+            <div class="card-body text-center py-3" @click="expanded = !expanded" style="cursor: pointer;">
+                {% if status and status.healthy %}
+                    <div class="mb-1 monitor-light bg-success" aria-label="{{ label }} status: healthy"></div>
+                    <small class="text-success d-block">{{ label }}</small>
+                    <small class="text-muted">{{ status.message[:30] }}</small>
+                    {% if status.latency_ms %}
+                        <small class="text-muted d-block">{{ status.latency_ms }}ms</small>
+                    {% endif %}
+                {% elif status and status.degraded %}
+                    <div class="mb-1 monitor-light bg-warning" aria-label="{{ label }} status: degraded"></div>
+                    <small class="text-warning d-block">{{ label }}</small>
+                    <small class="text-muted">{{ status.message[:30] }}</small>
+                    {% if status.latency_ms %}
+                        <small class="text-muted d-block">{{ status.latency_ms }}ms</small>
+                    {% endif %}
+                {% elif status and not status.healthy %}
+                    <div class="mb-1 monitor-light bg-danger" aria-label="{{ label }} status: unhealthy"></div>
+                    <small class="text-danger d-block">{{ label }}</small>
+                    <small class="text-muted">{{ status.message[:30] }}</small>
+                    {% if status.latency_ms %}
+                        <small class="text-muted d-block">{{ status.latency_ms }}ms</small>
+                    {% endif %}
+                {% else %}
+                    <div class="mb-1 monitor-light bg-secondary" aria-label="{{ label }} status: not configured"></div>
+                    <small class="text-secondary d-block">{{ label }}</small>
+                    <small class="text-muted">Not configured</small>
+                {% endif %}
+            </div>
+            <div x-show="expanded" class="card-footer text-start small px-3 py-2">
+                {% if status %}
+                    <div><strong>Component:</strong> {{ label }}</div>
+                    <div><strong>Key:</strong> {{ key }}</div>
+                    <div><strong>Message:</strong> {{ status.message }}</div>
+                    {% if status.latency_ms %}
+                        <div><strong>Latency:</strong> {{ status.latency_ms }}ms</div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-muted">No status data available</div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>

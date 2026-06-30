@@ -41,9 +41,7 @@ def mock_router():
 
 class TestGetRelatedDocuments:
     @pytest.mark.asyncio
-    async def test_returns_chunks_for_graph_id(
-        self, mock_store, mock_router
-    ):
+    async def test_returns_chunks_for_graph_id(self, mock_store, mock_router):
         mock_store.list_documents_by_graph_id.return_value = [
             {
                 "source_file": "docs/guide.md",
@@ -61,9 +59,7 @@ class TestGetRelatedDocuments:
         srv.store = mock_store
         srv.collection_router = mock_router
 
-        out = await srv._get_related_documents(
-            {"doc_graph_id": "abc123"}
-        )
+        out = await srv._get_related_documents({"doc_graph_id": "abc123"})
 
         assert len(out) == 1
         assert "abc123" in out[0].text
@@ -77,16 +73,12 @@ class TestGetRelatedDocuments:
         )
 
     @pytest.mark.asyncio
-    async def test_no_results_returns_message(
-        self, mock_store, mock_router
-    ):
+    async def test_no_results_returns_message(self, mock_store, mock_router):
         mock_store.list_documents_by_graph_id.return_value = []
         srv.store = mock_store
         srv.collection_router = mock_router
 
-        out = await srv._get_related_documents(
-            {"doc_graph_id": "missing"}
-        )
+        out = await srv._get_related_documents({"doc_graph_id": "missing"})
 
         assert len(out) == 1
         assert "No documents found" in out[0].text
@@ -97,9 +89,7 @@ class TestGetRelatedDocuments:
         srv.store = mock_store
         srv.collection_router = mock_router
 
-        await srv._get_related_documents(
-            {"doc_graph_id": "abc", "limit": 5}
-        )
+        await srv._get_related_documents({"doc_graph_id": "abc", "limit": 5})
 
         mock_store.list_documents_by_graph_id.assert_called_once_with(
             doc_graph_id="abc",
@@ -108,9 +98,7 @@ class TestGetRelatedDocuments:
         )
 
     @pytest.mark.asyncio
-    async def test_respects_collection_param(
-        self, mock_store, mock_router
-    ):
+    async def test_respects_collection_param(self, mock_store, mock_router):
         mock_store.list_documents_by_graph_id.return_value = []
         srv.store = mock_store
         srv.collection_router = mock_router
@@ -127,9 +115,7 @@ class TestGetRelatedDocuments:
         )
 
     @pytest.mark.asyncio
-    async def test_handles_collection_not_found(
-        self, mock_store, mock_router
-    ):
+    async def test_handles_collection_not_found(self, mock_store, mock_router):
         srv.store = mock_store
         srv.collection_router = mock_router
         mock_router.resolve.side_effect = CollectionNotFoundError(
@@ -151,9 +137,7 @@ class TestGetRelatedDocuments:
 
 class TestExploreTopic:
     @pytest.mark.asyncio
-    async def test_returns_documents_for_topic(
-        self, mock_store, mock_router
-    ):
+    async def test_returns_documents_for_topic(self, mock_store, mock_router):
         payload_1 = MagicMock()
         payload_1.payload = {
             "source_file": "docs/install.md",
@@ -180,9 +164,7 @@ class TestExploreTopic:
         mock_store.client.scroll.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_no_results_returns_message(
-        self, mock_store, mock_router
-    ):
+    async def test_no_results_returns_message(self, mock_store, mock_router):
         mock_store.client.scroll.return_value = ([], None)
         srv.store = mock_store
         srv.collection_router = mock_router
@@ -193,9 +175,7 @@ class TestExploreTopic:
         assert "No documents found" in out[0].text
 
     @pytest.mark.asyncio
-    async def test_deduplicates_by_source_file(
-        self, mock_store, mock_router
-    ):
+    async def test_deduplicates_by_source_file(self, mock_store, mock_router):
         payload = MagicMock()
         payload.payload = {
             "source_file": "docs/guide.md",
@@ -213,9 +193,7 @@ class TestExploreTopic:
         assert "Total: 1 unique documents" in out[0].text
 
     @pytest.mark.asyncio
-    async def test_respects_collection_param(
-        self, mock_store, mock_router
-    ):
+    async def test_respects_collection_param(self, mock_store, mock_router):
         mock_store.client.scroll.return_value = ([], None)
         srv.store = mock_store
         srv.collection_router = mock_router
@@ -229,9 +207,7 @@ class TestExploreTopic:
         assert call_kwargs["collection_name"] == "custom_col"
 
     @pytest.mark.asyncio
-    async def test_handles_collection_not_found(
-        self, mock_store, mock_router
-    ):
+    async def test_handles_collection_not_found(self, mock_store, mock_router):
         srv.store = mock_store
         srv.collection_router = mock_router
         mock_router.resolve.side_effect = CollectionNotFoundError(

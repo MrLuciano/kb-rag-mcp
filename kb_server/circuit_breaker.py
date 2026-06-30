@@ -11,13 +11,14 @@ PHASE 36: Provider Budget & Circuit Breaker
 import enum
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, cast
 
 log = logging.getLogger("kb-mcp.circuit_breaker")
 
 
 class CircuitState(enum.Enum):
     """Circuit breaker state."""
+
     CLOSED = "closed"
     OPEN = "open"
     HALF_OPEN = "half_open"
@@ -90,7 +91,7 @@ class CircuitBreaker:
                 info["state"] = CircuitState.HALF_OPEN
                 info["test_request_allowed"] = True
 
-        return info["state"]
+        return cast(CircuitState, info["state"])
 
     def record_success(self, provider: str) -> None:
         """
@@ -178,7 +179,7 @@ class CircuitBreaker:
         Returns:
             Number of consecutive failures.
         """
-        return self._get_or_create(provider)["consecutive_failures"]
+        return cast(int, self._get_or_create(provider)["consecutive_failures"])
 
     def is_open(self, provider: str) -> bool:
         """
@@ -234,7 +235,11 @@ class CircuitBreaker:
                 "cooldown_multiplier": 1,
             }
         now = time.monotonic()
-        remaining = max(0.0, info.get("open_until", 0) - now) if info["state"] == CircuitState.OPEN else 0.0
+        remaining = (
+            max(0.0, info.get("open_until", 0) - now)
+            if info["state"] == CircuitState.OPEN
+            else 0.0
+        )
         return {
             "state": info["state"].value,
             "consecutive_failures": info["consecutive_failures"],
@@ -252,7 +257,9 @@ class CircuitBreaker:
         result = []
         now = time.monotonic()
         for provider, info in self._state.items():
-            if info["state"] == CircuitState.OPEN and now < info.get("open_until", 0):
+            if info["state"] == CircuitState.OPEN and now < info.get(
+                "open_until", 0
+            ):
                 result.append(provider)
         return result
 
@@ -294,4 +301,4 @@ class CircuitBreaker:
             info["backoff_multiplier"] * 2,
             int(self._cooldown_max / self._cooldown_base) + 1,
         )
-        return duration
+        return cast(float, duration)

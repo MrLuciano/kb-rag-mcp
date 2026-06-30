@@ -4,7 +4,7 @@ Legacy Office format extractors.
 Supported formats:
 - .doc  — via docx2txt (handles old binary Word via zip/xml fallback)
 - .xls  — via xlrd (Excel 97-2003)
-- .ppt  — via python-pptx text extraction (best-effort; binary .ppt not supported)
+- .ppt  — via python-pptx (best-effort; binary .ppt unsupported)
 - .odt, .ods, .odp — via odfpy (OpenDocument formats)
 - .wpd  — text extraction only (WordPerfect; no reliable Python parser)
 
@@ -12,6 +12,7 @@ All functions return list[dict] with keys:
     text: str   — extracted text content
     page: int|str|None  — page/sheet number or name, None if not applicable
 """
+
 import logging
 from pathlib import Path
 
@@ -30,6 +31,7 @@ def extract_doc(path: Path) -> list[dict]:
         return []
     try:
         import docx2txt
+
         text = docx2txt.process(str(path))
         if text and text.strip():
             return [{"text": text.strip(), "page": None}]
@@ -39,6 +41,7 @@ def extract_doc(path: Path) -> list[dict]:
     # Fallback: try python-docx (works if file is actually .docx)
     try:
         from docx import Document
+
         doc = Document(str(path))
         paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
         if paragraphs:
@@ -57,21 +60,26 @@ def extract_xls(path: Path) -> list[dict]:
         return []
     try:
         import xlrd
+
         wb = xlrd.open_workbook(str(path))
         results = []
         for sheet_name in wb.sheet_names():
             ws = wb.sheet_by_name(sheet_name)
             rows = []
             for row_idx in range(ws.nrows):
-                row_values = [str(ws.cell_value(row_idx, col)) for col in range(ws.ncols)]
+                row_values = [
+                    str(ws.cell_value(row_idx, col)) for col in range(ws.ncols)
+                ]
                 row_text = "\t".join(v for v in row_values if v.strip())
                 if row_text.strip():
                     rows.append(row_text)
             if rows:
-                results.append({
-                    "text": f"[Sheet: {sheet_name}]\n" + "\n".join(rows),
-                    "page": sheet_name,
-                })
+                results.append(
+                    {
+                        "text": f"[Sheet: {sheet_name}]\n" + "\n".join(rows),
+                        "page": sheet_name,
+                    }
+                )
         return results
     except ImportError:
         log.error("  Install xlrd: pip install xlrd")
@@ -93,6 +101,7 @@ def extract_ppt(path: Path) -> list[dict]:
         return []
     try:
         from pptx import Presentation
+
         prs = Presentation(str(path))
         results = []
         for i, slide in enumerate(prs.slides, 1):
@@ -104,7 +113,10 @@ def extract_ppt(path: Path) -> list[dict]:
                 results.append({"text": "\n".join(texts), "page": i})
         return results
     except Exception as e:
-        log.warning(f"  Could not extract .ppt {path.name} (binary format not supported): {e}")
+        log.warning(
+            f"  Could not extract .ppt {path.name} "
+            f"(binary format not supported): {e}"
+        )
         return []
 
 
@@ -121,12 +133,15 @@ def extract_odt(path: Path) -> list[dict]:
         paragraphs = []
         for p in doc.getElementsByType(P):
             text = "".join(
-                node.data for node in p.childNodes
-                if hasattr(node, "data")
+                node.data for node in p.childNodes if hasattr(node, "data")
             ).strip()
             if text:
                 paragraphs.append(text)
-        return [{"text": "\n".join(paragraphs), "page": None}] if paragraphs else []
+        return (
+            [{"text": "\n".join(paragraphs), "page": None}]
+            if paragraphs
+            else []
+        )
     except ImportError:
         log.error("  Install odfpy: pip install odfpy")
         return []
@@ -142,7 +157,7 @@ def extract_ods(path: Path) -> list[dict]:
         return []
     try:
         from odf.opendocument import load
-        from odf.table import Table, TableRow, TableCell
+        from odf.table import Table, TableCell, TableRow
         from odf.text import P
 
         doc = load(str(path))
@@ -155,7 +170,9 @@ def extract_ods(path: Path) -> list[dict]:
                 for cell in row.getElementsByType(TableCell):
                     cell_text = "".join(
                         "".join(
-                            node.data for node in p.childNodes if hasattr(node, "data")
+                            node.data
+                            for node in p.childNodes
+                            if hasattr(node, "data")
                         )
                         for p in cell.getElementsByType(P)
                     ).strip()
@@ -164,10 +181,12 @@ def extract_ods(path: Path) -> list[dict]:
                 if row_text:
                     rows.append(row_text)
             if rows:
-                results.append({
-                    "text": f"[Sheet: {sheet_name}]\n" + "\n".join(rows),
-                    "page": sheet_name,
-                })
+                results.append(
+                    {
+                        "text": f"[Sheet: {sheet_name}]\n" + "\n".join(rows),
+                        "page": sheet_name,
+                    }
+                )
         return results
     except ImportError:
         log.error("  Install odfpy: pip install odfpy")
@@ -183,8 +202,8 @@ def extract_odp(path: Path) -> list[dict]:
     if not path.exists():
         return []
     try:
-        from odf.opendocument import load
         from odf.draw import Page
+        from odf.opendocument import load
         from odf.text import P
 
         doc = load(str(path))
@@ -221,13 +240,17 @@ def extract_wpd(path: Path) -> list[dict]:
         return []
     try:
         import re
+
         raw = path.read_bytes()
         text = raw.decode("latin-1", errors="replace")
         text = re.sub(r"[^\x20-\x7e\x80-\xff\n\r\t]", " ", text)
         text = re.sub(r" {3,}", " ", text)
         text = text.strip()
         if text:
-            log.warning(f"  .wpd extracted with heuristic text strip (low quality): {path.name}")
+            log.warning(
+                f"  .wpd extracted with heuristic text strip "
+                f"(low quality): {path.name}"
+            )
             return [{"text": text, "page": None}]
     except Exception as e:
         log.error(f"  Error extracting WPD {path.name}: {e}")

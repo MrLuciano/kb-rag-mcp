@@ -177,9 +177,7 @@ async def test_file_worker_success():
 @pytest.mark.asyncio
 async def test_file_worker_retry():
     """Test retry logic on failure."""
-    worker = FileWorker(
-        rate_limiter=None, max_retries=2, skip_validation=True
-    )
+    worker = FileWorker(rate_limiter=None, max_retries=2, skip_validation=True)
 
     # Mock to fail twice then succeed
     with patch("ingest.ingest.process_file") as mock:
@@ -205,9 +203,7 @@ async def test_file_worker_retry():
 @pytest.mark.asyncio
 async def test_file_worker_max_retries():
     """Test exceeding max retries."""
-    worker = FileWorker(
-        rate_limiter=None, max_retries=2, skip_validation=True
-    )
+    worker = FileWorker(rate_limiter=None, max_retries=2, skip_validation=True)
 
     # Mock to always fail
     with patch("ingest.ingest.process_file") as mock:
@@ -427,7 +423,9 @@ async def test_worker_pool_with_rate_limiter():
     limiter = RateLimiter(
         requests_per_minute=120.0, burst_capacity=2
     )  # 2/sec, 2 burst
-    pool = WorkerPool(num_workers=2, rate_limiter=limiter, skip_validation=True)
+    pool = WorkerPool(
+        num_workers=2, rate_limiter=limiter, skip_validation=True
+    )
 
     await pool.start()
 
@@ -447,9 +445,7 @@ async def test_worker_pool_with_rate_limiter():
         start = asyncio.get_event_loop().time()
         await pool.submit_batch(tasks)
 
-        results = await pool.get_all_results(
-            expected_count=5, timeout=10.0
-        )
+        results = await pool.get_all_results(expected_count=5, timeout=10.0)
         elapsed = asyncio.get_event_loop().time() - start
 
         assert len(results) == 5

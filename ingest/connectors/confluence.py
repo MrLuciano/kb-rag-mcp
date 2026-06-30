@@ -15,13 +15,17 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, cast
 
 import httpx
 
 from ingest.connectors.base import ConnectorBase
 from ingest.connectors.factory import register
-from ingest.connectors.models import ConnectorConfig, RemoteDocument, SyncResult
+from ingest.connectors.models import (
+    ConnectorConfig,
+    RemoteDocument,
+    SyncResult,
+)
 from ingest.worker.limiter import MultiRateLimiter
 
 log = logging.getLogger("kb-ingest.connectors.confluence")
@@ -46,7 +50,7 @@ def _storage_to_markdown(html_content: str) -> str:
         converter.ignore_links = False
         converter.ignore_images = False
         converter.ignore_emphasis = False
-        return converter.handle(html_content).strip()
+        return cast(str, converter.handle(html_content).strip())
     except ImportError:
         pass
 
@@ -146,9 +150,7 @@ class ConfluenceConnector(ConnectorBase):
             content = _storage_to_markdown(raw_html)
 
             webui = item.get("_links", {}).get("webui", "")
-            remote_url = (
-                f"{self.config.endpoint}{webui}" if webui else None
-            )
+            remote_url = f"{self.config.endpoint}{webui}" if webui else None
 
             remote_mtime = None
             if modified:
@@ -195,9 +197,7 @@ class ConfluenceConnector(ConnectorBase):
             log.error("Failed to connect to Confluence: %s", e)
             raise
 
-    async def fetch_documents(
-        self, since: Optional[str] = None
-    ) -> SyncResult:
+    async def fetch_documents(self, since: Optional[str] = None) -> SyncResult:
         client = self._get_client()
         headers = self._auth_header()
         documents: list[RemoteDocument] = []
@@ -236,9 +236,7 @@ class ConfluenceConnector(ConnectorBase):
                         resp.raise_for_status()
                         data = resp.json()
                     except Exception as e:
-                        errors.append(
-                            f"Space {space} cursor={cursor}: {e}"
-                        )
+                        errors.append(f"Space {space} cursor={cursor}: {e}")
                         break
 
                     for item in data.get("results", []):
@@ -270,9 +268,7 @@ class ConfluenceConnector(ConnectorBase):
                         resp.raise_for_status()
                         data = resp.json()
                     except Exception as e:
-                        errors.append(
-                            f"Space {space} start={start}: {e}"
-                        )
+                        errors.append(f"Space {space} start={start}: {e}")
                         break
 
                     for item in data.get("results", []):
@@ -297,9 +293,7 @@ class ConfluenceConnector(ConnectorBase):
             errors=errors,
         )
 
-    async def fetch_document(
-        self, remote_id: str
-    ) -> Optional[RemoteDocument]:
+    async def fetch_document(self, remote_id: str) -> Optional[RemoteDocument]:
         client = self._get_client()
         headers = self._auth_header()
         url = (
@@ -328,9 +322,7 @@ class ConfluenceConnector(ConnectorBase):
             self._client = None
 
     @staticmethod
-    def _update_checkpoint(
-        current: Optional[str], doc: RemoteDocument
-    ) -> str:
+    def _update_checkpoint(current: Optional[str], doc: RemoteDocument) -> str:
         if doc.remote_mtime is None:
             return current or ""
         dt = datetime.fromtimestamp(doc.remote_mtime, tz=timezone.utc)

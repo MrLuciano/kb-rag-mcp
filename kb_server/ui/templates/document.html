@@ -5,46 +5,41 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Document Details</h1>
-    <a href="/ui/browse" class="btn btn-secondary">
-        Back to Browse
+    <a href="{{ back_url }}" class="btn btn-secondary">
+        Back{% if '/admin' in back_url %} to Admin{% endif %}
     </a>
 </div>
 
 <div class="card mb-4">
     <div class="card-header">
-        <h5 class="mb-0">{{ document.source_file }}</h5>
+        <h3 class="h5 mb-0">{{ document.source_file }}</h3>
     </div>
     <div class="card-body">
         <dl class="row">
             <dt class="col-sm-3">ID</dt>
             <dd class="col-sm-9">{{ document.id }}</dd>
-            
             <dt class="col-sm-3">Status</dt>
             <dd class="col-sm-9">
-                <span class="status-{{ document.status }}">
-                    {{ document.status }}
-                </span>
+                {% if document.status == 'completed' or document.status == 'ok' %}
+                <span class="badge bg-success">{{ document.status }}</span>
+                {% elif document.status == 'failed' or document.status == 'error' %}
+                <span class="badge bg-danger">{{ document.status }}</span>
+                {% else %}
+                <span class="badge bg-warning">{{ document.status }}</span>
+                {% endif %}
             </dd>
-            
             <dt class="col-sm-3">Product</dt>
             <dd class="col-sm-9">{{ document.product or 'N/A' }}</dd>
-            
             <dt class="col-sm-3">Document Type</dt>
             <dd class="col-sm-9">{{ document.doc_type or 'N/A' }}</dd>
-            
             <dt class="col-sm-3">Version</dt>
             <dd class="col-sm-9">{{ document.version or 'N/A' }}</dd>
-            
             <dt class="col-sm-3">File Type</dt>
             <dd class="col-sm-9">{{ document.file_type or 'N/A' }}</dd>
-            
             <dt class="col-sm-3">Chunks Stored</dt>
             <dd class="col-sm-9">{{ document.chunks_stored or 0 }}</dd>
-            
             <dt class="col-sm-3">Hash</dt>
-            <dd class="col-sm-9">
-                <code>{{ document.hash or 'N/A' }}</code>
-            </dd>
+            <dd class="col-sm-9"><code>{{ document.hash or 'N/A' }}</code></dd>
         </dl>
     </div>
 </div>
@@ -52,23 +47,72 @@
 {% if document.status == 'failed' %}
 <div class="alert alert-danger">
     <strong>Ingestion Failed</strong>
-    <p class="mb-0">
-        This document failed to process. Check the logs for details.
-    </p>
+    <p class="mb-0">This document failed to process. Check the logs for details.</p>
 </div>
 {% elif document.chunks_stored == 0 %}
 <div class="alert alert-warning">
     <strong>No Chunks Stored</strong>
-    <p class="mb-0">
-        This document has no searchable chunks yet.
-    </p>
+    <p class="mb-0">This document has no searchable chunks yet.</p>
 </div>
 {% else %}
 <div class="alert alert-success">
     <strong>Document Indexed Successfully</strong>
-    <p class="mb-0">
-        {{ document.chunks_stored }} chunks are searchable.
-    </p>
+    <p class="mb-0">{{ document.chunks_stored }} chunks are searchable.</p>
+</div>
+{% endif %}
+
+{% if chunks and chunks|length > 0 %}
+<h2 class="h4 mt-4">Chunks ({{ chunks|length }} total)</h2>
+{% if search_query %}
+<p class="text-muted mb-3">
+    Showing results with highlighted matches for: <strong>{{ search_query }}</strong>
+</p>
+{% endif %}
+<div id="chunks-container">
+<div class="accordion" id="chunksAccordion">
+    {% for chunk in chunks %}
+    {% set outer_loop = loop %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="heading-{{ outer_loop.index }}">
+            <button class="accordion-button {% if outer_loop.index > 10 %}collapsed{% endif %}"
+                    type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapse-{{ outer_loop.index }}"
+                    aria-expanded="{% if outer_loop.index <= 10 %}true{% else %}false{% endif %}">
+                Chunk {{ chunk.chunk_index }}
+                <small class="text-muted ms-2 text-truncate chunk-title-truncate">
+                    {{ highlight_term(chunk.text[:80], search_query) }}
+                </small>
+            </button>
+        </h2>
+        <div id="collapse-{{ outer_loop.index }}"
+             class="accordion-collapse collapse {% if outer_loop.index <= 10 %}show{% endif %}"
+             aria-labelledby="heading-{{ outer_loop.index }}"
+             data-bs-parent="#chunksAccordion">
+            <div class="accordion-body">
+                <pre class="mb-0 chunk-preview">{{ highlight_term(chunk.text, search_query) }}</pre>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% if chunks|length > 10 %}
+<button class="btn btn-sm btn-outline-primary mt-2"
+        hx-get="/ui/document/{{ document.id }}/chunks?offset=10{% if search_query %}&q={{ search_query }}{% endif %}"
+        hx-target="#chunks-container"
+        hx-swap="outerHTML">
+    Show next 10 chunks
+</button>
+{% endif %}
+</div>
+{% elif chunks is not none and chunks|length == 0 %}
+<div class="alert alert-info mt-3">
+    <strong>Chunks Unavailable</strong>
+    <p class="mb-0">No chunks are stored for this document.</p>
+</div>
+{% elif chunks is none %}
+<div class="alert alert-warning mt-3">
+    <strong>Chunk Loading Failed</strong>
+    <p class="mb-0">Chunk data could not be loaded from the vector store. Please try again later.</p>
 </div>
 {% endif %}
 

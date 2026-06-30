@@ -2,6 +2,7 @@
 
 FASE 25: Optimization Experiments
 """
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -64,15 +65,16 @@ class TestHybridVariant:
         mock_hybrid.sparse_weight = 0.3
         mock_hybrid.rrf_k = 60
 
-        variant = HybridVariant(
-            dense_weight=0.7, sparse_weight=0.3, rrf_k=60
-        )
-        with patch(
-            "kb_server.optimization.scoring_experiments.get_hybrid_searcher",
-            return_value=mock_hybrid,
-        ), patch(
-            "kb_server.optimization.scoring_experiments.get_embedding",
-            return_value=[0.1, 0.2],
+        variant = HybridVariant(dense_weight=0.7, sparse_weight=0.3, rrf_k=60)
+        with (
+            patch(
+                "kb_server.optimization.scoring_experiments.get_hybrid_searcher",
+                return_value=mock_hybrid,
+            ),
+            patch(
+                "kb_server.optimization.scoring_experiments.get_embedding",
+                return_value=[0.1, 0.2],
+            ),
         ):
             results = await variant.search(
                 query="test", vector_store=MagicMock(), top_k=5
@@ -97,15 +99,16 @@ class TestHybridVariant:
         mock_hybrid.sparse_weight = 0.3
         mock_hybrid.rrf_k = 60
 
-        variant = HybridVariant(
-            dense_weight=0.8, sparse_weight=0.2, rrf_k=60
-        )
-        with patch(
-            "kb_server.optimization.scoring_experiments.get_hybrid_searcher",
-            return_value=mock_hybrid,
-        ), patch(
-            "kb_server.optimization.scoring_experiments.get_embedding",
-            return_value=[0.1, 0.2],
+        variant = HybridVariant(dense_weight=0.8, sparse_weight=0.2, rrf_k=60)
+        with (
+            patch(
+                "kb_server.optimization.scoring_experiments.get_hybrid_searcher",
+                return_value=mock_hybrid,
+            ),
+            patch(
+                "kb_server.optimization.scoring_experiments.get_embedding",
+                return_value=[0.1, 0.2],
+            ),
         ):
             await variant.search(
                 query="test", vector_store=MagicMock(), top_k=5
@@ -170,9 +173,7 @@ class TestRerankedVariant:
     async def test_reranked_variant_disabled(self):
         """Base variant results returned as-is if reranker fails."""
         base = AsyncMock()
-        base.search.return_value = [
-            {"chunk_id": "1", "source_file": "a.pdf"}
-        ]
+        base.search.return_value = [{"chunk_id": "1", "source_file": "a.pdf"}]
         mock_reranker = MagicMock()
         mock_reranker.rerank = AsyncMock(side_effect=RuntimeError("boom"))
         mock_reranker._load_model = MagicMock()

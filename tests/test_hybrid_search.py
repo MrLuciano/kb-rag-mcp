@@ -15,6 +15,7 @@ class TestHybridSearcher:
     @pytest.fixture
     def hybrid_searcher(self):
         from kb_server.retrieval.hybrid_search import HybridSearcher
+
         return HybridSearcher()
 
     @pytest.mark.asyncio
@@ -27,9 +28,9 @@ class TestHybridSearcher:
             {"id": "2", "chunk_id": "2", "score": 0.95, "text": "result 2"},
             {"id": "3", "chunk_id": "3", "score": 0.85, "text": "result 3"},
         ]
-        
+
         fused = hybrid_searcher._rrf_fusion(dense_results, sparse_results)
-        
+
         assert len(fused) == 3
         assert all(r.get("fusion") == "rrf" for r in fused)
         result_ids = [r["chunk_id"] for r in fused]
@@ -42,9 +43,9 @@ class TestHybridSearcher:
             {"id": "2", "chunk_id": "2", "score": 0.8},
         ]
         sparse_results = []
-        
+
         fused = hybrid_searcher._rrf_fusion(dense_results, sparse_results)
-        
+
         assert len(fused) == 2
         assert fused[0]["chunk_id"] == "1"
 
@@ -52,10 +53,16 @@ class TestHybridSearcher:
     async def test_sparse_path_exercised(self, hybrid_searcher):
         """Proves sparse search is called and RRF receives non-empty sparse results."""
         mock_vector_store = AsyncMock()
-        dense_results = [{"id": "1", "chunk_id": "1", "score": 0.9, "text": "doc"}]
-        sparse_results = [{"id": "1", "chunk_id": "1", "score": 0.85, "text": "doc"}]
+        dense_results = [
+            {"id": "1", "chunk_id": "1", "score": 0.9, "text": "doc"}
+        ]
+        sparse_results = [
+            {"id": "1", "chunk_id": "1", "score": 0.85, "text": "doc"}
+        ]
         mock_vector_store.search = AsyncMock(return_value=dense_results)
-        mock_vector_store.search_sparse = AsyncMock(return_value=sparse_results)
+        mock_vector_store.search_sparse = AsyncMock(
+            return_value=sparse_results
+        )
 
         sparse_vec = {42: 0.5, 99: 0.8}
         with patch.object(
@@ -64,7 +71,9 @@ class TestHybridSearcher:
             new=AsyncMock(return_value=sparse_vec),
         ):
             with patch.object(
-                hybrid_searcher, "_rrf_fusion", wraps=hybrid_searcher._rrf_fusion
+                hybrid_searcher,
+                "_rrf_fusion",
+                wraps=hybrid_searcher._rrf_fusion,
             ) as mock_rrf:
                 await hybrid_searcher.search(
                     vector_store=mock_vector_store,
@@ -74,14 +83,19 @@ class TestHybridSearcher:
                 )
                 mock_vector_store.search_sparse.assert_called_once()
                 call_kwargs = mock_rrf.call_args
-                assert len(call_kwargs.kwargs.get("sparse_results", [])) > 0, \
-                    "sparse_results passed to _rrf_fusion must be non-empty"
+                assert (
+                    len(call_kwargs.kwargs.get("sparse_results", [])) > 0
+                ), "sparse_results passed to _rrf_fusion must be non-empty"
 
     @pytest.mark.asyncio
-    async def test_falls_back_to_dense_when_sparse_empty(self, hybrid_searcher):
+    async def test_falls_back_to_dense_when_sparse_empty(
+        self, hybrid_searcher
+    ):
         """When sparse vector is empty, only dense results are returned."""
         mock_vector_store = AsyncMock()
-        dense_results = [{"id": "1", "chunk_id": "1", "score": 0.9, "text": "doc"}]
+        dense_results = [
+            {"id": "1", "chunk_id": "1", "score": 0.9, "text": "doc"}
+        ]
         mock_vector_store.search = AsyncMock(return_value=dense_results)
         mock_vector_store.search_sparse = AsyncMock(return_value=[])
 
@@ -168,14 +182,11 @@ class TestMergeMultiCollectionResults:
 
         per_collection = {
             "kb_hr": [
-                {"chunk_id": "c1", "score": 0.8,
-                 "source_file": "hr.md"},
-                {"chunk_id": "c2", "score": 0.6,
-                 "source_file": "hr.md"},
+                {"chunk_id": "c1", "score": 0.8, "source_file": "hr.md"},
+                {"chunk_id": "c2", "score": 0.6, "source_file": "hr.md"},
             ],
             "kb_eng": [
-                {"chunk_id": "c1", "score": 0.7,
-                 "source_file": "eng.md"},
+                {"chunk_id": "c1", "score": 0.7, "source_file": "eng.md"},
             ],
         }
         result = merge_multi_collection_results(per_collection, top_k=5)
@@ -190,13 +201,19 @@ class TestMergeMultiCollectionResults:
 
         per_collection = {
             "kb_a": [
-                {"chunk_id": f"c{i}", "score": 0.9 - i * 0.1,
-                 "source_file": f"doc{i}.md"}
+                {
+                    "chunk_id": f"c{i}",
+                    "score": 0.9 - i * 0.1,
+                    "source_file": f"doc{i}.md",
+                }
                 for i in range(5)
             ],
             "kb_b": [
-                {"chunk_id": f"d{i}", "score": 0.8 - i * 0.1,
-                 "source_file": f"doc{i}.md"}
+                {
+                    "chunk_id": f"d{i}",
+                    "score": 0.8 - i * 0.1,
+                    "source_file": f"doc{i}.md",
+                }
                 for i in range(5)
             ],
         }
@@ -210,12 +227,10 @@ class TestMergeMultiCollectionResults:
 
         per_collection = {
             "kb_a": [
-                {"chunk_id": "c1", "score": 0.5,
-                 "source_file": "a.md"},
+                {"chunk_id": "c1", "score": 0.5, "source_file": "a.md"},
             ],
             "kb_b": [
-                {"chunk_id": "c1", "score": 0.9,
-                 "source_file": "b.md"},
+                {"chunk_id": "c1", "score": 0.9, "source_file": "b.md"},
             ],
         }
         result = merge_multi_collection_results(per_collection, top_k=5)
@@ -230,12 +245,10 @@ class TestMergeMultiCollectionResults:
 
         per_collection = {
             "kb_x": [
-                {"chunk_id": "c1", "score": 0.9,
-                 "source_file": "x.md"},
+                {"chunk_id": "c1", "score": 0.9, "source_file": "x.md"},
             ],
             "kb_y": [
-                {"chunk_id": "c1", "score": 0.8,
-                 "source_file": "y.md"},
+                {"chunk_id": "c1", "score": 0.8, "source_file": "y.md"},
             ],
         }
         result = merge_multi_collection_results(per_collection, top_k=5)
@@ -255,9 +268,12 @@ class TestHybridSearchCLI:
 
         tools = app.list_tools()
         search_kb_tool = next(t for t in tools if t.name == "search_kb")
-        
+
         assert "hybrid" in search_kb_tool.inputSchema["properties"]
-        assert search_kb_tool.inputSchema["properties"]["hybrid"]["type"] == "boolean"
+        assert (
+            search_kb_tool.inputSchema["properties"]["hybrid"]["type"]
+            == "boolean"
+        )
 
 
 pytestmark = pytest.mark.fase12

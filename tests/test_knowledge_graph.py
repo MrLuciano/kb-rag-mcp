@@ -165,7 +165,9 @@ class TestBuildGraphMetadata:
         result = build_graph_metadata(
             text="", source_file="empty.md", meta=meta
         )
-        assert result["doc_graph_id"] == compute_document_id("empty.md", "Test")
+        assert result["doc_graph_id"] == compute_document_id(
+            "empty.md", "Test"
+        )
         assert result["graph_entities"] == []
         assert "Test" in result["graph_topics"]
 

@@ -1,4 +1,5 @@
 """Tests for kb_server/cache/request_cache.py — RetrievalCache."""
+
 from __future__ import annotations
 
 import time
@@ -10,7 +11,6 @@ from kb_server.cache.request_cache import (
     RetrievalCache,
     make_cache_key,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -139,7 +139,12 @@ class TestRetrievalCache:
         cache = RetrievalCache(max_entries=100, ttl=300)
         key = cache.make_key(query="ssl")
         results = [
-            {"chunk_id": "1", "score": 0.95, "text": "SSL config", "source_file": "doc.md"},
+            {
+                "chunk_id": "1",
+                "score": 0.95,
+                "text": "SSL config",
+                "source_file": "doc.md",
+            },
         ]
         cache.put(key, results)
         assert cache.get(key) == results
@@ -204,10 +209,14 @@ class TestRetrievalCache:
         """RetrievalCache.make_key matches module-level make_cache_key."""
         cache = RetrievalCache(max_entries=100, ttl=300)
         instance_key = cache.make_key(
-            query="test", top_k=5, product="AppServer",
+            query="test",
+            top_k=5,
+            product="AppServer",
         )
         module_key = make_cache_key(
-            query="test", top_k=5, product="AppServer",
+            query="test",
+            top_k=5,
+            product="AppServer",
         )
         assert instance_key == module_key
 

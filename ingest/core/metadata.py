@@ -16,7 +16,7 @@ from typing import Optional
 log = logging.getLogger("kb-ingest.metadata")
 
 DEFAULT_DB = Path(__file__).parent.parent.parent / "data" / "kb_metadata.db"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 6
 
 
 class MetadataStore:
@@ -55,6 +55,7 @@ class MetadataStore:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")  # Better concurrency
         self._conn.execute("PRAGMA synchronous=NORMAL")  # Performance
+        self._conn.execute("PRAGMA foreign_keys=ON")
         self._migrate()
         log.info(f"MetadataStore: {self.db_path} (schema v{SCHEMA_VERSION})")
 
@@ -88,17 +89,30 @@ class MetadataStore:
             self._create_schema_v2()
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
+            self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
         elif current_version == 1:
             self._migrate_v1_to_v2()
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
+            self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
         elif current_version == 2:
             self._migrate_v2_to_v3()
             self._migrate_v3_to_v4()
+            self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
         elif current_version == 3:
             self._migrate_v3_to_v4()
-        elif current_version == SCHEMA_VERSION:
-            log.debug(f"Schema v{current_version} up to date")
+            self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
+        elif current_version == 4:
+            self._migrate_v4_to_v5()
+            self._migrate_v5_to_v6()
+        elif current_version == 5:
+            self._migrate_v5_to_v6()
+        elif current_version == 6:  # Already up to date
+            pass
         else:
             raise ValueError(f"Unknown schema version {current_version}")
 
@@ -184,7 +198,8 @@ class MetadataStore:
                 error_msg   TEXT,
                 indexed_at  REAL NOT NULL,
                 file_mtime  REAL,
-                file_size   INTEGER
+                file_size   INTEGER,
+                tags        TEXT DEFAULT '[]'
             );
 
             CREATE INDEX idx_files_status ON files(status);
@@ -199,7 +214,8 @@ class MetadataStore:
                 field_name TEXT NOT NULL,
                 old_value TEXT,
                 chunk_index INTEGER,
-                PRIMARY KEY (session_timestamp, source_file, field_name, chunk_index)
+                PRIMARY KEY (session_timestamp, source_file,
+                             field_name, chunk_index)
             );
 
             -- Reclassification audit history
@@ -211,11 +227,29 @@ class MetadataStore:
                 old_value TEXT,
                 new_value TEXT,
                 session_timestamp TEXT NOT NULL,
-                FOREIGN KEY (session_timestamp) REFERENCES reclassify_backups(session_timestamp)
+                FOREIGN KEY (session_timestamp)
+                    REFERENCES reclassify_backups(session_timestamp)
             );
 
-            CREATE INDEX idx_reclassify_history_session ON reclassify_history(session_timestamp);
-            CREATE INDEX idx_reclassify_history_timestamp ON reclassify_history(timestamp);
+            CREATE INDEX idx_reclassify_history_session
+                ON reclassify_history(session_timestamp);
+            CREATE INDEX idx_reclassify_history_timestamp
+                ON reclassify_history(timestamp);
+
+            -- Tag management audit history (Phase 51)
+            CREATE TABLE tags_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL NOT NULL,
+                user_id TEXT,
+                source_file TEXT NOT NULL,
+                action TEXT NOT NULL,
+                tag_values TEXT
+            );
+
+            CREATE INDEX idx_tags_history_file
+                ON tags_history(source_file);
+            CREATE INDEX idx_tags_history_timestamp
+                ON tags_history(timestamp);
         """)
 
         self._set_schema_version(SCHEMA_VERSION)
@@ -232,7 +266,7 @@ class MetadataStore:
             return
 
         # Attach old database
-        self.conn.execute(f"ATTACH DATABASE '{v1_path}' AS old")
+        self.conn.execute("ATTACH DATABASE ? AS old", (str(v1_path),))
 
         # Create new schema
         self._create_schema_v2()
@@ -263,7 +297,7 @@ class MetadataStore:
             log.debug("connector_state table already exists")
         else:
             self.conn.execute("""
-                CREATE TABLE connector_state (
+                CREATE TABLE IF NOT EXISTS connector_state (
                     source_key     TEXT NOT NULL,
                     remote_id      TEXT NOT NULL,
                     connector_type TEXT NOT NULL,
@@ -314,9 +348,7 @@ class MetadataStore:
                     max_chars_per_index INTEGER
                 )
             """)
-            self.conn.execute(
-                "INSERT INTO quota_config (id) VALUES (1)"
-            )
+            self.conn.execute("INSERT INTO quota_config (id) VALUES (1)")
             log.info("Created quota_config table")
         else:
             log.debug("quota_config table already exists")
@@ -344,6 +376,92 @@ class MetadataStore:
             log.debug("quota_usage table already exists")
 
         self._set_schema_version(4)
+
+    def _migrate_v4_to_v5(self) -> None:
+        """Migrate from v4 to v5: add tags support."""
+        log.info("Migrating schema v4 → v5...")
+
+        # Add tags column to files table
+        columns = [
+            r[1]
+            for r in self.conn.execute(
+                "PRAGMA table_info(files)"
+            ).fetchall()
+        ]
+        if "tags" not in columns:
+            self.conn.execute(
+                "ALTER TABLE files ADD COLUMN tags TEXT DEFAULT '[]'"
+            )
+            log.info("Added tags column to files table")
+        else:
+            log.debug("tags column already exists")
+
+        # Create tags_history table
+        tables = [
+            r[0]
+            for r in self.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        if "tags_history" not in tables:
+            self.conn.execute("""
+                CREATE TABLE tags_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp REAL NOT NULL,
+                    user_id TEXT,
+                    source_file TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    tag_values TEXT
+                )
+            """)
+            self.conn.execute(
+                "CREATE INDEX idx_tags_history_file ON tags_history(source_file)"
+            )
+            self.conn.execute(
+                "CREATE INDEX idx_tags_history_timestamp ON tags_history(timestamp)"
+            )
+            log.info("Created tags_history table")
+        else:
+            log.debug("tags_history table already exists")
+
+        self._set_schema_version(5)
+
+    def _migrate_v5_to_v6(self) -> None:
+        """Migrate from v5 to v6: add schedules table."""
+        log.info("Migrating schema v5 → v6...")
+        tables = [
+            r[0]
+            for r in self.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        if "schedules" not in tables:
+            self.conn.execute("""
+                CREATE TABLE schedules (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    cron_expr TEXT NOT NULL,
+                    docs_path TEXT NOT NULL,
+                    product TEXT,
+                    workers INTEGER DEFAULT 2,
+                    priority TEXT DEFAULT 'normal',
+                    clean INTEGER DEFAULT 0,
+                    force INTEGER DEFAULT 0,
+                    enabled INTEGER DEFAULT 1,
+                    created_at REAL NOT NULL,
+                    updated_at REAL,
+                    last_run_at REAL,
+                    last_run_status TEXT,
+                    next_run_at REAL
+                )
+            """)
+            self.conn.execute(
+                "CREATE INDEX idx_schedules_enabled ON schedules(enabled)"
+            )
+            log.info("Created schedules table")
+        else:
+            log.debug("schedules table already exists")
+        self._set_schema_version(6)
 
     # ── Quota Helpers
 
@@ -444,8 +562,7 @@ class MetadataStore:
         if mbf is not None and file_bytes > mbf:
             return (
                 False,
-                f"File exceeds max bytes per file: "
-                f"{file_bytes} > {mbf}",
+                f"File exceeds max bytes per file: " f"{file_bytes} > {mbf}",
             )
 
         mdi = quotas.get("max_documents_per_index")
@@ -545,9 +662,7 @@ class MetadataStore:
         stats = {}
 
         # Job counts
-        row = self.conn.execute(
-            "SELECT COUNT(*) FROM jobs"
-        ).fetchone()
+        row = self.conn.execute("SELECT COUNT(*) FROM jobs").fetchone()
         stats["total_jobs"] = row[0] if row else 0
 
         row = self.conn.execute(
@@ -627,7 +742,9 @@ class MetadataStore:
         self.conn.commit()
         log.debug(
             "Connector state upserted: %s/%s (type=%s)",
-            source_key, remote_id, connector_type,
+            source_key,
+            remote_id,
+            connector_type,
         )
 
     def get_connector_state(
@@ -685,9 +802,7 @@ class MetadataStore:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def delete_connector_state(
-        self, source_key: str, remote_id: str
-    ) -> None:
+    def delete_connector_state(self, source_key: str, remote_id: str) -> None:
         """Remove a connector state record.
 
         Args:
@@ -700,13 +815,9 @@ class MetadataStore:
             (source_key, remote_id),
         )
         self.conn.commit()
-        log.debug(
-            "Connector state deleted: %s/%s", source_key, remote_id
-        )
+        log.debug("Connector state deleted: %s/%s", source_key, remote_id)
 
-    def get_connector_sync_checkpoint(
-        self, source_key: str
-    ) -> str | None:
+    def get_connector_sync_checkpoint(self, source_key: str) -> str | None:
         """Retrieve the latest sync checkpoint for a connector source.
 
         Uses the most recent ``ingested_at`` record to determine
@@ -725,6 +836,144 @@ class MetadataStore:
             (source_key,),
         ).fetchone()
         return row["sync_checkpoint"] if row else None
+
+    def add_schedule(
+        self,
+        schedule_id: str,
+        name: str,
+        cron_expr: str,
+        docs_path: str,
+        product: Optional[str] = None,
+        workers: int = 2,
+        priority: str = "normal",
+        clean: bool = False,
+        force: bool = False,
+    ) -> dict:
+        now = time.time()
+        self.conn.execute(
+            """
+            INSERT INTO schedules (id, name, cron_expr, docs_path, product,
+                                   workers, priority, clean, force,
+                                   enabled, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            """,
+            (
+                schedule_id, name, cron_expr, docs_path,
+                product, workers, priority,
+                1 if clean else 0, 1 if force else 0,
+                now, now,
+            ),
+        )
+        self._conn.commit()
+        log.info("Added schedule: %s (cron=%s)", name, cron_expr)
+        return self.get_schedule(schedule_id)
+
+    def list_schedules(self) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT * FROM schedules ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_schedule(self, schedule_id: str) -> Optional[dict]:
+        row = self.conn.execute(
+            "SELECT * FROM schedules WHERE id = ?", (schedule_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def update_schedule(
+        self,
+        schedule_id: str,
+        name: Optional[str] = None,
+        cron_expr: Optional[str] = None,
+        docs_path: Optional[str] = None,
+        product: Optional[str] = None,
+        workers: Optional[int] = None,
+        priority: Optional[str] = None,
+        clean: Optional[bool] = None,
+        force: Optional[bool] = None,
+        enabled: Optional[bool] = None,
+    ) -> Optional[dict]:
+        existing = self.get_schedule(schedule_id)
+        if existing is None:
+            return None
+        updates = {}
+        if name is not None:
+            updates["name"] = name
+        if cron_expr is not None:
+            updates["cron_expr"] = cron_expr
+        if docs_path is not None:
+            updates["docs_path"] = docs_path
+        if product is not None:
+            updates["product"] = product
+        if workers is not None:
+            updates["workers"] = workers
+        if priority is not None:
+            updates["priority"] = priority
+        if clean is not None:
+            updates["clean"] = 1 if clean else 0
+        if force is not None:
+            updates["force"] = 1 if force else 0
+        if enabled is not None:
+            updates["enabled"] = 1 if enabled else 0
+        updates["updated_at"] = time.time()
+        set_clause = ", ".join(
+            f"{k} = ?" for k in updates
+        )
+        values = list(updates.values()) + [schedule_id]
+        self.conn.execute(
+            f"UPDATE schedules SET {set_clause} WHERE id = ?", values
+        )
+        self._conn.commit()
+        return self.get_schedule(schedule_id)
+
+    def delete_schedule(self, schedule_id: str) -> bool:
+        row = self.conn.execute(
+            "SELECT id FROM schedules WHERE id = ?", (schedule_id,)
+        ).fetchone()
+        if row is None:
+            return False
+        self.conn.execute(
+            "DELETE FROM schedules WHERE id = ?", (schedule_id,)
+        )
+        self._conn.commit()
+        log.info("Deleted schedule: %s", schedule_id)
+        return True
+
+    def update_schedule_run(
+        self,
+        schedule_id: str,
+        last_run_at: float,
+        last_run_status: str,
+        next_run_at: Optional[float] = None,
+    ) -> None:
+        if next_run_at is not None:
+            self.conn.execute(
+                """UPDATE schedules
+                   SET last_run_at = ?, last_run_status = ?,
+                       next_run_at = ?, updated_at = ?
+                   WHERE id = ?""",
+                (last_run_at, last_run_status, next_run_at, time.time(), schedule_id),
+            )
+        else:
+            self.conn.execute(
+                """UPDATE schedules
+                   SET last_run_at = ?, last_run_status = ?,
+                       updated_at = ?
+                   WHERE id = ?""",
+                (last_run_at, last_run_status, time.time(), schedule_id),
+            )
+        self._conn.commit()
+
+    def get_enabled_schedules_due(self) -> list[dict]:
+        now = time.time()
+        rows = self.conn.execute(
+            """SELECT * FROM schedules
+               WHERE enabled = 1
+                 AND (next_run_at IS NULL OR next_run_at <= ?)
+               ORDER BY created_at""",
+            (now,),
+        ).fetchall()
+        return [dict(r) for r in rows]
 
 
 # ── Legacy registry (migrated from ingest/registry.py) ──────────────────────
@@ -754,9 +1003,7 @@ class IngestRegistry:
         else:
             reg_env = os.getenv("REGISTRY_DB")
             resolved_db_path = (
-                Path(reg_env)
-                if reg_env is not None
-                else _REGISTRY_DEFAULT_DB
+                Path(reg_env) if reg_env is not None else _REGISTRY_DEFAULT_DB
             )
         self.db_path = resolved_db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -768,8 +1015,13 @@ class IngestRegistry:
 
         Creates the files table and indexes if they do not exist.
         """
-        self._conn = sqlite3.connect(self.db_path)
+        self._conn = sqlite3.connect(
+            self.db_path,
+            check_same_thread=False,
+        )
         self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA foreign_keys=ON")
         self._migrate()
         log_reg.info(f"Registry: {self.db_path}")
 
@@ -801,7 +1053,8 @@ class IngestRegistry:
                 error_msg   TEXT,
                 indexed_at  REAL NOT NULL,
                 file_mtime  REAL,
-                file_size   INTEGER
+                file_size   INTEGER,
+                tags        TEXT DEFAULT '[]'
             );
             CREATE INDEX IF NOT EXISTS idx_status   ON files(status);
             CREATE INDEX IF NOT EXISTS idx_product  ON files(product);
@@ -810,15 +1063,32 @@ class IngestRegistry:
         """)
         cols = [
             r[1]
-            for r in self._conn.execute(
-                "PRAGMA table_info(files)"
-            ).fetchall()
+            for r in self._conn.execute("PRAGMA table_info(files)").fetchall()
         ]
         if "doc_type" not in cols:
             self._conn.execute(
                 "ALTER TABLE files ADD COLUMN "
                 "doc_type TEXT DEFAULT 'document'"
             )
+        if "tags" not in cols:
+            self._conn.execute(
+                "ALTER TABLE files ADD COLUMN "
+                "tags TEXT DEFAULT '[]'"
+            )
+        self._conn.executescript("""
+            CREATE TABLE IF NOT EXISTS tags_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL NOT NULL,
+                user_id TEXT,
+                source_file TEXT NOT NULL,
+                action TEXT NOT NULL,
+                tag_values TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_tags_history_file
+                ON tags_history(source_file);
+            CREATE INDEX IF NOT EXISTS idx_tags_history_timestamp
+                ON tags_history(timestamp);
+        """)
         self._conn.commit()
 
     @staticmethod
@@ -882,7 +1152,9 @@ class IngestRegistry:
         row = self._conn.execute(
             "SELECT * FROM files WHERE path = ?", (rel_path,)
         ).fetchone()
-        log_reg.debug("get_record '%s': %s", rel_path, "found" if row else "not found")
+        log_reg.debug(
+            "get_record '%s': %s", rel_path, "found" if row else "not found"
+        )
         return dict(row) if row else None
 
     def mark_ok(
@@ -1054,7 +1326,7 @@ class IngestRegistry:
                 SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END)    AS ok,
                 SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) AS errors,
                 COALESCE(SUM(chunks), 0)                          AS chunks,
-                MAX(indexed_at)                                   AS last_indexed
+                MAX(indexed_at) AS last_indexed
             FROM files
             GROUP BY source
             ORDER BY source
@@ -1097,7 +1369,107 @@ class IngestRegistry:
             rows = self._conn.execute(
                 "SELECT * FROM files ORDER BY indexed_at DESC"
             ).fetchall()
-        log_reg.debug("Listed %d files (status=%s)", len(rows), status or "all")
+        log_reg.debug(
+            "Listed %d files (status=%s)", len(rows), status or "all"
+        )
+        return [dict(r) for r in rows]
+
+    # ── Phase 51: Tag management ────────────────────────────────────────
+
+    def update_file_tags(
+        self, rel_path: str, tags: list[str]
+    ) -> None:
+        """Update tags for a file in the registry.
+
+        Args:
+            rel_path: Relative file path (primary key).
+            tags: List of tag strings (will be JSON-serialized).
+        """
+        assert self._conn is not None, "Database connection not established."
+        import json
+
+        self._conn.execute(
+            "UPDATE files SET tags = ? WHERE path = ?",
+            (json.dumps(tags), rel_path),
+        )
+        self._conn.commit()
+        log_reg.info("Updated tags for '%s': %s", rel_path, tags)
+
+    def get_file_tags(self, rel_path: str) -> list[str]:
+        """Get tags for a file from the registry.
+
+        Args:
+            rel_path: Relative file path.
+
+        Returns:
+            List of tag strings.
+        """
+        assert self._conn is not None, "Database connection not established."
+        import json
+
+        row = self._conn.execute(
+            "SELECT tags FROM files WHERE path = ?", (rel_path,)
+        ).fetchone()
+        if row and row[0]:
+            return json.loads(row[0])
+        return []
+
+    def log_tag_history(
+        self,
+        user_id: str | None,
+        source_file: str,
+        action: str,
+        tag_values: list[str],
+    ) -> None:
+        """Log a tag mutation to the audit history.
+
+        Args:
+            user_id: User who performed the action.
+            source_file: Document path affected.
+            action: Action type (add, remove, replace, delete-tag).
+            tag_values: List of tag values involved.
+        """
+        assert self._conn is not None, "Database connection not established."
+        import json
+
+        self._conn.execute(
+            """
+            INSERT INTO tags_history (timestamp, user_id, source_file,
+                                      action, tag_values)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                time.time(),
+                user_id,
+                source_file,
+                action,
+                json.dumps(tag_values),
+            ),
+        )
+        self._conn.commit()
+
+    def get_tags_history(
+        self, source_file: str | None = None
+    ) -> list[dict]:
+        """Get tag audit history, optionally filtered by file.
+
+        Args:
+            source_file: Optional file path filter.
+
+        Returns:
+            List of history record dicts.
+        """
+        assert self._conn is not None, "Database connection not established."
+        if source_file:
+            rows = self._conn.execute(
+                "SELECT * FROM tags_history WHERE source_file = ? "
+                "ORDER BY timestamp DESC",
+                (source_file,),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM tags_history ORDER BY timestamp DESC"
+            ).fetchall()
         return [dict(r) for r in rows]
 
     def purge_deleted(self) -> None:
@@ -1117,9 +1489,7 @@ class IngestRegistry:
         self._conn.commit()
         log_reg.info("Registry reset.")
 
-    def is_indexed(
-        self, rel_path: str, checksum: str | None = None
-    ) -> bool:
+    def is_indexed(self, rel_path: str, checksum: str | None = None) -> bool:
         """
         Return True if the file is already indexed with the given checksum.
 
@@ -1143,9 +1513,7 @@ class IngestRegistry:
         log_reg.debug("is_indexed '%s' (checksum): %s", rel_path, indexed)
         return indexed
 
-    def mark_indexed(
-        self, rel_path: str, checksum: str, chunks: int
-    ) -> None:
+    def mark_indexed(self, rel_path: str, checksum: str, chunks: int) -> None:
         """
         Mark a file as successfully indexed with a pre-computed checksum.
         """
@@ -1154,8 +1522,8 @@ class IngestRegistry:
             """
             INSERT INTO files (path, sha256, file_type, product, doc_type,
                                chunks, status, error_msg, indexed_at,
-                               file_mtime, file_size)
-            VALUES (?, ?, '', '', 'document', ?, 'ok', NULL, ?, 0, 0)
+                               file_mtime, file_size, tags)
+            VALUES (?, ?, '', '', 'document', ?, 'ok', NULL, ?, 0, 0, '[]')
             ON CONFLICT(path) DO UPDATE SET
                 sha256     = excluded.sha256,
                 chunks     = excluded.chunks,
@@ -1166,4 +1534,4 @@ class IngestRegistry:
             (rel_path, checksum, chunks, time.time()),
         )
         self._conn.commit()
-        log_reg.info("Marked indexed: '%s' chunks=%d", rel_path, chunks)
+

@@ -43,3 +43,11 @@ def bootstrap_env(env_file: str | None = None) -> None:
         log.debug(f"Loaded env from {env_path}")
     else:
         log.debug(f"No .env file found at {env_path}; skipping")
+
+    # Seed config table from environment after dotenv loads
+    try:
+        from kb_server.config import config
+
+        config.load_from_env()
+    except Exception:
+        log.debug("ConfigLoader seeding skipped (bootstrap timing)")

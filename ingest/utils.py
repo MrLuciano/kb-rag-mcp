@@ -25,9 +25,7 @@ def write_filter_cache_bust(path: Path | str | None = None) -> None:
     marker_path = Path(path) if path else Path("data/.filter_cache_bust")
     try:
         marker_path.parent.mkdir(parents=True, exist_ok=True)
-        marker_path.write_text(
-            f"{datetime.now(timezone.utc).isoformat()}\n"
-        )
+        marker_path.write_text(f"{datetime.now(timezone.utc).isoformat()}\n")
         log.info(f"Filter cache-bust marker written: {marker_path}")
     except OSError as e:
         log.warning(f"Failed to write cache-bust marker: {e}")

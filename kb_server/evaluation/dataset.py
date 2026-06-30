@@ -4,9 +4,10 @@ Supports both JSON and CSV formats:
   - JSON: list of objects with query, expected_answer, expected_docs, metadata
   - CSV: rows with columns query, expected_answer, expected_docs, metadata
 """
+
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from kb_server.evaluation.csv_loader import CSVDatasetLoader
 
@@ -49,14 +50,13 @@ class GoldenDataset:
             return CSVDatasetLoader.load(self.dataset_path)
         else:
             raise ValueError(
-                f"Unsupported dataset format: {suffix}. "
-                "Use .json or .csv"
+                f"Unsupported dataset format: {suffix}. " "Use .json or .csv"
             )
 
     def _load_json(self) -> List[Dict[str, Any]]:
         """Load dataset from JSON file."""
-        with open(self.dataset_path, 'r') as f:
-            return json.load(f)
+        with open(self.dataset_path, "r") as f:
+            return cast(List[Dict[str, Any]], json.load(f))
 
     @classmethod
     def from_csv(cls, path: Path) -> "GoldenDataset":
@@ -83,7 +83,7 @@ class GoldenDataset:
         query: str,
         expected_answer: str,
         expected_docs: List[str],
-        metadata: Optional[Dict[str, str]] = None
+        metadata: Optional[Dict[str, str]] = None,
     ) -> None:
         """Add a new example to the dataset.
 
@@ -94,16 +94,16 @@ class GoldenDataset:
             metadata: Optional metadata (product, version, etc.)
         """
         example = {
-            'query': query,
-            'expected_answer': expected_answer,
-            'expected_docs': expected_docs,
-            'metadata': metadata or {}
+            "query": query,
+            "expected_answer": expected_answer,
+            "expected_docs": expected_docs,
+            "metadata": metadata or {},
         }
         self.examples.append(example)
 
     def save(self) -> None:
         """Save dataset to JSON file."""
-        with open(self.dataset_path, 'w') as f:
+        with open(self.dataset_path, "w") as f:
             json.dump(self.examples, f, indent=2)
 
     def validate(self) -> List[str]:
@@ -116,19 +116,15 @@ class GoldenDataset:
 
         for i, example in enumerate(self.examples):
             # Check required fields
-            if not example.get('query'):
+            if not example.get("query"):
                 errors.append(f"Example {i}: Empty query")
-            if not example.get('expected_answer'):
+            if not example.get("expected_answer"):
                 errors.append(f"Example {i}: Empty expected_answer")
-            if not example.get('expected_docs'):
-                errors.append(
-                    f"Example {i}: Empty or missing expected_docs"
-                )
+            if not example.get("expected_docs"):
+                errors.append(f"Example {i}: Empty or missing expected_docs")
 
             # Check types
-            if not isinstance(example.get('expected_docs', []), list):
-                errors.append(
-                    f"Example {i}: expected_docs must be a list"
-                )
+            if not isinstance(example.get("expected_docs", []), list):
+                errors.append(f"Example {i}: expected_docs must be a list")
 
         return errors

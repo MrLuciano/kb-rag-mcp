@@ -39,8 +39,11 @@ class TestStatusCommand:
 
     def _create_test_files(self, base: pathlib.Path) -> None:
         """Create test document files needed for registry operations."""
-        for rel in ["webreports/doc.pdf", "xecm/manual.pdf",
-                     "webreports/error.pdf"]:
+        for rel in [
+            "webreports/doc.pdf",
+            "xecm/manual.pdf",
+            "webreports/error.pdf",
+        ]:
             fp = base / rel
             fp.parent.mkdir(parents=True, exist_ok=True)
             fp.write_text("test content")
@@ -63,15 +66,24 @@ class TestStatusCommand:
         with IngestRegistry(db) as reg:
             reg.mark_ok(
                 files_base / "webreports/doc.pdf",
-                "webreports/doc.pdf", 3, "pdf", "WebReports",
+                "webreports/doc.pdf",
+                3,
+                "pdf",
+                "WebReports",
             )
             reg.mark_ok(
                 files_base / "xecm/manual.pdf",
-                "xecm/manual.pdf", 5, "pdf", "xECM",
+                "xecm/manual.pdf",
+                5,
+                "pdf",
+                "xECM",
             )
             reg.mark_error(
                 files_base / "webreports/error.pdf",
-                "webreports/error.pdf", "parse failed", "pdf", "WebReports",
+                "webreports/error.pdf",
+                "parse failed",
+                "pdf",
+                "WebReports",
             )
 
             rows = reg.per_source_summary()
@@ -108,20 +120,23 @@ class TestStatusCommand:
         with IngestRegistry(db) as reg:
             reg.mark_ok(
                 files_base / "webreports/doc.pdf",
-                "webreports/doc.pdf", 3, "pdf", "WebReports",
+                "webreports/doc.pdf",
+                3,
+                "pdf",
+                "WebReports",
             )
             reg.mark_ok(
                 files_base / "xecm/manual.pdf",
-                "xecm/manual.pdf", 5, "pdf", "xECM",
+                "xecm/manual.pdf",
+                5,
+                "pdf",
+                "xECM",
             )
 
         # Get all rows then filter (Python-side, matching status.py logic)
         with IngestRegistry(db) as reg:
             all_rows = reg.per_source_summary()
-            filtered = [
-                r for r in all_rows
-                if "xecm" in r["source"].lower()
-            ]
+            filtered = [r for r in all_rows if "xecm" in r["source"].lower()]
 
         assert len(filtered) == 1
         assert filtered[0]["source"] == "xecm"

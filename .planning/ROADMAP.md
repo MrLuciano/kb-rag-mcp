@@ -6,8 +6,8 @@
 - ✅ **v0.1.1 Quality & Operational Excellence** — Phases 5–8 (shipped 2026-05-23) — [archive](milestones/v0.1.1-ROADMAP.md)
 - ✅ **v0.1.2 Tech Debt & Classification** — Phases 9–11.1 (shipped 2026-05-27) — [archive](milestones/v0.1.2-ROADMAP.md)
 - ✅ **v0.1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v0.1.3-ROADMAP.md)
-- ✅ **v0.1.4 Platform, Analytics & Enterprise** — Phases 23–37 (shipped 2026-06-11)
-- 🔄 **v0.1.5 Streamable HTTP & Management Platform** — Phases 28 (reopened), 28b, 28c, 38, 39, 40, 41 (active)
+- ✅ **v0.1.4 Platform, Analytics & Enterprise** — Phases 23–37 (shipped 2026-06-11) — [archive](milestones/v0.1.4-ROADMAP.md)
+- ✅ **v0.1.5 Streamable HTTP & Management Platform** — Phases 28–53 (shipped 2026-06-29) — [archive](milestones/v0.1.5-ROADMAP.md)
 
 ## Phases
 
@@ -70,49 +70,62 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 ## v0.1.4 Platform, Analytics & Enterprise
 
-<details open>
-<summary>✅ v0.1.4 Phase Overview — SHIPPED 2026-06-11</summary>
+<details>
+<summary>✅ v0.1.4 Phase Overview — SHIPPED 2026-06-11 — [archive](milestones/v0.1.4-ROADMAP.md)</summary>
 
 **All 15 phases (23-37) complete:**
 
-- [x] Phase 23: Documentation Overhaul — 3 plans (doc reorganization, README restructuring, CHANGELOG/REFERENCE update) — completed 2026-05-27
-- [x] Phase 24: RAGAS Evaluation Pipeline — 4 plans (custom metrics, dataset loading, CLI + exporter, LLM wrappers) — completed 2026-06-11
-- [x] Phase 25: Optimization Experiments — 4 plans (chunking experiments, scoring experiments, metric computation, CLI runner) — completed 2026-06-11
-- [x] Phase 26: KB Content Discoverability — Dynamic content-summary tool descriptions + `kb://overview` MCP Resource — completed 2026-06-03
-- [x] Phase 27: Knowledge Base Registry — SQLite-backed KB registry with public/agent_private scopes, stable `kb_<id>` collection names — completed 2026-06-03
-- [x] Phase 28: MCP Streamable HTTP Transport — `/mcp` HTTP endpoint alongside stdio/SSE — completed 2026-06-03
-- [x] Phase 29: Enterprise Data Source Connectors — 4 plans (connector foundation, Confluence, JIRA, Git) — completed 2026-06-10
-- [x] Phase 30: Cross-Document Knowledge Graph — 2 plans (graph metadata derivation, MCP tools) — completed 2026-06-10
-- [x] Phase 31: MCP Prompt Templates — 1 plan (extract_answer + summarize_documents prompts) — completed 2026-06-10
-- [x] Phase 32: API Key Authentication — 1 plan (SQLite key registry, SSE middleware, CLI) — completed 2026-06-10
-- [x] Phase 33: Request Rate Limiting — 1 plan (token bucket per subject, HTTP 429, prometheus metrics) — completed 2026-06-10
-- [x] Phase 34: Upload and Index Quotas — 1 plan (quota config/usage tables, CLI, ingest enforcement) — completed 2026-06-10
-- [x] Phase 35: Multi-KB Aggregated Search — 1 plan (multi-KB search with resolve_multi, multi_search, merge + dedup) — completed 2026-06-10
-- [x] Phase 36: Provider Budget & Circuit Breaker — 1 plan (resilience layer, circuit breaker, budget tracking, fallback chain, 7 prometheus metrics) — completed 2026-06-11
-- [x] Phase 37: Request-level Retrieval Cache — 1 plan (LRU retrieval cache, deterministic cache keys, TTL expiry, invalidation hooks) — completed 2026-06-11
+- [x] Phase 23: Documentation Overhaul — 3 plans — completed 2026-05-27
+- [x] Phase 24: RAGAS Evaluation Pipeline — 4 plans — completed 2026-06-11
+- [x] Phase 25: Optimization Experiments — 4 plans — completed 2026-06-11
+- [x] Phase 26: KB Content Discoverability — 1 plan — completed 2026-06-03
+- [x] Phase 27: Knowledge Base Registry — 1 plan — completed 2026-06-03
+- [x] Phase 28: MCP Streamable HTTP Transport — 2 plans — completed 2026-06-03
+- [x] Phase 29: Enterprise Data Source Connectors — 4 plans — completed 2026-06-10
+- [x] Phase 30: Cross-Document Knowledge Graph — 2 plans — completed 2026-06-10
+- [x] Phase 31: MCP Prompt Templates — 1 plan — completed 2026-06-10
+- [x] Phase 32: API Key Authentication — 1 plan — completed 2026-06-10
+- [x] Phase 33: Request Rate Limiting — 1 plan — completed 2026-06-10
+- [x] Phase 34: Upload and Index Quotas — 1 plan — completed 2026-06-10
+- [x] Phase 35: Multi-KB Aggregated Search — 1 plan — completed 2026-06-10
+- [x] Phase 36: Provider Budget & Circuit Breaker — 1 plan — completed 2026-06-11
+- [x] Phase 37: Request-level Retrieval Cache — 1 plan — completed 2026-06-11
 
-**Delivered:** Documentation restructuring + KB content discoverability + KB Registry with SQLite scoping (3 MCP CRUD tools, ingest `--kb-id` flag, legacy migration) + MCP Streamable HTTP transport (stdio + SSE + Streamable HTTP, 3 transports) + Optimization Experiments framework (chunking strategies, scoring variants, IR metrics, `kb-rag optimize` CLI) + RAGAS Evaluation Pipeline (4 custom metrics, dataset loading, CLI, 4 LLM backends) + Multi-KB Aggregated Search + Enterprise Connectors (Confluence, JIRA, Git) + Cross-Document Knowledge Graph + MCP Prompt Templates + API Key Authentication + Request Rate Limiting + Upload/Index Quotas + Provider Budget & Circuit Breaker + Request-level Retrieval Cache.
-
-**All 15 phases (23-37) of v0.1.4 are complete.** Phase 24 (RAGAS Evaluation) was executed and verified — 4 plans, 57 tests. All features are implemented and tested.
+**Delivered:** Documentation restructuring + KB content discoverability + KB Registry + MCP Streamable HTTP transport + Optimization Experiments + RAGAS Evaluation Pipeline + Multi-KB Aggregated Search + Enterprise Connectors + Cross-Document Knowledge Graph + MCP Prompt Templates + API Key Authentication + Rate Limiting + Quotas + Circuit Breakers + Retrieval Cache.
 
 </details>
 
 ## v0.1.5 Streamable HTTP & Management Platform
 
-<details open>
-<summary>🔄 v0.1.5 Phase Overview — PLANNING</summary>
+<details>
+<summary>✅ v0.1.5 Phase Overview — SHIPPED 2026-06-29 — [archive](milestones/v0.1.5-ROADMAP.md)</summary>
 
-**Target features:**
+**All 19 phases (28-53) complete:**
 
-- [ ] Phase 28 (reopened): MCP Streamable HTTP Transport — single `/mcp` endpoint, `StreamableHTTPSessionManager`, CORS, auth middleware
-- [ ] Phase 28b: Auth & User Management API — SQLAlchemy User/ApiKey/AuditLog models, CRUD REST endpoints, role-based access, GDPR erasure workflow
-- [ ] Phase 28c: Admin SPA Panel — Alpine.js + HTMX tabbed UI at `/admin/`, login modal, admin/user role gating, Grafana embed tab
-- [ ] Phase 38: Grafana Dashboard Embedding — iframe embed helper, CSP config, time range selector, OPERATIONS.md docs
-- [ ] Phase 39: Observability Backlog — OBS-01 (health/readiness), OBS-02 (request identity), METRICS-01 (percentile metrics)
-- [ ] Phase 40: Configuration Backlog — CONF-01 (hot-reload), CONF-02 (config API endpoints)
-- [ ] Phase 41: Provider Alias — PROV-01 (provider name normalization)
+- [x] Phase 28: MCP Streamable HTTP Transport — 2 plans — completed 2026-06-15
+- [x] Phase 28b: Auth & User Management API — 2 plans — completed 2026-06-16
+- [x] Phase 28c: Admin SPA Panel — 4 plans — completed 2026-06-16
+- [x] Phase 28c-fixes: Admin SPA Gap Closure — 4 plans — completed 2026-06-16
+- [x] Phase 38: Grafana Dashboard Embedding — 1 plan — completed 2026-06-16
+- [x] Phase 39: Observability Backlog — 1 plan — completed 2026-06-16
+- [x] Phase 40: Configuration Backlog — 2 plans — completed 2026-06-16
+- [x] Phase 41: Provider Alias — 1 plan — completed 2026-06-16
+- [x] Phase 42: Query Analytics Dashboard — 1 plan — completed 2026-06-17
+- [x] Phase 43: Chunk Preview in Document Detail — 1 plan — completed 2026-06-17
+- [x] Phase 44: Auth Security Hardening — 1 plan — completed 2026-06-17
+- [x] Phase 45: Database Reliability — 1 plan — completed 2026-06-17
+- [x] Phase 46: Code Quality & Coverage — 1 plan — completed 2026-06-17
+- [x] Phase 47: LM Studio Dependency Handling — 1 plan — completed 2026-06-17
+- [x] Phase 50: SSE Test Consolidation — 1 plan — completed 2026-06-17
+- [x] Phase 51: Document Tag Management — 1 plan — completed 2026-06-17
+- [x] Phase 52: Ingestion Schedule Management — 1 plan — completed 2026-06-17
+- [x] Phase 53: Quality & Polish — 1 plan — completed 2026-06-29
+
+**Delivered:** Streamable HTTP transport with session lifecycle, auth middleware, and Prometheus metrics; full Auth API with SQLAlchemy models, RBAC, GDPR erasure, API key CRUD; Admin SPA (Alpine.js+HTMX) with login, documents, config, monitoring, schedules, tags; Grafana dashboard embedding; observability (request ID, percentile latency); SQLite config with hot-reload; provider aliases; query analytics dashboard; chunk preview with search term highlighting; auth security hardening; database reliability fixes; code quality cleanup; LM Studio graceful fallback; SSE test consolidation; document tag management; cron-based ingestion scheduler; E2E tests; security audit; performance optimization.
 
 </details>
+
+---
 
 ## Progress
 
@@ -146,7 +159,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 25. Optimization Experiments | v0.1.4 | 4/4 | Complete | 2026-06-11 |
 | 26. KB Content Discoverability | v0.1.4 | 1/1 | Complete | 2026-06-03 |
 | 27. Knowledge Base Registry | v0.1.4 | 3/3 | Complete | 2026-06-03 |
-| 28. MCP Streamable HTTP | v0.1.4 | 1/1 | Complete | 2026-06-03 |
+| 28. MCP Streamable HTTP | v0.1.4 | 2/2 | Complete   | 2026-06-15 |
 | 29. Enterprise Data Source Connectors | v0.1.4 | 4/4 | Complete | 2026-06-10 |
 | 30. Cross-Document Knowledge Graph | v0.1.4 | 2/2 | Complete | 2026-06-10 |
 | 31. MCP Prompt Templates | v0.1.4 | 1/1 | Complete | 2026-06-10 |
@@ -157,37 +170,29 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 36. Provider Budget & Circuit Breaker | v0.1.4 | 1/1 | Complete   | 2026-06-11 |
 | 37. Request-level Retrieval Cache | v0.1.4 | 1/1 | Complete | 2026-06-11 |
 
-| 38. MCP Streamable HTTP (reopened) | v0.1.5 | 0/0 | Planning | — |
-| 39. Auth & User Management API | v0.1.5 | 0/0 | Planning | — |
-| 40. Admin SPA Panel | v0.1.5 | 0/0 | Planning | — |
-| 41. Grafana Dashboard Embedding | v0.1.5 | 0/0 | Planning | — |
-| 42. Observability Backlog | v0.1.5 | 0/0 | Planning | — |
-| 43. Configuration Backlog | v0.1.5 | 0/0 | Planning | — |
-| 44. Provider Alias | v0.1.5 | 0/0 | Planning | — |
+| 28. MCP Streamable HTTP (reopened) | v0.1.5 | 2/2 | Complete | 2026-06-15 |
+| 28b. Auth & User Management API | v0.1.5 | 2/2 | Complete | 2026-06-16 |
+| 28c. Admin SPA Panel + Fixes | v0.1.5 | 9/9 | Complete | 2026-06-16 |
+| 38. Grafana Dashboard Embedding | v0.1.5 | 1/1 | Complete | 2026-06-16 |
+| 39. Observability Backlog | v0.1.5 | 1/1 | Complete | 2026-06-16 |
+| 40. Configuration Backlog | v0.1.5 | 2/2 | Complete | 2026-06-16 |
+| 41. Provider Alias | v0.1.5 | 1/1 | Complete | 2026-06-16 |
+| 42. Query Analytics Dashboard | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 43. Chunk Preview in Document Detail | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 44. Auth Security Hardening | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 45. Database Reliability | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 46. Code Quality & Coverage | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 47. LM Studio Dependency Handling | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 48. Cross-Encoder Lazy Loading | v0.1.5 | — | Complete (v0.1.3) | — |
+| 49. Qdrant Mock Cleanup | v0.1.5 | — | Complete (v0.1.3) | — |
+| 50. SSE Test Consolidation | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 51. Document Tag Management | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 52. Ingestion Schedule Management | v0.1.5 | 1/1 | Complete | 2026-06-17 |
+| 53. Quality & Polish | v0.1.5 | 1/1 | Complete | 2026-06-29 |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
-Items for future milestones (v0.1.6+).
+All backlog items promoted or completed. See phase directories under `.planning/phases/` for details.
 
-### Low Priority
-
-- **SPA-02: Query Logging Analytics Dashboard** — Visualize query logs in the SPA (popular queries, no-results queries, latency distribution)
-- **SPA-03: Chunk Preview in Document Detail** — Inline chunk viewer with highlight for matched terms
-- **SPA-04: Export Filtered Results** — Export document search results to CSV/JSON from the SPA
-- **SPA-05: Advanced Filters** — Date range, file type, vendor filters in document browse
-
-### Phase 25: Optimization Experiments
-
-**Goal:** Run systematic chunking and scoring experiments to optimize retrieval quality and provide actionable recommendations for RAG configuration.
-**Requirements:** OPT-01, OPT-02, OPT-03
-**Depends on:** Phase 24
-**Plans:** 4/4 plans executed
-
-Plans:
-
-- [x] 25-01-PLAN.md — Core infrastructure: config, metric_computer, result_store
-- [x] 25-02-PLAN.md — Chunking experiments: fixed, recursive, semantic strategies
-- [x] 25-03-PLAN.md — Scoring experiments: dense, hybrid, reranked variants
-- [x] 25-04-PLAN.md — Experiment runner + CLI: `kb-rag optimize` command

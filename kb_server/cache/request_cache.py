@@ -26,7 +26,9 @@ log = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────
 _RLCACHE_ENABLED = os.getenv("RLCACHE_ENABLED", "true").lower() in (
-    "true", "1", "yes"
+    "true",
+    "1",
+    "yes",
 )
 _RLCACHE_TTL = int(os.getenv("RLCACHE_TTL", "300"))
 _RLCACHE_MAX_ENTRIES = int(os.getenv("RLCACHE_MAX_ENTRIES", "1000"))
@@ -184,7 +186,7 @@ class RetrievalCache:
         collection_param: Optional[str] = None,
         kb_ids: Optional[list[str]] = None,
     ) -> str:
-        """Build a deterministic cache key (delegates to module-level function).
+        """Build a deterministic cache key (delegates to module-level).
 
         See :func:`make_cache_key` for details.
         """

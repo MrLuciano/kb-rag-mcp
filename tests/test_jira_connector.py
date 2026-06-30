@@ -62,9 +62,7 @@ class TestJiraJQL:
         from ingest.connectors.jira import JiraConnector
 
         conn = JiraConnector(server_config)
-        jql = conn._build_jql(
-            project="PROJ", since="2026-01-01T00:00:00Z"
-        )
+        jql = conn._build_jql(project="PROJ", since="2026-01-01T00:00:00Z")
         assert "updated" in jql
 
     def test_jql_with_jql_filter(self, server_config):
@@ -242,9 +240,7 @@ class TestJiraFetchDocuments:
 
         error_response = MagicMock()
         error_response.status_code = 500
-        error_response.raise_for_status.side_effect = Exception(
-            "JIRA error"
-        )
+        error_response.raise_for_status.side_effect = Exception("JIRA error")
 
         with patch.object(conn, "_get_client") as mf:
             mc = AsyncMock()
@@ -292,9 +288,7 @@ class TestJiraFetchDocuments:
             mc = AsyncMock()
             req = httpx.Request("GET", "https://example.com")
             resp = httpx.Response(404, request=req)
-            exc = httpx.HTTPStatusError(
-                "404", request=req, response=resp
-            )
+            exc = httpx.HTTPStatusError("404", request=req, response=resp)
             mc.get = AsyncMock(side_effect=exc)
             mf.return_value = mc
             doc = await conn.fetch_document("PROJ-999")

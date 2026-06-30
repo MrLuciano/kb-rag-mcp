@@ -43,9 +43,7 @@ class ChunkingStrategy(ABC):
 class FixedStrategy(ChunkingStrategy):
     """Fixed-size sliding-window chunking."""
 
-    def __init__(
-        self, chunk_size: int = 600, chunk_overlap: int = 80
-    ) -> None:
+    def __init__(self, chunk_size: int = 600, chunk_overlap: int = 80) -> None:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
@@ -105,9 +103,9 @@ class RecursiveStrategy(ChunkingStrategy):
                 "RecursiveCharacterTextSplitter unavailable; "
                 "falling back to fixed-size split"
             )
-            return FixedStrategy(
-                self.chunk_size, self.chunk_overlap
-            ).split(text)
+            return FixedStrategy(self.chunk_size, self.chunk_overlap).split(
+                text
+            )
 
 
 class SemanticStrategy(ChunkingStrategy):
@@ -125,13 +123,11 @@ class SemanticStrategy(ChunkingStrategy):
         try:
             from docling.chunking import HybridChunker
 
-            chunker = HybridChunker(max_tokens=self.max_tokens)
-            chunks = chunker.chunk(text)
+            chunker = HybridChunker(max_tokens=self.max_tokens)  # type: ignore[call-arg]
+            chunks = chunker.chunk(text)  # type: ignore[arg-type]
             return [c.text for c in chunks]
         except Exception:
-            log.warning(
-                "HybridChunker unavailable; falling back to recursive"
-            )
+            log.warning("HybridChunker unavailable; falling back to recursive")
             return RecursiveStrategy(chunk_size=512).split(text)
 
 
@@ -167,9 +163,7 @@ def create_strategy(name: str, **kwargs: Any) -> ChunkingStrategy:
             ),
         )
     elif name == "semantic":
-        return SemanticStrategy(
-            max_tokens=kwargs.get("max_tokens", 512)
-        )
+        return SemanticStrategy(max_tokens=kwargs.get("max_tokens", 512))
     else:
         raise ValueError(f"Unknown strategy: {name}")
 
@@ -245,15 +239,17 @@ class ChunkingEngine:
                 for chunk_index, chunk_text in enumerate(chunks):
                     if len(chunk_text.strip()) < 30:
                         continue
-                    all_chunks.append({
-                        "text": chunk_text,
-                        "source_file": str(file_path),
-                        "file_type": file_type,
-                        "product": "experiment",
-                        "chunk_index": chunk_index,
-                        "page": section.get("page"),
-                        "chunk_id": str(uuid.uuid4()),
-                    })
+                    all_chunks.append(
+                        {
+                            "text": chunk_text,
+                            "source_file": str(file_path),
+                            "file_type": file_type,
+                            "product": "experiment",
+                            "chunk_index": chunk_index,
+                            "page": section.get("page"),
+                            "chunk_id": str(uuid.uuid4()),
+                        }
+                    )
 
             file_index += 1
 
@@ -350,18 +346,18 @@ class ChunkingEngine:
                     top_k=top_k,
                     collection_name=experiment_collection,
                 )
-                retrieved_docs = [
-                    r.get("source_file", "") for r in results
-                ]
+                retrieved_docs = [r.get("source_file", "") for r in results]
             except Exception as exc:
                 log.warning("Query failed: %s", exc)
                 retrieved_docs = []
 
-            query_results.append({
-                "query": query_text,
-                "retrieved_docs": retrieved_docs,
-                "expected_docs": example.get("expected_docs", []),
-            })
+            query_results.append(
+                {
+                    "query": query_text,
+                    "retrieved_docs": retrieved_docs,
+                    "expected_docs": example.get("expected_docs", []),
+                }
+            )
 
         metrics = self.metric_computer.compute_all(query_results, k=top_k)
         metrics["chunk_count"] = chunk_count

@@ -11,7 +11,7 @@ PHASE 36: Provider Budget & Circuit Breaker
 import logging
 import time
 from collections import defaultdict, deque
-from typing import Dict, List, Optional
+from typing import Dict, Optional, cast
 
 log = logging.getLogger("kb-mcp.provider_budget")
 
@@ -119,9 +119,7 @@ class ProviderBudget:
         }
 
         if self._max_tokens is not None:
-            total_tokens = sum(
-                entry[1] for entry in dq if len(entry) > 1
-            )
+            total_tokens = sum(entry[1] for entry in dq if len(entry) > 1)
             result["token_count"] = total_tokens
             result["token_limit"] = self._max_tokens
             result["tokens_remaining"] = max(
@@ -152,9 +150,9 @@ class ProviderBudget:
         if self._max_tokens is not None and dq:
             total_tokens = sum(entry[1] for entry in dq if len(entry) > 1)
             token_ratio = 1.0 - (total_tokens / self._max_tokens)
-            return max(0.0, min(request_ratio, token_ratio))
+            return cast(float, max(0.0, min(request_ratio, token_ratio)))
 
-        return max(0.0, request_ratio)
+        return cast(float, max(0.0, request_ratio))
 
     def reset_provider(self, provider: str) -> None:
         """

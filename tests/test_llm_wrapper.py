@@ -2,6 +2,7 @@
 
 Uses httpx.MockTransport to avoid live HTTP calls.
 """
+
 import json
 from unittest.mock import MagicMock, patch
 
@@ -18,7 +19,6 @@ from kb_server.evaluation.llm_wrapper import (
     RAGASLLMAdapter,
     create_llm_wrapper,
 )
-
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -68,15 +68,11 @@ class TestCreateLLMWrapper:
 @pytest.mark.asyncio
 async def test_lmstudio_rest_invoke():
     mock_resp = {
-        "choices": [
-            {"message": {"content": "  Hello from LM Studio  "}}
-        ]
+        "choices": [{"message": {"content": "  Hello from LM Studio  "}}]
     }
     transport = _mock_transport(mock_resp)
     async with httpx.AsyncClient(transport=transport) as client:
-        with patch(
-            "kb_server.evaluation.llm_wrapper._http_client", client
-        ):
+        with patch("kb_server.evaluation.llm_wrapper._http_client", client):
             wrapper = LMStudioRestWrapper(
                 base_url="http://localhost:1234",
                 model="test-model",
@@ -91,15 +87,11 @@ async def test_lmstudio_rest_invoke():
 @pytest.mark.asyncio
 async def test_openai_compat_invoke():
     mock_resp = {
-        "choices": [
-            {"message": {"content": "  Hello from OpenAI  "}}
-        ]
+        "choices": [{"message": {"content": "  Hello from OpenAI  "}}]
     }
     transport = _mock_transport(mock_resp)
     async with httpx.AsyncClient(transport=transport) as client:
-        with patch(
-            "kb_server.evaluation.llm_wrapper._http_client", client
-        ):
+        with patch("kb_server.evaluation.llm_wrapper._http_client", client):
             wrapper = OpenAICompatWrapper(
                 base_url="http://localhost:1234",
                 api_key="test-key",
@@ -117,9 +109,7 @@ async def test_ollama_invoke():
     mock_resp = {"response": "  Hello from Ollama  "}
     transport = _mock_transport(mock_resp)
     async with httpx.AsyncClient(transport=transport) as client:
-        with patch(
-            "kb_server.evaluation.llm_wrapper._http_client", client
-        ):
+        with patch("kb_server.evaluation.llm_wrapper._http_client", client):
             wrapper = OllamaWrapper(
                 host="http://localhost:11434",
                 model="llama2",
@@ -136,16 +126,10 @@ async def test_lmstudio_sdk_falls_back_on_import_error():
     """SDK wrapper falls back to REST when lmstudio package missing."""
     wrapper = LMStudioSDKWrapper(model="test")
 
-    mock_resp = {
-        "choices": [
-            {"message": {"content": "Fallback response"}}
-        ]
-    }
+    mock_resp = {"choices": [{"message": {"content": "Fallback response"}}]}
     transport = _mock_transport(mock_resp)
     async with httpx.AsyncClient(transport=transport) as client:
-        with patch(
-            "kb_server.evaluation.llm_wrapper._http_client", client
-        ):
+        with patch("kb_server.evaluation.llm_wrapper._http_client", client):
             with patch.dict("sys.modules", {"lmstudio": None}):
                 result = await wrapper.invoke("Say hello")
     assert result == "Fallback response"

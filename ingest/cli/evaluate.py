@@ -1,4 +1,5 @@
 """Evaluate CLI subcommand: `kb-rag evaluate`."""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,7 +7,6 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import click
 
@@ -36,7 +36,10 @@ def _default_output_path() -> Path:
     "-o",
     type=click.Path(dir_okay=False, path_type=Path),
     default=None,
-    help="Output file path (default: data/evaluation_results_YYYYMMDD_HHMMSS.csv)",
+    help=(
+        "Output file path "
+        "(default: data/evaluation_results_YYYYMMDD_HHMMSS.csv)"
+    ),
 )
 @click.option(
     "--format",
@@ -70,7 +73,8 @@ def evaluate(
 
     Example:
         kb-rag evaluate --dataset data/golden.json
-        kb-rag evaluate --dataset data/golden.csv --output results.csv --format csv
+        kb-rag evaluate --dataset data/golden.csv \
+            --output results.csv --format csv
     """
     # Resolve backend
     eval_backend = backend or os.getenv("EMBED_BACKEND", "lmstudio-rest")
@@ -102,6 +106,8 @@ def evaluate(
             click.echo(f"  ... and {len(errors) - 10} more", err=True)
 
     # Run evaluation
+    assert eval_backend is not None
+    assert eval_model is not None
     evaluator = RAGASEvaluator(
         dataset=golden_dataset,
         backend=eval_backend,

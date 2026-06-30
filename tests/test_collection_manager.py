@@ -1,4 +1,5 @@
 """Tests for CollectionManager."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -35,6 +36,7 @@ def manager(client):
 # list_collections
 # ------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_list_collections_returns_names(client, manager):
     client.get_collections.return_value = _make_collections("kb_docs", "alpha")
@@ -53,6 +55,7 @@ async def test_list_collections_empty(client, manager):
 # collection_exists
 # ------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_collection_exists_true(client, manager):
     client.get_collections.return_value = _make_collections("kb_docs")
@@ -68,6 +71,7 @@ async def test_collection_exists_false(client, manager):
 # ------------------------------------------------------------------
 # create_collection
 # ------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_create_collection_calls_qdrant(client, manager):
@@ -110,12 +114,15 @@ async def test_create_collection_creates_payload_indexes(client, manager):
 # delete_collection
 # ------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_delete_collection_calls_qdrant(client, manager):
     client.get_collections.return_value = _make_collections("to_delete")
     result = await manager.delete_collection("to_delete")
     assert result is True
-    client.delete_collection.assert_awaited_once_with(collection_name="to_delete")
+    client.delete_collection.assert_awaited_once_with(
+        collection_name="to_delete"
+    )
 
 
 @pytest.mark.asyncio

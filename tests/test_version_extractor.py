@@ -92,10 +92,10 @@ class TestVersionExtractor:
         """Version extraction should be case insensitive."""
         path1 = Path("/docs/ce 24.4/manual.pdf")
         path2 = Path("/docs/CE 24.4/manual.pdf")
-        
+
         version1 = extractor.extract(path1)
         version2 = extractor.extract(path2)
-        
+
         assert version1 is not None
         assert version2 is not None
         assert "24.4" in version1
@@ -122,9 +122,9 @@ class TestVersionExtractor:
             Path("/docs/guide_v24.4.pdf"),
             Path("/docs/readme.pdf"),  # No version
         ]
-        
+
         results = extractor.extract_batch(paths)
-        
+
         assert len(results) == 3
         assert "22.3" in results[paths[0]]
         assert "24.4" in results[paths[1]]
@@ -153,11 +153,11 @@ class TestVersionPatterns:
             ("ce 22.3", "22.3"),  # Case insensitive
             ("CE24.4", None),  # Should require space
         ]
-        
+
         for input_str, expected in test_cases:
             path = Path(f"/docs/{input_str}/manual.pdf")
             version = extractor.extract(path)
-            
+
             if expected:
                 assert version is not None
                 assert expected in version
@@ -173,7 +173,7 @@ class TestVersionPatterns:
             ("v23.1", "23.1"),
             ("V2.5", "2.5"),  # Case insensitive
         ]
-        
+
         for input_str, expected in test_cases:
             path = Path(f"/docs/manual_{input_str}.pdf")
             version = extractor.extract(path)
@@ -188,7 +188,7 @@ class TestVersionPatterns:
             ("99.9", "99.9"),
             ("10.0", "10.0"),
         ]
-        
+
         for input_str, expected in test_cases:
             path = Path(f"/docs/manual_{input_str}.pdf")
             version = extractor.extract(path)
@@ -202,7 +202,7 @@ class TestVersionPatterns:
             "Version 16.2",
             "VERSION 16.2",
         ]
-        
+
         for input_str in test_cases:
             path = Path(f"/docs/Release Notes for {input_str}.pdf")
             version = extractor.extract(path)

@@ -18,7 +18,7 @@ Choose your deployment mode:
 ## Getting Started
 
 - [README.md](../README.md) — Quick start, installation, usage
-- [FEATURES.md](../FEATURES.md) — Complete feature reference — all 16 implemented features
+- [FEATURES.md](../FEATURES.md) — Complete feature reference — all 23 features
 - [REFERENCE.md](REFERENCE.md) — **Living reference: architecture, components, config, ops, QA results**
 - [TESTING.md](TESTING.md) — Testing strategy and guidelines
 - [CHANGELOG.md](CHANGELOG.md) — Release history and per-PHASE change log
@@ -33,6 +33,7 @@ Choose your deployment mode:
 ## Topic Guides
 
 - [SEARCH_QUALITY.md](SEARCH_QUALITY.md) — Hybrid search, reranking, evaluation methodology
+- [OPERATIONS.md#tag-management-phase-51](OPERATIONS.md) — Document tag management (CLI + Web UI)
 - [AUTO_INGESTION.md](AUTO_INGESTION.md) — File watcher, version extractor, _meta.json overrides
 - [VERSION_FILTERING.md](VERSION_FILTERING.md) — Version extraction and search filtering
 - [METADATA_OVERRIDES.md](METADATA_OVERRIDES.md) — Per-directory metadata overrides
@@ -78,7 +79,8 @@ PHASE lifecycle docs (completion reports, per-PHASE plans) are preserved in
 | v0.1.1-5 | CI Matrix & SSE Fixes | ✅ Complete |
 | v0.1.1-6 | Test Isolation & Fixtures | ✅ Complete |
 | v0.1.1-7 | Quality Gate & Logging Coverage | ✅ Complete |
-| v0.1.1-8 | Ingest Improvements & Documentation | ✅ Wave 1 (OTCS tagging + Status CLI), Wave 2 (Docstrings + Docs refresh)
+| 17-50 | v0.1.5 Feature Delivery | ✅ Complete |
+| v0.1.1-8 | Ingest Improvements & Documentation | ✅ Complete
 
 ---
 
@@ -86,10 +88,10 @@ PHASE lifecycle docs (completion reports, per-PHASE plans) are preserved in
 
 | Metric | Value |
 |---|---|
-| **Tests passing** | 1095 |
-| **Tests failing** | 0 (12 skipped — require Qdrant) |
-| **Coverage target** | 90% branch (kb_server/ + ingest/) |
-| **Phases completed** | 26 (v0.1.0 through v0.1.4) |
+| **Tests passing** | 1284 |
+| **Tests failing** | 0 (6 skipped, 2 pre-existing) |
+| **Coverage target** | 72% branch |
+| **Phases completed** | 50 (v0.1.0 through v0.1.5) |
 | **QA Hit Rate** | 100% |
 | **QA MRR** | 0.78 |
 

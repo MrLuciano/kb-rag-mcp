@@ -1,0 +1,142 @@
+<div x-data="scheduleManager" x-init="load()">
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Add Schedule</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-control form-control-sm" x-model="form.name"
+                           placeholder="Weekly docs ingest">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Cron Expression</label>
+                    <input type="text" class="form-control form-control-sm" x-model="form.cron_expr"
+                           placeholder="0 3 * * 1">
+                    <div class="form-text">min hour dom mon dow</div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Docs Path</label>
+                    <input type="text" class="form-control form-control-sm" x-model="form.docs_path"
+                           placeholder="/data/docs">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Workers</label>
+                    <input type="number" class="form-control form-control-sm" x-model="form.workers" min="1" max="8">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Clean</label>
+                    <select class="form-select form-select-sm" x-model="form.clean">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Force</label>
+                    <select class="form-select form-select-sm" x-model="form.force">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-primary btn-sm w-100" @click="create()"
+                            :disabled="!form.name || !form.cron_expr || !form.docs_path">
+                        Add
+                    </button>
+                </div>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-md-3">
+                    <label class="form-label">Product (optional)</label>
+                    <input type="text" class="form-control form-control-sm" x-model="form.product"
+                           placeholder="AppServer">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Priority</label>
+                    <select class="form-select form-select-sm" x-model="form.priority">
+                        <option value="low">Low</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            <template x-if="formError">
+                <div class="alert alert-danger mt-2 mb-0 py-2" x-text="formError"></div>
+            </template>
+            <template x-if="formSuccess">
+                <div class="alert alert-success mt-2 mb-0 py-2" x-text="formSuccess"></div>
+            </template>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Schedules</h5>
+            <span class="badge bg-secondary" x-text="schedules.length + ' schedule(s)'"></span>
+        </div>
+        <div class="card-body p-0">
+            <template x-if="loading">
+                <div class="text-center text-muted py-4">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    <span class="ms-2">Loading schedules...</span>
+                </div>
+            </template>
+            <template x-if="!loading && schedules.length === 0">
+                <div class="text-center text-muted py-4">
+                    No ingestion schedules configured. Add a schedule above.
+                </div>
+            </template>
+            <template x-if="!loading && schedules.length > 0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Cron</th>
+                            <th>Path</th>
+                            <th>Product</th>
+                            <th>Workers</th>
+                            <th>Priority</th>
+                            <th>Flags</th>
+                            <th>Enabled</th>
+                            <th>Last Run</th>
+                            <th>Next Run</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="s in schedules" :key="s.id">
+                            <tr>
+                                <td x-text="s.name"></td>
+                                <td><code x-text="s.cron_expr"></code></td>
+                                <td x-text="s.docs_path"></td>
+                                <td x-text="s.product || '-'"></td>
+                                <td x-text="s.workers"></td>
+                                <td x-text="s.priority"></td>
+                                <td>
+                                    <span x-show="s.clean" class="badge bg-warning me-1">clean</span>
+                                    <span x-show="s.force" class="badge bg-info">force</span>
+                                </td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox"
+                                               :checked="!!s.enabled"
+                                               @click="toggle(s.id, !s.enabled)">
+                                    </div>
+                                </td>
+                                <td x-text="s.last_run_at ? new Date(s.last_run_at * 1000).toLocaleString() : '-'"></td>
+                                <td x-text="s.next_run_at ? new Date(s.next_run_at * 1000).toLocaleString() : '-'"></td>
+                                <td>
+                                    <button class="btn btn-outline-danger btn-sm" @click="remove(s.id)"
+                                            title="Delete schedule">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </template>
+        </div>
+    </div>
+</div>

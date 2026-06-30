@@ -225,6 +225,27 @@ root — it is loaded automatically before `kb_server` is imported.
 | `SSE_HOST` | `0.0.0.0` | MCP SSE transport host |
 | `SSE_PORT` | `8765` | MCP SSE transport port |
 
+**Streamable HTTP Transport**
+
+The server supports MCP Streamable HTTP transport for browser-based clients.
+
+| Variable | Default | Description |
+|---|---|---|
+| `MCP_TRANSPORT` | — | Set to `streamable-http` to enable |
+| `MCP_HOST` | `127.0.0.1` | Bind address |
+| `MCP_PORT` | `8765` | HTTP port |
+| `MCP_ENDPOINT` | `/mcp` | MCP endpoint path |
+| `MCP_JSON_RESPONSE` | `false` | JSON-only mode (no SSE streaming) |
+| `MCP_STATELESS` | `false` | Disable session tracking |
+| `MCP_SESSION_TIMEOUT` | `300` | Idle session timeout (seconds) |
+
+**Client usage:**
+
+POST JSON-RPC to `http://{host}:{port}/mcp` with:
+- `Content-Type: application/json`
+- `Mcp-Session-Id: <session_id>` (returned from first response)
+- `Authorization: Bearer <api_key>` (if auth enabled)
+
 **Auth**
 
 | Variable | Default | Description |

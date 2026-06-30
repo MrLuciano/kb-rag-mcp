@@ -764,7 +764,7 @@ sudo journalctl -u kb-mcp -f
 
 - **Environment** → [§2. Runtime Environment → Local Machine](#2-runtime-environment) (WSL2/manual setup)
 - **Python setup** → Create venv, `pip install -r requirements.txt`
-- **Run server** → `python kb_server/server.py` (stdio) or with SSE transport
+- **Run server** → `python kb_server/server.py` (stdio), SSE (`MCP_TRANSPORT=sse`), or streamable HTTP (`MCP_TRANSPORT=streamable-http`)
 - **Ingestion** → `python ingest/ingest.py --docs <path>` (see [§7. Ingestion Pipeline](#7-ingestion-pipeline))
 - **Windows startup** → `pwsh scripts/start-kb-rag.ps1`
 

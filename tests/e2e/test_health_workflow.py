@@ -54,7 +54,9 @@ class TestHealthCheckComponents:
         with patch("kb_server.vector_store.VectorStore") as mock_store_cls:
             mock_store = AsyncMock()
             mock_store.connect = AsyncMock()
-            mock_store.get_stats = AsyncMock(return_value={"total_chunks": 100})
+            mock_store.get_stats = AsyncMock(
+                return_value={"total_chunks": 100}
+            )
             mock_store.close = AsyncMock()
             mock_store_cls.return_value = mock_store
 
@@ -138,11 +140,13 @@ class TestHealthAggregation:
             HealthStatus,
         )
 
-        with patch("kb_server.health.check_embedding_service") as mock_emb, \
-                patch("kb_server.health.check_vector_store") as mock_vs, \
-                patch("kb_server.health.check_cache") as mock_cache, \
-                patch("kb_server.health.check_database") as mock_db, \
-                patch("kb_server.health.check_filesystem") as mock_fs:
+        with (
+            patch("kb_server.health.check_embedding_service") as mock_emb,
+            patch("kb_server.health.check_vector_store") as mock_vs,
+            patch("kb_server.health.check_cache") as mock_cache,
+            patch("kb_server.health.check_database") as mock_db,
+            patch("kb_server.health.check_filesystem") as mock_fs,
+        ):
 
             mock_emb.return_value = HealthStatus(
                 name="embedding", healthy=True, latency_ms=10.0
@@ -164,7 +168,7 @@ class TestHealthAggregation:
             healthy = is_system_healthy(components)
 
         assert healthy is True
-        assert len(components) == 5
+        assert len(components) == 6
         assert all(c.healthy for c in components.values())
 
     @pytest.mark.asyncio
@@ -176,15 +180,16 @@ class TestHealthAggregation:
             HealthStatus,
         )
 
-        with patch("kb_server.health.check_embedding_service") as mock_emb, \
-                patch("kb_server.health.check_vector_store") as mock_vs, \
-                patch("kb_server.health.check_cache") as mock_cache, \
-                patch("kb_server.health.check_database") as mock_db, \
-                patch("kb_server.health.check_filesystem") as mock_fs:
+        with (
+            patch("kb_server.health.check_embedding_service") as mock_emb,
+            patch("kb_server.health.check_vector_store") as mock_vs,
+            patch("kb_server.health.check_cache") as mock_cache,
+            patch("kb_server.health.check_database") as mock_db,
+            patch("kb_server.health.check_filesystem") as mock_fs,
+        ):
 
             mock_emb.return_value = HealthStatus(
-                name="embedding", healthy=False,
-                message="Connection refused"
+                name="embedding", healthy=False, message="Connection refused"
             )
             mock_vs.return_value = HealthStatus(
                 name="vector_store", healthy=True, latency_ms=5.0
@@ -214,11 +219,13 @@ class TestHealthAggregation:
             HealthStatus,
         )
 
-        with patch("kb_server.health.check_embedding_service") as mock_emb, \
-                patch("kb_server.health.check_vector_store") as mock_vs, \
-                patch("kb_server.health.check_cache") as mock_cache, \
-                patch("kb_server.health.check_database") as mock_db, \
-                patch("kb_server.health.check_filesystem") as mock_fs:
+        with (
+            patch("kb_server.health.check_embedding_service") as mock_emb,
+            patch("kb_server.health.check_vector_store") as mock_vs,
+            patch("kb_server.health.check_cache") as mock_cache,
+            patch("kb_server.health.check_database") as mock_db,
+            patch("kb_server.health.check_filesystem") as mock_fs,
+        ):
 
             mock_emb.return_value = HealthStatus(
                 name="embedding", healthy=True, latency_ms=10.0
@@ -227,8 +234,7 @@ class TestHealthAggregation:
                 name="vector_store", healthy=True, latency_ms=5.0
             )
             mock_cache.return_value = HealthStatus(
-                name="cache", healthy=False,
-                message="Redis connection failed"
+                name="cache", healthy=False, message="Redis connection failed"
             )
             mock_db.return_value = HealthStatus(
                 name="database", healthy=True, latency_ms=2.0
@@ -283,7 +289,7 @@ class TestHealthHTTPEndpoints:
             "vector_store",
             "cache",
             "database",
-            "filesystem"
+            "filesystem",
         ]
         for component in expected_components:
             assert component in data["components"]
@@ -369,7 +375,7 @@ class TestHealthStatusCaching:
 
 @pytest.mark.skipif(
     os.getenv("SKIP_INTEGRATION_TESTS") == "1",
-    reason="Integration tests disabled"
+    reason="Integration tests disabled",
 )
 class TestRealHealthChecks:
     """

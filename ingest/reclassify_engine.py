@@ -9,14 +9,15 @@ Phase 16: Core reclassification capability.
 
 import glob
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
+
+from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from ingest.classifier import classify
 from ingest.core.metadata import MetadataStore
 from kb_server.vector_store import VectorStore
-from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 log = logging.getLogger("kb-ingest.reclassify")
 
@@ -36,17 +37,20 @@ async def detect_changed_classifications(
     allow_missing: bool = False,
 ) -> list[dict[str, Any]]:
     """
-    Detect documents where current Qdrant metadata differs from classify() output.
+    Detect documents where current Qdrant metadata differs
+    from classify() output.
 
-    Compares classification fields (vendor, product, subsystem, doc_type, version)
-    between Qdrant payload and what classify() would return today. Only returns
-    documents with at least one field difference.
+    Compares classification fields (vendor, product, subsystem,
+    doc_type, version) between Qdrant payload and what classify()
+    would return today. Only returns documents with at least one
+    field difference.
 
     Args:
         collection_name: Qdrant collection to query.
         pattern: File glob pattern (e.g., 'docs/**/*.pdf').
-        metadata_filter: Optional dict of field->value filters to apply.
-        allow_missing: If True, process docs even if source file missing on disk.
+        metadata_filter: Optional dict of field->value filters.
+        allow_missing: If True, process docs even if source file
+            missing on disk.
 
     Returns:
         List of dicts with keys:
@@ -73,14 +77,17 @@ async def detect_changed_classifications(
                 FieldCondition(key=field, match=MatchValue(value=value))
             )
 
-    query_filter = Filter(must=conditions) if conditions else None
+    query_filter = Filter(must=conditions) if conditions else None  # type: ignore[arg-type]
 
     # Scroll through collection to get all matching documents
     offset = None
     docs_metadata: dict[str, dict] = {}
 
+    client = store.client
+    assert client is not None
+
     while True:
-        points, offset = await store.client.scroll(
+        points, offset = await client.scroll(
             collection_name=collection_name,
             scroll_filter=query_filter,
             limit=1000,
@@ -90,18 +97,20 @@ async def detect_changed_classifications(
         )
 
         for point in points:
-            source_file = point.payload.get("source_file", "")
+            payload = point.payload
+            assert payload is not None
+            source_file = payload.get("source_file", "")
             if not source_file:
                 continue
 
             # Aggregate metadata per document (use first chunk's metadata)
             if source_file not in docs_metadata:
                 docs_metadata[source_file] = {
-                    "vendor": point.payload.get("vendor", ""),
-                    "product": point.payload.get("product", ""),
-                    "subsystem": point.payload.get("subsystem", ""),
-                    "doc_type": point.payload.get("doc_type", "document"),
-                    "version": point.payload.get("version", ""),
+                    "vendor": payload.get("vendor", ""),
+                    "product": payload.get("product", ""),
+                    "subsystem": payload.get("subsystem", ""),
+                    "doc_type": payload.get("doc_type", "document"),
+                    "version": payload.get("version", ""),
                     "chunk_count": 0,
                 }
             docs_metadata[source_file]["chunk_count"] += 1
@@ -131,15 +140,19 @@ async def detect_changed_classifications(
                 log.warning(
                     f"File missing but allow_missing=True: {abs_path_str}"
                 )
-                # For missing files with allow_missing, we can't re-run classify()
-                # so we skip them (could be enhanced to use metadata-only logic)
+                # For missing files with allow_missing, we can't
+                # re-run classify() so we skip them
+                # (could be enhanced to use metadata-only logic)
                 continue
             else:
                 log.warning(f"Skipping missing file: {abs_path_str}")
                 continue
 
         # Check if file matches glob pattern
-        if abs_path_str not in matched_files and source_file not in matched_files:
+        if (
+            abs_path_str not in matched_files
+            and source_file not in matched_files
+        ):
             # File in Qdrant but doesn't match current pattern
             continue
 
@@ -152,7 +165,14 @@ async def detect_changed_classifications(
 
         # Compare classification fields
         fields_changed = {}
-        for field in ["vendor", "product", "subsystem", "module", "doc_type", "version"]:
+        for field in [
+            "vendor",
+            "product",
+            "subsystem",
+            "module",
+            "doc_type",
+            "version",
+        ]:
             old_value = current_meta.get(field, "")
             new_value = expected_meta.get(field, "")
             if old_value != new_value:
@@ -218,7 +238,8 @@ def backup_metadata(
         store.conn.executemany(
             """
             INSERT INTO reclassify_backups
-            (session_timestamp, source_file, field_name, old_value, chunk_index)
+            (session_timestamp, source_file, field_name, old_value,
+             chunk_index)
             VALUES (?, ?, ?, ?, ?)
             """,
             backup_records,
@@ -247,7 +268,7 @@ def log_changes(session_timestamp: str, changes: list[dict[str, Any]]) -> None:
 
     log.info(f"Logging {len(changes)} document changes to audit history")
 
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
     with MetadataStore() as store:
         # Batch insert for performance
@@ -272,7 +293,8 @@ def log_changes(session_timestamp: str, changes: list[dict[str, Any]]) -> None:
         store.conn.executemany(
             """
             INSERT INTO reclassify_history
-            (timestamp, source_file, field_name, old_value, new_value, session_timestamp)
+            (timestamp, source_file, field_name, old_value,
+             new_value, session_timestamp)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             history_records,
@@ -302,7 +324,9 @@ def cleanup_old_backups(retention_days: int | None = None) -> int:
     if retention_days is None:
         retention_days = RECLASSIFY_BACKUP_RETENTION_DAYS
 
-    cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+    cutoff_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+        days=retention_days
+    )
     cutoff_str = cutoff_date.isoformat()[:10]  # YYYY-MM-DD prefix
 
     log.info(
@@ -320,7 +344,8 @@ def cleanup_old_backups(retention_days: int | None = None) -> int:
             """,
             (cutoff_str,),
         )
-        count_before = cursor.fetchone()[0]
+        row = cursor.fetchone()
+        count_before = cast(int, row[0] if row else 0)
 
         if count_before == 0:
             log.info("No old backups to clean up")
@@ -375,7 +400,8 @@ async def reclassify_documents(
         Dict with keys:
             - session_timestamp: ISO timestamp for this session
             - documents_changed: Number of documents with changes
-            - total_field_changes: Total number of field changes across all docs
+            - total_field_changes: Total number of field changes
+              across all docs
             - chunks_updated: Number of Qdrant chunks updated (0 if dry_run)
             - backup_records: Number of backup records created (0 if dry_run)
             - history_records: Number of history records created (0 if dry_run)
@@ -385,7 +411,11 @@ async def reclassify_documents(
     Raises:
         Exception: If detection, backup, update, or logging fails.
     """
-    session_timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H-%M-%S")
+    session_timestamp = (
+        datetime.now(timezone.utc)
+        .replace(tzinfo=None)
+        .strftime("%Y-%m-%dT%H-%M-%S")
+    )
 
     log.info(
         f"Starting reclassification session {session_timestamp} "
@@ -492,6 +522,7 @@ async def reclassify_documents(
     # PHASE 17: Signal MCP server to refresh filter terms
     try:
         from ingest.utils import write_filter_cache_bust
+
         write_filter_cache_bust()
     except Exception:
         pass
@@ -499,7 +530,8 @@ async def reclassify_documents(
     log.info(
         f"Reclassification complete: {len(changes)} documents, "
         f"{chunks_updated} chunks updated, {backup_records} backups, "
-        f"{history_records} history records, {old_backups_cleaned} old backups cleaned"
+        f"{history_records} history records, "
+        f"{old_backups_cleaned} old backups cleaned"
     )
 
     return {
@@ -512,4 +544,3 @@ async def reclassify_documents(
         "old_backups_cleaned": old_backups_cleaned,
         "changes": changes,
     }
-

@@ -1,0 +1,57 @@
+# kb-rag-mcp Docker Compose — Development (lightweight)
+# Only runs core services: Qdrant + kb-rag-mcp
+# No Prometheus, Grafana, or Web UI — saves ~6-10GB RAM
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+#
+# Or use the dev-only override directly:
+#   docker compose -f docker-compose.dev.yml up -d
+
+services:
+  qdrant:
+    extends:
+      file: docker-compose.yml
+      service: qdrant
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  kb-rag-mcp:
+    extends:
+      file: docker-compose.yml
+      service: kb-rag-mcp
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+    # In dev, don't wait for healthcheck — start faster
+    healthcheck:
+      start_period: 30s
+
+  # Prometheus and Grafana are explicitly excluded in dev
+  # Uncomment below if you need them (adds ~1-2GB RAM):
+  # prometheus:
+  #   extends:
+  #     file: docker-compose.yml
+  #     service: prometheus
+  # grafana:
+  #   extends:
+  #     file: docker-compose.yml
+  #     service: grafana
+
+  # Web UI is excluded in dev (adds another copy of the heavy Python image)
+  # web-ui:
+  #   extends:
+  #     file: docker-compose.yml
+  #     service: web-ui
+
+volumes:
+  prometheus-data:
+  grafana-data:

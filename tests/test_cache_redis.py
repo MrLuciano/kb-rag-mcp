@@ -1,11 +1,11 @@
 """Tests for kb_server/cache/redis.py — RedisCache (fully mocked)."""
+
 from __future__ import annotations
 
 import pickle
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
