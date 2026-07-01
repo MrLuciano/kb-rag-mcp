@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 54: UI Polish Fixes** — 13 fixes resolving all UI-REVIEW.md findings
+  - Copywriting: "RAGAS Evaluation" → "Evaluation", "Search Tester" → "Semantic Search", expanded K/BM25/Rerank labels, user-friendly error messages
+  - Typography: Fixed heading hierarchy (h4.h6 → h4, h3.h5 → h3) for valid outline
+  - Layout: Removed double container nesting, clean pagination hrefs, centered job status counters, mobile spacing
+  - UX: Dismissible HTMX error alerts, animated RAGAS progress bar, Bootstrap search pagination (HTMX)
+  - Nyquist: 13 validation tests (1554 suite baseline, all green)
+
+- **docs/PROVISIONING.md** — Provisioning reference with VM SKUs, pricing, and sizing for small (10 users) and medium (100 users) teams
+
+### Fixed
+
+- **Docker: croniter dependency** — Added `croniter==6.2.2` to `requirements.core.txt` to fix `web-ui` crash on startup (ModuleNotFoundError from `ingest.core.cron`)
+
+### Changed
+
+- **Root directory cleanup** — Moved 5 documentation files to `docs/` (FEATURES, TRANSITION, UI-REVIEW, REVIEW, REVIEW-DBA), removed stale empty `package-lock.json`
+- **Updated `.gitignore`** — Added `logs/` and `.mypy_cache/`
+
+### Security
+
+- **Phase 29: Nyquist validation retrofill** — 18 new tests across 8 connector test files covering schema migration coexistence, rate limiting, incremental checkpoint wiring, SSH auth, workspace cleanup, and pipeline end-to-end flows (1572 suite baseline, all green)
 
 ## [0.1.5] 2026-06-29
 
