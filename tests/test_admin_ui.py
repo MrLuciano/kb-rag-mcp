@@ -711,3 +711,64 @@ class TestCredentialsSection:
             content = f.read()
         assert '{% include "admin/_sessions_table.html" %}' in content
         assert '{% include "admin/_credentials_section.html" %}' in content
+
+
+# ---------------------------------------------------------------------------
+# Phase 54 gaps — UI polish behavioral verifications
+# ---------------------------------------------------------------------------
+class TestPhase54ProfileConfigHeading:
+    """T5: Remove h4.h6 class on Config heading."""
+
+    def test_profile_config_heading_no_downclass(self):
+        """Profile Config heading is <h4> without class='h6'."""
+        import re
+        with open("kb_server/ui/templates/admin/tab_profile.html") as f:
+            content = f.read()
+        # Verify the Config heading is <h4> with no class attribute
+        assert '<h4>Config</h4>' in content
+        # Reject any h4 with class="h6"
+        assert not re.search(r'<h4[^>]*class="h6"', content)
+
+
+class TestPhase54AnalyticsHeadings:
+    """T6: Remove h3.h5 classes on analytics headings."""
+
+    def test_analytics_headings_no_h5_class(self):
+        """Analytics h3 headings do NOT have class='h5' visual override."""
+        import re
+        with open("kb_server/ui/templates/admin/tab_analytics.html") as f:
+            content = f.read()
+        # Check that no h3 element has class containing "h5"
+        matches = re.findall(r'<h3[^>]*class="[^"]*h5[^"]*"', content)
+        assert len(matches) == 0, f"Found {len(matches)} h3 with h5 class: {matches}"
+        # Verify the headings are plain <h3> (no class overrides at all)
+        assert re.search(r'<h3>Popular Queries</h3>', content)
+        assert re.search(r'<h3>Content Gaps</h3>', content)
+        assert re.search(r'<h3>Latency Statistics</h3>', content)
+
+
+class TestPhase54JobStatus:
+    """T9: Center job status counters."""
+
+    def test_job_status_counters_centered(self):
+        """Job status counters use justify-content-center for alignment."""
+        with open("kb_server/ui/templates/admin/_job_status.html") as f:
+            content = f.read()
+        assert "justify-content-center" in content
+        # Verify the flex container has gap utility
+        assert "d-flex" in content
+        assert "gap-2" in content
+
+
+class TestPhase54RagasProgress:
+    """T12: RAGAS progress bar."""
+
+    def test_ragas_run_has_progress_indication(self):
+        """RAGAS Run Evaluation shows a progress bar with status text."""
+        with open("kb_server/ui/templates/admin/_ragas_editor.html") as f:
+            content = f.read()
+        # The beforeRequest handler injects a progress bar
+        assert "progress-bar" in content
+        assert "progress-bar-striped" in content
+        assert "progress-bar-animated" in content
+        assert "Running evaluation" in content

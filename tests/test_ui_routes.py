@@ -690,3 +690,120 @@ class TestErrorHandlers:
         assert resp.status_code == 200
         assert "htmx:sendError" in resp.text
         assert "Network error. Please check your connection." in resp.text
+
+
+# ---------------------------------------------------------------------------
+# Phase 54 gaps — UI polish behavioral verifications
+# ---------------------------------------------------------------------------
+class TestPhase54SearchPage:
+    """T3: Rename 'Search Tester' → 'Semantic Search' on search page."""
+
+    def test_search_page_has_semantic_title(self):
+        """Search page h1 shows 'Semantic Search', not 'Search Tester'."""
+        with open("kb_server/ui/templates/search.html") as f:
+            content = f.read()
+        assert "<h1>Semantic Search</h1>" in content
+        # The h1 should NOT say "Search Tester"
+        assert "<h1>Search Tester</h1>" not in content
+
+
+class TestPhase54ChunkErrorMessage:
+    """T4: Rephrase 'Chunk Loading Failed' → 'Unable to Load Chunks'."""
+
+    def test_chunk_loading_error_message(self):
+        """Document template uses 'Unable to Load Chunks' not 'Chunk Loading Failed'."""
+        with open("kb_server/ui/templates/document.html") as f:
+            content = f.read()
+        assert "Unable to Load Chunks" in content
+        assert "Chunk Loading Failed" not in content
+
+
+class TestPhase54ErrorPage:
+    """T7: Remove double container nesting on error page."""
+
+    def test_error_page_no_double_container(self):
+        """Rendered 404 page has at most one .container (not nested)."""
+        import re
+        resp = client.get("/nonexistent")
+        assert resp.status_code == 404
+        # Find all class values that contain "container" as a separate class token
+        containers = []
+        for m in re.finditer(r'<div class="([^"]*)"', resp.text):
+            classes = m.group(1).split()
+            if 'container' in classes:
+                containers.append(m.group(1))
+        # Valid layouts have exactly 1 container (the main content container)
+        assert len(containers) <= 1, (
+            f"Expected at most 1 container div, found {len(containers)}: {containers}"
+        )
+
+
+class TestPhase54BrowsePagination:
+    """T8: Clean pagination href whitespace."""
+
+    def test_pagination_hrefs_no_whitespace(self):
+        """Pagination href values should not contain internal whitespace/newlines."""
+        import re
+        with open("kb_server/ui/templates/browse.html") as f:
+            content = f.read()
+        # Find all href attributes in pagination links (class="page-link")
+        hrefs = re.findall(r'class="page-link"[^>]*href="([^"]*)"', content)
+        # Also find hrefs that start on the line after class="page-link"
+        hrefs += re.findall(r'class="page-link"\s*\n\s*href="([^"]*)"', content)
+        for href in hrefs:
+            # A clean href starts with ?page= and has no leading whitespace/newlines
+            assert href.strip() == href, f"href has leading/trailing whitespace: {repr(href[:50])}"
+            assert "\n" not in href, f"href contains newline: {repr(href[:50])}"
+
+
+class TestPhase54SearchSpacing:
+    """T10: Add mb-3 mobile spacing on search results div."""
+
+    def test_search_results_has_mobile_spacing(self):
+        """Search results div has mb-3 class for mobile spacing."""
+        with open("kb_server/ui/templates/search.html") as f:
+            content = f.read()
+        # The results div should have mb-3 class
+        assert 'id="results" class="mb-3"' in content
+
+
+class TestPhase54ErrorAlerts:
+    """T11: Dismissible alerts in HTMX error handlers."""
+
+    def test_error_alerts_are_dismissible(self):
+        """HTMX error handlers inject alert-dismissible with btn-close."""
+        resp = client.get("/ui/search")
+        assert resp.status_code == 200
+        assert "alert-dismissible" in resp.text
+        assert "btn-close" in resp.text
+        # The btn-close button should have aria-label for accessibility
+        assert 'aria-label="Close"' in resp.text
+
+    def test_send_error_alert_is_dismissible(self):
+        """sendError handler creates a dismissible alert with btn-close."""
+        with open("kb_server/ui/templates/base.html") as f:
+            content = f.read()
+        # The htmx:sendError handler renders an alert-dismissible div
+        assert "htmx:sendError" in content
+        assert "alert-dismissible" in content
+        assert "btn-close" in content
+
+
+class TestPhase54SearchPagination:
+    """T13: Search pagination controls."""
+
+    def test_search_results_have_pagination(self):
+        """Search results template has pagination with page-link elements."""
+        with open("kb_server/ui/templates/search_results.html") as f:
+            content = f.read()
+        assert "pagination" in content
+        assert "page-link" in content
+        # Should have HTMX-powered pagination
+        assert "hx-post" in content
+        assert 'hx-vals=\'{"page"' in content or 'hx-vals="{' in content
+
+    def test_search_route_has_page_param(self):
+        """Search POST route accepts page parameter."""
+        with open("kb_server/ui/routes.py") as f:
+            content = f.read()
+        assert "page: int = Form(1, ge=1)" in content or "page: int = Form(1" in content
