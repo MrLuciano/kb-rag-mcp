@@ -207,7 +207,8 @@ class TestAuthFlow:
     def test_sidebar_tab_labels(self):
         with open("kb_server/ui/templates/admin/shell.html") as f:
             content = f.read()
-        assert "RAGAS Evaluation" in content
+        assert "Evaluation" in content
+        assert "RAGAS Evaluation" not in content
         assert "Admin" in content
 
     def test_auth_router_has_logout(self):

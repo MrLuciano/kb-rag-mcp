@@ -4,7 +4,7 @@
 <div class="mb-3">
     <h4 class="h6">Config</h4>
     <div class="d-flex justify-content-between align-items-center mb-1">
-        <span>K: {{ qdrant_k }}</span>
+        <span>Top-K: {{ qdrant_k }}</span>
         {% if config_validation.qdrant_k %}
         <span class="badge text-success border border-success">Valid</span>
         {% else %}
@@ -12,7 +12,7 @@
         {% endif %}
     </div>
     <div class="d-flex justify-content-between align-items-center mb-1">
-        <span>BM25: {{ bm25_enabled }}</span>
+        <span>BM25 Enabled: {{ bm25_enabled }}</span>
         {% if config_validation.bm25_enabled %}
         <span class="badge text-success border border-success">Valid</span>
         {% else %}
@@ -20,7 +20,7 @@
         {% endif %}
     </div>
     <div class="d-flex justify-content-between align-items-center mb-1">
-        <span>Rerank: {{ reranker_enabled }}</span>
+        <span>Reranker Enabled: {{ reranker_enabled }}</span>
         {% if config_validation.reranker_enabled %}
         <span class="badge text-success border border-success">Valid</span>
         {% else %}

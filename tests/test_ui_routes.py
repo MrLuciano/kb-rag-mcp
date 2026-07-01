@@ -648,9 +648,9 @@ class TestProfileConfigValidation:
         resp = client.get("/admin/tabs/profile")
         assert resp.status_code == 200
         html = resp.text
-        assert "K:" in html
-        assert "BM25:" in html
-        assert "Rerank:" in html
+        assert "Top-K:" in html
+        assert "BM25 Enabled:" in html
+        assert "Reranker Enabled:" in html
         assert 'text-success border border-success' in html
         assert 'text-danger border border-danger' not in html
 
