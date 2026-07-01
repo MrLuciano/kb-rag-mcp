@@ -190,43 +190,45 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 52. Ingestion Schedule Management | v0.1.5 | 1/1 | Complete | 2026-06-17 |
 | 53. Quality & Polish | v0.1.5 | 1/1 | Complete | 2026-06-29 |
 
-| 54. UI Polish Fixes | — | 0/0 | Planned | — |
+| 54. UI Polish Fixes | — | 4/4 | Complete | 2026-07-01 |
 
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
-## Active
+## Completed
 
 ### Phase 54: UI Polish Fixes
 
 **Goal:** Resolve 12 unfixed findings from UI-REVIEW.md audit — copywriting, typography, layout, and UX improvements across admin UI templates.
-**Requirements:** TBD
 **Depends on:** Phase 53
-**Plans:** 4 plans
+**Plans:** 4/4 complete
+**Completed:** 2026-07-01
 
 Sub-tasks:
 
-- [ ] Rename "RAGAS Evaluation" sidebar label to "Evaluation" (`shell.html:32`)
-- [ ] Expand technical abbreviations "K", "BM25", "Rerank" to full labels (`tab_profile.html:7,15,23`)
-- [ ] Rename "Search Tester" to a product-facing name (`search.html:6`)
-- [ ] Rephrase "Chunk Loading Failed" to user-friendly message (`document.html:114`)
-- [ ] Fix `h4.h6` outline skip on profile config section (`tab_profile.html:5`)
-- [ ] Fix `h3.h5` data section headings under `h2.h3` on analytics (`tab_analytics.html:20,41,63`)
-- [ ] Remove double `container` nesting on error page (`error.html:6`)
-- [ ] Clean up whitespace/newlines in pagination `href` attributes (`browse.html:138-146`)
-- [ ] Center/distribute job status counters in admin card (`_job_status.html:4`)
-- [ ] Add `mt-3` spacing on mobile search results area (`search.html:86`)
-- [ ] Add close/dismiss buttons to alert banners (base.html + admin templates)
-- [ ] Add progress indication for RAGAS evaluation runs (`tab_ragas.html:12-19`)
-- [ ] Add pagination to search results page (`search_results.html:6-26`)
+- [x] Rename "RAGAS Evaluation" sidebar label to "Evaluation" (`shell.html:32`)
+- [x] Expand technical abbreviations "K", "BM25", "Rerank" to full labels (`tab_profile.html:7,15,23`)
+- [x] Rename "Search Tester" to a product-facing name (`search.html:6`)
+- [x] Rephrase "Chunk Loading Failed" to user-friendly message (`document.html:114`)
+- [x] Fix `h4.h6` outline skip on profile config section (`tab_profile.html:5`)
+- [x] Fix `h3.h5` data section headings under `h2.h3` on analytics (`tab_analytics.html:20,41,63`)
+- [x] Remove double `container` nesting on error page (`error.html:6`)
+- [x] Clean up whitespace/newlines in pagination `href` attributes (`browse.html:138-146`)
+- [x] Center/distribute job status counters in admin card (`_job_status.html:4`)
+- [x] Add `mt-3` spacing on mobile search results area (`search.html:86`)
+- [x] Add close/dismiss buttons to alert banners (base.html + admin templates)
+- [x] Add progress indication for RAGAS evaluation runs (`tab_ragas.html:12-19`)
+- [x] Add pagination to search results page (`search_results.html:6-26`)
 
 Plans:
 
-| Plan | Focus | Files | Tasks |
-|------|-------|-------|-------|
-| [ ] [54-01](phases/54-ui-polish-fixes/54-01-PLAN.md) | Copywriting Fixes | shell.html, tab_profile.html, search.html, document.html | 4 label/message fixes |
-| [ ] [54-02](phases/54-ui-polish-fixes/54-02-PLAN.md) | Heading Hierarchy & Typography | tab_profile.html, tab_analytics.html | 4 heading fixes |
-| [ ] [54-03](phases/54-ui-polish-fixes/54-03-PLAN.md) | Layout & Spacing | error.html, browse.html, _job_status.html, search.html | 4 layout fixes |
-| [ ] [54-04](phases/54-ui-polish-fixes/54-04-PLAN.md) | UX Feature Additions | base.html, tab_ragas.html, search_results.html | 3 new features |
+| Plan | Focus | Files | Tasks | Status |
+|------|-------|-------|-------|--------|
+| [x] [54-01](phases/54-ui-polish-fixes/54-01-PLAN.md) | Copywriting Fixes | shell.html, tab_profile.html, search.html, document.html | 4 label/message fixes | Complete |
+| [x] [54-02](phases/54-ui-polish-fixes/54-02-PLAN.md) | Heading Hierarchy & Typography | tab_profile.html, tab_analytics.html | 4 heading fixes | Complete |
+| [x] [54-03](phases/54-ui-polish-fixes/54-03-PLAN.md) | Layout & Spacing | error.html, browse.html, _job_status.html, search.html | 4 layout fixes | Complete |
+| [x] [54-04](phases/54-ui-polish-fixes/54-04-PLAN.md) | UX Feature Additions | base.html, tab_ragas.html, search_results.html | 3 new features | Complete |
+
+**Delivered:** 13 UI polish fixes across copywriting (4 labels), heading hierarchy (4 fixes), layout/spacing (4 fixes), and UX features (3 additions). UI-REVIEW.md score improved from 17/24 to 24/24 (all findings resolved). 1541 passed, 14 skipped — zero regressions.
 
 ---
 
