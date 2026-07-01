@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-15)
 
 **Core value:** AI assistants stop hallucinating about closed-source products — every answer is grounded in the team's actual documentation.
-**Current focus:** Planning next milestone
+**Current focus:** Phase 54 UI Polish Fixes
 
 ## Current Position
 
-Phase: Milestone 0.1.5 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-30 — Milestone 0.1.5 completed and archived
+Phase: 54 (ui-polish-fixes) — 4 plans planned
+Plan: 54-01 through 54-04
+Status: Planned — ready to execute
+Last activity: 2026-07-01 — Phase 54 context and 4 plans created
 
 ## Phase 28c-fixes Outcomes
 

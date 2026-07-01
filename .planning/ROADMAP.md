@@ -201,7 +201,7 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 **Goal:** Resolve 12 unfixed findings from UI-REVIEW.md audit — copywriting, typography, layout, and UX improvements across admin UI templates.
 **Requirements:** TBD
 **Depends on:** Phase 53
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Sub-tasks:
 
@@ -221,7 +221,12 @@ Sub-tasks:
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 54 to break down)
+| Plan | Focus | Files | Tasks |
+|------|-------|-------|-------|
+| [ ] [54-01](phases/54-ui-polish-fixes/54-01-PLAN.md) | Copywriting Fixes | shell.html, tab_profile.html, search.html, document.html | 4 label/message fixes |
+| [ ] [54-02](phases/54-ui-polish-fixes/54-02-PLAN.md) | Heading Hierarchy & Typography | tab_profile.html, tab_analytics.html | 4 heading fixes |
+| [ ] [54-03](phases/54-ui-polish-fixes/54-03-PLAN.md) | Layout & Spacing | error.html, browse.html, _job_status.html, search.html | 4 layout fixes |
+| [ ] [54-04](phases/54-ui-polish-fixes/54-04-PLAN.md) | UX Feature Additions | base.html, tab_ragas.html, search_results.html | 3 new features |
 
 ---
 
