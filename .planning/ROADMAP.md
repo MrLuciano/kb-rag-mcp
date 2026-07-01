@@ -194,5 +194,53 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 ## Backlog
 
-All backlog items promoted or completed. See phase directories under `.planning/phases/` for details.
+### Phase 999.1: UI Polish — Copywriting & Messaging (BACKLOG)
+
+**Goal:** Fix jargon-heavy and technical labels across admin UI templates for clearer user-facing copy.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Sub-tasks:
+- [ ] Rename "RAGAS Evaluation" sidebar label to "Evaluation" (`shell.html:32`)
+- [ ] Expand technical abbreviations "K", "BM25", "Rerank" to full labels (`tab_profile.html:7,15,23`)
+- [ ] Rename "Search Tester" to a product-facing name (`search.html:6`)
+- [ ] Rephrase "Chunk Loading Failed" to user-friendly message (`document.html:114`)
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.2: UI Polish — Typography & Layout (BACKLOG)
+
+**Goal:** Fix heading hierarchy inconsistencies, container nesting, and visual alignment in UI templates.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Sub-tasks:
+- [ ] Fix `h4.h6` outline skip on profile config section (`tab_profile.html:5`)
+- [ ] Fix `h3.h5` data section headings under `h2.h3` on analytics (`tab_analytics.html:20,41,63`)
+- [ ] Remove double `container` nesting on error page (`error.html:6`)
+- [ ] Clean up whitespace/newlines in pagination `href` attributes (`browse.html:138-146`)
+- [ ] Center/distribute job status counters in admin card (`_job_status.html:4`)
+- [ ] Add `mt-3` spacing on mobile search results area (`search.html:86`)
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.3: UI Polish — UX Experience (BACKLOG)
+
+**Goal:** Add dismissible alerts, RAGAS progress feedback, and search result pagination.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Sub-tasks:
+- [ ] Add close/dismiss buttons to alert banners (base.html + admin templates)
+- [ ] Add progress indication for RAGAS evaluation runs (`tab_ragas.html:12-19`)
+- [ ] Add pagination to search results page (`search_results.html:6-26`)
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
 
