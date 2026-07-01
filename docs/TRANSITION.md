@@ -60,7 +60,7 @@ ingest/
 |------|---------|
 | `docs/HYGIENE_STATUS.md` | Detailed FASE 1 completion report |
 | `longstrings.md` | E501 long lines for manual fix (31 lines) |
-| `TRANSITION.md` | This file - transition summary |
+| `docs/TRANSITION.md` | This file - transition summary |
 
 ## Next Actions
 

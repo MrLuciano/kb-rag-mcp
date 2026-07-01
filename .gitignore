@@ -30,6 +30,7 @@ env/
 
 # IDE
 .vscode/
+.mypy_cache/
 .idea/
 *.swp
 *.swo
@@ -47,6 +48,7 @@ htmlcov/
 *.sqlite3
 
 # Logs
+logs/
 *.log
 
 # OS
