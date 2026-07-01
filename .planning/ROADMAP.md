@@ -8,7 +8,6 @@
 - ✅ **v0.1.3 Post-Ship Polish & Infrastructure** — Phases 12–22 (shipped 2026-05-27) — [archive](milestones/v0.1.3-ROADMAP.md)
 - ✅ **v0.1.4 Platform, Analytics & Enterprise** — Phases 23–37 (shipped 2026-06-11) — [archive](milestones/v0.1.4-ROADMAP.md)
 - ✅ **v0.1.5 Streamable HTTP & Management Platform** — Phases 28–53 (shipped 2026-06-29) — [archive](milestones/v0.1.5-ROADMAP.md)
-- ⏳ **v0.1.6 UI Polish** — Phases 54–56 (planned)
 
 ## Phases
 
@@ -126,21 +125,6 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 
 </details>
 
-## v0.1.6 UI Polish
-
-<details>
-<summary>⏳ v0.1.6 Phase Overview — PLANNED</summary>
-
-**All 3 phases (54-56) planned:**
-
-- [ ] Phase 54: UI Polish — Copywriting & Messaging (0/0 plans) — planned
-- [ ] Phase 55: UI Polish — Typography & Layout (0/0 plans) — planned
-- [ ] Phase 56: UI Polish — UX Experience (0/0 plans) — planned
-
-**Goal:** Resolve 12 unfixed findings from UI-REVIEW.md audit — fix jargon-heavy labels, heading hierarchy, container nesting, spacing, dismissible alerts, RAGAS progress feedback, and search pagination.
-
-</details>
-
 ---
 
 ## Progress
@@ -206,12 +190,57 @@ multi-stage Dockerfile, quickstart.sh, and new README getting-started guide.
 | 52. Ingestion Schedule Management | v0.1.5 | 1/1 | Complete | 2026-06-17 |
 | 53. Quality & Polish | v0.1.5 | 1/1 | Complete | 2026-06-29 |
 
-| 54. UI Polish — Copywriting & Messaging | v0.1.6 | 0/0 | Planned | — |
-| 55. UI Polish — Typography & Layout | v0.1.6 | 0/0 | Planned | — |
-| 56. UI Polish — UX Experience | v0.1.6 | 0/0 | Planned | — |
-
 *Earlier milestones (v0.1.0–v0.1.3): see archived roadmaps in [milestones/](milestones/).*
 
 ## Backlog
 
-All backlog items promoted or completed. See phase directories under `.planning/phases/` for details.
+### Phase 999.1: UI Polish — Copywriting & Messaging (BACKLOG)
+
+**Goal:** Fix jargon-heavy and technical labels across admin UI templates for clearer user-facing copy.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Sub-tasks:
+- [ ] Rename "RAGAS Evaluation" sidebar label to "Evaluation" (`shell.html:32`)
+- [ ] Expand technical abbreviations "K", "BM25", "Rerank" to full labels (`tab_profile.html:7,15,23`)
+- [ ] Rename "Search Tester" to a product-facing name (`search.html:6`)
+- [ ] Rephrase "Chunk Loading Failed" to user-friendly message (`document.html:114`)
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.2: UI Polish — Typography & Layout (BACKLOG)
+
+**Goal:** Fix heading hierarchy inconsistencies, container nesting, and visual alignment in UI templates.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Sub-tasks:
+- [ ] Fix `h4.h6` outline skip on profile config section (`tab_profile.html:5`)
+- [ ] Fix `h3.h5` data section headings under `h2.h3` on analytics (`tab_analytics.html:20,41,63`)
+- [ ] Remove double `container` nesting on error page (`error.html:6`)
+- [ ] Clean up whitespace/newlines in pagination `href` attributes (`browse.html:138-146`)
+- [ ] Center/distribute job status counters in admin card (`_job_status.html:4`)
+- [ ] Add `mt-3` spacing on mobile search results area (`search.html:86`)
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.3: UI Polish — UX Experience (BACKLOG)
+
+**Goal:** Add dismissible alerts, RAGAS progress feedback, and search result pagination.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Sub-tasks:
+- [ ] Add close/dismiss buttons to alert banners (base.html + admin templates)
+- [ ] Add progress indication for RAGAS evaluation runs (`tab_ragas.html:12-19`)
+- [ ] Add pagination to search results page (`search_results.html:6-26`)
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
