@@ -704,6 +704,22 @@ class TestConnectorCommands:
         assert result.exit_code == 0
         assert "test-con" in result.output
 
+    def test_connectors_list_shows_builtin_types(self, cli_runner, temp_db):
+        """'connectors list' shows builtin types: confluence, jira, git."""
+        # Ensure connector modules are imported so their register() calls run
+        import ingest.connectors.confluence  # noqa: F401
+        import ingest.connectors.jira  # noqa: F401
+        import ingest.connectors.git  # noqa: F401
+
+        result = cli_runner.invoke(
+            cli, ["--db", str(temp_db), "connectors", "list"]
+        )
+        assert result.exit_code == 0
+        assert "confluence" in result.output
+        assert "jira" in result.output
+        assert "git" in result.output
+        assert "test-con" in result.output
+
     def test_connectors_list_empty(self, cli_runner, temp_db):
         """Test 'connectors list' without mock registration."""
         result = cli_runner.invoke(

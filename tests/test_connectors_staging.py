@@ -6,6 +6,10 @@ import os
 import time
 from pathlib import Path
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 from ingest.connectors.models import RemoteDocument
 from ingest.connectors.staging import (
     _safe_path_component,
@@ -187,3 +191,106 @@ class TestResolveStagedMetadata:
         """Non-existent file returns empty dict."""
         metadata = resolve_staged_metadata(tmp_path / "nope.md")
         assert metadata == {}
+
+
+class TestStagedDocumentIngestPipeline:
+    """Tests that staged documents can feed into the ingest pipeline."""
+
+    @pytest.mark.asyncio
+    async def test_staged_document_flows_into_ingest(self, tmp_path):
+        """Stage a remote document and feed to run_ingest via staged_paths."""
+        from ingest.ingest import run_ingest
+
+        doc = RemoteDocument(
+            remote_id="page-123",
+            source_key="confluence://myspace",
+            connector_type="confluence",
+            title="Test Page",
+            content="Hello world content.",
+        )
+
+        staged = stage_document(doc, staging_root=tmp_path)
+        assert staged.exists()
+
+        # Mock the expensive infrastructure in run_ingest
+        mock_vector_store = MagicMock()
+        mock_vector_store.connect = AsyncMock()
+        mock_vector_store.delete_document = AsyncMock()
+        mock_vector_store.upsert_chunks = AsyncMock()
+
+        mock_registry = MagicMock()
+        mock_registry.needs_ingest.return_value = (True, "new")
+        mock_registry.sha256.return_value = "abc123"
+        mock_registry.summary.return_value = {"ok": 0, "errors": 0,
+                                               "deleted": 0, "total_chunks": 0}
+
+        # Mock MetadataStore for connector state verification
+        mock_meta_store = MagicMock()
+        mock_meta_store.connect = MagicMock()
+        mock_meta_store.close = MagicMock()
+        mock_meta_store.check_quota.return_value = (True, "ok")
+
+        with patch("kb_server.vector_store.VectorStore", return_value=mock_vector_store), \
+             patch("ingest.core.metadata.IngestRegistry", return_value=mock_registry), \
+             patch("ingest.ingest.process_file", new_callable=AsyncMock) as mock_process, \
+             patch("ingest.core.metadata.MetadataStore", return_value=mock_meta_store):
+            mock_process.return_value = (5, "ok")
+
+            await run_ingest(
+                docs_path=tmp_path,
+                staged_paths=[staged],
+                connector_source="confluence://myspace",
+                workers=1,
+            )
+
+        # Verify process_file was called with the staged file
+        mock_process.assert_called_once()
+        args, kwargs = mock_process.call_args
+        assert args[0] == staged  # file_path is the staged path
+
+        # Verify connector_state was recorded
+        mock_meta_store.upsert_connector_state.assert_called_once()
+        call_kwargs = mock_meta_store.upsert_connector_state.call_args[1]
+        assert call_kwargs["source_key"] == "confluence://myspace"
+
+    @pytest.mark.asyncio
+    async def test_run_ingest_works_without_connector_params(self, tmp_path):
+        """run_ingest works when called with only legacy args (docs_path)."""
+        from ingest.ingest import run_ingest
+
+        # Create a test doc file
+        doc_file = tmp_path / "test_doc.md"
+        doc_file.write_text("# Hello\n\nTest content.\n")
+
+        mock_vector_store = MagicMock()
+        mock_vector_store.connect = AsyncMock()
+        mock_vector_store.delete_document = AsyncMock()
+        mock_vector_store.upsert_chunks = AsyncMock()
+
+        mock_registry = MagicMock()
+        mock_registry.needs_ingest.return_value = (True, "new")
+        mock_registry.sha256.return_value = "abc123"
+        mock_registry.summary.return_value = {"ok": 0, "errors": 0,
+                                               "deleted": 0, "total_chunks": 0}
+
+        with patch("kb_server.vector_store.VectorStore", return_value=mock_vector_store), \
+             patch("ingest.core.metadata.IngestRegistry", return_value=mock_registry), \
+             patch("ingest.ingest.process_file", new_callable=AsyncMock) as mock_process, \
+             patch("ingest.core.metadata.MetadataStore") as mock_meta_cls:
+            mock_meta_store = MagicMock()
+            mock_meta_store.connect = MagicMock()
+            mock_meta_store.close = MagicMock()
+            mock_meta_store.check_quota.return_value = (True, "ok")
+            mock_meta_cls.return_value = mock_meta_store
+            mock_process.return_value = (3, "ok")
+
+            # Call with only docs_path (legacy args) — no staged_paths or connector_source
+            await run_ingest(
+                docs_path=tmp_path,
+                workers=1,
+            )
+
+        # Verify process_file was called with the doc file
+        mock_process.assert_called_once()
+        args, kwargs = mock_process.call_args
+        assert args[0] == doc_file

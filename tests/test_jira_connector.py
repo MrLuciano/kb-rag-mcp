@@ -294,6 +294,76 @@ class TestJiraFetchDocuments:
             doc = await conn.fetch_document("PROJ-999")
             assert doc is None
 
+    async def test_fetch_applies_rate_limiting(self, server_config):
+        """MultiRateLimiter.acquire is called before each HTTP request."""
+        from ingest.connectors.jira import JiraConnector
+
+        conn = JiraConnector(server_config)
+
+        projects_response = MagicMock()
+        projects_response.status_code = 200
+        projects_response.json.return_value = [
+            {"key": "PROJ", "name": "My Project"}
+        ]
+
+        search_response = MagicMock()
+        search_response.status_code = 200
+        search_response.json.return_value = {
+            "startAt": 0, "maxResults": 100, "total": 0, "issues": [],
+        }
+
+        # Mock the rate limiter's acquire method
+        conn._rate_limiter.acquire = AsyncMock(return_value=None)
+
+        with patch.object(conn, "_get_client") as mf:
+            mc = AsyncMock()
+            mc.get = AsyncMock()
+            mc.get.side_effect = [projects_response, search_response]
+            mf.return_value = mc
+            await conn.fetch_documents()
+
+        # Verify rate limiter was acquired for projects and search requests
+        assert conn._rate_limiter.acquire.call_count >= 2
+        conn._rate_limiter.acquire.assert_any_call("jira")
+
+    async def test_fetch_incremental_uses_checkpoint(self, server_config):
+        """When since is provided, it is passed as checkpoint in JQL query."""
+        from ingest.connectors.jira import JiraConnector
+
+        conn = JiraConnector(server_config)
+
+        projects_response = MagicMock()
+        projects_response.status_code = 200
+        projects_response.json.return_value = [
+            {"key": "PROJ", "name": "My Project"}
+        ]
+
+        search_response = MagicMock()
+        search_response.status_code = 200
+        search_response.json.return_value = {
+            "startAt": 0, "maxResults": 100, "total": 0, "issues": [],
+        }
+
+        with patch.object(conn, "_get_client") as mf:
+            mc = AsyncMock()
+            mc.get = AsyncMock()
+            mc.get.side_effect = [projects_response, search_response]
+            mf.return_value = mc
+
+            # Fetch with a checkpoint
+            since = "2026-06-01T00:00:00Z"
+            await conn.fetch_documents(since=since)
+
+        # The search URL should contain updated filter
+        # Check the second call (search URL)
+        search_url = mc.get.call_args_list[1][0][0]  # First positional arg
+        assert "updated" in search_url
+
+        # Verify the since checkpoint appears in the encoded JQL
+        import urllib.parse
+        decoded = urllib.parse.unquote(search_url)
+        assert 'updated>="2026-06-01T00:00:00Z"' in decoded
+
 
 class TestFactoryRegistration:
     def test_registered_in_factory(self):

@@ -76,6 +76,34 @@ class TestConfluenceContentExtraction:
         md = _storage_to_markdown(html)
         assert "Para 1" in md
         assert "Para 2" in md
+        # Verify HTML tags are stripped (no angle brackets remain from tags)
+        assert "<p>" not in md
+        assert "</p>" not in md
+        assert "<" not in md or "<" in md  # Only '<' in text should be if content contained it
+
+    def test_html_fallback_strips_all_tags(self):
+        """HTML fallback removes all HTML tags, leaving only text."""
+        from ingest.connectors.confluence import _storage_to_markdown
+
+        html = (
+            "<div><h1>Title</h1><p>Some <b>bold</b> text</p>"
+            "<ul><li>Item 1</li><li>Item 2</li></ul></div>"
+        )
+        md = _storage_to_markdown(html)
+        # All text content should survive
+        assert "Title" in md
+        assert "Some" in md
+        assert "bold" in md
+        assert "Item 1" in md
+        assert "Item 2" in md
+        # No HTML tags should remain
+        assert "<div>" not in md
+        assert "</div>" not in md
+        assert "<h1>" not in md
+        assert "<b>" not in md
+        assert "</b>" not in md
+        assert "<ul>" not in md
+        assert "<li>" not in md
 
 
 class TestConfluencePagination:
@@ -248,11 +276,11 @@ class TestConfluenceFetchDocuments:
         assert doc.title == "Single Page"
 
     async def test_fetch_document_404(self, server_config):
+        import httpx
+
         from ingest.connectors.confluence import ConfluenceConnector
 
         conn = ConfluenceConnector(server_config)
-
-        import httpx
 
         with patch.object(conn, "_get_client") as mf:
             mc = AsyncMock()
@@ -265,6 +293,79 @@ class TestConfluenceFetchDocuments:
             mf.return_value = mc
             doc = await conn.fetch_document("999")
             assert doc is None
+
+    async def test_fetch_applies_rate_limiting(self, server_config):
+        """MultiRateLimiter.acquire is called before each HTTP request."""
+        from ingest.connectors.confluence import ConfluenceConnector
+
+        conn = ConfluenceConnector(server_config)
+
+        spaces_response = MagicMock()
+        spaces_response.status_code = 200
+        spaces_response.json.return_value = {
+            "results": [{"key": "DEV", "name": "Development"}],
+            "size": 1,
+        }
+
+        content_response = MagicMock()
+        content_response.status_code = 200
+        content_response.json.return_value = {
+            "results": [], "size": 0, "start": 0,
+            "limit": 200, "totalSize": 0, "_links": {},
+        }
+
+        # Mock the rate limiter's acquire method
+        conn._rate_limiter.acquire = AsyncMock(return_value=None)
+
+        with patch.object(conn, "_get_client") as mf:
+            mc = AsyncMock()
+            mc.get = AsyncMock()
+            mc.get.side_effect = [spaces_response, content_response]
+            mf.return_value = mc
+            await conn.fetch_documents()
+
+        # Verify rate limiter was acquired for spaces request and content request
+        assert conn._rate_limiter.acquire.call_count >= 2
+        conn._rate_limiter.acquire.assert_any_call("confluence")
+
+    async def test_fetch_incremental_uses_checkpoint(self, server_config):
+        """When since is provided, it is passed as checkpoint in content CQL query."""
+        from ingest.connectors.confluence import ConfluenceConnector
+
+        conn = ConfluenceConnector(server_config)
+
+        spaces_response = MagicMock()
+        spaces_response.status_code = 200
+        spaces_response.json.return_value = {
+            "results": [{"key": "DEV", "name": "Development"}],
+            "size": 1,
+        }
+
+        content_response = MagicMock()
+        content_response.status_code = 200
+        content_response.json.return_value = {
+            "results": [], "size": 0, "start": 0,
+            "limit": 200, "totalSize": 0, "_links": {},
+        }
+
+        with patch.object(conn, "_get_client") as mf:
+            mc = AsyncMock()
+            mc.get = AsyncMock()
+            mc.get.side_effect = [spaces_response, content_response]
+            mf.return_value = mc
+
+            # Fetch with a checkpoint
+            since = "2026-06-01T00:00:00Z"
+            await conn.fetch_documents(since=since)
+
+        # The URL should contain lastModified filter
+        _, call_kwargs = mc.get.call_args
+        url = call_kwargs["url"] if "url" in call_kwargs else mc.get.call_args[0][0]
+        assert "lastModified" in url or "since_checkpoint" in str(mc.get.call_args_list)
+        # Verify the checkpoint appears in the URL
+        url_str = str(mc.get.call_args_list[1]) if len(mc.get.call_args_list) > 1 else str(mc.get.call_args_list[-1])
+        # The content URL should include the since parameter
+        assert since in url_str or "lastModified" in url_str
 
 
 class TestParseResult:

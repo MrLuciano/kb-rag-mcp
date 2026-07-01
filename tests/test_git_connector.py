@@ -459,6 +459,92 @@ class TestGitContentTypeDetection:
         assert conn._get_content_type("binary.bin") == ""
 
 
+class TestGitSSHAuth:
+    """Tests for git SSH authentication."""
+
+    def test_ssh_auth_sets_env(self, git_config_ssh, monkeypatch):
+        """SSH auth mode produces GIT_SSH_COMMAND env var in _git_env."""
+        from ingest.connectors.git import GitConnector
+
+        monkeypatch.setenv("GIT_SSH_KEY", "/home/user/.ssh/id_rsa")
+        conn = GitConnector(git_config_ssh)
+
+        env = conn._git_env()
+
+        assert "GIT_SSH_COMMAND" in env
+        assert "ssh -i /home/user/.ssh/id_rsa" in env["GIT_SSH_COMMAND"]
+        assert "StrictHostKeyChecking=no" in env["GIT_SSH_COMMAND"]
+
+    def test_ssh_auth_no_key_env(self, git_config_ssh):
+        """SSH auth without key env var produces fallback GIT_SSH_COMMAND."""
+        from ingest.connectors.git import GitConnector
+
+        conn = GitConnector(git_config_ssh)
+        env = conn._git_env()
+
+        # GIT_SSH_COMMAND may still be set but with empty key path
+        if "GIT_SSH_COMMAND" in env:
+            assert "ssh -i " in env["GIT_SSH_COMMAND"]
+
+    def test_token_auth_does_not_set_ssh_env(self, git_config, monkeypatch):
+        """Token auth mode does not set GIT_SSH_COMMAND."""
+        from ingest.connectors.git import GitConnector
+
+        monkeypatch.setenv("GITHUB_TOKEN", "ghp_abc123")
+        conn = GitConnector(git_config)
+
+        env = conn._git_env()
+
+        # GIT_SSH_COMMAND should not be set for token auth
+        assert "GIT_SSH_COMMAND" not in env or env["GIT_SSH_COMMAND"] == ""
+
+
+class TestGitWorkspaceCleanup:
+    """Tests for git workspace cleanup."""
+
+    @pytest.mark.asyncio
+    async def test_close_cleans_up_temp_workspace(self, git_config, monkeypatch):
+        """close() removes the temporary workspace directory."""
+        from ingest.connectors.git import GitConnector
+
+        monkeypatch.setenv("GITHUB_TOKEN", "ghp_fake")
+
+        conn = GitConnector(git_config)
+
+        # Set up a mock workspace (simulating what fetch_documents would do)
+        import tempfile
+        mock_workspace = tempfile.mkdtemp(prefix="kb-git-test-")
+        conn._workspace = mock_workspace
+        conn._owns_workspace = True
+
+        assert os.path.isdir(mock_workspace)
+
+        await conn.close()
+
+        assert not os.path.isdir(mock_workspace)
+        assert conn._workspace is None
+
+    @pytest.mark.asyncio
+    async def test_close_does_not_remove_external_workspace(
+        self, git_config, tmp_path, monkeypatch
+    ):
+        """close() does not remove workspace that was externally provided."""
+        from ingest.connectors.git import GitConnector
+
+        monkeypatch.setenv("GITHUB_TOKEN", "ghp_fake")
+
+        conn = GitConnector(git_config)
+        # Externally provided workspace (connector doesn't own it)
+        conn._workspace = str(tmp_path)
+        conn._owns_workspace = False
+
+        await conn.close()
+
+        # External workspace should still exist
+        assert tmp_path.exists()
+        assert conn._workspace is None
+
+
 class TestGitCheckpoint:
     def test_checkpoint_from_sha(self, git_config, temp_git_repo):
         from ingest.connectors.git import GitConnector

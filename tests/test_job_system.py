@@ -493,3 +493,88 @@ def test_job_can_cancel():
 
     job.status = JobStatus.COMPLETED
     assert not job.can_cancel()
+
+
+class TestConnectorAwareJobs:
+    """Tests that job system coexists with connector_state."""
+
+    def test_job_creation_with_connector_state_present(self, temp_db):
+        """Creating jobs works when connector_state table has entries."""
+        store = MetadataStore(db_path=temp_db)
+        store.connect()
+
+        # Add connector_state entries (simulating existing connector data)
+        store.upsert_connector_state(
+            source_key="confluence://myspace",
+            remote_id="page-123",
+            connector_type="confluence",
+            sync_checkpoint="cursor_v1",
+        )
+        store.upsert_connector_state(
+            source_key="jira://PROJ",
+            remote_id="PROJ-42",
+            connector_type="jira",
+            sync_checkpoint="cursor_v2",
+        )
+
+        # Create jobs alongside connector state
+        manager = JobManager(store)
+        job1 = manager.create_job(
+            docs_path="/test/docs1", priority=JobPriority.NORMAL
+        )
+        job2 = manager.create_job(
+            docs_path="/test/docs2", priority=JobPriority.HIGH
+        )
+
+        assert job1.job_id is not None
+        assert job1.status == JobStatus.PENDING
+        assert job2.job_id is not None
+
+        # Verify jobs were persisted
+        jobs = manager.list_jobs()
+        assert len(jobs) == 2
+
+        # Verify connector_state entries still intact
+        state1 = store.get_connector_state("confluence://myspace", "page-123")
+        assert state1 is not None
+        assert state1["sync_checkpoint"] == "cursor_v1"
+
+        state2 = store.get_connector_state("jira://PROJ", "PROJ-42")
+        assert state2 is not None
+        assert state2["sync_checkpoint"] == "cursor_v2"
+
+        store.close()
+
+    def test_connector_state_and_jobs_independent_tables(self, temp_db):
+        """Connector state and jobs tables are independent."""
+        store = MetadataStore(db_path=temp_db)
+        store.connect()
+
+        manager = JobManager(store)
+        job = manager.create_job(
+            docs_path="/test/docs", priority=JobPriority.NORMAL
+        )
+
+        # Connector state should not affect job operations
+        store.upsert_connector_state(
+            source_key="confluence://myspace",
+            remote_id="page-1",
+            connector_type="confluence",
+            sync_checkpoint="cp1",
+        )
+        store.upsert_connector_state(
+            source_key="confluence://myspace",
+            remote_id="page-2",
+            connector_type="confluence",
+            sync_checkpoint="cp2",
+        )
+
+        # Start and complete job — should succeed
+        assert manager.start_job(job.job_id)
+        assert manager.complete_job(job.job_id)
+
+        # List connector state — should return both
+        states = store.list_connector_state(connector_type="confluence")
+        assert len(states) == 2
+
+        store.close()

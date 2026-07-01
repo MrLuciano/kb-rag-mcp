@@ -455,3 +455,50 @@ async def test_worker_pool_with_rate_limiter():
         assert elapsed >= 1.0
 
     await pool.stop()
+
+
+@pytest.mark.asyncio
+async def test_worker_processes_staged_connector_file():
+    """Worker processes connector-staged .md files without error."""
+    limiter = RateLimiter(requests_per_minute=60.0)
+    worker = FileWorker(
+        rate_limiter=limiter, max_retries=2, skip_validation=True
+    )
+
+    # Create a staged connector file (simulating stage_document output)
+    import tempfile
+    from pathlib import Path
+    import shutil
+
+    staging_dir = Path(tempfile.mkdtemp())
+    try:
+        staged_file = staging_dir / "confluence__confluence___myspace__page-123.md"
+        staged_file.write_text(
+            "source_key: confluence://myspace\n"
+            "remote_id: page-123\n"
+            "connector_type: confluence\n"
+            "title: Test Page\n"
+            "\n"
+            "---\n"
+            "\n"
+            "Hello from staged connector content.\n",
+            encoding="utf-8",
+        )
+
+        # Mock process_file to succeed
+        with patch("ingest.ingest.process_file") as mock_process:
+            mock_process.return_value = (5, "ok")
+
+            result = await worker.process_file(
+                file_path=staged_file,
+                docs_root=staging_dir,
+                store=MagicMock(),
+                registry=MagicMock(),
+            )
+
+        assert result.success
+        assert result.chunks_generated == 5
+        assert result.status == "ok"
+        assert result.retries == 0
+    finally:
+        shutil.rmtree(staging_dir, ignore_errors=True)
