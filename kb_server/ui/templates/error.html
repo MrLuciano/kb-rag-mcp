@@ -3,15 +3,13 @@
 {% block title %}Error {{ code }} | Knowledge Base{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="alert alert-danger" role="alert">
-        <h1 class="h4 alert-heading">Error {{ code }}: {{ title }}</h1>
-        <p>{{ detail }}</p>
-        <hr>
-        <p class="mb-0">
-            <a href="/ui/search" class="alert-link">Try searching</a>
-            or <a href="/ui/browse" class="alert-link">browse documents</a>.
-        </p>
-    </div>
+<div class="alert alert-danger" role="alert">
+    <h1 class="h4 alert-heading">Error {{ code }}: {{ title }}</h1>
+    <p>{{ detail }}</p>
+    <hr>
+    <p class="mb-0">
+        <a href="/ui/search" class="alert-link">Try searching</a>
+        or <a href="/ui/browse" class="alert-link">browse documents</a>.
+    </p>
 </div>
 {% endblock %}

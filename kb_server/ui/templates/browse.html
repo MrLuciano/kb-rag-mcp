@@ -134,16 +134,8 @@
     <ul class="pagination">
         {% if page > 1 %}
         <li class="page-item">
-            <a class="page-link" 
-               href="?page={{ page - 1 }}
-                     {% if filters.product %}&product={{ filters.product }}
-                     {% endif %}
-                     {% if filters.doc_type %}&doc_type={{ filters.doc_type }}
-                     {% endif %}
-                     {% if filters.version %}&version={{ filters.version }}
-                     {% endif %}
-                     {% if filters.status %}&status={{ filters.status }}
-                     {% endif %}">
+            <a class="page-link"
+               href="?page={{ page - 1 }}{% if filters.product %}&product={{ filters.product }}{% endif %}{% if filters.doc_type %}&doc_type={{ filters.doc_type }}{% endif %}{% if filters.version %}&version={{ filters.version }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}">
                 Previous
             </a>
         </li>
@@ -157,16 +149,8 @@
             {% elif (p <= 3) or (p >= total_pages - 2) or 
                     (p >= page - 1 and p <= page + 1) %}
             <li class="page-item">
-                <a class="page-link" 
-                   href="?page={{ p }}
-                         {% if filters.product %}&product={{ filters.product }}
-                         {% endif %}
-                         {% if filters.doc_type %}&doc_type={{ filters.doc_type }}
-                         {% endif %}
-                         {% if filters.version %}&version={{ filters.version }}
-                         {% endif %}
-                         {% if filters.status %}&status={{ filters.status }}
-                         {% endif %}">
+            <a class="page-link"
+               href="?page={{ p }}{% if filters.product %}&product={{ filters.product }}{% endif %}{% if filters.doc_type %}&doc_type={{ filters.doc_type }}{% endif %}{% if filters.version %}&version={{ filters.version }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}">
                     {{ p }}
                 </a>
             </li>
@@ -179,16 +163,8 @@
         
         {% if page < total_pages %}
         <li class="page-item">
-            <a class="page-link" 
-               href="?page={{ page + 1 }}
-                     {% if filters.product %}&product={{ filters.product }}
-                     {% endif %}
-                     {% if filters.doc_type %}&doc_type={{ filters.doc_type }}
-                     {% endif %}
-                     {% if filters.version %}&version={{ filters.version }}
-                     {% endif %}
-                     {% if filters.status %}&status={{ filters.status }}
-                     {% endif %}">
+            <a class="page-link"
+               href="?page={{ page + 1 }}{% if filters.product %}&product={{ filters.product }}{% endif %}{% if filters.doc_type %}&doc_type={{ filters.doc_type }}{% endif %}{% if filters.version %}&version={{ filters.version }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}">
                 Next
             </a>
         </li>
