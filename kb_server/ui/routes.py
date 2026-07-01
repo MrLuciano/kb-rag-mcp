@@ -247,6 +247,7 @@ async def search_kb(
     version: Optional[str] = Form(None),
     hybrid: bool = Form(False),
     rerank: bool = Form(False),
+    page: int = Form(1, ge=1),
 ):
     """Execute search and return HTML results."""
     from kb_server.server import _search_kb
@@ -263,6 +264,12 @@ async def search_kb(
     result_text = results[0].text if results else "No results found."
     parsed_results = _parse_search_results(result_text) if results else []
 
+    per_page = 10
+    total_results = len(parsed_results)
+    total_pages = max(1, (total_results + per_page - 1) // per_page)
+    offset = (page - 1) * per_page
+    page_results = parsed_results[offset:offset + per_page]
+
     return templates.TemplateResponse(
         request,
         "search_results.html",
@@ -271,7 +278,11 @@ async def search_kb(
             "query": query,
             "results": results,
             "result_text": result_text,
-            "parsed_results": parsed_results,
+            "parsed_results": page_results,
+            "page": page,
+            "total_pages": total_pages,
+            "per_page": per_page,
+            "total_results": total_results,
         },
     )
 

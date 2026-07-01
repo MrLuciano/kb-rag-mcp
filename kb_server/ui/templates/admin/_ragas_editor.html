@@ -22,9 +22,13 @@
         ragasBtn.addEventListener('htmx:beforeRequest', function() {
             var spinner = document.getElementById('ragas-spinner');
             var btnText = ragasBtn.querySelector('.btn-text');
+            var resultDiv = document.getElementById('ragas-result');
             ragasBtn.disabled = true;
             btnText.classList.add('d-none');
             spinner.classList.remove('d-none');
+            if (resultDiv) {
+                resultDiv.innerHTML = '<div class="progress mt-3"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%">Running evaluation...</div></div>';
+            }
         });
         ragasBtn.addEventListener('htmx:afterRequest', function() {
             var spinner = document.getElementById('ragas-spinner');

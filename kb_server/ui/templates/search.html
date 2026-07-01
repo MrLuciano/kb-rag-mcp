@@ -11,6 +11,7 @@
             <div class="card-body">
                 <h2 class="h5 card-title">Search Parameters</h2>
                 <form id="searchForm" hx-post="/ui/search" hx-target="#results" hx-swap="innerHTML" hx-indicator="#search-loading">
+                    <input type="hidden" name="page" value="1">
                     <div class="mb-3">
                         <label for="query" class="form-label">
                             Query *
